@@ -1480,11 +1480,6 @@
           <span>07 / 20 Rate Limiting & Resource Consumption</span>
         </div>
         <div style="display:flex; align-items:center; gap:12px;">
-          <!-- Dark / Light Mode Toggle Button -->
-          <button class="theme-toggle-btn" id="themeToggleBtn" title="Switch Theme">
-            <span>☀️</span> <span class="theme-label">Light Mode</span>
-          </button>
-
           <!-- Dual Language Switcher -->
           <div class="lang-switch-wrapper">
             <span id="lbl-hi" class="lang-label active">Hindi</span>
@@ -1944,8 +1939,8 @@
           <!-- Language Selector Pills -->
           <div class="code-lang-pills-row" style="display:flex; gap:10px; margin-bottom:1.4rem; flex-wrap:wrap;">
             <button type="button" class="code-lang-btn active" onclick="switchCodeLang(this, 'code-node')">Node.js (Express + Redis)</button>
-            <button type="button" class="code-lang-btn" onclick="switchCodeLang(this, 'code-python')">Python (FastAPI + SlowAPI)</button>
-            <button type="button" class="code-lang-btn" onclick="switchCodeLang(this, 'code-nginx')">Nginx (API Gateway)</button>
+            <button type="button" class="code-lang-btn" onclick="switchCodeLang(this, 'code-python')">Python (Flask + Flask-Limiter)</button>
+            
           </div>
 
           <!-- Section A: Node.js Express -->
@@ -2076,62 +2071,7 @@ app.state.limiter = limiter
           </div>
 
           <!-- Section C: Nginx Gateway -->
-          <div class="code-lang-section" id="code-nginx" style="display:none;">
-            <div class="code-compare-grid">
-              <div class="compare-box vulnerable">
-                <div class="compare-header">
-                  <span class="compare-dot red"></span>
-                  <span class="compare-title">❌ Vulnerable Nginx (Direct Reverse Proxy Pass)</span>
-                  <button type="button" class="term-copy-btn" onclick="copyTerm(this)" style="margin-left:auto;">Copy</button>
-                </div>
-                <pre><code><span class="t-comm"># 🚨 INSECURE: Unbounded pass-through to internal backend upstream</span>
-<span class="t-kw">server</span> {
-    <span class="t-kw">listen</span> <span class="t-num">80</span>;
-    <span class="t-kw">server_name</span> <span class="t-str">api.enterprise.com</span>;
-
-    <span class="t-kw">location</span> /api/ {
-        <span class="t-comm"># Attacker floods 10,000 req/s directly hitting backend Node/Python apps!</span>
-        <span class="t-fn">proxy_pass</span> <span class="t-str">http://internal_backend_upstream</span>;
-    }
-}</code></pre>
-              </div>
-
-              <div class="compare-box secure">
-                <div class="compare-header">
-                  <span class="compare-dot green"></span>
-                  <span class="compare-title">✅ Secure Nginx Gateway (limit_req_zone & Burst Damping)</span>
-                  <button type="button" class="term-copy-btn" onclick="copyTerm(this)" style="margin-left:auto;">Copy</button>
-                </div>
-                <pre><code><span class="t-comm"># ✅ SECURE: 10MB shared memory zone tracking binary IP addresses</span>
-<span class="t-fn">limit_req_zone</span> $binary_remote_addr <span class="t-key">zone</span>=api_general:<span class="t-num">10m</span> <span class="t-key">rate</span>=<span class="t-num">10r/s</span>;
-<span class="t-fn">limit_req_zone</span> $binary_remote_addr <span class="t-key">zone</span>=auth_strict:<span class="t-num">10m</span> <span class="t-key">rate</span>=<span class="t-num">2r/m</span>;
-
-<span class="t-kw">server</span> {
-    <span class="t-kw">listen</span> <span class="t-num">443</span> ssl;
-    <span class="t-kw">server_name</span> <span class="t-str">api.enterprise.com</span>;
-
-    <span class="t-comm"># Sensitive Login & OTP Routes strictly throttled to 2 per minute</span>
-    <span class="t-kw">location</span> /api/v1/auth/ {
-        <span class="t-fn">limit_req</span> <span class="t-key">zone</span>=auth_strict <span class="t-key">burst</span>=<span class="t-num">3</span> nodelay;
-        <span class="t-fn">limit_req_status</span> <span class="t-num">429</span>;
-        <span class="t-fn">proxy_pass</span> <span class="t-str">http://internal_backend_upstream</span>;
-    }
-
-    <span class="t-comm"># General API endpoints allow 10r/s with short burst smoothing</span>
-    <span class="t-kw">location</span> /api/ {
-        <span class="t-fn">limit_req</span> <span class="t-key">zone</span>=api_general <span class="t-key">burst</span>=<span class="t-num">20</span> nodelay;
-        <span class="t-fn">limit_req_status</span> <span class="t-num">429</span>;
-        <span class="t-fn">proxy_pass</span> <span class="t-str">http://internal_backend_upstream</span>;
-    }
-}</code></pre>
-              </div>
-            </div>
-          </div>
-
-        </div>
-      </div>
-
-                  <!-- ====================================================================
+          <!-- ====================================================================
            TAB 5: PENTESTING CHECKLIST (WITH INTERACTIVE PASS / FAIL BUTTONS)
            ==================================================================== -->
       <div class="tab-content" id="tab-checklist">

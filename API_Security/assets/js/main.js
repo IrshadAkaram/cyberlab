@@ -5,7 +5,9 @@
  */
 
 document.addEventListener('DOMContentLoaded', () => {
-  initThemeToggle();
+  // Enforce permanent dark theme
+  document.documentElement.setAttribute('data-theme', 'dark');
+  try { localStorage.removeItem('api_sec_theme'); } catch(e) {}
   initLanguageToggle();
   initTabs();
   initCopyButtons();
@@ -14,37 +16,6 @@ document.addEventListener('DOMContentLoaded', () => {
   initInteractiveBackground();
   initHeroInteractiveWidgets();
 });
-
-/* ==========================================================================
-   Dark / Light Theme Toggle Handler
-   ========================================================================== */
-function initThemeToggle() {
-  const themeBtn = document.getElementById('themeToggleBtn');
-  const html = document.documentElement;
-
-  const savedTheme = localStorage.getItem('api_sec_theme') || 'dark';
-  setTheme(savedTheme);
-
-  if (themeBtn) {
-    themeBtn.addEventListener('click', () => {
-      const currentTheme = html.getAttribute('data-theme') || 'dark';
-      const newTheme = (currentTheme === 'dark') ? 'light' : 'dark';
-      setTheme(newTheme);
-    });
-  }
-
-  function setTheme(theme) {
-    html.setAttribute('data-theme', theme);
-    localStorage.setItem('api_sec_theme', theme);
-    if (themeBtn) {
-      if (theme === 'dark') {
-        themeBtn.innerHTML = '<span>☀️</span> <span class="theme-label">Light Mode</span>';
-      } else {
-        themeBtn.innerHTML = '<span>🌙</span> <span class="theme-label">Dark Mode</span>';
-      }
-    }
-  }
-}
 
 /* ==========================================================================
    Language Toggle Handler (Hindi / English)

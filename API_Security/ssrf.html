@@ -1359,11 +1359,6 @@
           <span>08 / 20 Server-Side Request Forgery (SSRF)</span>
         </div>
         <div style="display:flex; align-items:center; gap:12px;">
-          <!-- Dark / Light Mode Toggle Button -->
-          <button class="theme-toggle-btn" id="themeToggleBtn" title="Switch Theme">
-            <span>☀️</span> <span class="theme-label">Light Mode</span>
-          </button>
-
           <!-- Dual Language Switcher -->
           <div class="lang-switch-wrapper">
             <span id="lbl-hi" class="lang-label active">Hindi</span>
@@ -1835,8 +1830,8 @@
           <!-- Language Selector Pills (Module 07) -->
           <div class="code-lang-pills-row">
             <button type="button" class="code-lang-btn active" onclick="switchCodeLang(this, 'code-node')">Node.js (Express + ipaddr.js)</button>
-            <button type="button" class="code-lang-btn" onclick="switchCodeLang(this, 'code-python')">Python (FastAPI + ipaddress)</button>
-            <button type="button" class="code-lang-btn" onclick="switchCodeLang(this, 'code-go')">Go (net/http Safe DialContext)</button>
+            <button type="button" class="code-lang-btn" onclick="switchCodeLang(this, 'code-python')">Python (Flask + ipaddress)</button>
+            
           </div>
 
           <!-- Section A: Node.js Express -->
@@ -1989,91 +1984,7 @@ app = <span class="t-fn">FastAPI</span>()
           </div>
 
           <!-- Section C: Go Language -->
-          <div class="code-lang-section" id="code-go" style="display:none;">
-            <div class="code-compare-grid">
-              <div class="compare-box vulnerable">
-                <div class="compare-header">
-                  <span class="compare-dot red"></span>
-                  <span class="compare-title">❌ Vulnerable (Go / net/http Default Client)</span>
-                  <button type="button" class="term-copy-btn" onclick="copyTerm(this)">Copy</button>
-                </div>
-                <pre><code><span class="t-comm">// 🚨 VULNERABLE: http.Get connects directly to arbitrary IPs</span>
-<span class="t-kw">package</span> main
-<span class="t-kw">import</span> (
-    <span class="t-str">"net/http"</span>
-    <span class="t-str">"io"</span>
-)
-
-<span class="t-kw">func</span> <span class="t-fn">fetchHandler</span>(w http.ResponseWriter, r *http.Request) {
-    targetUrl := r.URL.Query().<span class="t-fn">Get</span>(<span class="t-str">"url"</span>)
-    resp, err := http.<span class="t-fn">Get</span>(targetUrl) <span class="t-comm">// Danger: No IP control!</span>
-    <span class="t-kw">if</span> err != <span class="t-bool">nil</span> { <span class="t-kw">return</span> }
-    <span class="t-kw">defer</span> resp.Body.<span class="t-fn">Close</span>()
-    io.<span class="t-fn">Copy</span>(w, resp.Body)
-}</code></pre>
-              </div>
-
-              <div class="compare-box secure">
-                <div class="compare-header">
-                  <span class="compare-dot green"></span>
-                  <span class="compare-title">✅ Secure (Go / Custom DialContext Safe Transport)</span>
-                  <button type="button" class="term-copy-btn" onclick="copyTerm(this)">Copy</button>
-                </div>
-                <pre><code><span class="t-comm">// ✅ SECURE: Safe DialContext rejects private IPs at connection handshake</span>
-<span class="t-kw">package</span> main
-<span class="t-kw">import</span> (
-    <span class="t-str">"context"</span>
-    <span class="t-str">"errors"</span>
-    <span class="t-str">"net"</span>
-    <span class="t-str">"net/http"</span>
-    <span class="t-str">"time"</span>
-)
-
-<span class="t-kw">var</span> safeTransport = &amp;http.Transport{
-    <span class="t-key">DialContext</span>: <span class="t-kw">func</span>(ctx context.Context, network, addr <span class="t-type">string</span>) (net.Conn, <span class="t-type">error</span>) {
-        host, port, _ := net.<span class="t-fn">SplitHostPort</span>(addr)
-        ips, err := net.<span class="t-fn">LookupIP</span>(host)
-        <span class="t-kw">if</span> err != <span class="t-bool">nil</span> { <span class="t-kw">return</span> <span class="t-bool">nil</span>, err }
-
-        <span class="t-kw">for</span> _, ip := <span class="t-kw">range</span> ips {
-            <span class="t-kw">if</span> ip.<span class="t-fn">IsLoopback</span>() || ip.<span class="t-fn">IsPrivate</span>() || ip.<span class="t-fn">IsLinkLocalUnicast</span>() {
-                <span class="t-kw">return</span> <span class="t-bool">nil</span>, errors.<span class="t-fn">New</span>(<span class="t-str">"SSRF Guard: Blocked private destination"</span>)
-            }
-        }
-        dialer := &amp;net.Dialer{<span class="t-key">Timeout</span>: <span class="t-num">3</span> * time.Second}
-        <span class="t-kw">return</span> dialer.<span class="t-fn">DialContext</span>(ctx, network, addr)
-    },
-}
-
-<span class="t-kw">var</span> safeClient = &amp;http.Client{
-    <span class="t-key">Transport</span>: safeTransport,
-    <span class="t-key">CheckRedirect</span>: <span class="t-kw">func</span>(req *http.Request, via []*http.Request) <span class="t-type">error</span> {
-        <span class="t-kw">return</span> http.ErrUseLastResponse <span class="t-comm">// Disallow auto redirects</span>
-    },
-}</code></pre>
-              </div>
-            </div>
-          </div>
-
-          <!-- Golden Rules Box (Module 07) -->
-          <div class="golden-rules-card">
-            <div class="golden-rules-title">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
-              <span>🛡️ 5 Golden Rules for Bulletproof SSRF Remediation</span>
-            </div>
-            <div class="def-lead-text">
-              1. <strong>Pre-DNS Resolution:</strong> Resolve hostname to numeric IP address before TCP socket initiation.<br>
-              2. <strong>Strict CIDR Blocklist:</strong> Reject all RFC 1918 private subnets, loopback (<code>127.0.0.0/8</code>, <code>::1</code>), and cloud link-local addresses (<code>169.254.0.0/16</code>).<br>
-              3. <strong>Disable HTTP Redirects:</strong> Configure <code>maxRedirects: 0</code> on your HTTP client to prevent open redirect chaining attacks.<br>
-              4. <strong>Enforce IMDSv2:</strong> In AWS EC2, mandate IMDSv2 and configure <code>HttpPutResponseHopLimit: 1</code> so containers cannot access metadata.<br>
-              5. <strong>Dedicated Egress Gateway / DMZ:</strong> Run remote fetching services in an isolated DMZ VPC with egress firewall rules preventing connections into internal production databases.
-            </div>
-          </div>
-
-        </div>
-      </div>
-
-      <!-- ====================================================================
+          <!-- ====================================================================
            TAB 5: PENTESTING CHECKLIST (Exact Module 07 Theme & Buttons)
            ==================================================================== -->
       <div class="tab-content" id="tab-checklist">

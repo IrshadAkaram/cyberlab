@@ -1571,11 +1571,6 @@
           <span>10 / 20 Command Injection (RCE)</span>
         </div>
         <div style="display:flex; align-items:center; gap:12px;">
-          <!-- Dark / Light Mode Toggle Button -->
-          <button class="theme-toggle-btn" id="themeToggleBtn" title="Switch Theme">
-            <span>☀️</span> <span class="theme-label">Light Mode</span>
-          </button>
-
           <!-- Dual Language Switcher -->
           <div class="lang-switch-wrapper">
             <span class="lang-label active" id="lbl-hi">Hindi</span>
@@ -2056,7 +2051,7 @@
       <!-- ====================================================================
            TAB 4: CODE & FIX
            ==================================================================== -->
-      <div class="tab-content" id="tab-code">
+            <div class="tab-content" id="tab-code">
         <div class="card-panel">
           <div class="card-title-badge-row">
             <div class="blue-circle-num">4</div>
@@ -2071,228 +2066,195 @@
             <span class="lang-en">The most effective defense against command injection is completely bypassing shell interpreters by invoking binaries with immutable argument arrays:</span>
           </p>
 
-          <!-- Language Switcher -->
-          <div class="code-lang-pills-row">
+          <!-- Language Switcher: Python (Flask) and Node.js (Express) Only -->
+          <div class="code-lang-pills-row" style="display:flex; gap:10px; margin-bottom:1.4rem; flex-wrap:wrap;">
             <button type="button" class="code-lang-btn active" onclick="switchCodeLang(this, 'code-python')">
-              <span>🐍</span> Python (FastAPI / Subprocess)
+              <span>🐍</span> Python (Flask)
             </button>
             <button type="button" class="code-lang-btn" onclick="switchCodeLang(this, 'code-node')">
-              <span>🟢</span> Node.js (Express / execFile)
-            </button>
-            <button type="button" class="code-lang-btn" onclick="switchCodeLang(this, 'code-go')">
-              <span>🐹</span> Go (os/exec)
+              <span>🟢</span> Node.js (Express)
             </button>
           </div>
 
-          <!-- Python Section -->
-          <div id="code-python" class="code-lang-section" style="display:block;">
+          <!-- Section 1: Python (Flask) -->
+          <div class="code-lang-section" id="code-python">
             <div class="code-compare-grid">
               <div class="compare-box vulnerable">
                 <div class="compare-header">
-                  <span class="compare-dot red"></span>
-                  <span>❌ Vulnerable: shell=True String Concatenation</span>
-                  <button type="button" class="term-copy-btn" onclick="copyTerm(this)">Copy</button>
+                  <span class="compare-title">❌ Vulnerable: shell=True String Concatenation</span>
+                  <button type="button" class="copy-code-btn" onclick="copyCodeSnippet(this)">Copy</button>
                 </div>
-                <pre><code><span class="t-comm"># ❌ VULNERABLE: Invokes shell, interprets metacharacters</span>
+                <div class="compare-body">
+                  <pre><code><span class="t-comment"># ❌ VULNERABLE: Invokes shell, interprets metacharacters</span>
+<span class="t-kw">from</span> flask <span class="t-kw">import</span> Flask, request, jsonify
 <span class="t-kw">import</span> subprocess
-<span class="t-kw">from</span> fastapi <span class="t-kw">import</span> FastAPI
-<span class="t-kw">from</span> pydantic <span class="t-kw">import</span> BaseModel
 
-app = <span class="t-fn">FastAPI</span>()
+app = Flask(__name__)
 
-<span class="t-kw">class</span> <span class="t-cls">PingRequest</span>(BaseModel):
-    host: <span class="t-cls">str</span>
+<span class="t-dec">@app.route</span>(<span class="t-str">"/api/v1/diagnostics/ping"</span>, methods=[<span class="t-str">"POST"</span>])
+<span class="t-kw">def</span> <span class="t-fn">ping_diagnostics</span>():
+    data = request.get_json() <span class="t-kw">or</span> {}
+    host = data.get(<span class="t-str">"host"</span>, <span class="t-str">""</span>)
 
-<span class="t-cls">@app.post</span>(<span class="t-str">"/api/v1/diagnostics/ping"</span>)
-<span class="t-kw">def</span> <span class="t-fn">ping_host</span>(payload: PingRequest):
-    <span class="t-comm"># 🚨 CRITICAL RCE: shell=True enables ; && | $() chaining</span>
-    cmd = <span class="t-str">f"ping -c 2 {payload.host}"</span>
-    output = subprocess.<span class="t-fn">check_output</span>(cmd, <span class="t-key">shell</span>=<span class="t-bool">True</span>)
-    <span class="t-kw">return</span> {"output": output.<span class="t-fn">decode</span>()}</code></pre>
-              </div>
-
-              <div class="compare-box secure">
-                <div class="compare-header">
-                  <span class="compare-dot green"></span>
-                  <span>✅ Secure: shell=False + Argument Array + Regex</span>
-                  <button type="button" class="term-copy-btn" onclick="copyTerm(this)">Copy</button>
-                </div>
-                <pre><code><span class="t-comm"># ✅ SECURE: Strict validation + direct binary execution</span>
-<span class="t-kw">import</span> subprocess
-<span class="t-kw">from</span> ipaddress <span class="t-kw">import</span> ip_address
-<span class="t-kw">from</span> fastapi <span class="t-kw">import</span> FastAPI, HTTPException
-
-app = <span class="t-fn">FastAPI</span>()
-
-<span class="t-cls">@app.post</span>(<span class="t-str">"/api/v1/diagnostics/ping"</span>)
-<span class="t-kw">def</span> <span class="t-fn">ping_host</span>(payload: PingRequest):
-    <span class="t-comm"># 1. Type validation: must be a valid IPv4/IPv6 address</span>
-    <span class="t-kw">try</span>:
-        valid_ip = <span class="t-cls">str</span>(<span class="t-fn">ip_address</span>(payload.host))
-    <span class="t-kw">except</span> ValueError:
-        <span class="t-kw">raise</span> <span class="t-fn">HTTPException</span>(status_code=400, detail=<span class="t-str">"Invalid IP"</span>)
-
-    <span class="t-comm"># 2. shell=False (Default): OS treats args literally</span>
-    result = subprocess.<span class="t-fn">run</span>(
-        [<span class="t-str">"/bin/ping"</span>, <span class="t-str">"-c"</span>, <span class="t-str">"2"</span>, valid_ip],
-        <span class="t-key">shell</span>=<span class="t-bool">False</span>,
-        <span class="t-key">capture_output</span>=<span class="t-bool">True</span>,
-        <span class="t-key">text</span>=<span class="t-bool">True</span>,
-        <span class="t-key">timeout</span>=5
+    <span class="t-comment"># CRITICAL FLAW: shell=True passes string directly to /bin/sh</span>
+    <span class="t-comment"># Attacker payload: '8.8.8.8; whoami' runs ping AND whoami!</span>
+    cmd = <span class="t-str">f"ping -c 2 {host}"</span>
+    output = subprocess.check_output(
+        cmd,
+        shell=<span class="t-kw">True</span>,
+        text=<span class="t-kw">True</span>,
+        stderr=subprocess.STDOUT
     )
-    <span class="t-kw">return</span> {"output": result.stdout}</code></pre>
-              </div>
-            </div>
-          </div>
 
-          <!-- Node.js Section -->
-          <div id="code-node" class="code-lang-section" style="display:none;">
-            <div class="code-compare-grid">
-              <div class="compare-box vulnerable">
-                <div class="compare-header">
-                  <span class="compare-dot red"></span>
-                  <span>❌ Vulnerable: child_process.exec()</span>
-                  <button type="button" class="term-copy-btn" onclick="copyTerm(this)">Copy</button>
+    <span class="t-kw">return</span> jsonify({<span class="t-str">"status"</span>: <span class="t-str">"success"</span>, <span class="t-str">"output"</span>: output}), <span class="t-num">200</span></code></pre>
                 </div>
-                <pre><code><span class="t-comm">// ❌ VULNERABLE: exec() invokes /bin/sh</span>
-<span class="t-kw">const</span> { exec } = <span class="t-fn">require</span>(<span class="t-str">'child_process'</span>);
-<span class="t-kw">const</span> express = <span class="t-fn">require</span>(<span class="t-str">'express'</span>);
-<span class="t-kw">const</span> app = <span class="t-fn">express</span>();
-app.<span class="t-fn">use</span>(express.<span class="t-fn">json</span>());
-
-app.<span class="t-fn">post</span>(<span class="t-str">'/api/v1/diagnostics/ping'</span>, (req, res) => {
-  <span class="t-comm">// 🚨 CRITICAL: Untrusted input directly parsed by shell</span>
-  exec(<span class="t-str">`ping -c 2 ${req.body.host}`</span>, (err, stdout) => {
-    <span class="t-kw">if</span> (err) <span class="t-kw">return</span> res.<span class="t-fn">status</span>(500).<span class="t-fn">send</span>(err.message);
-    res.<span class="t-fn">json</span>({ <span class="t-key">output</span>: stdout });
-  });
-});</code></pre>
               </div>
 
               <div class="compare-box secure">
                 <div class="compare-header">
-                  <span class="compare-dot green"></span>
-                  <span>✅ Secure: child_process.execFile() + Zod Regex</span>
-                  <button type="button" class="term-copy-btn" onclick="copyTerm(this)">Copy</button>
+                  <span class="compare-title">✅ Secure: shell=False + Argument Array + IP Validation</span>
+                  <button type="button" class="copy-code-btn" onclick="copyCodeSnippet(this)">Copy</button>
                 </div>
-                <pre><code><span class="t-comm">// ✅ SECURE: execFile bypasses shell, enforces argument array</span>
-<span class="t-kw">const</span> { execFile } = <span class="t-fn">require</span>(<span class="t-str">'child_process'</span>);
-<span class="t-kw">const</span> { z } = <span class="t-fn">require</span>(<span class="t-str">'zod'</span>);
+                <div class="compare-body">
+                  <pre><code><span class="t-comment"># ✅ SECURE: Strict validation + direct binary execution</span>
+<span class="t-kw">from</span> flask <span class="t-kw">import</span> Flask, request, jsonify
+<span class="t-kw">import</span> subprocess
+<span class="t-kw">import</span> ipaddress
 
-<span class="t-kw">const</span> HostSchema = z.<span class="t-fn">object</span>({
-  <span class="t-key">host</span>: z.<span class="t-fn">string</span>().<span class="t-fn">regex</span>(<span class="t-str">/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/</span>)
-});
+app = Flask(__name__)
 
-app.<span class="t-fn">post</span>(<span class="t-str">'/api/v1/diagnostics/ping'</span>, (req, res) => {
-  <span class="t-kw">const</span> parsed = HostSchema.<span class="t-fn">safeParse</span>(req.body);
-  <span class="t-kw">if</span> (!parsed.success) <span class="t-kw">return</span> res.<span class="t-fn">status</span>(400).<span class="t-fn">json</span>({ <span class="t-key">error</span>: <span class="t-str">"Invalid IP"</span> });
+<span class="t-dec">@app.route</span>(<span class="t-str">"/api/v1/diagnostics/ping"</span>, methods=[<span class="t-str">"POST"</span>])
+<span class="t-kw">def</span> <span class="t-fn">ping_diagnostics</span>():
+    data = request.get_json() <span class="t-kw">or</span> {}
+    host = str(data.get(<span class="t-str">"host"</span>, <span class="t-str">""</span>)).strip()
 
-  <span class="t-comm">// execFile invokes binary directly without /bin/sh</span>
-  execFile(<span class="t-str">'/bin/ping'</span>, [<span class="t-str">'-c'</span>, <span class="t-str">'2'</span>, parsed.data.host], { <span class="t-key">timeout</span>: 5000 }, (err, stdout) => {
-    <span class="t-kw">if</span> (err) <span class="t-kw">return</span> res.<span class="t-fn">status</span>(500).<span class="t-fn">json</span>({ <span class="t-key">error</span>: err.message });
-    res.<span class="t-fn">json</span>({ <span class="t-key">output</span>: stdout });
-  });
-});</code></pre>
+    <span class="t-comment"># 1. Strict Allowlist: Validate IPv4 syntax before execution</span>
+    <span class="t-kw">try</span>:
+        ip_obj = ipaddress.IPv4Address(host)
+        clean_ip = str(ip_obj)
+    <span class="t-kw">except</span> ValueError:
+        <span class="t-kw">return</span> jsonify({
+            <span class="t-str">"error"</span>: <span class="t-str">"Validation Error: 'host' must be a valid IPv4 address"</span>,
+            <span class="t-str">"code"</span>: <span class="t-str">"INVALID_PARAMETER_SYNTAX"</span>
+        }), <span class="t-num">400</span>
+
+    <span class="t-comment"># 2. Direct execution: shell=False + immutable argument vector</span>
+    <span class="t-comment"># Shell metacharacters (; && | `) are passed as literal text</span>
+    res = subprocess.run(
+        [<span class="t-str">"/bin/ping"</span>, <span class="t-str">"-c"</span>, <span class="t-str">"2"</span>, clean_ip],
+        shell=<span class="t-kw">False</span>,
+        capture_output=<span class="t-kw">True</span>,
+        text=<span class="t-kw">True</span>,
+        timeout=<span class="t-num">5</span>,
+        check=<span class="t-kw">False</span>
+    )
+
+    <span class="t-kw">return</span> jsonify({<span class="t-str">"status"</span>: <span class="t-str">"success"</span>, <span class="t-str">"output"</span>: res.stdout}), <span class="t-num">200</span></code></pre>
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- Go Section -->
-          <div id="code-go" class="code-lang-section" style="display:none;">
+          <!-- Section 2: Node.js (Express) -->
+          <div class="code-lang-section" id="code-node" style="display:none;">
             <div class="code-compare-grid">
               <div class="compare-box vulnerable">
                 <div class="compare-header">
-                  <span class="compare-dot red"></span>
-                  <span>❌ Vulnerable: exec.Command("sh", "-c", ...)</span>
-                  <button type="button" class="term-copy-btn" onclick="copyTerm(this)">Copy</button>
+                  <span class="compare-title">❌ Vulnerable: child_process.exec() Shell Invocation</span>
+                  <button type="button" class="copy-code-btn" onclick="copyCodeSnippet(this)">Copy</button>
                 </div>
-                <pre><code><span class="t-comm">// ❌ VULNERABLE: Wrapping command inside shell string</span>
-<span class="t-kw">package</span> main
-<span class="t-kw">import</span> (
-    <span class="t-str">"net/http"</span>
-    <span class="t-str">"os/exec"</span>
-)
+                <div class="compare-body">
+                  <pre><code><span class="t-comment">// ❌ VULNERABLE: Invokes /bin/sh -c with unescaped input</span>
+<span class="t-kw">const</span> express = require(<span class="t-str">'express'</span>);
+<span class="t-kw">const</span> { exec } = require(<span class="t-str">'child_process'</span>);
+<span class="t-kw">const</span> app = express();
+app.use(express.json());
 
-<span class="t-kw">func</span> <span class="t-fn">pingHandler</span>(w http.ResponseWriter, r *http.Request) {
-    host := r.URL.Query().<span class="t-fn">Get</span>(<span class="t-str">"host"</span>)
-    <span class="t-comm">// 🚨 CRITICAL: Passing string into sh -c</span>
-    cmd := exec.<span class="t-fn">Command</span>(<span class="t-str">"sh"</span>, <span class="t-str">"-c"</span>, <span class="t-str">"ping -c 2 "</span>+host)
-    out, _ := cmd.<span class="t-fn">CombinedOutput</span>()
-    w.<span class="t-fn">Write</span>(out)
-}</code></pre>
-              </div>
+app.post(<span class="t-str">'/api/v1/diagnostics/ping'</span>, (req, res) => {
+  <span class="t-kw">const</span> host = req.body.host || <span class="t-str">''</span>;
 
-              <div class="compare-box secure">
-                <div class="compare-header">
-                  <span class="compare-dot green"></span>
-                  <span>✅ Secure: exec.Command("ping", "-c", "2", host)</span>
-                  <button type="button" class="term-copy-btn" onclick="copyTerm(this)">Copy</button>
-                </div>
-                <pre><code><span class="t-comm">// ✅ SECURE: Directly pass parameters as slice arguments</span>
-<span class="t-kw">package</span> main
-<span class="t-kw">import</span> (
-    <span class="t-str">"net"</span>
-    <span class="t-str">"net/http"</span>
-    <span class="t-str">"os/exec"</span>
-)
-
-<span class="t-kw">func</span> <span class="t-fn">pingHandler</span>(w http.ResponseWriter, r *http.Request) {
-    rawHost := r.URL.Query().<span class="t-fn">Get</span>(<span class="t-str">"host"</span>)
-    <span class="t-comm">// 1. Validate as true IP</span>
-    <span class="t-kw">if</span> ip := net.<span class="t-fn">ParseIP</span>(rawHost); ip == nil {
-        http.<span class="t-fn">Error</span>(w, <span class="t-str">"Invalid IP"</span>, http.StatusBadRequest)
-        <span class="t-kw">return</span>
+  <span class="t-comment">// CRITICAL FLAW: exec() spawns a shell interpreter</span>
+  <span class="t-comment">// Attacker payload: "8.8.8.8; id" executes both</span>
+  exec(<span class="t-str">`ping -c 2 ${host}`</span>, (error, stdout, stderr) => {
+    <span class="t-kw">if</span> (error) {
+      <span class="t-kw">return</span> res.status(<span class="t-num">500</span>).json({ error: stderr || error.message });
     }
-    <span class="t-comm">// 2. Direct binary call; no shell invoked</span>
-    cmd := exec.<span class="t-fn">Command</span>(<span class="t-str">"/bin/ping"</span>, <span class="t-str">"-c"</span>, <span class="t-str">"2"</span>, rawHost)
-    out, _ := cmd.<span class="t-fn">CombinedOutput</span>()
-    w.<span class="t-fn">Write</span>(out)
-}</code></pre>
+    <span class="t-kw">return</span> res.json({ status: <span class="t-str">'success'</span>, output: stdout });
+  });
+});</code></pre>
+                </div>
+              </div>
+
+              <div class="compare-box secure">
+                <div class="compare-header">
+                  <span class="compare-title">✅ Secure: execFile() + net.isIPv4 Validation</span>
+                  <button type="button" class="copy-code-btn" onclick="copyCodeSnippet(this)">Copy</button>
+                </div>
+                <div class="compare-body">
+                  <pre><code><span class="t-comment">// ✅ SECURE: Strict type validation + execFile (No shell spawned)</span>
+<span class="t-kw">const</span> express = require(<span class="t-str">'express'</span>);
+<span class="t-kw">const</span> { execFile } = require(<span class="t-str">'child_process'</span>);
+<span class="t-kw">const</span> net = require(<span class="t-str">'net'</span>);
+<span class="t-kw">const</span> app = express();
+app.use(express.json());
+
+app.post(<span class="t-str">'/api/v1/diagnostics/ping'</span>, (req, res) => {
+  <span class="t-kw">const</span> host = String(req.body.host || <span class="t-str">''</span>).trim();
+
+  <span class="t-comment">// 1. Strict Allowlist: Reject non-IPv4 addresses upfront</span>
+  <span class="t-kw">if</span> (!net.isIPv4(host)) {
+    <span class="t-kw">return</span> res.status(<span class="t-num">400</span>).json({
+      error: <span class="t-str">"Validation Error: 'host' must be a valid IPv4 address"</span>,
+      code: <span class="t-str">'INVALID_PARAMETER_SYNTAX'</span>
+    });
+  }
+
+  <span class="t-comment">// 2. execFile invokes binary directly (bypasses /bin/sh)</span>
+  <span class="t-comment">// Argument array elements cannot inject new commands</span>
+  execFile(<span class="t-str">'/bin/ping'</span>, [<span class="t-str">'-c'</span>, <span class="t-str">'2'</span>, host], { timeout: <span class="t-num">5000</span> }, (error, stdout, stderr) => {
+    <span class="t-kw">if</span> (error) {
+      <span class="t-kw">return</span> res.status(<span class="t-num">500</span>).json({ error: stderr || error.message });
+    }
+    <span class="t-kw">return</span> res.json({ status: <span class="t-str">'success'</span>, output: stdout });
+  });
+});</code></pre>
+                </div>
               </div>
             </div>
-          </div>
-
-          <!-- Golden Rules Card -->
-          <div class="golden-rules-card">
-            <div class="golden-rules-title">
-              <span>🛡️</span> 4 Golden Architecture Rules to Prevent Command Injection
-            </div>
-            <ul class="golden-rules-list">
-              <li><strong>Rule 1: Never Call a Shell:</strong> Avoid <code>shell=True</code>, <code>os.system()</code>, and <code>child_process.exec()</code>. Use direct binary execution with static argument vectors (<code>subprocess.run(list)</code>, <code>execFile()</code>).</li>
-              <li><strong>Rule 2: Prefer Native Language Libraries:</strong> Instead of executing OS CLI binaries (like <code>curl</code>, <code>ping</code>, <code>tar</code>), use native runtime libraries (Python <code>requests</code>, <code>tarfile</code>, Go <code>net/http</code>).</li>
-              <li><strong>Rule 3: Enforce Strict Character Allowlists:</strong> Never rely on blacklists. Validate input types strictly with Regex (e.g. <code>^[a-zA-Z0-9._-]+$</code>) or typed schemas (Zod, Pydantic).</li>
-              <li><strong>Rule 4: Least Privilege Container Isolation:</strong> Run API workers as unprivileged users (<code>USER nonroot</code>), mount root filesystems read-only (<code>readOnlyRootFilesystem: true</code>), and drop all Linux capabilities (<code>drop: [ALL]</code>).</li>
-            </ul>
           </div>
 
         </div>
       </div>
 
       <!-- ====================================================================
-           TAB 5: REVIEW CHECKLIST
+           TAB 5: PENTESTING CHECKLIST (Module 07 Architecture)
            ==================================================================== -->
       <div class="tab-content" id="tab-checklist">
         <div class="card-panel">
           <div class="card-title-badge-row">
             <div class="blue-circle-num">5</div>
             <h2 class="panel-header-title">
-              <span class="lang-hi">Review &amp; Pentesting Checklist</span>
-              <span class="lang-en">Review &amp; Pentesting Checklist</span>
+              <span class="lang-hi">Hands-On API Command Injection Pentesting Checklist</span>
+              <span class="lang-en">Hands-On API Command Injection Pentesting Checklist</span>
             </h2>
           </div>
 
           <div class="checklist-meta-header">
-            <span class="checklist-guide-msg">
-              <span class="lang-hi">Har audit checkpoint ko test karein aur Pass (Secure) ya Fail (Vulnerable) mark karein:</span>
-              <span class="lang-en">Inspect each audit checkpoint and mark as Pass (Secure) or Fail (Vulnerable):</span>
-            </span>
-            <span class="checklist-counter-badge" id="checklist-progress-counter">0 / 6 Checks Tested</span>
+            <div class="checklist-guide-msg">
+              <span class="lang-hi">Har test case ko inspect karein aur <strong>Pass (Secure)</strong> ya <strong>Fail (Vulnerable)</strong> mark karein:</span>
+              <span class="lang-en">Audit each test case and mark as <strong>Pass (Secure)</strong> or <strong>Fail (Vulnerable)</strong>:</span>
+            </div>
+            <div class="checklist-counter-badge">
+              <span id="checklist-progress-counter">0 of 6 Checks Audited (0 Passed | 0 Vulnerable)</span>
+            </div>
           </div>
 
-          <div class="checklist-grid">
+          <div class="checklist-container">
             <!-- Check 1 -->
             <div class="checklist-item" id="check-item-1" onclick="handleCheckItemClick(event, this)">
-              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Toggle Pass / Fail"><span class="check-mark-icon">1</span></div>
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">1</span>
+              </div>
               <div class="check-content">
                 <h5>
                   <span class="lang-hi">1. Shell Process Invocation Audit (shell=False / execFile)</span>
@@ -2303,127 +2265,267 @@ app.<span class="t-fn">post</span>(<span class="t-str">'/api/v1/diagnostics/ping
                   <span class="lang-en">Verify that backend source code does not invoke shell interpreters via <code>shell=True</code>, <code>os.system(</code>, or <code>child_process.exec(</code>.</span>
                 </p>
                 <div class="check-how-to-box">
-                  <div class="check-how-to-title">🔍 How to Test:</div>
-                  <div class="check-how-to-code">git grep -E "shell\s*=\s*True|child_process\.exec\(|os\.system\("</div>
+                  <div class="check-how-to-title">🔍 How to Test (Testing Steps &amp; Source Code Audit):</div>
+                  <span class="lang-hi">1. Terminal me codebase grep karein: <code>git grep -E "shell\s*=\s*True|child_process\.exec\(|os\.system\("</code><br>2. Jahan bhi OS commands run ho rahe hon, ensure karein ki execution binary aur arguments separated arrays me pass kiye gaye hon bina kisi shell wrapper ke.<br>3. Agar koi route unescaped user string ko <code>shell=True</code> ke sath format kar raha hai, toh <strong>CRITICAL FAIL</strong> mark karein.</span>
+                  <span class="lang-en">1. Grep repository for shell execution functions: <code>git grep -E "shell\s*=\s*True|child_process\.exec\(|os\.system\("</code><br>2. Confirm that system binaries execute with immutable argument vectors without shell wrappers.<br>3. If any route formats user input into shell strings with <code>shell=True</code>, mark as <strong>CRITICAL FAIL</strong>.</span>
                 </div>
                 <div class="check-actions-bar">
-                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')"><span>✓</span> <span>Pass (Secure)</span></button>
-                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')"><span>✕</span> <span>Fail (Vulnerable)</span></button>
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
                 </div>
               </div>
             </div>
 
             <!-- Check 2 -->
             <div class="checklist-item" id="check-item-2" onclick="handleCheckItemClick(event, this)">
-              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Toggle Pass / Fail"><span class="check-mark-icon">2</span></div>
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">2</span>
+              </div>
               <div class="check-content">
                 <h5>
-                  <span class="lang-hi">2. Semicolon &amp; Command Delimiter Fuzzing (;, &&, |, ||)</span>
-                  <span class="lang-en">2. Semicolon &amp; Command Delimiter Fuzzing (;, &&, |, ||)</span>
+                  <span class="lang-hi">2. Semicolon &amp; Command Delimiter Fuzzing (; whoami / id)</span>
+                  <span class="lang-en">2. Semicolon &amp; Command Delimiter Fuzzing (; whoami / id)</span>
                 </h5>
                 <p>
-                  <span class="lang-hi">Check karein ki endpoints me <code>; id</code>, <code>&& whoami</code>, aur <code>| uname -a</code> inject karne par HTTP 400 rejection aata hai.</span>
-                  <span class="lang-en">Probe diagnostic and file export endpoints with <code>; id</code>, <code>&& whoami</code>, and <code>| uname -a</code> to verify HTTP 400 rejection.</span>
+                  <span class="lang-hi">Check karein ki endpoint me <code>; whoami</code>, <code>&& id</code>, ya <code>| uname -a</code> inject karne par HTTP 400 rejection aata hai ya arbitrary command execute hoti hai.</span>
+                  <span class="lang-en">Check whether injecting command separators (<code>;</code>, <code>&&</code>, <code>|</code>) executes secondary commands or gets rejected with HTTP 400.</span>
                 </p>
                 <div class="check-how-to-box">
-                  <div class="check-how-to-title">🔍 How to Test:</div>
-                  <div class="check-how-to-code">curl -X POST https://api.target.com/api/v1/ping -d '{"host":"8.8.8.8; whoami"}' -H "Content-Type: application/json"</div>
+                  <div class="check-how-to-title">🔍 How to Test (Burp Suite Repeater Walkthrough):</div>
+                  <span class="lang-hi">1. Burp Suite Proxy HTTP history me target endpoint (<code>POST /api/v1/network/ping</code>) dhundein aur <strong>Ctrl+R</strong> (Mac: <strong>Cmd+R</strong>) se <strong>Repeater</strong> me bhejein.<br>2. Repeater Request pane me delimiter payload inject karein:
+                    <div class="check-how-to-code">POST /api/v1/network/ping HTTP/1.1
+Host: api.target.com
+Authorization: Bearer eyJhbGciOi...
+Content-Type: application/json
+Content-Length: 32
+
+{
+  "host": "8.8.8.8; whoami"
+}</div>
+                    3. <strong>Send</strong> click karein. Agar Response me <code>root</code> ya server username return ho jaye aur status 200 OK ho, toh command injection confirm ho chuka hai (<strong>CRITICAL FAIL</strong>)! Agar server <code>HTTP 400 Bad Request</code> throw karta hai toh <strong>Pass</strong> mark karein.</span>
+                  <span class="lang-en">1. In Burp Suite Proxy HTTP history, select target endpoint request (<code>POST /api/v1/network/ping</code>) and press <strong>Ctrl+R</strong> (Mac: <strong>Cmd+R</strong>) to send to <strong>Repeater</strong>.<br>2. In Repeater Request pane, inject command separator into JSON body:
+                    <div class="check-how-to-code">POST /api/v1/network/ping HTTP/1.1
+Host: api.target.com
+Authorization: Bearer eyJhbGciOi...
+Content-Type: application/json
+Content-Length: 32
+
+{
+  "host": "8.8.8.8; whoami"
+}</div>
+                    3. Click <strong>Send</strong>. If the response body returns <code>root</code> or the server process owner with HTTP 200 OK, OS Command Injection is confirmed (<strong>CRITICAL FAIL</strong>). If blocked with HTTP 400 Bad Request, mark as <strong>Pass</strong>.</span>
                 </div>
                 <div class="check-actions-bar">
-                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')"><span>✓</span> <span>Pass (Secure)</span></button>
-                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')"><span>✕</span> <span>Fail (Vulnerable)</span></button>
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
                 </div>
               </div>
             </div>
 
             <!-- Check 3 -->
             <div class="checklist-item" id="check-item-3" onclick="handleCheckItemClick(event, this)">
-              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Toggle Pass / Fail"><span class="check-mark-icon">3</span></div>
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">3</span>
+              </div>
               <div class="check-content">
                 <h5>
-                  <span class="lang-hi">3. Blind Time-Based Delay Probing (; sleep 5)</span>
-                  <span class="lang-en">3. Blind Time-Based Delay Probing (; sleep 5)</span>
+                  <span class="lang-hi">3. Time-Based Blind Command Injection (sleep / ping delay)</span>
+                  <span class="lang-en">3. Time-Based Blind Command Injection (sleep / ping delay)</span>
                 </h5>
                 <p>
-                  <span class="lang-hi">Verify karein ki background tasks ya async workers me <code>; sleep 5</code> pass karne par network latency 5 seconds tak extend nahi hoti.</span>
-                  <span class="lang-en">Confirm background jobs and asynchronous tasks do not exhibit delayed response times when injected with <code>; sleep 5</code>.</span>
+                  <span class="lang-hi">Jab direct terminal output response me display na ho, tab time delay payloads se injection verify karein.</span>
+                  <span class="lang-en">When command output is not reflected in responses, test for execution using controlled sleep delay payloads.</span>
                 </p>
                 <div class="check-how-to-box">
-                  <div class="check-how-to-title">🔍 How to Test:</div>
-                  <div class="check-how-to-code">curl -w "Latency: %{time_total}s\n" -X POST https://api.target.com/api/v1/tasks/run -d '{"job":"backup; sleep 5"}'</div>
+                  <div class="check-how-to-title">🔍 How to Test (Burp Suite Repeater Walkthrough):</div>
+                  <span class="lang-hi">1. Task ya background job request ko Burp Repeater me bhejein.<br>2. Payload me 5 second ka sleep delay inject karein:
+                    <div class="check-how-to-code">POST /api/v1/tasks/run HTTP/1.1
+Host: api.target.com
+Authorization: Bearer eyJhbGciOi...
+Content-Type: application/json
+Content-Length: 35
+
+{
+  "job": "backup; sleep 5"
+}</div>
+                    3. <strong>Send</strong> click karein aur Burp Repeater bottom-right timer observe karein: Agar response latency 50ms se badhkar ~5,050ms (5 seconds) ho jati hai, toh blind command execution confirm hai (<strong>CRITICAL FAIL</strong>).</span>
+                  <span class="lang-en">1. Send target diagnostic or background job request to Burp Repeater.<br>2. Modify parameter to inject a 5-second sleep delay:
+                    <div class="check-how-to-code">POST /api/v1/tasks/run HTTP/1.1
+Host: api.target.com
+Authorization: Bearer eyJhbGciOi...
+Content-Type: application/json
+Content-Length: 35
+
+{
+  "job": "backup; sleep 5"
+}</div>
+                    3. Click <strong>Send</strong> and observe the round-trip latency counter at the bottom-right of Burp Repeater. If elapsed time jumps by ~5,000ms, blind command injection is confirmed (<strong>CRITICAL FAIL</strong>).</span>
                 </div>
                 <div class="check-actions-bar">
-                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')"><span>✓</span> <span>Pass (Secure)</span></button>
-                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')"><span>✕</span> <span>Fail (Vulnerable)</span></button>
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
                 </div>
               </div>
             </div>
 
             <!-- Check 4 -->
             <div class="checklist-item" id="check-item-4" onclick="handleCheckItemClick(event, this)">
-              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Toggle Pass / Fail"><span class="check-mark-icon">4</span></div>
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">4</span>
+              </div>
               <div class="check-content">
                 <h5>
-                  <span class="lang-hi">4. Whitespace Bypass Probing (${IFS} &amp; Newline \n)</span>
-                  <span class="lang-en">4. Whitespace Bypass Probing (${IFS} &amp; Newline \n)</span>
+                  <span class="lang-hi">4. Space Filter &amp; WAF Blacklist Bypass (${IFS} / Redirection)</span>
+                  <span class="lang-en">4. Space Filter &amp; WAF Blacklist Bypass (${IFS} / Redirection)</span>
                 </h5>
                 <p>
-                  <span class="lang-hi">Check karein ki application space character ke alawa <code>${IFS}</code>, <code>$IFS$9</code>, tabs (<code>\t</code>), aur newlines (<code>\n</code>) ko bhi strip/reject karti hai.</span>
-                  <span class="lang-en">Test whether whitespace filters can be bypassed using <code>${IFS}</code>, curly brace expansion <code>{cat,/etc/passwd}</code>, or URL-encoded newlines <code>%0A</code>.</span>
+                  <span class="lang-hi">Check karein ki kya naive space validation ko shell environment variables (<code>${IFS}</code>) ya redirection (<code>&lt;</code>) se bypass kiya ja sakta hai.</span>
+                  <span class="lang-en">Verify whether whitespace blacklists can be bypassed using internal field separators (<code>${IFS}</code>) or redirection.</span>
                 </p>
                 <div class="check-how-to-box">
-                  <div class="check-how-to-title">🔍 How to Test:</div>
-                  <div class="check-how-to-code">curl -X POST https://api.target.com/api/v1/ping -d '{"host":"8.8.8.8;cat${IFS}/etc/passwd"}'</div>
+                  <div class="check-how-to-title">🔍 How to Test (Burp Suite Repeater Walkthrough):</div>
+                  <span class="lang-hi">1. Burp Repeater me request load karein.<br>2. Space-blocked filter ko bypass karne ke liye Linux Internal Field Separator use karein:
+                    <div class="check-how-to-code">POST /api/v1/network/ping HTTP/1.1
+Host: api.target.com
+Authorization: Bearer eyJhbGciOi...
+Content-Type: application/json
+Content-Length: 42
+
+{
+  "host": "8.8.8.8;cat${IFS}/etc/passwd"
+}</div>
+                    3. <strong>Send</strong> click karein. Agar <code>root:x:0:0:...</code> leak hota hai, toh blacklist filter bypass ho chuka hai (<strong>CRITICAL FAIL</strong>). Parameterized execution hi safe defense hai.</span>
+                  <span class="lang-en">1. Load request in Burp Repeater.<br>2. If spaces are stripped, replace them with <code>${IFS}</code> or redirection:
+                    <div class="check-how-to-code">POST /api/v1/network/ping HTTP/1.1
+Host: api.target.com
+Authorization: Bearer eyJhbGciOi...
+Content-Type: application/json
+Content-Length: 42
+
+{
+  "host": "8.8.8.8;cat${IFS}/etc/passwd"
+}</div>
+                    3. Click <strong>Send</strong>. If <code>/etc/passwd</code> contents are returned, primitive filtering is bypassed (<strong>CRITICAL FAIL</strong>). True defense requires parameterized execution without shells.</span>
                 </div>
                 <div class="check-actions-bar">
-                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')"><span>✓</span> <span>Pass (Secure)</span></button>
-                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')"><span>✕</span> <span>Fail (Vulnerable)</span></button>
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
                 </div>
               </div>
             </div>
 
             <!-- Check 5 -->
             <div class="checklist-item" id="check-item-5" onclick="handleCheckItemClick(event, this)">
-              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Toggle Pass / Fail"><span class="check-mark-icon">5</span></div>
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">5</span>
+              </div>
               <div class="check-content">
                 <h5>
-                  <span class="lang-hi">5. Argument Injection Flags Audit (--output, -F, @file)</span>
-                  <span class="lang-en">5. Argument Injection Flags Audit (--output, -F, @file)</span>
+                  <span class="lang-hi">5. Strict Regex Allowlist &amp; Schema Validation Enforcement</span>
+                  <span class="lang-en">5. Strict Regex Allowlist &amp; Schema Validation Enforcement</span>
                 </h5>
                 <p>
-                  <span class="lang-hi">Audit karein ki parameter allowlists dash (<code>-</code>) character ko block karti hain taaki attacker binary flags (e.g. <code>--output</code>) inject na kar sake.</span>
-                  <span class="lang-en">Audit argument allowlists to ensure values cannot start with hyphens (<code>-</code> or <code>--</code>) to prevent flag injection into CLI utilities.</span>
+                  <span class="lang-hi">Verify karein ki input parameter strictly valid schema regex (e.g. valid IPv4 / alphanumeric) se enforce hota hai aur non-matching strings reject hoti hain.</span>
+                  <span class="lang-en">Verify that parameters strictly validate against strict allowlists (e.g., valid IPv4 syntax) before reaching backend handlers.</span>
                 </p>
                 <div class="check-how-to-box">
-                  <div class="check-how-to-title">🔍 How to Test:</div>
-                  <div class="check-how-to-code">Verify schema regex enforces: ^[a-zA-Z0-9._]+$ and disallows leading hyphens.</div>
+                  <div class="check-how-to-title">🔍 How to Test (Burp Suite Repeater Walkthrough):</div>
+                  <span class="lang-hi">1. Burp Repeater me illegal characters aur backticks inject karein:
+                    <div class="check-how-to-code">POST /api/v1/network/ping HTTP/1.1
+Host: api.target.com
+Authorization: Bearer eyJhbGciOi...
+Content-Type: application/json
+Content-Length: 26
+
+{
+  "host": "8.8.8.8`id`"
+}</div>
+                    2. Response inspect karein: Schema validator ko request backend shell process tak pahuche bina turant <code>HTTP 400 Bad Request</code> aur <code>INVALID_PARAMETER_SYNTAX</code> return karna chahiye (<strong>Pass</strong>).</span>
+                  <span class="lang-en">1. In Burp Repeater, inject backticks or metacharacters:
+                    <div class="check-how-to-code">POST /api/v1/network/ping HTTP/1.1
+Host: api.target.com
+Authorization: Bearer eyJhbGciOi...
+Content-Type: application/json
+Content-Length: 26
+
+{
+  "host": "8.8.8.8`id`"
+}</div>
+                    2. Check response: Schema validation must immediately reject with <code>HTTP 400 Bad Request</code> before any process executes (<strong>Pass</strong>).</span>
                 </div>
                 <div class="check-actions-bar">
-                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')"><span>✓</span> <span>Pass (Secure)</span></button>
-                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')"><span>✕</span> <span>Fail (Vulnerable)</span></button>
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
                 </div>
               </div>
             </div>
 
             <!-- Check 6 -->
             <div class="checklist-item" id="check-item-6" onclick="handleCheckItemClick(event, this)">
-              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Toggle Pass / Fail"><span class="check-mark-icon">6</span></div>
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">6</span>
+              </div>
               <div class="check-content">
                 <h5>
-                  <span class="lang-hi">6. Container Sandboxing &amp; Non-Root Execution</span>
-                  <span class="lang-en">6. Container Sandboxing &amp; Non-Root Execution</span>
+                  <span class="lang-hi">6. Container Hardening &amp; Principle of Least Privilege Audit</span>
+                  <span class="lang-en">6. Container Hardening &amp; Principle of Least Privilege Audit</span>
                 </h5>
                 <p>
-                  <span class="lang-hi">Confirm karein ki production Docker containers <code>USER 10001</code> ke sath execute hote hain aur root filesystem read-only mounted hai.</span>
-                  <span class="lang-en">Confirm production containers run under an unprivileged UID with a read-only root filesystem and dropped Linux capabilities.</span>
+                  <span class="lang-hi">Verify karein ki API container root (UID 0) ke bajaye non-root user ke under execute hota hai aur minimal distroless image use karta hai.</span>
+                  <span class="lang-en">Verify that API containers execute as unprivileged non-root users with read-only root filesystems and minimal distroless images.</span>
                 </p>
                 <div class="check-how-to-box">
-                  <div class="check-how-to-title">🔍 How to Test:</div>
-                  <div class="check-how-to-code">docker inspect &lt;container_id&gt; --format='{{.Config.User}}'</div>
+                  <div class="check-how-to-title">🔍 How to Test (Burp Suite Repeater &amp; Container Audit):</div>
+                  <span class="lang-hi">1. Burp Repeater me user ID check karein:
+                    <div class="check-how-to-code">POST /api/v1/network/ping HTTP/1.1
+Host: api.target.com
+Authorization: Bearer eyJhbGciOi...
+Content-Type: application/json
+Content-Length: 27
+
+{
+  "host": "8.8.8.8; id"
+}</div>
+                    2. Agar output <code>uid=0(root)</code> return karta hai, toh container privilege misconfigured hai (<strong>CRITICAL FAIL</strong>).<br>3. Production deployment me verify karein: Dockerfile me <code>USER 1001</code> specified ho aur Kubernetes securityContext me <code>readOnlyRootFilesystem: true</code> aur <code>allowPrivilegeEscalation: false</code> configured ho (<strong>Pass</strong>).</span>
+                  <span class="lang-en">1. Test user ID in Burp Repeater:
+                    <div class="check-how-to-code">POST /api/v1/network/ping HTTP/1.1
+Host: api.target.com
+Authorization: Bearer eyJhbGciOi...
+Content-Type: application/json
+Content-Length: 27
+
+{
+  "host": "8.8.8.8; id"
+}</div>
+                    2. If output returns <code>uid=0(root)</code>, the container runs with excessive root privileges (<strong>CRITICAL FAIL</strong>).<br>3. In production manifest, verify non-root user (<code>USER 1001</code>) and hardened security context: <code>readOnlyRootFilesystem: true</code> and <code>allowPrivilegeEscalation: false</code> (<strong>Pass</strong>).</span>
                 </div>
                 <div class="check-actions-bar">
-                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')"><span>✓</span> <span>Pass (Secure)</span></button>
-                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')"><span>✕</span> <span>Fail (Vulnerable)</span></button>
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -2435,7 +2537,7 @@ app.<span class="t-fn">post</span>(<span class="t-str">'/api/v1/diagnostics/ping
       <!-- ====================================================================
            TAB 6: LIVE LAB
            ==================================================================== -->
-      <div class="tab-content" id="tab-lab">
+<div class="tab-content" id="tab-lab">
         <div class="card-panel">
           <div class="card-title-badge-row">
             <div class="blue-circle-num">6</div>

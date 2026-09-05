@@ -1372,11 +1372,6 @@
           <span>09 / 20 NoSQL Injection (NoSQLi)</span>
         </div>
         <div style="display:flex; align-items:center; gap:12px;">
-          <!-- Dark / Light Mode Toggle Button -->
-          <button class="theme-toggle-btn" id="themeToggleBtn" title="Switch Theme">
-            <span>☀️</span> <span class="theme-label">Light Mode</span>
-          </button>
-
           <!-- Dual Language Switcher -->
           <div class="lang-switch-wrapper">
             <span id="lbl-hi" class="lang-label active">Hindi</span>
@@ -1872,297 +1867,235 @@
       <!-- ====================================================================
            TAB 4: CODE & FIX (Node.js, Python, Go Exact ssrf.html Parity)
            ==================================================================== -->
-      <div class="tab-content" id="tab-code">
+            <div class="tab-content" id="tab-code">
         <div class="card-panel">
           <div class="card-title-badge-row">
             <div class="blue-circle-num">4</div>
             <h2 class="panel-header-title">
-              <span class="lang-hi">Vulnerable vs. Secure Code Implementations</span>
-              <span class="lang-en">Vulnerable vs. Secure Code Implementations</span>
+              <span class="lang-hi">Code &amp; Fix: Secure Architecture &amp; Query Sanitization</span>
+              <span class="lang-en">Code &amp; Fix: Secure Architecture &amp; Query Sanitization</span>
             </h2>
           </div>
 
           <p class="panel-body-text">
-            <span class="lang-hi">NoSQL Injection se bachne ke liye 3 multi-layered defenses zaroori hain: Strict Type Casting/Schema Validation (Zod/Joi), <code>mongo-sanitize</code> middleware jo <code>$</code> aur <code>.</code> keys ko strip karta hai, aur <code>$where</code> operator ka complete ban. Niche Node.js, Python, aur Go ke production examples diye gaye hain:</span>
-            <span class="lang-en">Bulletproof NoSQL injection defense requires strict type contracts (Zod/Pydantic), sanitizing operators with <code>mongo-sanitize</code>, and avoiding dynamic JavaScript evaluation ($where). Compare implementations across Node.js, Python, and Go:</span>
+            <span class="lang-hi">NoSQL Injection ko root se fix karne ke liye untrusted JSON inputs ko query filter me pass karne se pehle scalar type check aur BSON sanitization enforce karna anivarya hai:</span>
+            <span class="lang-en">Preventing NoSQL injection requires strict scalar type enforcement and BSON operator sanitization before query documents are passed to database engines:</span>
           </p>
 
-          <!-- Language Switcher Pills -->
-          <div class="code-lang-pills-row">
-            <button type="button" class="code-lang-btn active" onclick="switchCodeLang(this, 'code-lang-node')">
+          <!-- Language Switcher: Python (Flask) and Node.js (Express) Only -->
+          <div class="code-lang-pills-row" style="display:flex; gap:10px; margin-bottom:1.4rem; flex-wrap:wrap;">
+            <button type="button" class="code-lang-btn active" onclick="switchCodeLang(this, 'code-lang-python')">
+              <span>🐍</span> Python (Flask + PyMongo)
+            </button>
+            <button type="button" class="code-lang-btn" onclick="switchCodeLang(this, 'code-lang-node')">
               <span>🟢</span> Node.js (Express + Mongoose)
             </button>
-            <button type="button" class="code-lang-btn" onclick="switchCodeLang(this, 'code-lang-python')">
-              <span>🐍</span> Python (FastAPI + PyMongo)
-            </button>
-            <button type="button" class="code-lang-btn" onclick="switchCodeLang(this, 'code-lang-go')">
-              <span>🔵</span> Go (mongo-go-driver)
-            </button>
           </div>
 
-          <!-- Code Section: Node.js -->
-          <div class="code-lang-section" id="code-lang-node">
+          <!-- Section 1: Python (Flask + PyMongo) -->
+          <div class="code-lang-section" id="code-lang-python">
             <div class="code-compare-grid">
               <div class="compare-box vulnerable">
                 <div class="compare-header">
-                  <span class="compare-dot red"></span>
-                  <span class="compare-title">❌ Vulnerable: Raw JSON Object into Query Filter</span>
-                  <button type="button" class="term-copy-btn" onclick="copyTerm(this)">Copy</button>
+                  <span class="compare-title">❌ Vulnerable: Direct Untrusted Dict Query</span>
+                  <button type="button" class="copy-code-btn" onclick="copyCodeSnippet(this)">Copy</button>
                 </div>
-                <pre><code><span class="t-comm">// ❌ VULNERABLE (Node.js Express + MongoDB Native)</span>
-<span class="t-kw">const</span> express = <span class="t-fn">require</span>(<span class="t-str">'express'</span>);
-<span class="t-kw">const</span> app = <span class="t-fn">express</span>();
-app.<span class="t-fn">use</span>(express.<span class="t-fn">json</span>()); <span class="t-comm">// Parses raw JSON object</span>
-
-app.<span class="t-fn">post</span>(<span class="t-str">'/api/v1/auth/login'</span>, <span class="t-kw">async</span> (req, res) => {
-  <span class="t-comm">// DANGER: req.body.password can be {"$ne": ""}</span>
-  <span class="t-comm">// Raw object passed into query filter directly!</span>
-  <span class="t-kw">const</span> user = <span class="t-kw">await</span> db.<span class="t-fn">collection</span>(<span class="t-str">'users'</span>).<span class="t-fn">findOne</span>({
-    <span class="t-key">username</span>: req.body.username,
-    <span class="t-key">password</span>: req.body.password <span class="t-comm">// 🚨 Operator injected here!</span>
-  });
-
-  <span class="t-kw">if</span> (!user) {
-    <span class="t-kw">return</span> res.<span class="t-fn">status</span>(<span class="t-num">401</span>).<span class="t-fn">json</span>({ <span class="t-key">error</span>: <span class="t-str">'Invalid credentials'</span> });
-  }
-
-  <span class="t-kw">const</span> token = jwt.<span class="t-fn">sign</span>({ <span class="t-key">id</span>: user._id, <span class="t-key">role</span>: user.role }, SECRET);
-  res.<span class="t-fn">json</span>({ <span class="t-key">success</span>: <span class="t-bool">true</span>, token });
-});</code></pre>
-              </div>
-
-              <div class="compare-box secure">
-                <div class="compare-header">
-                  <span class="compare-dot green"></span>
-                  <span class="compare-title">✅ Secure: Zod Schema Contract + Mongo-Sanitize</span>
-                  <button type="button" class="term-copy-btn" onclick="copyTerm(this)">Copy</button>
-                </div>
-                <pre><code><span class="t-comm">// ✅ SECURE (Zod Strict Types + mongo-sanitize)</span>
-<span class="t-kw">const</span> mongoSanitize = <span class="t-fn">require</span>(<span class="t-str">'express-mongo-sanitize'</span>);
-<span class="t-kw">const</span> { z } = <span class="t-fn">require</span>(<span class="t-str">'zod'</span>);
-
-<span class="t-comm">// 1. Strip $ and . from all request inputs</span>
-app.<span class="t-fn">use</span>(<span class="t-fn">mongoSanitize</span>());
-
-<span class="t-comm">// 2. Enforce strict string schema contract</span>
-<span class="t-kw">const</span> LoginSchema = z.<span class="t-fn">object</span>({
-  <span class="t-key">username</span>: z.<span class="t-fn">string</span>().<span class="t-fn">min</span>(<span class="t-num">3</span>).<span class="t-fn">max</span>(<span class="t-num">50</span>),
-  <span class="t-key">password</span>: z.<span class="t-fn">string</span>().<span class="t-fn">min</span>(<span class="t-num">8</span>).<span class="t-fn">max</span>(<span class="t-num">128</span>) <span class="t-comm">// MUST be string!</span>
-});
-
-app.<span class="t-fn">post</span>(<span class="t-str">'/api/v1/auth/login'</span>, <span class="t-kw">async</span> (req, res) => {
-  <span class="t-comm">// Throws validation error if password is an object!</span>
-  <span class="t-kw">const</span> parsed = LoginSchema.<span class="t-fn">safeParse</span>(req.body);
-  <span class="t-kw">if</span> (!parsed.success) {
-    <span class="t-kw">return</span> res.<span class="t-fn">status</span>(<span class="t-num">400</span>).<span class="t-fn">json</span>({ <span class="t-key">error</span>: <span class="t-str">'Invalid payload structure'</span> });
-  }
-
-  <span class="t-comm">// 3. Query user by username only, verify hash separately!</span>
-  <span class="t-kw">const</span> user = <span class="t-kw">await</span> db.<span class="t-fn">collection</span>(<span class="t-str">'users'</span>).<span class="t-fn">findOne</span>({
-    <span class="t-key">username</span>: <span class="t-fn">String</span>(parsed.data.username)
-  });
-
-  <span class="t-kw">if</span> (!user || !<span class="t-kw">await</span> bcrypt.<span class="t-fn">compare</span>(parsed.data.password, user.passwordHash)) {
-    <span class="t-kw">return</span> res.<span class="t-fn">status</span>(<span class="t-num">401</span>).<span class="t-fn">json</span>({ <span class="t-key">error</span>: <span class="t-str">'Invalid credentials'</span> });
-  }
-
-  <span class="t-kw">const</span> token = jwt.<span class="t-fn">sign</span>({ <span class="t-key">id</span>: user._id, <span class="t-key">role</span>: user.role }, SECRET);
-  res.<span class="t-fn">json</span>({ <span class="t-key">success</span>: <span class="t-bool">true</span>, token });
-});</code></pre>
-              </div>
-            </div>
-          </div>
-
-          <!-- Code Section: Python -->
-          <div class="code-lang-section" id="code-lang-python" style="display:none;">
-            <div class="code-compare-grid">
-              <div class="compare-box vulnerable">
-                <div class="compare-header">
-                  <span class="compare-dot red"></span>
-                  <span class="compare-title">❌ Vulnerable: Raw Dict into PyMongo Filter</span>
-                  <button type="button" class="term-copy-btn" onclick="copyTerm(this)">Copy</button>
-                </div>
-                <pre><code><span class="t-comm"># ❌ VULNERABLE (Python Flask + PyMongo)</span>
+                <div class="compare-body">
+                  <pre><code><span class="t-comment"># ❌ VULNERABLE: Direct untrusted dict query</span>
 <span class="t-kw">from</span> flask <span class="t-kw">import</span> Flask, request, jsonify
 <span class="t-kw">from</span> pymongo <span class="t-kw">import</span> MongoClient
 
-app = <span class="t-fn">Flask</span>(__name__)
-client = <span class="t-fn">MongoClient</span>(<span class="t-str">"mongodb://localhost:27017"</span>)
-db = client.production_db
+app = Flask(__name__)
+client = MongoClient(<span class="t-str">"mongodb://localhost:27017"</span>)
+db = client[<span class="t-str">"prod_db"</span>]
 
-<span class="t-cls">@app.route</span>(<span class="t-str">"/api/v1/auth/login"</span>, methods=[<span class="t-str">"POST"</span>])
+<span class="t-dec">@app.route</span>(<span class="t-str">"/api/v1/auth/login"</span>, methods=[<span class="t-str">"POST"</span>])
 <span class="t-kw">def</span> <span class="t-fn">login</span>():
-    data = request.<span class="t-fn">get_json</span>()
-    <span class="t-comm"># DANGER: data['password'] can be {"$gt": ""}</span>
-    user = db.users.<span class="t-fn">find_one</span>({
-        <span class="t-str">"username"</span>: data.get(<span class="t-str">"username"</span>),
-        <span class="t-str">"password"</span>: data.get(<span class="t-str">"password"</span>) <span class="t-comm"># 🚨 Operator injection!</span>
-    })
-    <span class="t-kw">if</span> <span class="t-kw">not</span> user:
-        <span class="t-kw">return</span> <span class="t-fn">jsonify</span>({"error": "Unauthorized"}), <span class="t-num">401</span>
-    <span class="t-kw">return</span> <span class="t-fn">jsonify</span>({"token": "secret_token_123"})</code></pre>
+    data = request.get_json() <span class="t-kw">or</span> {}
+    username = data.get(<span class="t-str">"username"</span>)
+    password = data.get(<span class="t-str">"password"</span>)
+
+    <span class="t-comment"># CRITICAL FLAW: Attacker passes {"password": {"$ne": ""}}</span>
+    <span class="t-comment"># PyMongo treats dict as BSON operator instead of scalar string!</span>
+    query = {<span class="t-str">"username"</span>: username, <span class="t-str">"password"</span>: password}
+    user = db.users.find_one(query)
+
+    <span class="t-kw">if</span> user:
+        <span class="t-kw">return</span> jsonify({<span class="t-str">"status"</span>: <span class="t-str">"success"</span>, <span class="t-str">"token"</span>: <span class="t-str">"admin-session"</span>}), <span class="t-num">200</span>
+    <span class="t-kw">return</span> jsonify({<span class="t-str">"error"</span>: <span class="t-str">"Invalid credentials"</span>}), <span class="t-num">401</span></code></pre>
+                </div>
               </div>
 
               <div class="compare-box secure">
                 <div class="compare-header">
-                  <span class="compare-dot green"></span>
-                  <span class="compare-title">✅ Secure: Pydantic Schema Type Validation</span>
-                  <button type="button" class="term-copy-btn" onclick="copyTerm(this)">Copy</button>
+                  <span class="compare-title">✅ Secure: Strict Scalar Type Guard + $eq Match</span>
+                  <button type="button" class="copy-code-btn" onclick="copyCodeSnippet(this)">Copy</button>
                 </div>
-                <pre><code><span class="t-comm"># ✅ SECURE (Python FastAPI + Pydantic Strict Typing)</span>
-<span class="t-kw">from</span> fastapi <span class="t-kw">import</span> FastAPI, HTTPException, status
-<span class="t-kw">from</span> pydantic <span class="t-kw">import</span> BaseModel, Field
+                <div class="compare-body">
+                  <pre><code><span class="t-comment"># ✅ SECURE: Strict scalar type enforcement</span>
+<span class="t-kw">from</span> flask <span class="t-kw">import</span> Flask, request, jsonify
+<span class="t-kw">from</span> pymongo <span class="t-kw">import</span> MongoClient
 <span class="t-kw">import</span> bcrypt
 
-app = <span class="t-fn">FastAPI</span>()
+app = Flask(__name__)
+client = MongoClient(<span class="t-str">"mongodb://localhost:27017"</span>)
+db = client[<span class="t-str">"prod_db"</span>]
 
-<span class="t-kw">class</span> <span class="t-cls">LoginRequest</span>(BaseModel):
-    <span class="t-comm"># Enforce primitive string; rejects dict / nested object</span>
-    username: <span class="t-cls">str</span> = Field(..., min_length=<span class="t-num">3</span>, max_length=<span class="t-num">50</span>)
-    password: <span class="t-cls">str</span> = Field(..., min_length=<span class="t-num">8</span>, max_length=<span class="t-num">128</span>)
+<span class="t-dec">@app.route</span>(<span class="t-str">"/api/v1/auth/login"</span>, methods=[<span class="t-str">"POST"</span>])
+<span class="t-kw">def</span> <span class="t-fn">login</span>():
+    data = request.get_json() <span class="t-kw">or</span> {}
+    raw_user = data.get(<span class="t-str">"username"</span>)
+    raw_pass = data.get(<span class="t-str">"password"</span>)
 
-<span class="t-cls">@app.post</span>(<span class="t-str">"/api/v1/auth/login"</span>)
-<span class="t-kw">async def</span> <span class="t-fn">login</span>(payload: LoginRequest):
-    <span class="t-comm"># 1. Guaranteed primitive string by Pydantic</span>
-    user = db.users.<span class="t-fn">find_one</span>({"username": payload.username})
-    
-    <span class="t-comm"># 2. Verify hashed password out-of-band via bcrypt</span>
-    <span class="t-kw">if not</span> user <span class="t-kw">or not</span> bcrypt.<span class="t-fn">checkpw</span>(
-        payload.password.<span class="t-fn">encode</span>(), user["passwordHash"].<span class="t-fn">encode</span>()
-    ):
-        <span class="t-kw">raise</span> <span class="t-fn">HTTPException</span>(status_code=<span class="t-num">401</span>, detail=<span class="t-str">"Invalid credentials"</span>)
-    
-    <span class="t-kw">return</span> {"token": <span class="t-fn">generate_jwt</span>(user)}</code></pre>
+    <span class="t-comment"># 1. Type Guard: Reject nested dictionaries / BSON operators</span>
+    <span class="t-kw">if</span> <span class="t-kw">not</span> isinstance(raw_user, str) <span class="t-kw">or</span> <span class="t-kw">not</span> isinstance(raw_pass, str):
+        <span class="t-kw">return</span> jsonify({
+            <span class="t-str">"error"</span>: <span class="t-str">"Validation Error: credentials must be scalar strings"</span>,
+            <span class="t-str">"code"</span>: <span class="t-str">"INVALID_PARAMETER_TYPE"</span>
+        }), <span class="t-num">400</span>
+
+    username = str(raw_user).strip()[:<span class="t-num">100</span>]
+    password = str(raw_pass).strip()[:<span class="t-num">100</span>]
+
+    <span class="t-comment"># 2. Query solely by scalar username with explicit $eq operator</span>
+    user = db.users.find_one({<span class="t-str">"username"</span>: {<span class="t-str">"$eq"</span>: username}})
+    <span class="t-kw">if</span> user <span class="t-kw">and</span> bcrypt.checkpw(password.encode(), user[<span class="t-str">"password_hash"</span>].encode()):
+        <span class="t-kw">return</span> jsonify({<span class="t-str">"status"</span>: <span class="t-str">"success"</span>, <span class="t-str">"token"</span>: <span class="t-str">"secure-session"</span>}), <span class="t-num">200</span>
+
+    <span class="t-kw">return</span> jsonify({<span class="t-str">"error"</span>: <span class="t-str">"Invalid credentials"</span>}), <span class="t-num">401</span></code></pre>
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- Code Section: Go -->
-          <div class="code-lang-section" id="code-lang-go" style="display:none;">
+          <!-- Section 2: Node.js (Express + Mongoose) -->
+          <div class="code-lang-section" id="code-lang-node" style="display:none;">
             <div class="code-compare-grid">
               <div class="compare-box vulnerable">
                 <div class="compare-header">
-                  <span class="compare-dot red"></span>
-                  <span class="compare-title">❌ Vulnerable: Unchecked bson.M Map</span>
-                  <button type="button" class="term-copy-btn" onclick="copyTerm(this)">Copy</button>
+                  <span class="compare-title">❌ Vulnerable: req.body Object directly in Query</span>
+                  <button type="button" class="copy-code-btn" onclick="copyCodeSnippet(this)">Copy</button>
                 </div>
-                <pre><code><span class="t-comm">// ❌ VULNERABLE (Go - mongo-go-driver)</span>
-<span class="t-kw">func</span> <span class="t-fn">LoginHandler</span>(w http.ResponseWriter, r *http.Request) {
-    <span class="t-comm">// Raw JSON unmarshaled into generic map interface</span>
-    <span class="t-kw">var</span> payload <span class="t-kw">map</span>[<span class="t-cls">string</span>]<span class="t-kw">interface</span>{}
-    json.<span class="t-fn">NewDecoder</span>(r.Body).<span class="t-fn">Decode</span>(&payload)
+                <div class="compare-body">
+                  <pre><code><span class="t-comment">// ❌ VULNERABLE: Direct req.body object in findOne()</span>
+<span class="t-kw">const</span> express = require(<span class="t-str">'express'</span>);
+<span class="t-kw">const</span> mongoose = require(<span class="t-str">'mongoose'</span>);
+<span class="t-kw">const</span> app = express();
+app.use(express.json());
 
-    <span class="t-comm">// 🚨 DANGER: payload["password"] can be map[string]interface{"$ne": ""}</span>
-    filter := bson.M{
-        <span class="t-str">"username"</span>: payload[<span class="t-str">"username"</span>],
-        <span class="t-str">"password"</span>: payload[<span class="t-str">"password"</span>],
-    }
-    <span class="t-kw">var</span> user User
-    err := collection.<span class="t-fn">FindOne</span>(ctx, filter).<span class="t-fn">Decode</span>(&user)
-    <span class="t-kw">if</span> err != <span class="t-bool">nil</span> {
-        http.<span class="t-fn">Error</span>(w, <span class="t-str">"Unauthorized"</span>, <span class="t-num">401</span>)
-        <span class="t-kw">return</span>
-    }
-}</code></pre>
+app.post(<span class="t-str">'/api/v1/auth/login'</span>, <span class="t-kw">async</span> (req, res) => {
+  <span class="t-comment">// CRITICAL FLAW: req.body.password can be {"$ne": null}</span>
+  <span class="t-kw">const</span> { username, password } = req.body;
+  <span class="t-kw">const</span> user = <span class="t-kw">await</span> User.findOne({ username, password });
+
+  <span class="t-kw">if</span> (user) {
+    <span class="t-kw">return</span> res.json({ token: <span class="t-str">'admin-jwt-token'</span> });
+  }
+  <span class="t-kw">return</span> res.status(<span class="t-num">401</span>).json({ error: <span class="t-str">'Invalid credentials'</span> });
+});</code></pre>
+                </div>
               </div>
 
               <div class="compare-box secure">
                 <div class="compare-header">
-                  <span class="compare-dot green"></span>
-                  <span class="compare-title">✅ Secure: Strongly Typed Struct Deserialization</span>
-                  <button type="button" class="term-copy-btn" onclick="copyTerm(this)">Copy</button>
+                  <span class="compare-title">✅ Secure: mongo-sanitize + Strict String Casting</span>
+                  <button type="button" class="copy-code-btn" onclick="copyCodeSnippet(this)">Copy</button>
                 </div>
-                <pre><code><span class="t-comm">// ✅ SECURE (Go - Strongly Typed Struct Deserialization)</span>
-<span class="t-kw">type</span> LoginRequest <span class="t-kw">struct</span> {
-    Username <span class="t-cls">string</span> `json:"username" validate:"required,min=3,max=50"`
-    Password <span class="t-cls">string</span> `json:"password" validate:"required,min=8,max=128"`
-}
+                <div class="compare-body">
+                  <pre><code><span class="t-comment">// ✅ SECURE: mongo-sanitize strips all $ / . keys</span>
+<span class="t-kw">const</span> express = require(<span class="t-str">'express'</span>);
+<span class="t-kw">const</span> mongoSanitize = require(<span class="t-str">'express-mongo-sanitize'</span>);
+<span class="t-kw">const</span> bcrypt = require(<span class="t-str">'bcrypt'</span>);
+<span class="t-kw">const</span> app = express();
 
-<span class="t-kw">func</span> <span class="t-fn">LoginHandler</span>(w http.ResponseWriter, r *http.Request) {
-    <span class="t-kw">var</span> req LoginRequest
-    <span class="t-comm">// Unmarshaling fails with 400 if password is a JSON object!</span>
-    <span class="t-kw">if</span> err := json.<span class="t-fn">NewDecoder</span>(r.Body).<span class="t-fn">Decode</span>(&req); err != <span class="t-bool">nil</span> {
-        http.<span class="t-fn">Error</span>(w, <span class="t-str">"Invalid JSON payload"</span>, <span class="t-num">400</span>)
-        <span class="t-kw">return</span>
-    }
+app.use(express.json());
+app.use(mongoSanitize()); <span class="t-comment">// Strips any key starting with $</span>
 
-    <span class="t-comm">// Query strictly by string username</span>
-    filter := bson.M{"username": req.Username}
-    <span class="t-kw">var</span> user User
-    <span class="t-kw">if</span> err := collection.<span class="t-fn">FindOne</span>(ctx, filter).<span class="t-fn">Decode</span>(&user); err != <span class="t-bool">nil</span> {
-        http.<span class="t-fn">Error</span>(w, <span class="t-str">"Invalid credentials"</span>, <span class="t-num">401</span>)
-        <span class="t-kw">return</span>
-    }
+app.post(<span class="t-str">'/api/v1/auth/login'</span>, <span class="t-kw">async</span> (req, res) => {
+  <span class="t-comment">// 1. Explicit scalar type validation</span>
+  <span class="t-kw">if</span> (<span class="t-kw">typeof</span> req.body.username !== <span class="t-str">'string'</span> || <span class="t-kw">typeof</span> req.body.password !== <span class="t-str">'string'</span>) {
+    <span class="t-kw">return</span> res.status(<span class="t-num">400</span>).json({ error: <span class="t-str">'Invalid parameter format'</span> });
+  }
 
-    <span class="t-comm">// Secure bcrypt comparison out of database query engine</span>
-    <span class="t-kw">if</span> err := bcrypt.<span class="t-fn">CompareHashAndPassword</span>([]<span class="t-cls">byte</span>(user.Hash), []<span class="t-cls">byte</span>(req.Password)); err != <span class="t-bool">nil</span> {
-        http.<span class="t-fn">Error</span>(w, <span class="t-str">"Invalid credentials"</span>, <span class="t-num">401</span>)
-        <span class="t-kw">return</span>
-    }
-}</code></pre>
+  <span class="t-kw">const</span> username = String(req.body.username).trim();
+  <span class="t-kw">const</span> user = <span class="t-kw">await</span> User.findOne({ username: { $eq: username } });
+
+  <span class="t-kw">if</span> (user && <span class="t-kw">await</span> bcrypt.compare(req.body.password, user.passwordHash)) {
+    <span class="t-kw">return</span> res.json({ token: <span class="t-str">'secure-jwt-token'</span> });
+  }
+  <span class="t-kw">return</span> res.status(<span class="t-num">401</span>).json({ error: <span class="t-str">'Invalid credentials'</span> });
+});</code></pre>
+                </div>
               </div>
             </div>
-          </div>
-
-          <!-- Golden Rules Card -->
-          <div class="golden-rules-card">
-            <div class="golden-rules-title">
-              <span>🛡️</span>
-              <span class="lang-hi">5 Golden Rules for Bulletproof NoSQL Injection Remediation</span>
-              <span class="lang-en">5 Golden Rules for Bulletproof NoSQL Injection Remediation</span>
-            </div>
-            <ul style="padding-left:1.2rem; color:var(--text-main); font-size:0.92rem; line-height:1.7;">
-              <li><strong>1. Strict Primitive Type Validation:</strong> Use Zod, Joi, or Pydantic schemas to enforce that inputs are strictly <code>string</code>. Reject objects immediately.</li>
-              <li><strong>2. Deploy `mongo-sanitize`:</strong> Strip all object keys starting with <code>$</code> or containing <code>.</code> in application gateway middleware.</li>
-              <li><strong>3. Decouple Credential Verification:</strong> Never query both username and password in MongoDB filter. Query solely by username, then verify hash using <code>bcrypt.compare()</code> in server runtime.</li>
-              <li><strong>4. Permanently Disable `$where`:</strong> In MongoDB configuration (<code>security.javascriptEnabled: false</code>), block JavaScript runtime execution.</li>
-              <li><strong>5. Reject Unknown URL Query Objects:</strong> Ensure Express <code>extended: false</code> is configured for query string parser so attackers cannot inject <code>?user[$ne]=x</code> via GET parameters.</li>
-            </ul>
           </div>
 
         </div>
       </div>
 
       <!-- ====================================================================
-           TAB 5: REVIEW CHECKLIST (Exact ssrf.html Parity)
+           TAB 5: PENTESTING CHECKLIST (Module 07 Architecture)
            ==================================================================== -->
       <div class="tab-content" id="tab-checklist">
         <div class="card-panel">
           <div class="card-title-badge-row">
             <div class="blue-circle-num">5</div>
             <h2 class="panel-header-title">
-              <span class="lang-hi">Review & Pentesting Checklist</span>
-              <span class="lang-en">Review & Pentesting Checklist</span>
+              <span class="lang-hi">Hands-On API NoSQL Injection Pentesting Checklist</span>
+              <span class="lang-en">Hands-On API NoSQL Injection Pentesting Checklist</span>
             </h2>
           </div>
 
           <div class="checklist-meta-header">
-            <span class="checklist-guide-msg">
-              <span class="lang-hi">Har test case ko inspect karein aur Pass (Secure) ya Fail (Vulnerable) mark karein:</span>
-              <span class="lang-en">Inspect each audit checkpoint and mark as Pass (Secure) or Fail (Vulnerable):</span>
-            </span>
-            <span class="checklist-counter-badge" id="checklist-progress-counter">0 / 6 Checks Tested</span>
+            <div class="checklist-guide-msg">
+              <span class="lang-hi">Har test case ko inspect karein aur <strong>Pass (Secure)</strong> ya <strong>Fail (Vulnerable)</strong> mark karein:</span>
+              <span class="lang-en">Audit each test case and mark as <strong>Pass (Secure)</strong> or <strong>Fail (Vulnerable)</strong>:</span>
+            </div>
+            <div class="checklist-counter-badge">
+              <span id="checklist-progress-counter">0 of 6 Checks Audited (0 Passed | 0 Vulnerable)</span>
+            </div>
           </div>
 
-          <div class="checklist-grid">
+          <div class="checklist-container">
 
             <!-- Check 1 -->
             <div class="checklist-item" id="check-item-1" onclick="handleCheckItemClick(event, this)">
-              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail"><span class="check-mark-icon">●</span></div>
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">1</span>
+              </div>
               <div class="check-content">
                 <h5>
-                  <span class="lang-hi">1. Authentication JSON Operator Injection ($ne & $gt)</span>
-                  <span class="lang-en">1. Authentication JSON Operator Injection ($ne & $gt)</span>
+                  <span class="lang-hi">1. Authentication JSON Operator Injection ($ne &amp; $gt)</span>
+                  <span class="lang-en">1. Authentication JSON Operator Injection ($ne &amp; $gt)</span>
                 </h5>
                 <p>
-                  <span class="lang-hi">Verify karein ki login endpoint JSON body me <code>{"password": {"$ne": ""}}</code> ya <code>{"password": {"$gt": ""}}</code> pass karne par HTTP 400 Bad Request throw karta hai aur login allow nahi karta.</span>
-                  <span class="lang-en">Verify that submitting <code>{"password": {"$ne": ""}}</code> or <code>{"password": {"$gt": ""}}</code> to authentication routes returns HTTP 400 Bad Request instead of logging in.</span>
+                  <span class="lang-hi">Verify karein ki login endpoint JSON body me <code>{"password": {"$ne": ""}}</code> pass karne par HTTP 400 rejection milta hai aur auth bypass nahi hota.</span>
+                  <span class="lang-en">Verify that submitting <code>{"password": {"$ne": ""}}</code> to authentication endpoints returns HTTP 400 Bad Request rather than bypassing login.</span>
                 </p>
                 <div class="check-how-to-box">
-                  <div class="check-how-to-title">🔍 How to Test:</div>
-                  <div class="check-how-to-code">
-                    curl -X POST https://api.target.com/api/v1/login -H "Content-Type: application/json" -d '{"username":"admin","password":{"$ne":"random"}}'
-                  </div>
+                  <div class="check-how-to-title">🔍 How to Test (Burp Suite Repeater Walkthrough):</div>
+                  <span class="lang-hi">1. Burp Suite Proxy HTTP history me login request (<code>POST /api/v1/auth/login</code>) ko locate karein aur <strong>Ctrl+R</strong> (Mac: <strong>Cmd+R</strong>) press karke <strong>Repeater</strong> me bhejein.<br>2. Repeater Request tab me password string ko replace karke BSON inequality object inject karein:
+                    <div class="check-how-to-code">POST /api/v1/auth/login HTTP/1.1
+Host: api.target.com
+Content-Type: application/json
+Content-Length: 53
+
+{
+  "username": "admin",
+  "password": { "$ne": "wrong_guess" }
+}</div>
+                    3. <strong>Send</strong> click karein. Agar Response me valid admin session token return ho jata hai aur HTTP 200 OK milta hai, toh ye <strong>CRITICAL FAIL</strong> hai! Agar server <code>HTTP 400 Bad Request</code> throw karta hai toh <strong>Pass</strong> mark karein.</span>
+                  <span class="lang-en">1. Locate the authentication request (<code>POST /api/v1/auth/login</code>) in Burp Suite Proxy HTTP history and press <strong>Ctrl+R</strong> (Mac: <strong>Cmd+R</strong>) to send to <strong>Repeater</strong>.<br>2. In the Repeater Request pane, replace the password string with a BSON query operator:
+                    <div class="check-how-to-code">POST /api/v1/auth/login HTTP/1.1
+Host: api.target.com
+Content-Type: application/json
+Content-Length: 53
+
+{
+  "username": "admin",
+  "password": { "$ne": "wrong_guess" }
+}</div>
+                    3. Click <strong>Send</strong>. If the server returns HTTP 200 OK with an admin authentication token, mark as <strong>CRITICAL FAIL</strong>. If blocked with HTTP 400 Bad Request, mark as <strong>Pass</strong>.</span>
                 </div>
                 <div class="check-actions-bar">
                   <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
@@ -2177,21 +2110,32 @@ app = <span class="t-fn">FastAPI</span>()
 
             <!-- Check 2 -->
             <div class="checklist-item" id="check-item-2" onclick="handleCheckItemClick(event, this)">
-              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail"><span class="check-mark-icon">●</span></div>
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">2</span>
+              </div>
               <div class="check-content">
                 <h5>
-                  <span class="lang-hi">2. URL Query Parameter Object Parsing (?username[$ne]=x)</span>
-                  <span class="lang-en">2. URL Query Parameter Object Parsing (?username[$ne]=x)</span>
+                  <span class="lang-hi">2. URL Query Parameter Operator Smuggling (?role[$ne]=guest)</span>
+                  <span class="lang-en">2. URL Query Parameter Operator Smuggling (?role[$ne]=guest)</span>
                 </h5>
                 <p>
-                  <span class="lang-hi">Check karein ki GET search endpoints me bracket notation query parameters (jaise <code>qs</code> ya Express <code>extended: true</code>) nested objects create karke filters bypass toh nahi kar rahe.</span>
-                  <span class="lang-en">Ensure GET endpoints using bracket notation (e.g. <code>?username[$ne]=test</code>) cannot construct nested query objects that bypass filtering.</span>
+                  <span class="lang-hi">Verify karein ki GET query parameters me square bracket notation (<code>qs</code> library) use karke BSON operators inject nahi ho rahe.</span>
+                  <span class="lang-en">Verify that URL query parser (qs / express) does not parse bracket syntax into nested MongoDB filter objects.</span>
                 </p>
                 <div class="check-how-to-box">
-                  <div class="check-how-to-title">🔍 How to Test:</div>
-                  <div class="check-how-to-code">
-                    curl "https://api.target.com/api/v1/users?role[$ne]=guest&active=true"
-                  </div>
+                  <div class="check-how-to-title">🔍 How to Test (Burp Suite Repeater Walkthrough):</div>
+                  <span class="lang-hi">1. Data listing endpoint request ko Burp Repeater me bhejein.<br>2. URL path me query parameter filter inject karein:
+                    <div class="check-how-to-code">GET /api/v1/users?role[$ne]=guest&amp;active=true HTTP/1.1
+Host: api.target.com
+Authorization: Bearer eyJhbGciOi...
+Accept: application/json</div>
+                    3. <strong>Send</strong> click karein. Agar response me privileged admin/staff users leak ho jate hain, toh URL parameter parser directly MongoDB filter me bind ho raha hai (<strong>CRITICAL FAIL</strong>).</span>
+                  <span class="lang-en">1. Send the user listing request to Burp Repeater.<br>2. Tamper with the query parameters using bracket operator notation:
+                    <div class="check-how-to-code">GET /api/v1/users?role[$ne]=guest&amp;active=true HTTP/1.1
+Host: api.target.com
+Authorization: Bearer eyJhbGciOi...
+Accept: application/json</div>
+                    3. Click <strong>Send</strong>. If privileged internal accounts are returned, query parameters are directly fed into MongoDB filters without allowlisting (<strong>CRITICAL FAIL</strong>).</span>
                 </div>
                 <div class="check-actions-bar">
                   <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
@@ -2206,21 +2150,40 @@ app = <span class="t-fn">FastAPI</span>()
 
             <!-- Check 3 -->
             <div class="checklist-item" id="check-item-3" onclick="handleCheckItemClick(event, this)">
-              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail"><span class="check-mark-icon">●</span></div>
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">3</span>
+              </div>
               <div class="check-content">
                 <h5>
-                  <span class="lang-hi">3. Blind Regex Exfiltration Probing ($regex & $options)</span>
-                  <span class="lang-en">3. Blind Regex Exfiltration Probing ($regex & $options)</span>
+                  <span class="lang-hi">3. Blind Character Exfiltration via BSON $regex</span>
+                  <span class="lang-en">3. Blind Character Exfiltration via BSON $regex</span>
                 </h5>
                 <p>
-                  <span class="lang-hi">Test karein ki sensitive fields (reset token, API key, phone number) me <code>{"$regex": "^[0-9]"}</code> bhejkar differential response codes (200 vs 404/401) se data leak toh nahi ho raha.</span>
-                  <span class="lang-en">Test if sensitive fields (reset tokens, API keys) return differential status codes when injected with <code>{"$regex": "^[0-9]"}</code>.</span>
+                  <span class="lang-hi">Check karein ki kya attacker <code>{"token": {"$regex": "^sec"}}</code> bhejkar char-by-char sensitive tokens exfiltrate kar sakta hai.</span>
+                  <span class="lang-en">Check whether injecting BSON regex operators allows character-by-character token extraction via binary true/false responses.</span>
                 </p>
                 <div class="check-how-to-box">
-                  <div class="check-how-to-title">🔍 How to Test:</div>
-                  <div class="check-how-to-code">
-                    curl -X POST https://api.target.com/api/v1/verify-token -H "Content-Type: application/json" -d '{"token":{"$regex":"^sec"}}'
-                  </div>
+                  <div class="check-how-to-title">🔍 How to Test (Burp Suite Repeater Walkthrough):</div>
+                  <span class="lang-hi">1. Token verification endpoint ko Burp Repeater me load karein.<br>2. Regex anchor payload inject karein:
+                    <div class="check-how-to-code">POST /api/v1/verify-token HTTP/1.1
+Host: api.target.com
+Content-Type: application/json
+Content-Length: 42
+
+{
+  "token": { "$regex": "^secret_a" }
+}</div>
+                    3. <strong>Send</strong> click karein. Agar correct character guess par HTTP 200 aur wrong guess par HTTP 400/404 aata hai, toh attacker script likhkar complete secret leak kar sakta hai (<strong>CRITICAL FAIL</strong>).</span>
+                  <span class="lang-en">1. Load token verification endpoint into Burp Repeater.<br>2. Inject anchored regex pattern into token attribute:
+                    <div class="check-how-to-code">POST /api/v1/verify-token HTTP/1.1
+Host: api.target.com
+Content-Type: application/json
+Content-Length: 42
+
+{
+  "token": { "$regex": "^secret_a" }
+}</div>
+                    3. Click <strong>Send</strong>. If character matches return HTTP 200 while mismatches return 400/404, oracle exfiltration is active (<strong>CRITICAL FAIL</strong>).</span>
                 </div>
                 <div class="check-actions-bar">
                   <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
@@ -2235,21 +2198,42 @@ app = <span class="t-fn">FastAPI</span>()
 
             <!-- Check 4 -->
             <div class="checklist-item" id="check-item-4" onclick="handleCheckItemClick(event, this)">
-              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail"><span class="check-mark-icon">●</span></div>
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">4</span>
+              </div>
               <div class="check-content">
                 <h5>
-                  <span class="lang-hi">4. Server-Side JavaScript Execution ($where & sleep Injection)</span>
-                  <span class="lang-en">4. Server-Side JavaScript Execution ($where & sleep Injection)</span>
+                  <span class="lang-hi">4. JavaScript Execution in $where &amp; mapReduce Audit</span>
+                  <span class="lang-en">4. JavaScript Execution in $where &amp; mapReduce Audit</span>
                 </h5>
                 <p>
-                  <span class="lang-hi">Verify karein ki MongoDB configuration me server-side JavaScript disabled hai (<code>security.javascriptEnabled: false</code>) aur <code>$where</code> injection block hota hai.</span>
-                  <span class="lang-en">Verify that MongoDB runs with <code>security.javascriptEnabled: false</code> and all <code>$where</code> queries are dropped with HTTP 400.</span>
+                  <span class="lang-hi">Verify karein ki MongoDB queries me <code>$where</code> clause poori tarah disabled hai (<code>security.javascriptEnabled: false</code>).</span>
+                  <span class="lang-en">Verify that server-side JavaScript execution in MongoDB ($where clause) is completely disabled in mongod.conf.</span>
                 </p>
                 <div class="check-how-to-box">
-                  <div class="check-how-to-title">🔍 How to Test:</div>
-                  <div class="check-how-to-code">
-                    curl -X POST https://api.target.com/api/v1/search -H "Content-Type: application/json" -d '{"$where":"sleep(5000)"}'
-                  </div>
+                  <div class="check-how-to-title">🔍 How to Test (Burp Suite Repeater Walkthrough):</div>
+                  <span class="lang-hi">1. Search / filter request ko Burp Repeater me bhejein.<br>2. JavaScript sleep statement inject karein:
+                    <div class="check-how-to-code">POST /api/v1/search HTTP/1.1
+Host: api.target.com
+Authorization: Bearer eyJhbGciOi...
+Content-Type: application/json
+Content-Length: 32
+
+{
+  "$where": "sleep(5000)"
+}</div>
+                    3. <strong>Send</strong> click karein aur Repeater timer note karein: Agar response 5 second delay ke baad aata hai, toh server-side JS execution active hai jisse RCE ho sakta hai (<strong>CRITICAL FAIL</strong>).</span>
+                  <span class="lang-en">1. Send search request to Burp Repeater.<br>2. Inject JS execution payload into query body:
+                    <div class="check-how-to-code">POST /api/v1/search HTTP/1.1
+Host: api.target.com
+Authorization: Bearer eyJhbGciOi...
+Content-Type: application/json
+Content-Length: 32
+
+{
+  "$where": "sleep(5000)"
+}</div>
+                    3. Click <strong>Send</strong> and inspect response time: If delayed by 5,000ms, arbitrary JavaScript execution is enabled in the database (<strong>CRITICAL FAIL</strong>).</span>
                 </div>
                 <div class="check-actions-bar">
                   <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
@@ -2264,21 +2248,42 @@ app = <span class="t-fn">FastAPI</span>()
 
             <!-- Check 5 -->
             <div class="checklist-item" id="check-item-5" onclick="handleCheckItemClick(event, this)">
-              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail"><span class="check-mark-icon">●</span></div>
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">5</span>
+              </div>
               <div class="check-content">
                 <h5>
-                  <span class="lang-hi">5. Schema Probing via $exists & Type Identification</span>
-                  <span class="lang-en">5. Schema Probing via $exists & Type Identification</span>
+                  <span class="lang-hi">5. Field Existence Probing ($exists Operator)</span>
+                  <span class="lang-en">5. Field Existence Probing ($exists Operator)</span>
                 </h5>
                 <p>
-                  <span class="lang-hi">Audit karein ki kya attacker <code>{"mfa_secret": {"$exists": true}}</code> inject karke internal database schema structure map kar sakta hai.</span>
-                  <span class="lang-en">Audit whether attackers can probe for non-public schema attributes using <code>{"mfa_secret": {"$exists": true}}</code>.</span>
+                  <span class="lang-hi">Check karein ki kya attacker <code>{"is_admin": {"$exists": true}}</code> bhejkar unlisted ya hidden document schema attributes probe kar sakta hai.</span>
+                  <span class="lang-en">Verify whether schema structure and internal flags can be enumerated using the BSON $exists operator.</span>
                 </p>
                 <div class="check-how-to-box">
-                  <div class="check-how-to-title">🔍 How to Test:</div>
-                  <div class="check-how-to-code">
-                    curl -X POST https://api.target.com/api/v1/user/search -H "Content-Type: application/json" -d '{"is_admin":{"$exists":true}}'
-                  </div>
+                  <div class="check-how-to-title">🔍 How to Test (Burp Suite Repeater Walkthrough):</div>
+                  <span class="lang-hi">1. User search request ko Burp Repeater me bhejein.<br>2. Parameter me <code>$exists</code> clause inject karein:
+                    <div class="check-how-to-code">POST /api/v1/user/search HTTP/1.1
+Host: api.target.com
+Authorization: Bearer eyJhbGciOi...
+Content-Type: application/json
+Content-Length: 42
+
+{
+  "is_admin": { "$exists": true }
+}</div>
+                    3. <strong>Send</strong> click karein. Agar API bina type validation ke documents filter karke admin users return karti hai, toh <strong>CRITICAL FAIL</strong> mark karein.</span>
+                  <span class="lang-en">1. Send user search request to Burp Repeater.<br>2. Inject $exists probing clause:
+                    <div class="check-how-to-code">POST /api/v1/user/search HTTP/1.1
+Host: api.target.com
+Authorization: Bearer eyJhbGciOi...
+Content-Type: application/json
+Content-Length: 42
+
+{
+  "is_admin": { "$exists": true }
+}</div>
+                    3. Click <strong>Send</strong>. If records with internal attributes are returned without type validation, mark as <strong>CRITICAL FAIL</strong>.</span>
                 </div>
                 <div class="check-actions-bar">
                   <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
@@ -2293,21 +2298,40 @@ app = <span class="t-fn">FastAPI</span>()
 
             <!-- Check 6 -->
             <div class="checklist-item" id="check-item-6" onclick="handleCheckItemClick(event, this)">
-              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail"><span class="check-mark-icon">●</span></div>
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">6</span>
+              </div>
               <div class="check-content">
                 <h5>
-                  <span class="lang-hi">6. Middleware Sanitization & Global Type Assertions</span>
-                  <span class="lang-en">6. Middleware Sanitization & Global Type Assertions</span>
+                  <span class="lang-hi">6. Sanitization Middleware &amp; Schema Validation Audit</span>
+                  <span class="lang-en">6. Sanitization Middleware &amp; Schema Validation Audit</span>
                 </h5>
                 <p>
-                  <span class="lang-hi">Confirm karein ki application gateway par <code>express-mongo-sanitize</code> middleware globally mounted hai aur saari API routes par Zod / Pydantic schema validation enabled hai.</span>
-                  <span class="lang-en">Confirm that global sanitization middleware is active and all controllers utilize strict schema contracts before querying data.</span>
+                  <span class="lang-hi">Verify karein ki backend API layer me <code>express-mongo-sanitize</code> middleware aur Pydantic/Zod schema validation active hai.</span>
+                  <span class="lang-en">Verify that sanitization middleware (express-mongo-sanitize) and strict schema validation are deployed across all routes.</span>
                 </p>
                 <div class="check-how-to-box">
-                  <div class="check-how-to-title">🔍 How to Test:</div>
-                  <div class="check-how-to-code">
-                    Inspect backend source code for app.use(mongoSanitize()) and Zod/Pydantic validation schemas.
-                  </div>
+                  <div class="check-how-to-title">🔍 How to Test (Code Audit &amp; Burp Repeater):</div>
+                  <span class="lang-hi">1. Source code me verify karein: Node.js me <code>app.use(mongoSanitize())</code> aur Python me strict type checks implemented hon.<br>2. Burp Repeater me kisi bhi endpoint par root key me <code>$</code> inject karein:
+                    <div class="check-how-to-code">POST /api/v1/feedback HTTP/1.1
+Host: api.target.com
+Content-Type: application/json
+Content-Length: 28
+
+{
+  "$comment": "test audit"
+}</div>
+                    3. Agar response <code>HTTP 400 Bad Request</code> throw kare ya <code>$</code> key strip ho jaye, toh sanitization layer functional hai (<strong>Pass</strong>).</span>
+                  <span class="lang-en">1. In codebase, confirm <code>app.use(mongoSanitize())</code> in Node.js and explicit scalar type checking in Python.<br>2. In Burp Repeater, submit a payload containing top-level dollar sign keys:
+                    <div class="check-how-to-code">POST /api/v1/feedback HTTP/1.1
+Host: api.target.com
+Content-Type: application/json
+Content-Length: 28
+
+{
+  "$comment": "test audit"
+}</div>
+                    3. If blocked with HTTP 400 or keys are stripped before DB persistence, sanitization is active (<strong>Pass</strong>).</span>
                 </div>
                 <div class="check-actions-bar">
                   <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
@@ -2321,14 +2345,13 @@ app = <span class="t-fn">FastAPI</span>()
             </div>
 
           </div>
-
         </div>
       </div>
 
       <!-- ====================================================================
-           TAB 6: LIVE LAB (Exact ssrf.html Parity)
+           TAB 6: LIVE LAB
            ==================================================================== -->
-      <div class="tab-content" id="tab-lab">
+<div class="tab-content" id="tab-lab">
         <div class="card-panel">
           <div class="card-title-badge-row">
             <div class="blue-circle-num">6</div>
