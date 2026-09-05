@@ -573,15 +573,66 @@ html[data-theme="light"] #cyber-bg-canvas {
   font-size: 1.15rem;
 }
 
+.sidebar-header {
+  padding: 1.4rem 1.4rem 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  margin-bottom: 0.6rem;
+}
+
 .brand-icon {
-  width: 30px;
-  height: 30px;
-  background: linear-gradient(135deg, #0ea5e9, #6366f1);
-  border-radius: var(--radius-sm);
+  width: 34px;
+  height: 34px;
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.22), rgba(14, 165, 233, 0.08));
+  border: 1px solid rgba(56, 189, 248, 0.45);
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
+  color: #38bdf8;
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.25);
+  flex-shrink: 0;
+  transition: all 0.25s ease;
+}
+
+.sidebar-header:hover .brand-icon {
+  border-color: #38bdf8;
+  box-shadow: 0 0 22px rgba(56, 189, 248, 0.45);
+  transform: scale(1.04);
+}
+
+.sidebar-brand-title {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  line-height: 1.2;
+}
+
+.sidebar-brand-title span {
+  background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 20px rgba(56, 189, 248, 0.3);
+}
+
+.sidebar-section-heading {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #38bdf8 !important; /* General accent theme color matching BOLA */
+  padding: 0.9rem 1.4rem 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .brand-text span {

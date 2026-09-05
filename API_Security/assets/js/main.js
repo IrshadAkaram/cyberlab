@@ -1223,6 +1223,123 @@ function initHeroInteractiveWidgets() {
     });
   }
 
+  // 5. Setup Command Injection Hero Widget (Module 10)
+  const cmdWidget = document.getElementById('cmdHeroWidget');
+  if (cmdWidget) {
+    const btnNormal = document.getElementById('btnCmdNormal');
+    const btnExploit = document.getElementById('btnCmdExploit');
+    const avatar = document.getElementById('cmdAttackerAvatar');
+    const label = document.getElementById('cmdAttackerLabel');
+    const sub = document.getElementById('cmdAttackerSub');
+    const verb = document.getElementById('cmdVerb');
+    const path = document.getElementById('cmdPath');
+    const badgeFrom = document.getElementById('cmdBadgeFrom');
+    const badgeTo = document.getElementById('cmdBadgeTo');
+    const beam = document.getElementById('cmdBeamParticle');
+    const flowText = document.getElementById('cmdFlowStateText');
+    const targetCard = document.getElementById('cmdTargetCard');
+    const targetName = document.getElementById('cmdTargetName');
+    const targetStatus = document.getElementById('cmdTargetStatus');
+    const targetExec = document.getElementById('cmdTargetExec');
+    const targetOutput = document.getElementById('cmdTargetOutput');
+    const targetResult = document.getElementById('cmdTargetResult');
+    const targetNote = document.getElementById('cmdTargetNote');
+
+    function setCmdState(isExploit) {
+      if (isExploit) {
+        btnExploit?.classList.add('active', 'exploit');
+        btnNormal?.classList.remove('active', 'normal');
+
+        if (avatar) {
+          avatar.textContent = '🥷';
+          avatar.style.borderColor = '#ef4444';
+          avatar.style.background = 'rgba(239, 68, 68, 0.15)';
+          avatar.style.boxShadow = '0 0 15px rgba(239, 68, 68, 0.35)';
+        }
+        if (label) { label.textContent = 'Rohan (Attacker)'; label.style.color = '#f87171'; }
+        if (sub) sub.textContent = 'Input: "8.8.8.8; whoami"';
+
+        if (verb) { verb.textContent = 'POST'; verb.style.color = '#ef4444'; }
+        if (path) path.textContent = '/api/v1/diagnostics/ping';
+        if (badgeFrom) { badgeFrom.textContent = '8.8.8.8'; }
+        if (badgeTo) {
+          badgeTo.textContent = '8.8.8.8; whoami';
+          badgeTo.className = 'swap-id-badge to';
+        }
+
+        if (beam) { beam.classList.add('exploit'); }
+        if (flowText) { flowText.textContent = 'Injected Semicolon Delimiter'; flowText.style.color = '#f87171'; }
+
+        if (targetCard) {
+          targetCard.classList.remove('normal');
+          targetCard.classList.add('exploit');
+        }
+        if (targetName) targetName.textContent = 'Linux App Container';
+        if (targetStatus) {
+          targetStatus.textContent = 'HTTP 200 (RCE)';
+          targetStatus.className = 'target-pill-status breach';
+        }
+        if (targetExec) targetExec.innerHTML = 'Exec: <code style="color:#ef4444;">sh -c "ping ...; whoami"</code>';
+        if (targetOutput) targetOutput.innerHTML = 'Output: <code style="color:#f87171; font-weight:700;">root (uid=0)</code>';
+        if (targetResult) targetResult.innerHTML = 'Status: <code style="color:#ef4444;">Host Compromise</code>';
+        if (targetNote) {
+          targetNote.innerHTML = '🚨 Arbitrary OS commands executed on host!';
+          targetNote.style.color = '#f87171';
+        }
+      } else {
+        btnNormal?.classList.add('active', 'normal');
+        btnExploit?.classList.remove('active', 'exploit');
+
+        if (avatar) {
+          avatar.textContent = '👤';
+          avatar.style.borderColor = '#10b981';
+          avatar.style.background = 'rgba(16, 185, 129, 0.15)';
+          avatar.style.boxShadow = '0 0 15px rgba(16, 185, 129, 0.35)';
+        }
+        if (label) { label.textContent = 'Vikram (User)'; label.style.color = '#34d399'; }
+        if (sub) sub.textContent = 'Input: "8.8.8.8"';
+
+        if (verb) { verb.textContent = 'POST'; verb.style.color = '#34d399'; }
+        if (path) path.textContent = '/api/v1/diagnostics/ping';
+        if (badgeFrom) { badgeFrom.textContent = '8.8.8.8'; }
+        if (badgeTo) {
+          badgeTo.textContent = '8.8.8.8';
+          badgeTo.className = 'swap-id-badge from';
+        }
+
+        if (beam) { beam.classList.remove('exploit'); }
+        if (flowText) { flowText.textContent = 'Isolated Parameter Vector'; flowText.style.color = '#34d399'; }
+
+        if (targetCard) {
+          targetCard.classList.remove('exploit');
+          targetCard.classList.add('normal');
+        }
+        if (targetName) targetName.textContent = 'Linux App Container';
+        if (targetStatus) {
+          targetStatus.textContent = 'HTTP 200 (OK)';
+          targetStatus.className = 'target-pill-status safe';
+        }
+        if (targetExec) targetExec.innerHTML = 'Exec: <code>["ping", "-c", "2", "8.8.8.8"]</code>';
+        if (targetOutput) targetOutput.innerHTML = 'Output: <code style="color:#34d399;">64 bytes from 8.8.8.8</code>';
+        if (targetResult) targetResult.innerHTML = 'Status: <code style="color:#34d399;">Latency: 14.2ms</code>';
+        if (targetNote) {
+          targetNote.innerHTML = '<span style="color:#34d399;">✓ Protected: shell=False, no shell parser</span>';
+          targetNote.style.color = '#34d399';
+        }
+      }
+    }
+
+    btnNormal?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setCmdState(false);
+    });
+
+    btnExploit?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setCmdState(true);
+    });
+  }
+
   // 4. 3D Holographic Tilt & Sheen on Hover
   const heroWidgets = document.querySelectorAll('.hero-glass-graphic');
   heroWidgets.forEach(widget => {

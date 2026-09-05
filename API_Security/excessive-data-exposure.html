@@ -56,20 +56,31 @@
       font-family: var(--font-heading);
       font-size: 1.25rem;
       font-weight: 800;
-      color: #fff;
+      color: #ffffff;
       letter-spacing: -0.02em;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      line-height: 1.2;
     }
     .sidebar-brand-title span {
-      color: #38bdf8;
+      background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 20px rgba(56, 189, 248, 0.3);
     }
 
     .sidebar-section-heading {
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       font-weight: 700;
-      color: #64748b;
-      padding: 0.8rem 1.4rem 0.6rem;
+      color: #38bdf8;
+      padding: 0.9rem 1.4rem 0.5rem;
       text-transform: uppercase;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.12em;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
     .vuln-nav-list {
@@ -1190,13 +1201,13 @@
          SIDEBAR NAVIGATION (21 MODULES)
          ==================================================================== -->
     <aside class="dashboard-sidebar">
-      <div class="sidebar-header">
+            <div class="sidebar-header">
         <div class="brand-icon">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
           </svg>
         </div>
-        <a href=\"index.html\" class=\"sidebar-brand-title\" style=\"text-decoration:none; display:block;\">API <span>Security</span></a>
+        <a href="index.html" class="sidebar-brand-title">API <span>SECURITY</span></a>
       </div>
 
       <div class="sidebar-section-heading">Foundations</div>
