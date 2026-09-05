@@ -1340,6 +1340,108 @@ function initHeroInteractiveWidgets() {
     });
   }
 
+  // 6. Setup XXE Hero Widget (Module 11)
+  const xxeWidget = document.getElementById('xxeHeroWidget');
+  if (xxeWidget) {
+    const btnNormal = document.getElementById('btnXxeNormal');
+    const btnExploit = document.getElementById('btnXxeExploit');
+    const avatar = document.getElementById('xxeAttackerAvatar');
+    const label = document.getElementById('xxeAttackerLabel');
+    const sub = document.getElementById('xxeAttackerSub');
+    const verb = document.getElementById('xxeVerb');
+    const badgeFrom = document.getElementById('xxeBadgeFrom');
+    const badgeTo = document.getElementById('xxeBadgeTo');
+    const beam = document.getElementById('xxeBeamParticle');
+    const flowText = document.getElementById('xxeFlowStateText');
+    const targetCard = document.getElementById('xxeTargetCard');
+    const targetName = document.getElementById('xxeTargetName');
+    const targetStatus = document.getElementById('xxeTargetStatus');
+    const targetF1 = document.getElementById('xxeTargetField1');
+    const targetF2 = document.getElementById('xxeTargetField2');
+    const targetF3 = document.getElementById('xxeTargetField3');
+    const targetNote = document.getElementById('xxeTargetNote');
+
+    function setXxeState(isExploit) {
+      if (isExploit) {
+        btnExploit?.classList.add('active', 'exploit');
+        btnNormal?.classList.remove('active', 'safe');
+
+        if (avatar) {
+          avatar.textContent = '🥷';
+          avatar.style.borderColor = '#ef4444';
+          avatar.style.background = 'rgba(239, 68, 68, 0.15)';
+        }
+        if (label) { label.textContent = 'Rohan (Attacker)'; label.style.color = '#fca5a5'; }
+        if (sub) { sub.textContent = 'SYSTEM "/etc/passwd"'; }
+        if (verb) { verb.style.color = '#ef4444'; }
+        if (badgeFrom) { badgeFrom.textContent = '<name>Om</name>'; }
+        if (badgeTo) {
+          badgeTo.textContent = '&xxe;';
+          badgeTo.className = 'swap-id-badge to';
+        }
+        if (beam) { beam.classList.add('exploit'); }
+        if (flowText) { flowText.textContent = 'DTD External Entity Resolved'; flowText.style.color = '#f87171'; }
+
+        if (targetCard) {
+          targetCard.classList.remove('safe');
+          targetCard.classList.add('exploit');
+        }
+        if (targetName) targetName.textContent = 'XML Core Parser';
+        if (targetStatus) {
+          targetStatus.textContent = 'HTTP 200';
+          targetStatus.className = 'target-pill-status breach';
+        }
+        if (targetF1) targetF1.innerHTML = 'Entity: <code style="color:#f87171;">&amp;xxe;</code>';
+        if (targetF2) targetF2.innerHTML = 'Resolved: <code style="color:#ef4444;">/etc/passwd</code>';
+        if (targetF3) targetF3.innerHTML = 'Status: <code style="color:#ef4444;">root:x:0:0...</code>';
+        if (targetNote) targetNote.innerHTML = '🚨 Local File Disclosure';
+      } else {
+        btnNormal?.classList.add('active', 'safe');
+        btnExploit?.classList.remove('active', 'exploit');
+
+        if (avatar) {
+          avatar.textContent = '👤';
+          avatar.style.borderColor = '#10b981';
+          avatar.style.background = 'rgba(16, 185, 129, 0.15)';
+        }
+        if (label) { label.textContent = 'Vikram (User)'; label.style.color = '#34d399'; }
+        if (sub) { sub.textContent = 'Payload: <item>Laptop</item>'; }
+        if (verb) { verb.style.color = '#34d399'; }
+        if (badgeFrom) { badgeFrom.textContent = '<item>Laptop</item>'; }
+        if (badgeTo) {
+          badgeTo.textContent = '<item>Laptop</item>';
+          badgeTo.className = 'swap-id-badge from';
+        }
+        if (beam) { beam.classList.remove('exploit'); }
+        if (flowText) { flowText.textContent = 'Safe Entity Sanitization'; flowText.style.color = '#34d399'; }
+
+        if (targetCard) {
+          targetCard.classList.remove('exploit');
+          targetCard.classList.add('safe');
+        }
+        if (targetName) targetName.textContent = 'XML Core Parser';
+        if (targetStatus) {
+          targetStatus.textContent = 'HTTP 200';
+          targetStatus.className = 'target-pill-status safe';
+        }
+        if (targetF1) targetF1.innerHTML = 'Item: <code>Laptop</code>';
+        if (targetF2) targetF2.innerHTML = 'DTD: <code>Disabled</code>';
+        if (targetF3) targetF3.innerHTML = 'Status: <code style="color:#34d399;">Order Placed</code>';
+        if (targetNote) targetNote.innerHTML = '<span style="color:#34d399;">✓ Protected: defusedxml</span>';
+      }
+    }
+
+    btnNormal?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setXxeState(false);
+    });
+
+    btnExploit?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setXxeState(true);
+    });
+  }
+
   // 4. 3D Holographic Tilt & Sheen on Hover
   const heroWidgets = document.querySelectorAll('.hero-glass-graphic');
   heroWidgets.forEach(widget => {

