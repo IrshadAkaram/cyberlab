@@ -1,0 +1,2618 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Module 12: GraphQL Security - API Security Master Notes</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Sora:wght@400;500;600;700;800&family=Fira+Code:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+
+  <style>
+    /* ==========================================================================
+       Module 12: GraphQL Security Custom Styling
+       Inherits Canonical Cyber-Dark Theme, Sub-Pixel Alignment & Zero Shift
+       ========================================================================== */
+    body {
+      background: #040814;
+      color: #f1f5f9;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      overflow-y: visible;
+      font-family: var(--font-sans);
+    }
+
+    /* Master Layout: Sidebar + Main Area */
+    .app-dashboard-layout {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* Left Sidebar */
+    .dashboard-sidebar {
+      width: 280px;
+      background: #070d1c;
+      border-right: 1px solid rgba(255, 255, 255, 0.07);
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      position: sticky;
+      top: 0;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #1e293b transparent;
+    }
+
+    .sidebar-header {
+      padding: 1.5rem 1.4rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .sidebar-brand-title {
+      font-family: var(--font-heading);
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: -0.02em;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      line-height: 1.2;
+    }
+    .sidebar-brand-title span {
+      background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 20px rgba(56, 189, 248, 0.3);
+    }
+
+    .sidebar-section-heading {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #38bdf8;
+      padding: 0.9rem 1.4rem 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .vuln-nav-list {
+      list-style: none;
+      padding: 0 0.8rem;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin: 0;
+    }
+
+    .vuln-nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      border-radius: var(--radius-pill, 9999px);
+      color: #ffffff;
+      text-decoration: none;
+      font-size: 0.86rem;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .vuln-nav-item:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #ffffff;
+    }
+
+    .vuln-nav-item.active {
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.22), rgba(2, 132, 199, 0.35)) !important;
+      border: 1px solid rgba(56, 189, 248, 0.55) !important;
+      color: #ffffff !important;
+      font-weight: 700 !important;
+      box-shadow: 0 4px 16px rgba(56, 189, 248, 0.3) !important;
+    }
+
+    .nav-num-badge {
+      font-size: 0.72rem;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      background: rgba(255, 255, 255, 0.12);
+      padding: 2px 7px;
+      border-radius: var(--radius-pill, 9999px);
+      color: #ffffff;
+    }
+
+    .vuln-nav-item.active .nav-num-badge {
+      background: #38bdf8 !important;
+      color: #040814 !important;
+      font-weight: 800 !important;
+    }
+
+    /* Main Content Body */
+    .dashboard-main {
+      flex: 1;
+      padding: 1.4rem 2.4rem 0;
+      max-width: 1480px;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* Top Action Bar */
+    .main-top-actionbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.2rem;
+      padding-bottom: 0.8rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    /* Language Switcher */
+    .lang-switch-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.04);
+      padding: 4px 10px;
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .lang-label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #94a3b8;
+      cursor: pointer;
+      user-select: none;
+    }
+    .lang-label.active {
+      color: #38bdf8;
+    }
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 34px;
+      height: 18px;
+    }
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #1e293b;
+      transition: .3s;
+      border-radius: 18px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 12px;
+      width: 12px;
+      left: 3px;
+      bottom: 3px;
+      background-color: #38bdf8;
+      transition: .3s;
+      border-radius: 50%;
+    }
+    input:checked + .slider {
+      background-color: #0284c7;
+    }
+    input:checked + .slider:before {
+      transform: translateX(16px);
+      background-color: #ffffff;
+    }
+
+    /* Hero Top Grid */
+    .hero-top-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 520px;
+      gap: 1.5rem;
+      margin-bottom: 1.4rem;
+      align-items: center;
+    }
+
+    @media (max-width: 1100px) {
+      .hero-top-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+      }
+    }
+
+    .category-tag-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 0.6rem;
+    }
+    .pill-index-tag {
+      background: #e11d48;
+      color: #ffffff;
+      font-size: 0.72rem;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: var(--radius-pill, 9999px);
+      font-family: var(--font-mono);
+      letter-spacing: 0.05em;
+    }
+    .pill-category-name {
+      font-size: 0.76rem;
+      font-weight: 700;
+      color: #fb7185;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    /* Single-line Fluid Title */
+    .main-vuln-h1 {
+      font-family: var(--font-heading);
+      font-size: clamp(1.6rem, 2.0vw, 2.05rem);
+      font-weight: 800;
+      color: #ffffff;
+      margin: 0.2rem 0 0.8rem;
+      line-height: 1.25;
+      letter-spacing: -0.02em;
+      white-space: nowrap;
+    }
+    .main-vuln-h1 .title-blue {
+      background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 25px rgba(56, 189, 248, 0.25);
+    }
+
+    .main-vuln-desc {
+      font-size: 0.95rem;
+      line-height: 1.65;
+      color: #cbd5e1;
+      margin-bottom: 1.2rem;
+    }
+
+    .meta-tags-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 1.2rem;
+    }
+    .meta-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: var(--radius-pill, 9999px);
+      font-size: 0.74rem;
+      font-weight: 600;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #cbd5e1;
+    }
+    .meta-chip.danger {
+      background: rgba(239, 68, 68, 0.12);
+      border-color: rgba(239, 68, 68, 0.3);
+      color: #fca5a5;
+    }
+    .meta-chip.info {
+      background: rgba(56, 189, 248, 0.12);
+      border-color: rgba(56, 189, 248, 0.3);
+      color: #7dd3fc;
+    }
+    .meta-chip.purple {
+      background: rgba(168, 85, 247, 0.12);
+      border-color: rgba(168, 85, 247, 0.3);
+      color: #d8b4fe;
+    }
+
+    .quote-bubble {
+      background: rgba(9, 18, 36, 0.85);
+      border-left: 3px solid #38bdf8;
+      padding: 10px 14px;
+      border-radius: 0 8px 8px 0;
+      font-size: 0.84rem;
+      color: #e2e8f0;
+      line-height: 1.5;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .quote-icon-box {
+      font-size: 1.1rem;
+      line-height: 1;
+    }
+
+    /* Hero Interactive Attack Card (Max Width 520px) */
+    .hero-glass-graphic {
+      background: rgba(7, 13, 28, 0.95);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: var(--radius-md, 12px);
+      padding: 1.2rem;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+      max-width: 520px;
+      width: 100%;
+      margin-left: auto;
+    }
+
+    .hero-widget-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      padding-bottom: 0.6rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .hero-widget-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .pulse-live-dot {
+      width: 8px;
+      height: 8px;
+      background: #ef4444;
+      border-radius: 50%;
+      box-shadow: 0 0 10px #ef4444;
+      animation: pulseDot 1.8s infinite;
+    }
+    @keyframes pulseDot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+    .hero-badge-title {
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #f1f5f9;
+    }
+
+    .hero-sim-pills {
+      display: flex;
+      gap: 6px;
+    }
+    .hero-sim-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #cbd5e1;
+      padding: 4px 10px;
+      border-radius: var(--radius-pill, 9999px);
+      font-size: 0.72rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .hero-sim-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+    }
+    .hero-sim-btn.active {
+      background: rgba(56, 189, 248, 0.2);
+      border-color: #38bdf8;
+      color: #38bdf8;
+    }
+    .hero-sim-btn.active.exploit {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: #ef4444;
+      color: #f87171;
+    }
+
+    .hero-widget-body {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      width: 100%;
+      box-sizing: border-box;
+      padding: 4px 0;
+    }
+    .attacker-graphic-node {
+      flex: 0 0 88px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 4px;
+    }
+    .attacker-avatar-circle {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+    }
+    .attacker-label {
+      font-size: 0.74rem;
+      font-weight: 700;
+      color: #f87171;
+      white-space: nowrap;
+    }
+    .attacker-sub {
+      font-size: 0.65rem;
+      color: #94a3b8;
+      white-space: nowrap;
+    }
+
+    .graphic-center-flow {
+      flex: 1 1 auto;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      background: rgba(0, 0, 0, 0.25);
+      padding: 6px 8px;
+      border-radius: 8px;
+      border: 1px dashed rgba(255, 255, 255, 0.1);
+    }
+    .graphic-url-pill {
+      background: #030712;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: #e2e8f0;
+      text-align: center;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .graphic-swap-box {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+    }
+    .swap-id-badge {
+      padding: 2px 6px;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+    .swap-id-badge.from {
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+    }
+    .swap-id-badge.to {
+      background: rgba(239, 68, 68, 0.2);
+      color: #f87171;
+      font-weight: 700;
+    }
+    .flow-beam-track {
+      width: 100%;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 2px;
+      position: relative;
+      overflow: hidden;
+      margin: 2px 0;
+    }
+    .flow-beam-particle {
+      width: 35%;
+      height: 100%;
+      background: #38bdf8;
+      position: absolute;
+      border-radius: 2px;
+      animation: beamFlow 1.8s infinite;
+    }
+    .flow-beam-particle.exploit {
+      background: #ef4444;
+      box-shadow: 0 0 8px #ef4444;
+    }
+    @keyframes beamFlow {
+      0% { left: -35%; }
+      100% { left: 100%; }
+    }
+    .flow-state-label {
+      font-size: 0.66rem;
+      font-weight: 600;
+      color: #94a3b8;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .target-profile-card {
+      flex: 0 0 152px;
+      width: 152px;
+      box-sizing: border-box;
+      background: rgba(10, 18, 36, 0.9);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: 8px;
+      padding: 7px 9px;
+      font-size: 0.72rem;
+      color: #cbd5e1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .target-profile-card.exploit {
+      border-color: rgba(239, 68, 68, 0.4);
+      background: rgba(24, 10, 16, 0.9);
+    }
+    .target-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      padding-bottom: 3px;
+    }
+    .target-card-top h4 {
+      margin: 0;
+      font-size: 0.76rem;
+      color: #ffffff;
+    }
+    .target-pill-status {
+      font-size: 0.62rem;
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-weight: 700;
+    }
+    .target-pill-status.safe {
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+    }
+    .target-pill-status.breach {
+      background: rgba(239, 68, 68, 0.25);
+      color: #f87171;
+    }
+    .target-profile-card p {
+      margin: 2px 0;
+      font-size: 0.68rem;
+      color: #cbd5e1;
+    }
+    .target-profile-card code {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+    }
+    .unauth-note {
+      display: block;
+      font-size: 0.64rem;
+      font-weight: 700;
+      color: #ef4444;
+      margin-top: 4px;
+    }
+
+    /* Tab Underline Navigation */
+    .tabs-underline-nav-wrapper {
+      margin-bottom: 1.6rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      position: sticky;
+      top: 0;
+      background: #040814;
+      z-index: 20;
+      padding-top: 0.4rem;
+    }
+    .tabs-underline-nav {
+      display: flex;
+      gap: 1.2rem;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .tabs-underline-nav::-webkit-scrollbar {
+      display: none;
+    }
+    .tab-underline-btn {
+      background: none;
+      border: none;
+      padding: 0.8rem 0.2rem;
+      color: #94a3b8;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .tab-underline-btn:hover {
+      color: #f1f5f9;
+    }
+    .tab-underline-btn.active {
+      color: #38bdf8;
+    }
+    .tab-underline-btn.active::after {
+      content: "";
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: #38bdf8;
+      box-shadow: 0 0 10px #38bdf8;
+    }
+
+    /* Tab Panes */
+    .tab-content-pane {
+      display: none;
+      animation: fadeInTab 0.25s ease-in-out;
+    }
+    .tab-content-pane.active {
+      display: block;
+    }
+    @keyframes fadeInTab {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Dialogue Section */
+    .dialogue-container {
+      background: #070e20;
+      border: 1px solid rgba(56, 189, 248, 0.18);
+      border-radius: var(--radius-lg, 16px);
+      padding: 1.8rem;
+      margin-bottom: 2rem;
+    }
+    .dialogue-title-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.4rem;
+      padding-bottom: 0.8rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .dialogue-title-bar h3 {
+      margin: 0;
+      font-size: 1.05rem;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .dialogue-thread {
+      display: flex;
+      flex-direction: column;
+      gap: 1.2rem;
+    }
+    .dialogue-row {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+    }
+    .dialogue-row.vikram {
+      flex-direction: row;
+    }
+    .dialogue-row.rohan {
+      flex-direction: row-reverse;
+    }
+    .char-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 0.82rem;
+      letter-spacing: -0.02em;
+    }
+    .char-vikram {
+      background: rgba(56, 189, 248, 0.15);
+      border: 2px solid #38bdf8;
+      color: #38bdf8;
+    }
+    .char-rohan {
+      background: rgba(168, 85, 247, 0.15);
+      border: 2px solid #a855f7;
+      color: #c084fc;
+    }
+    .dialogue-bubble {
+      max-width: 78%;
+      padding: 0.9rem 1.2rem;
+      border-radius: 12px;
+      font-size: 0.88rem;
+      line-height: 1.6;
+    }
+    .bubble-vikram {
+      background: rgba(14, 28, 56, 0.95);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-top-left-radius: 2px;
+      color: #e2e8f0;
+    }
+    .bubble-rohan {
+      background: rgba(30, 18, 54, 0.95);
+      border: 1px solid rgba(168, 85, 247, 0.3);
+      border-top-right-radius: 2px;
+      color: #f1f5f9;
+    }
+    .dialogue-name {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 4px;
+      display: block;
+    }
+    .name-vikram { color: #38bdf8; }
+    .name-rohan { color: #c084fc; }
+
+    /* Cards and Grids */
+    .cards-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.4rem;
+      margin-bottom: 2rem;
+    }
+    .cards-grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 1.2rem;
+      margin-bottom: 2rem;
+    }
+    .content-panel-card {
+      background: #081024;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-md, 12px);
+      padding: 1.4rem;
+      position: relative;
+    }
+    .content-panel-card.highlight {
+      border-color: rgba(56, 189, 248, 0.3);
+      background: radial-gradient(circle at 100% 0%, rgba(56, 189, 248, 0.05) 0%, transparent 70%), #081024;
+    }
+    .panel-card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 0.8rem;
+    }
+    .panel-card-header h4 {
+      margin: 0;
+      font-size: 1rem;
+      color: #ffffff;
+      font-family: var(--font-heading);
+    }
+    .panel-icon-badge {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      background: rgba(56, 189, 248, 0.12);
+      color: #38bdf8;
+    }
+    .panel-icon-badge.danger {
+      background: rgba(239, 68, 68, 0.12);
+      color: #f87171;
+    }
+    .panel-icon-badge.purple {
+      background: rgba(168, 85, 247, 0.12);
+      color: #c084fc;
+    }
+    .panel-icon-badge.emerald {
+      background: rgba(16, 185, 129, 0.12);
+      color: #34d399;
+    }
+
+    /* Code Panels (Zero Copy Buttons) */
+    .code-comparison-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.4rem;
+      margin-bottom: 2rem;
+    }
+    .code-editor-card {
+      background: #020612;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .code-editor-card.vuln {
+      border-color: rgba(239, 68, 68, 0.3);
+    }
+    .code-editor-card.secure {
+      border-color: rgba(16, 185, 129, 0.3);
+    }
+    .code-editor-head {
+      background: #060c1d;
+      padding: 8px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .code-editor-title {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #cbd5e1;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .code-editor-tag {
+      font-size: 0.65rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border-radius: 4px;
+    }
+    .code-editor-tag.vuln {
+      background: rgba(239, 68, 68, 0.2);
+      color: #fca5a5;
+    }
+    .code-editor-tag.secure {
+      background: rgba(16, 185, 129, 0.2);
+      color: #6ee7b7;
+    }
+    .code-editor-body {
+      padding: 1rem 1.2rem;
+      margin: 0;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      line-height: 1.6;
+      color: #e2e8f0;
+      overflow-x: auto;
+      background: #020612;
+    }
+    .code-editor-body code {
+      font-family: inherit;
+    }
+
+    /* Burp Checklist (Module 07 / 11 Parity) */
+    .checklist-counter-card {
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.1), rgba(2, 132, 199, 0.05));
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: 12px;
+      padding: 1.2rem 1.6rem;
+      margin-bottom: 1.6rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .checklist-counter-text h3 {
+      margin: 0 0 4px;
+      font-size: 1.1rem;
+      color: #ffffff;
+    }
+    .checklist-counter-text p {
+      margin: 0;
+      font-size: 0.82rem;
+      color: #94a3b8;
+    }
+    .counter-badge-pill {
+      font-size: 1.1rem;
+      font-weight: 800;
+      font-family: var(--font-mono);
+      background: #38bdf8;
+      color: #040814;
+      padding: 6px 14px;
+      border-radius: 20px;
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
+    }
+    .checklist-items-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .check-audit-box {
+      background: #070d1e;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      padding: 1.2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+    }
+    .check-audit-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .check-title-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .check-num-box {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 0.8rem;
+      color: #cbd5e1;
+    }
+    .check-title-text {
+      font-size: 0.94rem;
+      font-weight: 700;
+      color: #ffffff;
+    }
+    .check-action-btns {
+      display: flex;
+      gap: 6px;
+    }
+    .btn-audit {
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.04);
+      color: #cbd5e1;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-audit.pass.active {
+      background: rgba(16, 185, 129, 0.2);
+      border-color: #10b981;
+      color: #34d399;
+    }
+    .btn-audit.fail.active {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: #ef4444;
+      color: #f87171;
+    }
+    .check-burp-snippet {
+      background: #02050e;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 6px;
+      padding: 0.8rem 1rem;
+      font-family: var(--font-mono);
+      font-size: 0.76rem;
+      line-height: 1.5;
+      color: #cbd5e1;
+      white-space: pre-wrap;
+      overflow-x: auto;
+    }
+
+    /* Live Lab Simulator */
+    .lab-simulator-container {
+      background: #060b18;
+      border: 1px solid rgba(56, 189, 248, 0.22);
+      border-radius: var(--radius-lg, 16px);
+      padding: 1.4rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+    }
+    .lab-controls-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.2rem;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding-bottom: 0.8rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .preset-selector-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .preset-selector-group label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #cbd5e1;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .preset-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #cbd5e1;
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 0.74rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .preset-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+    }
+    .preset-btn.active {
+      background: rgba(56, 189, 248, 0.2);
+      border-color: #38bdf8;
+      color: #38bdf8;
+    }
+    .shield-toggle-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(16, 185, 129, 0.08);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      padding: 4px 10px;
+      border-radius: 20px;
+    }
+    .shield-toggle-wrap label {
+      font-size: 0.74rem;
+      font-weight: 700;
+      color: #34d399;
+      cursor: pointer;
+    }
+
+    .lab-dual-console {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.2rem;
+    }
+    .lab-panel {
+      background: #020612;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .lab-panel-header {
+      background: #070e20;
+      padding: 8px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .lab-panel-title {
+      font-size: 0.76rem;
+      font-weight: 700;
+      color: #cbd5e1;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .lab-textarea {
+      width: 100%;
+      height: 260px;
+      background: transparent;
+      border: none;
+      padding: 12px;
+      color: #e2e8f0;
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      line-height: 1.5;
+      resize: none;
+      outline: none;
+      box-sizing: border-box;
+    }
+    .lab-btn-run {
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      color: #ffffff;
+      border: none;
+      padding: 7px 16px;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 0.78rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .lab-btn-run:hover {
+      background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.4);
+    }
+    .lab-terminal-output {
+      padding: 12px;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      line-height: 1.5;
+      color: #94a3b8;
+      height: 260px;
+      overflow-y: auto;
+      margin: 0;
+      box-sizing: border-box;
+    }
+
+    .lab-metric-bar {
+      display: flex;
+      gap: 14px;
+      background: #070e20;
+      padding: 8px 12px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      font-size: 0.72rem;
+      color: #94a3b8;
+    }
+    .metric-val {
+      font-weight: 700;
+      color: #38bdf8;
+      font-family: var(--font-mono);
+    }
+    .metric-val.danger {
+      color: #f87171;
+    }
+
+    /* FAQ Section */
+    .faq-accordion {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 2.5rem;
+    }
+    .faq-item {
+      background: #070e20;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .faq-question-btn {
+      width: 100%;
+      background: none;
+      border: none;
+      padding: 1rem 1.4rem;
+      text-align: left;
+      font-size: 0.94rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: background 0.2s;
+    }
+    .faq-question-btn:hover {
+      background: rgba(255, 255, 255, 0.03);
+    }
+    .faq-arrow {
+      font-size: 0.8rem;
+      color: #38bdf8;
+      transition: transform 0.2s;
+    }
+    .faq-item.open .faq-arrow {
+      transform: rotate(180deg);
+    }
+    .faq-answer-body {
+      display: none;
+      padding: 0 1.4rem 1.2rem;
+      font-size: 0.88rem;
+      line-height: 1.65;
+      color: #cbd5e1;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .faq-item.open .faq-answer-body {
+      display: block;
+    }
+
+    /* Footer Navigation */
+    .module-footer-nav {
+      margin-top: auto;
+      padding: 2rem 0;
+      display: flex;
+      justify-content: space-between;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .nav-module-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 10px 18px;
+      border-radius: 8px;
+      color: #cbd5e1;
+      font-size: 0.84rem;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .nav-module-btn:hover {
+      background: rgba(56, 189, 248, 0.1);
+      border-color: rgba(56, 189, 248, 0.3);
+      color: #ffffff;
+    }
+
+    /* Bilingual Toggle Classes */
+    html[data-lang="en"] .lang-hi { display: none !important; }
+    html[data-lang="hi"] .lang-en { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <div class="app-dashboard-layout">
+
+    <!-- ====================================================================
+         LEFT SIDEBAR NAVIGATION (CANONICAL 21 MODULES)
+         ==================================================================== -->
+    <aside class="dashboard-sidebar">
+      <div class="sidebar-header">
+        <div class="brand-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+        <a href="index.html" class="sidebar-brand-title">API <span>SECURITY</span></a>
+      </div>
+
+      <div class="sidebar-section-heading">Foundations</div>
+      <ul class="vuln-nav-list" style="margin-bottom: 0.5rem;">
+        <li><a href="api-intro.html" class="vuln-nav-item"><span class="nav-num-badge">00</span> API Fundamentals</a></li>
+      </ul>
+
+      <div class="sidebar-section-heading">Common Vulnerabilities</div>
+      <ul class="vuln-nav-list">
+        <li><a href="bola.html" class="vuln-nav-item"><span class="nav-num-badge">01</span> BOLA</a></li>
+        <li><a href="bfla.html" class="vuln-nav-item"><span class="nav-num-badge">02</span> BFLA</a></li>
+        <li><a href="idor.html" class="vuln-nav-item"><span class="nav-num-badge">03</span> IDOR</a></li>
+        <li><a href="jwt.html" class="vuln-nav-item"><span class="nav-num-badge">04</span> JWT Vulnerabilities</a></li>
+        <li><a href="mass-assignment.html" class="vuln-nav-item"><span class="nav-num-badge">05</span> Mass Assignment</a></li>
+        <li><a href="excessive-data-exposure.html" class="vuln-nav-item"><span class="nav-num-badge">06</span> Excessive Data Exposure</a></li>
+        <li><a href="rate-limiting.html" class="vuln-nav-item"><span class="nav-num-badge">07</span> Rate Limiting</a></li>
+        <li><a href="ssrf.html" class="vuln-nav-item"><span class="nav-num-badge">08</span> SSRF</a></li>
+        <li><a href="nosql-injection.html" class="vuln-nav-item"><span class="nav-num-badge">09</span> NoSQL Injection</a></li>
+        <li><a href="command-injection.html" class="vuln-nav-item"><span class="nav-num-badge">10</span> Command Injection</a></li>
+        <li><a href="xxe.html" class="vuln-nav-item"><span class="nav-num-badge">11</span> XXE</a></li>
+        <li><a href="graphql-security.html" class="vuln-nav-item active"><span class="nav-num-badge">12</span> GraphQL Security</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">13</span> Business Logic Issues</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">14</span> CORS Misconfiguration</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">15</span> API Key Security</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">16</span> OAuth &amp; OpenID Security</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">17</span> Webhooks Security</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">18</span> Race Conditions</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">19</span> File Upload Vulnerabilities</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">20</span> Deserialization Issues</a></li>
+      </ul>
+    </aside>
+
+    <!-- ====================================================================
+         MAIN CONTENT AREA
+         ==================================================================== -->
+    <main class="dashboard-main">
+
+      <!-- Top Action Bar -->
+      <div class="main-top-actionbar">
+        <div style="font-size: 0.84rem; color: #94a3b8;">
+          <a href="index.html" style="color:#38bdf8; text-decoration:none;">Modules</a> &rsaquo;
+          <span>12 / 20 GraphQL Security (Introspection &amp; DoS)</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <!-- Dual Language Switcher -->
+          <div class="lang-switch-wrapper">
+            <span class="lang-label active" id="lbl-hi">Hindi</span>
+            <label class="switch">
+              <input type="checkbox" id="langToggle">
+              <span class="slider"></span>
+            </label>
+            <span class="lang-label" id="lbl-en">English</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hero Top Grid: Title/Lead on Left, Interactive Simulation on Right -->
+      <section class="hero-top-grid">
+        <div>
+          <div class="category-tag-row">
+            <span class="pill-index-tag">12</span>
+            <span class="pill-category-name">GRAPHQL API SECURITY &amp; SCHEMA ATTACKS</span>
+          </div>
+
+          <h1 class="main-vuln-h1">
+            GraphQL Security <span class="title-blue">(Introspection &amp; DoS)</span>
+          </h1>
+
+          <p class="main-vuln-desc">
+            <span class="lang-hi">GraphQL ek flexible query language hai jisme client decide karta hai ki use kaunsa data chahiye via a single <code>/graphql</code> endpoint. Par yahi flexibility vulnerabilities create karti hai: agar Introspection open ho toh attacker pura internal schema dump kar leta hai, recursive queries se CPU/RAM crash (Denial of Service) kar sakta hai, aur alias batching se rate limits bypass ho jate hain.</span>
+            <span class="lang-en">GraphQL empowers clients to request exactly what they need through a unified <code>/graphql</code> endpoint. However, this architectural flexibility introduces severe attack surfaces: unhardened introspection exposes hidden schemas and admin mutations, unbounded circular queries trigger CPU/memory Denial of Service, and alias batching easily bypasses perimeter rate limiters.</span>
+          </p>
+
+          <!-- Meta tags row -->
+          <div class="meta-tags-row">
+            <span class="meta-chip danger">
+              <span class="badge-dot" style="background:#ef4444; width:6px; height:6px; border-radius:50%; display:inline-block;"></span> Critical Schema Leakage &amp; DoS (CVSS 8.2)
+            </span>
+            <span class="meta-chip info">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+              OWASP API8:2023 / CWE-200
+            </span>
+            <span class="meta-chip purple">
+              ★ Query Depth &amp; Cost Analysis
+            </span>
+          </div>
+
+          <!-- Highlight Insight Quote Bubble -->
+          <div class="quote-bubble">
+            <div class="quote-icon-box">💡</div>
+            <div>
+              <span class="lang-hi"><strong>Rohan's Architecture Rule:</strong> "REST me server decide karta hai data contract. GraphQL me client query engineer ban jata hai! Agar tumne depth limit aur query complexity score nahi lagaya, toh attacker tumhara server crash karne ke liye free hai!"</span>
+              <span class="lang-en"><strong>Rohan's Architecture Rule:</strong> "In REST, the server enforces the response contract. In GraphQL, the client designs the query execution plan! Without strict depth limits and complexity scoring, any client can author a catastrophic denial-of-service attack!"</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Box: Interactive Hero Widget -->
+        <div class="hero-glass-graphic" id="graphqlHeroWidget">
+          <div class="hero-widget-header">
+            <div class="hero-widget-badge">
+              <span class="pulse-live-dot"></span>
+              <span class="hero-badge-title">Interactive Attack Flow</span>
+            </div>
+            <div class="hero-sim-pills">
+              <button type="button" class="hero-sim-btn" id="btnGqlNormal" title="Show Normal Query">
+                <span>👤</span> <span>Normal Query</span>
+              </button>
+              <button type="button" class="hero-sim-btn active exploit" id="btnGqlExploit" title="Show Introspection &amp; Circular Exploit">
+                <span>⚡</span> <span>Introspection Exploit</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="hero-widget-body">
+            <div class="attacker-graphic-node" id="gqlAttackerNode">
+              <div class="attacker-avatar-circle" id="gqlAttackerAvatar">🥷</div>
+              <div class="attacker-label" id="gqlAttackerLabel">Attacker (Adversary)</div>
+              <div class="attacker-sub" id="gqlAttackerSub">__schema { types }</div>
+            </div>
+
+            <div class="graphic-center-flow">
+              <div class="graphic-url-pill" id="gqlUrlPill">
+                <span class="m-verb" id="gqlVerb" style="color:#ef4444; font-weight:700;">POST</span> <span class="m-path" id="gqlPath">/graphql</span>
+              </div>
+              <div class="graphic-swap-box" id="gqlSwapBox">
+                <span class="swap-id-badge from" id="gqlBadgeFrom">{ me }</span>
+                <span class="swap-arrow-icon" id="gqlSwapArrow" style="color:var(--text-dim); font-size:0.8rem;">➔</span>
+                <span class="swap-id-badge to" id="gqlBadgeTo">__schema</span>
+              </div>
+              <div class="flow-beam-track" id="gqlBeamTrack">
+                <div class="flow-beam-particle exploit" id="gqlBeamParticle"></div>
+              </div>
+              <span class="flow-state-label" id="gqlFlowStateText" style="color:#f87171;">Full Schema AST Dumped</span>
+            </div>
+
+            <div class="target-profile-card exploit" id="gqlTargetCard">
+              <div class="target-card-top">
+                <h4 id="gqlTargetName">GraphQL Engine</h4>
+                <span class="target-pill-status breach" id="gqlTargetStatus">HTTP 200</span>
+              </div>
+              <p id="gqlTargetField1">Query: <code style="color:#f87171;">__schema</code></p>
+              <p id="gqlTargetField2">Discovered: <code style="color:#ef4444;">deleteUser, admin</code></p>
+              <p id="gqlTargetField3">Depth: <code style="color:#ef4444;">Unbounded (DoS)</code></p>
+              <span class="unauth-note" id="gqlTargetNote">🚨 Hidden Mutations Leaked</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tab Underline Navigation Bar -->
+      <div class="tabs-underline-nav-wrapper">
+        <nav class="tabs-underline-nav">
+          <button type="button" class="tab-underline-btn active" data-tab="tab-overview">📖 1. Overview</button>
+          <button type="button" class="tab-underline-btn" data-tab="tab-how-it-works">⚙️ 2. How It Works</button>
+          <button type="button" class="tab-underline-btn" data-tab="tab-scenarios">🎯 3. Attack Scenarios</button>
+          <button type="button" class="tab-underline-btn" data-tab="tab-code">💻 4. Code &amp; Fix</button>
+          <button type="button" class="tab-underline-btn" data-tab="tab-checklist">📋 5. Review Checklist</button>
+          <button type="button" class="tab-underline-btn" data-tab="tab-lab">⚡ 6. Live Lab</button>
+          <button type="button" class="tab-underline-btn" data-tab="tab-questions">❓ 7. FAQ</button>
+        </nav>
+      </div>
+
+      <!-- ====================================================================
+           TAB 1: OVERVIEW & ARCHITECTURAL FOUNDATION
+           ==================================================================== -->
+      <div class="tab-content-pane active" id="tab-overview">
+
+        <!-- Engineering Dialogue -->
+        <div class="dialogue-container">
+          <div class="dialogue-title-bar">
+            <h3>💬 Engineering Dialogue: REST vs GraphQL Security Realities</h3>
+            <span style="font-size:0.75rem; color:#94a3b8; font-family:var(--font-mono);">PRODUCTION_INCIDENT_POSTMORTEM</span>
+          </div>
+
+          <div class="dialogue-thread">
+            <div class="dialogue-row vikram">
+              <div class="char-avatar char-vikram">VI</div>
+              <div class="dialogue-bubble bubble-vikram">
+                <span class="dialogue-name name-vikram">Vikram (Backend Lead)</span>
+                <span class="lang-hi">Rohan bhai, humne naye checkout microservice ko REST se Apollo GraphQL par migrate kiya tha taaki mobile app sirf required fields fetch kare aur over-fetching na ho. Frontend team bohot khush thi. Lekin kl raat hamare Kubernetes pods memory leak ki wajah se crash hone lage, aur subah security team ne report kiya ki staging ka internal <code>deleteAccount</code> mutation public ho gaya hai! Ye kaise hua?</span>
+                <span class="lang-en">Rohan, we recently migrated our checkout microservice from traditional REST to Apollo GraphQL so our mobile apps could request exact fields without over-fetching. Frontend velocity doubled. But last night, our Kubernetes pods suddenly suffered OOM crash loops, and our external bug bounty triage reported that our internal <code>deleteAccount</code> mutation is exposed to the public! How did this happen?</span>
+              </div>
+            </div>
+
+            <div class="dialogue-row rohan">
+              <div class="char-avatar char-rohan">RO</div>
+              <div class="dialogue-bubble bubble-rohan">
+                <span class="dialogue-name name-rohan">Rohan (Senior Security Architect)</span>
+                <span class="lang-hi">Vikram, yahi GraphQL ka sabse bada trap hai! By default, Apollo Server aur GraphQL engines me <strong>Introspection</strong> enabled rehta hai. Iska matlab koi bhi user <code>__schema</code> query bhej kar tumhare sare queries, mutations, internal object types aur sensitive parameters ka pura blueprint 1 second me download kar sakta hai! Aur jo crash hua, wo ek <strong>Recursive Circular Query</strong> tha — attacker ne <code>user { orders { user { orders { user ... } } } }</code> bhej kar database par hazaaron nested SQL joins trigger kar diye!</span>
+                <span class="lang-en">Vikram, that is the quintessential GraphQL pitfall! By default, engines like Apollo Server ship with <strong>Introspection</strong> enabled. Any anonymous caller can query the meta-field <code>__schema</code> and receive your complete architectural blueprint—every query, mutation, hidden administrative field, and resolver argument. And that pod crash was caused by an <strong>Unbounded Circular Query</strong>—an attacker nested <code>user -> orders -> user -> orders</code> 20 times, forcing your resolvers into exponential database joins until memory was exhausted!</span>
+              </div>
+            </div>
+
+            <div class="dialogue-row vikram">
+              <div class="char-avatar char-vikram">VI</div>
+              <div class="dialogue-bubble bubble-vikram">
+                <span class="dialogue-name name-vikram">Vikram (Backend Lead)</span>
+                <span class="lang-hi">Arre baap re! Par humne Cloudflare WAF par IP rate limiting lagayi thi. Attacker ne sirf 1 single HTTP request bheja tha!</span>
+                <span class="lang-en">Unbelievable! But we have Cloudflare WAF rate limiting configured per IP. The attacker only sent a single HTTP POST request to <code>/graphql</code>!</span>
+              </div>
+            </div>
+
+            <div class="dialogue-row rohan">
+              <div class="char-avatar char-rohan">RO</div>
+              <div class="dialogue-bubble bubble-rohan">
+                <span class="dialogue-name name-rohan">Rohan (Senior Security Architect)</span>
+                <span class="lang-hi">Kyunki traditional WAFs HTTP request count measure karte hain, GraphQL AST complexity nahi! Attacker ne <strong>Alias Batching</strong> use kiya — ek hi HTTP POST body me 500 alag-alag alias queries bhej diye (<code>a1: login(...), a2: login(...)</code>). WAF ke liye ye 1 request thi, lekin tumhare backend server ne 500 database operations execute kar dale! GraphQL ko secure karne ke liye tumhe network layer par nahi, resolver aur query AST validation layer par defence lagana padta hai!</span>
+                <span class="lang-en">Because perimeter WAFs inspect HTTP request counts, not GraphQL AST complexity! Attackers use <strong>Alias Batching</strong>—packing 500 distinct operations inside a single HTTP POST body (<code>a1: login(...), a2: login(...)</code>). The WAF logs 1 request, but your server executes 500 database queries! To secure GraphQL, defenses must reside directly within AST validation rules, query depth limiters, and resolver authorization layers!</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Comparison Table: REST vs GraphQL -->
+        <div class="content-panel-card highlight" style="margin-bottom:2rem;">
+          <div class="panel-card-header">
+            <div class="panel-icon-badge">⚖️</div>
+            <h4>Architectural Security Comparison: REST vs. GraphQL</h4>
+          </div>
+          <div style="overflow-x:auto;">
+            <table style="width:100%; border-collapse:collapse; font-size:0.84rem; text-align:left;">
+              <thead>
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.1); color:#38bdf8;">
+                  <th style="padding:10px;">Security Dimension</th>
+                  <th style="padding:10px;">Traditional REST APIs</th>
+                  <th style="padding:10px;">GraphQL APIs</th>
+                  <th style="padding:10px;">Attacker Advantage in GraphQL</th>
+                </tr>
+              </thead>
+              <tbody style="color:#cbd5e1;">
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                  <td style="padding:10px; font-weight:700; color:#fff;">Endpoint Surface</td>
+                  <td style="padding:10px;">Dozens of distinct endpoints (<code>/users</code>, <code>/orders</code>)</td>
+                  <td style="padding:10px; color:#38bdf8;">Single endpoint (<code>/graphql</code>)</td>
+                  <td style="padding:10px; color:#f87171;">Perimeter WAF URL filtering cannot distinguish read vs write operations</td>
+                </tr>
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                  <td style="padding:10px; font-weight:700; color:#fff;">Schema Visibility</td>
+                  <td style="padding:10px;">Hidden unless Swagger/OpenAPI JSON is explicitly exposed</td>
+                  <td style="padding:10px; color:#f87171;">Introspection system allows dumping entire schema via <code>__schema</code></td>
+                  <td style="padding:10px; color:#f87171;">100% accurate discovery of all hidden types, mutations, and backend logic</td>
+                </tr>
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                  <td style="padding:10px; font-weight:700; color:#fff;">Rate Limiting</td>
+                  <td style="padding:10px;">1 HTTP Request = 1 Operation</td>
+                  <td style="padding:10px; color:#f87171;">1 HTTP Request = N Operations via Aliases &amp; Batching</td>
+                  <td style="padding:10px; color:#f87171;">Bypasses IP-based HTTP request rate limits effortlessly</td>
+                </tr>
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                  <td style="padding:10px; font-weight:700; color:#fff;">Resource Consumption</td>
+                  <td style="padding:10px;">Server defines database queries and nesting limits</td>
+                  <td style="padding:10px; color:#f87171;">Client dictates query depth, circular relations, and field selections</td>
+                  <td style="padding:10px; color:#f87171;">Unbounded circular queries exhaust server CPU &amp; database connections</td>
+                </tr>
+                <tr>
+                  <td style="padding:10px; font-weight:700; color:#fff;">Authorization Boundary</td>
+                  <td style="padding:10px;">Handled at Controller / Endpoint route middleware</td>
+                  <td style="padding:10px; color:#f87171;">Must be enforced per Resolver and per Field</td>
+                  <td style="padding:10px; color:#f87171;">Missing authorization in a single nested resolver leaks confidential data</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ====================================================================
+           TAB 2: HOW IT WORKS & ATTACK TAXONOMY
+           ==================================================================== -->
+      <div class="tab-content-pane" id="tab-how-it-works">
+
+        <div class="content-panel-card" style="margin-bottom:1.6rem;">
+          <div class="panel-card-header">
+            <div class="panel-icon-badge">⚙️</div>
+            <h4>GraphQL Internal Execution Lifecycle</h4>
+          </div>
+          <p class="main-vuln-desc" style="margin-bottom:1rem;">
+            <span class="lang-hi">GraphQL server par request kaise process hoti hai aur attacker kis step ko target karta hai:</span>
+            <span class="lang-en">Understanding the internal execution pipeline of a GraphQL engine reveals where security boundaries fail:</span>
+          </p>
+
+          <div class="cards-grid-3">
+            <div style="background:#020612; padding:1rem; border-radius:8px; border:1px solid rgba(255,255,255,0.06);">
+              <span style="font-size:0.7rem; font-weight:800; color:#38bdf8; font-family:var(--font-mono);">PHASE 01</span>
+              <h5 style="margin:6px 0; color:#fff; font-size:0.9rem;">1. Parse &amp; AST Generation</h5>
+              <p style="font-size:0.78rem; color:#94a3b8; margin:0;">
+                Incoming string query is lexed and converted into an Abstract Syntax Tree (AST). Syntax errors are trapped here.
+              </p>
+            </div>
+            <div style="background:#020612; padding:1rem; border-radius:8px; border:1px solid rgba(255,255,255,0.06);">
+              <span style="font-size:0.7rem; font-weight:800; color:#eab308; font-family:var(--font-mono);">PHASE 02</span>
+              <h5 style="margin:6px 0; color:#fff; font-size:0.9rem;">2. Schema Validation</h5>
+              <p style="font-size:0.78rem; color:#94a3b8; margin:0;">
+                AST is validated against the defined schema types. <em>Crucial Security Step:</em> Query Depth &amp; Complexity rules must execute here before resolvers run!
+              </p>
+            </div>
+            <div style="background:#020612; padding:1rem; border-radius:8px; border:1px solid rgba(255,255,255,0.06);">
+              <span style="font-size:0.7rem; font-weight:800; color:#ef4444; font-family:var(--font-mono);">PHASE 03</span>
+              <h5 style="margin:6px 0; color:#fff; font-size:0.9rem;">3. Resolver Execution</h5>
+              <p style="font-size:0.78rem; color:#94a3b8; margin:0;">
+                Individual resolvers <code>(parent, args, context, info)</code> execute in parallel. If field-level auth is missing, data is leaked to the response payload.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Attack Taxonomy -->
+        <h4 style="color:#ffffff; margin:0 0 1rem; font-size:1.05rem;">🎯 Comprehensive GraphQL Attack Taxonomy</h4>
+        <div class="cards-grid-2">
+          <div class="content-panel-card">
+            <div class="panel-card-header">
+              <div class="panel-icon-badge danger">🔍</div>
+              <h4>1. Introspection &amp; Schema Extraction</h4>
+            </div>
+            <p style="font-size:0.82rem; color:#cbd5e1; line-height:1.6;">
+              <span class="lang-hi">GraphQL ka built-in introspection feature <code>__schema</code> aur <code>__type</code> meta-fields ke zariye attackers ko pure backend schema ka interactive map de deta hai. Attacker <strong>GraphQL Voyager</strong> ya <strong>InQL</strong> use karke administrative mutations, internal fields aur unreleased APIs discover kar leta hai.</span>
+              <span class="lang-en">GraphQL's native introspection features allow attackers to issue queries against <code>__schema</code> and <code>__type</code> to recover the entire backend schema. Tools like InQL or GraphQL Voyager automatically visualize all hidden mutations, deprecated fields, and private arguments.</span>
+            </p>
+          </div>
+
+          <div class="content-panel-card">
+            <div class="panel-card-header">
+              <div class="panel-icon-badge danger">💣</div>
+              <h4>2. Nested Recursive Query DoS</h4>
+            </div>
+            <p style="font-size:0.82rem; color:#cbd5e1; line-height:1.6;">
+              <span class="lang-hi">Jab schema me circular relationships hoti hain (e.g. <code>Author -> Books -> Author -> Books</code>), attacker deep nesting queries bhejta hai. Har level par database queries exponentially multiply ho jati hain, jisse server ka event loop block ho jata hai aur database connections exhaust ho jate hain.</span>
+              <span class="lang-en">When schemas declare circular bidirectional relations (e.g., <code>Author -> Books -> Author -> Books</code>), an attacker constructs deeply nested queries. Each level exponentially multiplies database queries, exhausting connection pools and freezing Node.js/Python event loops.</span>
+            </p>
+          </div>
+
+          <div class="content-panel-card">
+            <div class="panel-card-header">
+              <div class="panel-icon-badge danger">⚡</div>
+              <h4>3. Alias Batching &amp; Brute-Force Bypass</h4>
+            </div>
+            <p style="font-size:0.82rem; color:#cbd5e1; line-height:1.6;">
+              <span class="lang-hi">GraphQL aliases (<code>op1: login(pin: 1001), op2: login(pin: 1002)...</code>) allow forcing hundreds of operations into a single HTTP POST. Perimeter WAFs see only 1 request, completely blinding rate limiters and enabling OTP or password brute-forcing in seconds.</span>
+              <span class="lang-en">GraphQL aliases (<code>op1: login(pin: 1001), op2: login(pin: 1002)...</code>) allow packing hundreds of queries into a single HTTP POST request. Edge WAFs count this as a single transaction, bypassing perimeter rate limiters to brute-force OTPs or tokens in seconds.</span>
+            </p>
+          </div>
+
+          <div class="content-panel-card">
+            <div class="panel-card-header">
+              <div class="panel-icon-badge danger">🛡️</div>
+              <h4>4. Resolver BOLA &amp; Field Authorization Flaws</h4>
+            </div>
+            <p style="font-size:0.82rem; color:#cbd5e1; line-height:1.6;">
+              <span class="lang-hi">GraphQL queries allow traversing deep relations (<code>query { order(id: 99) { user { creditCard { number } } } }</code>). Agar intermediate resolver me ownership check (<code>context.user.id == target.userId</code>) nahi hai, toh attacker IDOR / BOLA exploit karke doosre users ka data read kar leta hai.</span>
+              <span class="lang-en">GraphQL graph traversal allows deep relational fetching. If any intermediate or leaf resolver fails to verify ownership against <code>context.user</code>, attackers achieve complete BOLA/IDOR by fetching unauthorized nested entities through permitted parent objects.</span>
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ====================================================================
+           TAB 3: ATTACK SCENARIOS
+           ==================================================================== -->
+      <div class="tab-content-pane" id="tab-scenarios">
+
+        <div class="checklist-items-stack">
+          <!-- Scenario 1 -->
+          <div class="check-audit-box">
+            <div class="check-audit-header">
+              <div class="check-title-group">
+                <div class="check-num-box" style="background:rgba(239,68,68,0.15); color:#f87171;">01</div>
+                <div>
+                  <div class="check-title-text">Scenario 1: Production Schema Discovery &amp; Hidden Mutation Takeover</div>
+                  <span style="font-size:0.75rem; color:#94a3b8;">Full Introspection Dump Leading to Admin Account Creation</span>
+                </div>
+              </div>
+              <span class="meta-chip danger">Critical Severity</span>
+            </div>
+            <p style="font-size:0.84rem; color:#cbd5e1; margin:0; line-height:1.6;">
+              <span class="lang-hi">Attacker e-commerce website par <code>POST /graphql</code> endpoint par standard introspection query bhejta hai. Server response me pura AST dump kar deta hai, jisme developer ka hidden debug mutation <code>createAdminAccount(secretToken: String, email: String)</code> reveal ho jata hai. Attacker schema se required arguments dekh kar 1 minute me administrative user create kar leta hai.</span>
+              <span class="lang-en">An attacker sends an introspection payload to <code>POST /graphql</code> on a production e-commerce target. The server returns the entire type graph, exposing an undocumented staging mutation <code>createAdminAccount(secretToken: String, email: String)</code>. Inspecting the field arguments allows immediate administrative account creation.</span>
+            </p>
+            <div class="check-burp-snippet">
+<span style="color:#38bdf8;">POST</span> /graphql HTTP/1.1
+<span style="color:#94a3b8;">Host:</span> api.target.com
+<span style="color:#94a3b8;">Content-Type:</span> application/json
+
+{"query":"query IntrospectSchema { __schema { queryType { name } mutationType { name } types { name kind fields { name args { name type { name } } } } } }"}
+            </div>
+          </div>
+
+          <!-- Scenario 2 -->
+          <div class="check-audit-box">
+            <div class="check-audit-header">
+              <div class="check-title-group">
+                <div class="check-num-box" style="background:rgba(239,68,68,0.15); color:#f87171;">02</div>
+                <div>
+                  <div class="check-title-text">Scenario 2: Exponential Circular Depth Denial of Service (DoS)</div>
+                  <span style="font-size:0.75rem; color:#94a3b8;">Unbounded Graph Traversal Blocking Server Event Loop</span>
+                </div>
+              </div>
+              <span class="meta-chip danger">High Severity</span>
+            </div>
+            <p style="font-size:0.84rem; color:#cbd5e1; margin:0; line-height:1.6;">
+              <span class="lang-hi">Attacker schema me <code>thread</code> aur <code>replies</code> ki circular relation dekhta hai. Wo ek query draft karta hai jisme 15 levels of nested circular fetching hoti hai. Server par har level par queries exponentially multiply hoti hain: 10 threads &times; 10 replies &times; 10 replies... Node.js process 100% CPU par freeze ho jati hai aur Kubernetes OOMKilled trigger kar deta hai.</span>
+              <span class="lang-en">The attacker notices a circular relationship between <code>thread</code> and <code>replies</code>. They craft a query nesting 15 levels of bidirectional resolution. Resolvers execute exponential queries (10 threads &times; 10 replies &times; 10 replies...), causing memory consumption to skyrocket and triggering container OOM termination.</span>
+            </p>
+            <div class="check-burp-snippet">
+<span style="color:#38bdf8;">POST</span> /graphql HTTP/1.1
+<span style="color:#94a3b8;">Content-Type:</span> application/json
+
+{"query":"query CircularDoS { thread(id: 1) { replies { thread { replies { thread { replies { thread { id author { threads { replies { id } } } } } } } } } } }"}
+            </div>
+          </div>
+
+          <!-- Scenario 3 -->
+          <div class="check-audit-box">
+            <div class="check-audit-header">
+              <div class="check-title-group">
+                <div class="check-num-box" style="background:rgba(239,68,68,0.15); color:#f87171;">03</div>
+                <div>
+                  <div class="check-title-text">Scenario 3: 500-Alias Batching Rate Limit Bypass for OTP Brute-Force</div>
+                  <span style="font-size:0.75rem; color:#94a3b8;">Single HTTP Request Bypassing Cloudflare / Reverse Proxy Limiter</span>
+                </div>
+              </div>
+              <span class="meta-chip danger">Critical Severity</span>
+            </div>
+            <p style="font-size:0.84rem; color:#cbd5e1; margin:0; line-height:1.6;">
+              <span class="lang-hi">Account password reset endpoint 4-digit SMS OTP maangta hai. Reverse proxy 5 requests/minute allow karti hai. Attacker 1 single POST request me 500 aliases (<code>a0001: verifyOTP(otp:"0001"), a0002: verifyOTP(otp:"0002")...</code>) daal deta hai. WAF use 1 request samajhta hai, jabki backend 500 attempts process karke victim ka account 2 seconds me hijack kar leta hai.</span>
+              <span class="lang-en">The password reset endpoint requires a 4-digit SMS OTP. The edge reverse proxy rate limits clients to 5 requests/minute. The attacker sends 1 single POST request containing 500 aliases (<code>a0001: verifyOTP(otp:"0001"), a0002...</code>). The proxy passes the single HTTP transaction, allowing the attacker to brute-force the valid code in 20 requests total.</span>
+            </p>
+            <div class="check-burp-snippet">
+<span style="color:#38bdf8;">POST</span> /graphql HTTP/1.1
+<span style="color:#94a3b8;">Content-Type:</span> application/json
+
+{"query":"mutation BatchBypass { a0001: verifyOTP(email: \"admin@corp.com\", code: \"0001\") { token } a0002: verifyOTP(email: \"admin@corp.com\", code: \"0002\") { token } a0003: verifyOTP(email: \"admin@corp.com\", code: \"0003\") { token } }"}
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ====================================================================
+           TAB 4: VULNERABLE VS SECURE CODE & FIXES
+           ==================================================================== -->
+      <div class="tab-content-pane" id="tab-code">
+
+        <h4 style="color:#ffffff; margin:0 0 1rem;">💻 Server Hardening Implementations (Node.js &amp; Python)</h4>
+
+        <div class="code-comparison-grid">
+          <!-- Node.js Vulnerable -->
+          <div class="code-editor-card vuln">
+            <div class="code-editor-head">
+              <div class="code-editor-title">
+                <span>Node.js (Apollo Server)</span>
+              </div>
+              <span class="code-editor-tag vuln">Vulnerable</span>
+            </div>
+            <pre class="code-editor-body"><code><span style="color:#7dd3fc;">const</span> { ApolloServer } = <span style="color:#fbcfe8;">require</span>(<span style="color:#a7f3d0;">'@apollo/server'</span>);
+<span style="color:#7dd3fc;">const</span> { expressMiddleware } = <span style="color:#fbcfe8;">require</span>(<span style="color:#a7f3d0;">'@apollo/server/express4'</span>);
+
+<span style="color:#64748b;">// ❌ VULNERABLE: Default settings in Apollo Server</span>
+<span style="color:#64748b;">// Introspection remains enabled, no depth or cost limits</span>
+<span style="color:#7dd3fc;">const</span> server = <span style="color:#7dd3fc;">new</span> ApolloServer({
+  typeDefs,
+  resolvers,
+  <span style="color:#64748b;">// Introspection defaults to true in non-production</span>
+  <span style="color:#64748b;">// or if NODE_ENV is misconfigured!</span>
+  introspection: <span style="color:#fca5a5;">true</span>, 
+});
+
+<span style="color:#64748b;">// Resolvers lack field authorization checks</span>
+<span style="color:#7dd3fc;">const</span> resolvers = {
+  Query: {
+    userOrder: <span style="color:#7dd3fc;">async</span> (_, { orderId }, context) => {
+      <span style="color:#64748b;">// ❌ BOLA: No check if context.user owns orderId!</span>
+      <span style="color:#fbcfe8;">return</span> <span style="color:#7dd3fc;">await</span> db.orders.findById(orderId);
+    }
+  }
+};</code></pre>
+          </div>
+
+          <!-- Node.js Secure -->
+          <div class="code-editor-card secure">
+            <div class="code-editor-head">
+              <div class="code-editor-title">
+                <span>Node.js (Apollo Server Hardened)</span>
+              </div>
+              <span class="code-editor-tag secure">Remediated &amp; Hardened</span>
+            </div>
+            <pre class="code-editor-body"><code><span style="color:#7dd3fc;">const</span> { ApolloServer } = <span style="color:#fbcfe8;">require</span>(<span style="color:#a7f3d0;">'@apollo/server'</span>);
+<span style="color:#7dd3fc;">const</span> depthLimit = <span style="color:#fbcfe8;">require</span>(<span style="color:#a7f3d0;">'graphql-depth-limit'</span>);
+<span style="color:#7dd3fc;">const</span> { createComplexityLimitRule } = <span style="color:#fbcfe8;">require</span>(<span style="color:#a7f3d0;">'graphql-validation-complexity'</span>);
+
+<span style="color:#7dd3fc;">const</span> server = <span style="color:#7dd3fc;">new</span> ApolloServer({
+  typeDefs,
+  resolvers,
+  <span style="color:#6ee7b7;">// 1. Explicitly disable introspection in production</span>
+  introspection: process.env.NODE_ENV === <span style="color:#a7f3d0;">'development'</span>,
+  validationRules: [
+    <span style="color:#6ee7b7;">// 2. Limit query nesting to max 5 levels</span>
+    depthLimit(<span style="color:#fde047;">5</span>),
+    <span style="color:#6ee7b7;">// 3. Reject high-complexity AST calculations</span>
+    createComplexityLimitRule(<span style="color:#fde047;">1000</span>, {
+      onCost: (cost) => console.log(<span style="color:#a7f3d0;">'Query Cost:'</span>, cost)
+    })
+  ]
+});
+
+<span style="color:#7dd3fc;">const</span> resolvers = {
+  Query: {
+    userOrder: <span style="color:#7dd3fc;">async</span> (_, { orderId }, context) => {
+      <span style="color:#6ee7b7;">// 4. Enforce strict resolver authorization</span>
+      <span style="color:#7dd3fc;">if</span> (!context.user) <span style="color:#fbcfe8;">throw</span> <span style="color:#7dd3fc;">new</span> Error(<span style="color:#a7f3d0;">'UNAUTHENTICATED'</span>);
+      <span style="color:#7dd3fc;">const</span> order = <span style="color:#7dd3fc;">await</span> db.orders.findById(orderId);
+      <span style="color:#7dd3fc;">if</span> (order.userId !== context.user.id) {
+        <span style="color:#fbcfe8;">throw</span> <span style="color:#7dd3fc;">new</span> Error(<span style="color:#a7f3d0;">'FORBIDDEN_OBJECT_ACCESS'</span>);
+      }
+      <span style="color:#fbcfe8;">return</span> order;
+    }
+  }
+};</code></pre>
+          </div>
+        </div>
+
+        <!-- Python Section -->
+        <div class="code-comparison-grid">
+          <!-- Python Vulnerable -->
+          <div class="code-editor-card vuln">
+            <div class="code-editor-head">
+              <div class="code-editor-title">
+                <span>Python (Graphene / Flask-GraphQL)</span>
+              </div>
+              <span class="code-editor-tag vuln">Vulnerable</span>
+            </div>
+            <pre class="code-editor-body"><code><span style="color:#7dd3fc;">import</span> graphene
+<span style="color:#7dd3fc;">from</span> flask_graphql <span style="color:#7dd3fc;">import</span> GraphQLView
+
+<span style="color:#64748b;"># ❌ VULNERABLE: GraphiQL enabled on production route</span>
+<span style="color:#64748b;"># No depth limit or query complexity validation</span>
+app.add_url_rule(
+    <span style="color:#a7f3d0;">'/graphql'</span>,
+    view_func=GraphQLView.as_view(
+        <span style="color:#a7f3d0;">'graphql'</span>,
+        schema=schema,
+        graphiql=<span style="color:#fca5a5;">True</span>  <span style="color:#64748b;"># Leaks interactive IDE!</span>
+    )
+)
+
+<span style="color:#7dd3fc;">class</span> <span style="color:#fde047;">Query</span>(graphene.ObjectType):
+    user_data = graphene.Field(UserType, user_id=graphene.Int())
+    
+    <span style="color:#7dd3fc;">def</span> <span style="color:#38bdf8;">resolve_user_data</span>(root, info, user_id):
+        <span style="color:#64748b;"># ❌ BOLA: Returns arbitrary record without context auth!</span>
+        <span style="color:#fbcfe8;">return</span> UserModel.query.get(user_id)</code></pre>
+          </div>
+
+          <!-- Python Secure -->
+          <div class="code-editor-card secure">
+            <div class="code-editor-head">
+              <div class="code-editor-title">
+                <span>Python (Strawberry GraphQL Hardened)</span>
+              </div>
+              <span class="code-editor-tag secure">Remediated &amp; Hardened</span>
+            </div>
+            <pre class="code-editor-body"><code><span style="color:#7dd3fc;">import</span> os
+<span style="color:#7dd3fc;">import</span> strawberry
+<span style="color:#7dd3fc;">from</span> strawberry.extensions <span style="color:#7dd3fc;">import</span> MaxAliasesLimiter, QueryDepthLimiter
+<span style="color:#7dd3fc;">from</span> strawberry.permission <span style="color:#7dd3fc;">import</span> BasePermission
+
+<span style="color:#7dd3fc;">class</span> <span style="color:#fde047;">IsOwner</span>(BasePermission):
+    message = <span style="color:#a7f3d0;">"User does not own this resource"</span>
+    <span style="color:#7dd3fc;">def</span> <span style="color:#38bdf8;">has_permission</span>(self, source, info, **kwargs):
+        <span style="color:#fbcfe8;">return</span> info.context.user.id == kwargs.get(<span style="color:#a7f3d0;">"user_id"</span>)
+
+schema = strawberry.Schema(
+    query=Query,
+    extensions=[
+        <span style="color:#6ee7b7;"># 1. Hard cap query depth to 5 levels</span>
+        QueryDepthLimiter(max_depth=<span style="color:#fde047;">5</span>),
+        <span style="color:#6ee7b7;"># 2. Defend against alias batching attacks</span>
+        MaxAliasesLimiter(max_aliases=<span style="color:#fde047;">10</span>)
+    ]
+)
+
+<span style="color:#6ee7b7;"># 3. Disable introspection & GraphiQL in production</span>
+is_prod = os.getenv(<span style="color:#a7f3d0;">"ENV"</span>) == <span style="color:#a7f3d0;">"production"</span>
+graphql_app = GraphQLView(
+    schema=schema,
+    graphiql=<span style="color:#7dd3fc;">not</span> is_prod,
+    allow_introspection=<span style="color:#7dd3fc;">not</span> is_prod
+)</code></pre>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ====================================================================
+           TAB 5: BURP REPEATER REVIEW CHECKLIST (MODULE 07 / 11 PARITY)
+           ==================================================================== -->
+      <div class="tab-content-pane" id="tab-checklist">
+
+        <div class="checklist-counter-card">
+          <div class="checklist-counter-text">
+            <h3>GraphQL Security Auditing Checklist</h3>
+            <p>Interactive 7-Point Security &amp; Triage Review for Burp Suite Repeater</p>
+          </div>
+          <div class="counter-badge-pill" id="auditCounterBadge">0 of 7 Audited</div>
+        </div>
+
+        <div class="checklist-items-stack">
+          <!-- Check 1 -->
+          <div class="check-audit-box" id="chkBox1">
+            <div class="check-audit-header">
+              <div class="check-title-group">
+                <div class="check-num-box">01</div>
+                <div>
+                  <div class="check-title-text">Introspection Schema Dumping Probe</div>
+                  <span style="font-size:0.75rem; color:#94a3b8;">Verify if __schema meta-queries are disabled on public endpoints</span>
+                </div>
+              </div>
+              <div class="check-action-btns">
+                <button type="button" class="btn-audit pass" onclick="markCheck(1, 'pass')">PASS</button>
+                <button type="button" class="btn-audit fail" onclick="markCheck(1, 'fail')">FAIL</button>
+              </div>
+            </div>
+            <p style="font-size:0.84rem; color:#cbd5e1; margin:0;">
+              In Burp Repeater, send a POST request with body <code>{"query":"{ __schema { queryType { name } } }"}</code>. If response returns HTTP 200 with schema metadata, mark <strong>FAIL</strong>. If response returns "GraphQL introspection is not allowed", mark <strong>PASS</strong>.
+            </p>
+            <div class="check-burp-snippet">
+POST /graphql HTTP/1.1
+Host: target.com
+Content-Type: application/json
+
+{"query":"{ __schema { types { name } } }"}
+            </div>
+          </div>
+
+          <!-- Check 2 -->
+          <div class="check-audit-box" id="chkBox2">
+            <div class="check-audit-header">
+              <div class="check-title-group">
+                <div class="check-num-box">02</div>
+                <div>
+                  <div class="check-title-text">Field Suggestions Leakage (Clairvoyance Attack)</div>
+                  <span style="font-size:0.75rem; color:#94a3b8;">Check if disabled introspection still leaks schema via suggestion engine</span>
+                </div>
+              </div>
+              <div class="check-action-btns">
+                <button type="button" class="btn-audit pass" onclick="markCheck(2, 'pass')">PASS</button>
+                <button type="button" class="btn-audit fail" onclick="markCheck(2, 'fail')">FAIL</button>
+              </div>
+            </div>
+            <p style="font-size:0.84rem; color:#cbd5e1; margin:0;">
+              Send an intentional typo in a query (e.g. <code>{ me { user_emai } }</code>). If the error message responds <em>"Did you mean user_email?"</em>, the engine is leaking field names and can be brute-forced. Pass only if suggestion masking is enabled.
+            </p>
+            <div class="check-burp-snippet">
+POST /graphql HTTP/1.1
+Content-Type: application/json
+
+{"query":"{ user { passwrd_tkn } }"}
+            </div>
+          </div>
+
+          <!-- Check 3 -->
+          <div class="check-audit-box" id="chkBox3">
+            <div class="check-audit-header">
+              <div class="check-title-group">
+                <div class="check-num-box">03</div>
+                <div>
+                  <div class="check-title-text">Circular Query Depth Limit Resistance</div>
+                  <span style="font-size:0.75rem; color:#94a3b8;">Test server response against 10+ levels of circular nesting</span>
+                </div>
+              </div>
+              <div class="check-action-btns">
+                <button type="button" class="btn-audit pass" onclick="markCheck(3, 'pass')">PASS</button>
+                <button type="button" class="btn-audit fail" onclick="markCheck(3, 'fail')">FAIL</button>
+              </div>
+            </div>
+            <p style="font-size:0.84rem; color:#cbd5e1; margin:0;">
+              Send a query with 10 nested relations. If the server executes it (or delays responding by &gt;2 seconds), mark <strong>FAIL</strong>. Pass only if a <code>GRAPHQL_VALIDATION_FAILED: Query exceeds maximum depth</code> error is returned instantly.
+            </p>
+            <div class="check-burp-snippet">
+POST /graphql HTTP/1.1
+Content-Type: application/json
+
+{"query":"{ user { posts { author { posts { author { posts { id } } } } } } }"}
+            </div>
+          </div>
+
+          <!-- Check 4 -->
+          <div class="check-audit-box" id="chkBox4">
+            <div class="check-audit-header">
+              <div class="check-title-group">
+                <div class="check-num-box">04</div>
+                <div>
+                  <div class="check-title-text">Alias Batching Rate Limit Resistance</div>
+                  <span style="font-size:0.75rem; color:#94a3b8;">Verify if 50+ aliases in a single payload are rejected</span>
+                </div>
+              </div>
+              <div class="check-action-btns">
+                <button type="button" class="btn-audit pass" onclick="markCheck(4, 'pass')">PASS</button>
+                <button type="button" class="btn-audit fail" onclick="markCheck(4, 'fail')">FAIL</button>
+              </div>
+            </div>
+            <p style="font-size:0.84rem; color:#cbd5e1; margin:0;">
+              Send 50 aliases in 1 request to a login, OTP, or expensive calculation resolver. If all 50 execute, rate limiting is completely bypassed (FAIL). Pass only if server enforces max alias limits or batching restrictions.
+            </p>
+            <div class="check-burp-snippet">
+POST /graphql HTTP/1.1
+Content-Type: application/json
+
+{"query":"query { a1: login(pin:\"1\") a2: login(pin:\"2\") ... a50: login(pin:\"50\") }"}
+            </div>
+          </div>
+
+          <!-- Check 5 -->
+          <div class="check-audit-box" id="chkBox5">
+            <div class="check-audit-header">
+              <div class="check-title-group">
+                <div class="check-num-box">05</div>
+                <div>
+                  <div class="check-title-text">IDE Console Exposure Audit (/graphiql, /altair)</div>
+                  <span style="font-size:0.75rem; color:#94a3b8;">Probe common interactive developer console paths</span>
+                </div>
+              </div>
+              <div class="check-action-btns">
+                <button type="button" class="btn-audit pass" onclick="markCheck(5, 'pass')">PASS</button>
+                <button type="button" class="btn-audit fail" onclick="markCheck(5, 'fail')">FAIL</button>
+              </div>
+            </div>
+            <p style="font-size:0.84rem; color:#cbd5e1; margin:0;">
+              Send GET requests to <code>/graphiql</code>, <code>/graphql</code>, <code>/altair</code>, and <code>/playground</code> with <code>Accept: text/html</code>. If an interactive HTML explorer loads, mark <strong>FAIL</strong>.
+            </p>
+            <div class="check-burp-snippet">
+GET /graphiql HTTP/1.1
+Host: target.com
+Accept: text/html,application/xhtml+xml
+            </div>
+          </div>
+
+          <!-- Check 6 -->
+          <div class="check-audit-box" id="chkBox6">
+            <div class="check-audit-header">
+              <div class="check-title-group">
+                <div class="check-num-box">06</div>
+                <div>
+                  <div class="check-title-text">Resolver BOLA / Object Ownership Check</div>
+                  <span style="font-size:0.75rem; color:#94a3b8;">Test accessing another user's nested objects via ID parameters</span>
+                </div>
+              </div>
+              <div class="check-action-btns">
+                <button type="button" class="btn-audit pass" onclick="markCheck(6, 'pass')">PASS</button>
+                <button type="button" class="btn-audit fail" onclick="markCheck(6, 'fail')">FAIL</button>
+              </div>
+            </div>
+            <p style="font-size:0.84rem; color:#cbd5e1; margin:0;">
+              Authenticate as User A. Send query requesting User B's order ID (<code>order(id: 882)</code>). If the response returns User B's invoice details or shipping address, mark <strong>FAIL</strong> (BOLA/IDOR). Pass only if forbidden exception is thrown.
+            </p>
+            <div class="check-burp-snippet">
+POST /graphql HTTP/1.1
+Authorization: Bearer USER_A_JWT
+
+{"query":"query { order(id: 882) { id total shippingAddress } }"}
+            </div>
+          </div>
+
+          <!-- Check 7 -->
+          <div class="check-audit-box" id="chkBox7">
+            <div class="check-audit-header">
+              <div class="check-title-group">
+                <div class="check-num-box">07</div>
+                <div>
+                  <div class="check-title-text">GraphQL Injection in Resolvers (SQLi / NoSQLi)</div>
+                  <span style="font-size:0.75rem; color:#94a3b8;">Inject quotation marks and boolean payloads into query arguments</span>
+                </div>
+              </div>
+              <div class="check-action-btns">
+                <button type="button" class="btn-audit pass" onclick="markCheck(7, 'pass')">PASS</button>
+                <button type="button" class="btn-audit fail" onclick="markCheck(7, 'fail')">FAIL</button>
+              </div>
+            </div>
+            <p style="font-size:0.84rem; color:#cbd5e1; margin:0;">
+              Inject SQL payloads into filter strings: <code>users(filter: "admin' OR '1'='1")</code>. If database syntax error or dumped records appear, mark <strong>FAIL</strong>. GraphQL types do NOT sanitize raw SQL queries inside custom resolvers!
+            </p>
+            <div class="check-burp-snippet">
+POST /graphql HTTP/1.1
+Content-Type: application/json
+
+{"query":"query { searchUsers(term: \"' UNION SELECT username, password FROM users--\") { id username } }"}
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ====================================================================
+           TAB 6: INTERACTIVE LIVE LAB SIMULATOR
+           ==================================================================== -->
+      <div class="tab-content-pane" id="tab-lab">
+
+        <div class="lab-simulator-container">
+          <div class="lab-controls-bar">
+            <div class="preset-selector-group">
+              <label>Select Attack Preset:</label>
+              <button type="button" class="preset-btn active" onclick="loadLabPreset(1)">01. Normal Query</button>
+              <button type="button" class="preset-btn" onclick="loadLabPreset(2)">02. Introspection Dump</button>
+              <button type="button" class="preset-btn" onclick="loadLabPreset(3)">03. Circular Depth DoS</button>
+              <button type="button" class="preset-btn" onclick="loadLabPreset(4)">04. Alias Batching</button>
+              <button type="button" class="preset-btn" onclick="loadLabPreset(5)">05. Mutation Privilege Escalation</button>
+            </div>
+
+            <div class="shield-toggle-wrap">
+              <input type="checkbox" id="chkHardeningShield" onchange="runLabSimulation()">
+              <label for="chkHardeningShield">🛡️ Production Hardening (Depth: 4, Introspection: OFF)</label>
+            </div>
+          </div>
+
+          <div class="lab-dual-console">
+            <!-- Left Console: Query Editor -->
+            <div class="lab-panel">
+              <div class="lab-panel-header">
+                <span class="lab-panel-title">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                  Client GraphQL Query Payload (POST /graphql)
+                </span>
+                <button type="button" class="lab-btn-run" onclick="runLabSimulation()">
+                  <span>▶ Run Query</span>
+                </button>
+              </div>
+              <textarea class="lab-textarea" id="labQueryEditor" spellcheck="false"></textarea>
+            </div>
+
+            <!-- Right Console: Server Execution Response -->
+            <div class="lab-panel">
+              <div class="lab-panel-header">
+                <span class="lab-panel-title">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+                  GraphQL Server Response (JSON)
+                </span>
+                <span id="labStatusBadge" style="font-size:0.7rem; font-weight:700; color:#34d399; background:rgba(16,185,129,0.15); padding:2px 8px; border-radius:4px;">HTTP 200 OK</span>
+              </div>
+              <pre class="lab-terminal-output" id="labResponseTerminal"></pre>
+              <div class="lab-metric-bar">
+                <span>Calculated Depth: <span class="metric-val" id="metricDepth">1</span></span>
+                <span>Complexity Cost: <span class="metric-val" id="metricCost">5</span></span>
+                <span>Resolver Calls: <span class="metric-val" id="metricResolvers">2</span></span>
+                <span>Execution: <span class="metric-val" id="metricTime">12ms</span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ====================================================================
+           TAB 7: COMPREHENSIVE FAQ
+           ==================================================================== -->
+      <div class="tab-content-pane" id="tab-questions">
+
+        <div class="faq-accordion">
+          <!-- FAQ 1 -->
+          <div class="faq-item open">
+            <button type="button" class="faq-question-btn" onclick="toggleFaq(this)">
+              <span>1. Why is GraphQL Introspection considered a vulnerability if it is a built-in feature?</span>
+              <span class="faq-arrow">▼</span>
+            </button>
+            <div class="faq-answer-body">
+              <p class="lang-hi">Introspection development aur documentation ke liye banaya gaya tha. Lekin production me ye attacker ko backend ka pura architectural blueprint de deta hai. Isme internal microservices, administrative mutations (e.g. <code>debugResetDb</code>), private fields, aur field types bina kisi authentication ke expose ho jate hain.</p>
+              <p class="lang-en">Introspection is designed as a developer ergonomics tool to power IDE auto-completion. In production, however, it transforms into an adversary's primary reconnaissance weapon, exposing deprecated endpoints, administrative mutations (e.g., <code>updateUserRole</code>), internal field types, and backend relationships without requiring authentication.</p>
+            </div>
+          </div>
+
+          <!-- FAQ 2 -->
+          <div class="faq-item">
+            <button type="button" class="faq-question-btn" onclick="toggleFaq(this)">
+              <span>2. If introspection is disabled, can an attacker still discover the schema?</span>
+              <span class="faq-arrow">▼</span>
+            </button>
+            <div class="faq-answer-body">
+              <p class="lang-hi">Haan! Attacker <strong>Field Suggestions</strong> ka faayda uthate hain. Jab koi galat field query ki jaati hai, toh GraphQL engine "Did you mean ...?" kehta hai. Tools jaise <strong>Clairvoyance</strong> dictionary brute-force ke zariye pura schema bina introspection ke bhi reconstruct kar lete hain. Isliye suggestion masking bhi zaroori hai.</p>
+              <p class="lang-en">Yes! Attackers exploit <strong>Field Suggestions</strong>. When a client submits an invalid field, standard GraphQL engines respond with "Did you mean [field]?". Automated tools like <strong>Clairvoyance</strong> feed comprehensive wordlists to reconstruct the entire schema word-by-word. Production engines must disable suggestion hints.</p>
+            </div>
+          </div>
+
+          <!-- FAQ 3 -->
+          <div class="faq-item">
+            <button type="button" class="faq-question-btn" onclick="toggleFaq(this)">
+              <span>3. How does Query Depth Limiting prevent Denial of Service attacks?</span>
+              <span class="faq-arrow">▼</span>
+            </button>
+            <div class="faq-answer-body">
+              <p class="lang-hi">Query Depth Limiter AST ko inspect karta hai resolvers execute hone se pehle. Agar koi query defined limit (e.g. 5 levels) se zyada nested hoti hai, toh engine request ko turant reject kar deta hai. Isse circular relations (user -> orders -> user...) database tak pahunch hi nahi paati.</p>
+              <p class="lang-en">Query Depth Limiting inspects the parsed Abstract Syntax Tree (AST) prior to resolver invocation. If the nesting level exceeds a preset threshold (typically 5 to 7 levels), the engine immediately aborts query validation, preventing circular relationship queries from executing against the database.</p>
+            </div>
+          </div>
+
+          <!-- FAQ 4 -->
+          <div class="faq-item">
+            <button type="button" class="faq-question-btn" onclick="toggleFaq(this)">
+              <span>4. What is the difference between Query Depth and Query Complexity / Cost Analysis?</span>
+              <span class="faq-arrow">▼</span>
+            </button>
+            <div class="faq-answer-body">
+              <p class="lang-hi">Query Depth sirf nesting levels count karta hai (height). Lekin ek shallow query bhi server crash kar sakti hai agar wo 1000 items fetch kare (width: <code>users(first: 10000)</code>). Query Complexity har field aur argument ko ek numerical score deti hai (e.g., <code>users</code> = 10 points, per item = 2 points). Agar total cost 500 se zyada ho, toh query block ho jaati hai.</p>
+              <p class="lang-en">Query Depth only measures tree height (nesting levels). However, an attacker can crash a server using a shallow query that requests massive collections (e.g., <code>users(first: 10000)</code>). Complexity / Cost analysis assigns numerical weight to each field and multiplier arguments. If total query cost exceeds a configured budget (e.g. 1,000 points), execution is rejected.</p>
+            </div>
+          </div>
+
+          <!-- FAQ 5 -->
+          <div class="faq-item">
+            <button type="button" class="faq-question-btn" onclick="toggleFaq(this)">
+              <span>5. Why do traditional perimeter WAFs fail to rate-limit GraphQL APIs?</span>
+              <span class="faq-arrow">▼</span>
+            </button>
+            <div class="faq-answer-body">
+              <p class="lang-hi">Traditional WAFs HTTP request count (IP per second) par kaam karte hain. GraphQL me 1 HTTP POST request ke andar 500 aliases ya array batching use karke 500 alag operations bheje ja sakte hain. WAF use sirf 1 request count karta hai, jabki backend par 500 operations execute ho rahe hote hain.</p>
+              <p class="lang-en">Perimeter WAFs track HTTP request volumes per client IP. In GraphQL, a client can nest 500 distinct operations inside a single HTTP POST using field aliases or array batching. The perimeter WAF observes 1 inbound transaction, while the backend resolves 500 intensive operations, making perimeter rate limiting completely ineffective.</p>
+            </div>
+          </div>
+
+          <!-- FAQ 6 -->
+          <div class="faq-item">
+            <button type="button" class="faq-question-btn" onclick="toggleFaq(this)">
+              <span>6. What are Automatic Persisted Queries (APQ) and do they improve security?</span>
+              <span class="faq-arrow">▼</span>
+            </button>
+            <div class="faq-answer-body">
+              <p class="lang-hi">APQ me client query string bhejne ke bajaye query ka SHA-256 hash bhejta hai. Agar server par strict <strong>Query Whitelisting</strong> enable ho, toh server sirf approved hashes accept karta hai aur raw arbitrary query execution ko completely block kar deta hai. Ye GraphQL ka sabse powerful security defense hai!</p>
+              <p class="lang-en">With APQ and Persisted Queries, clients send a SHA-256 hash of pre-compiled queries rather than arbitrary query strings. When configured in strict whitelisting mode, the server only executes pre-approved queries, completely neutralizing arbitrary query crafting, introspection attacks, and unexpected circular nesting!</p>
+            </div>
+          </div>
+
+          <!-- FAQ 7 -->
+          <div class="faq-item">
+            <button type="button" class="faq-question-btn" onclick="toggleFaq(this)">
+              <span>7. How does BOLA (Broken Object Level Authorization) occur in GraphQL?</span>
+              <span class="faq-arrow">▼</span>
+            </button>
+            <div class="faq-answer-body">
+              <p class="lang-hi">REST me route middleware (e.g. <code>/orders/:id</code>) access control check karta hai. GraphQL me query graph ke through traverse karti hai (<code>user -> orders -> items</code>). Agar kisi child resolver me <code>context.user.id</code> verify nahi kiya gaya, toh attacker unauthorized records fetch kar leta hai chahe parent resolver secure ho.</p>
+              <p class="lang-en">In REST, authorization middleware guards entry routes. In GraphQL, execution flows through a graph tree of individual field resolvers. If any child or leaf resolver fails to validate the authenticated user's ownership from <code>context.user</code>, clients can traverse into unauthorized records despite the parent query being legitimate.</p>
+            </div>
+          </div>
+
+          <!-- FAQ 8 -->
+          <div class="faq-item">
+            <button type="button" class="faq-question-btn" onclick="toggleFaq(this)">
+              <span>8. Does GraphQL type validation protect against SQL or NoSQL injection?</span>
+              <span class="faq-arrow">▼</span>
+            </button>
+            <div class="faq-answer-body">
+              <p class="lang-hi">Nahi! GraphQL sirf input types enforce karta hai (e.g. String, Int). Agar resolver us String ko directly SQL query (<code>SELECT * FROM users WHERE name = '${args.term}'</code>) me concatenate karta hai, toh SQL Injection 100% possible hai. Resolvers me hamesha parameterized queries / ORM use karna chahiye.</p>
+              <p class="lang-en">No! GraphQL type validation only confirms primitive data types (e.g., String, Int, Boolean). If a resolver concatenates a String argument directly into a raw SQL query or MongoDB filter, SQLi or NoSQLi will execute unobstructed. Resolvers must always utilize parameterized statements and ORM abstractions.</p>
+            </div>
+          </div>
+
+          <!-- FAQ 9 -->
+          <div class="faq-item">
+            <button type="button" class="faq-question-btn" onclick="toggleFaq(this)">
+              <span>9. What is the N+1 problem in GraphQL and why is it also a security concern?</span>
+              <span class="faq-arrow">▼</span>
+            </button>
+            <div class="faq-answer-body">
+              <p class="lang-hi">N+1 problem tab hoti hai jab 1 parent query N child records fetch karti hai aur har child ke liye alag database query chalti hai (1 + N queries). Attackers iska faayda utha kar 10,000 queries trigger kar sakte hain. Isko solve karne ke liye <strong>DataLoader</strong> use kiya jata hai jo queries ko batch karta hai.</p>
+              <p class="lang-en">The N+1 problem occurs when fetching a parent collection of N items triggers N individual database calls for nested relations (1 parent + N child queries). Malicious actors exploit this to induce database CPU exhaustion. Implementing <strong>DataLoader</strong> batches and memoizes requests to consolidate hundreds of queries into single batch reads.</p>
+            </div>
+          </div>
+
+          <!-- FAQ 10 -->
+          <div class="faq-item">
+            <button type="button" class="faq-question-btn" onclick="toggleFaq(this)">
+              <span>10. Which HTTP methods should a production GraphQL server allow?</span>
+              <span class="faq-arrow">▼</span>
+            </button>
+            <div class="faq-answer-body">
+              <p class="lang-hi">Production me GraphQL queries aur mutations hamesha <strong>POST</strong> method se aani chahiye with <code>Content-Type: application/json</code>. GET requests me queries URL parameters me jati hain, jisse sensitive parameters browser history aur proxy logs me leak ho jate hain aur CSRF risks badh jate hain.</p>
+              <p class="lang-en">Production GraphQL APIs should strictly mandate <strong>POST</strong> requests with <code>Content-Type: application/json</code>. Allowing GET queries exposes sensitive parameters in server access logs and browser histories, while enabling Cross-Site Request Forgery (CSRF) vulnerabilities when combined with cookie-based session architectures.</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Module Footer Navigation -->
+      <footer class="module-footer-nav">
+        <a href="xxe.html" class="nav-module-btn">
+          <span>&larr; Previous: 11 XXE Injection</span>
+        </a>
+        <a href="#" class="nav-module-btn">
+          <span>Next: 13 Business Logic Issues &rarr;</span>
+        </a>
+      </footer>
+
+    </main>
+  </div>
+
+  <!-- ====================================================================
+       INTERACTIVE JAVASCRIPT CONTROLLER
+       ==================================================================== -->
+  <script>
+    // 1. Dual Language Switcher
+    const langToggle = document.getElementById('langToggle');
+    const lblHi = document.getElementById('lbl-hi');
+    const lblEn = document.getElementById('lbl-en');
+
+    langToggle.addEventListener('change', function() {
+      if (this.checked) {
+        document.documentElement.setAttribute('data-lang', 'en');
+        lblHi.classList.remove('active');
+        lblEn.classList.add('active');
+      } else {
+        document.documentElement.setAttribute('data-lang', 'hi');
+        lblHi.classList.add('active');
+        lblEn.classList.remove('active');
+      }
+    });
+
+    lblHi.addEventListener('click', () => { langToggle.checked = false; langToggle.dispatchEvent(new Event('change')); });
+    lblEn.addEventListener('click', () => { langToggle.checked = true; langToggle.dispatchEvent(new Event('change')); });
+
+    // 2. Tab Underline Switcher
+    const tabBtns = document.querySelectorAll('.tab-underline-btn');
+    const tabPanes = document.querySelectorAll('.tab-content-pane');
+
+    tabBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        tabBtns.forEach(b => b.classList.remove('active'));
+        tabPanes.forEach(p => p.classList.remove('active'));
+
+        btn.classList.add('active');
+        const targetId = btn.getAttribute('data-tab');
+        document.getElementById(targetId).classList.add('active');
+      });
+    });
+
+    // 3. Hero Widget Toggle
+    const btnGqlNormal = document.getElementById('btnGqlNormal');
+    const btnGqlExploit = document.getElementById('btnGqlExploit');
+    const gqlAttackerAvatar = document.getElementById('gqlAttackerAvatar');
+    const gqlAttackerLabel = document.getElementById('gqlAttackerLabel');
+    const gqlAttackerSub = document.getElementById('gqlAttackerSub');
+    const gqlVerb = document.getElementById('gqlVerb');
+    const gqlBadgeFrom = document.getElementById('gqlBadgeFrom');
+    const gqlBadgeTo = document.getElementById('gqlBadgeTo');
+    const gqlBeamParticle = document.getElementById('gqlBeamParticle');
+    const gqlFlowStateText = document.getElementById('gqlFlowStateText');
+    const gqlTargetCard = document.getElementById('gqlTargetCard');
+    const gqlTargetStatus = document.getElementById('gqlTargetStatus');
+    const gqlTargetField1 = document.getElementById('gqlTargetField1');
+    const gqlTargetField2 = document.getElementById('gqlTargetField2');
+    const gqlTargetField3 = document.getElementById('gqlTargetField3');
+    const gqlTargetNote = document.getElementById('gqlTargetNote');
+
+    btnGqlNormal.addEventListener('click', () => {
+      btnGqlNormal.classList.add('active');
+      btnGqlExploit.classList.remove('active', 'exploit');
+      gqlAttackerAvatar.textContent = '👤';
+      gqlAttackerAvatar.style.background = 'rgba(56, 189, 248, 0.15)';
+      gqlAttackerAvatar.style.borderColor = 'rgba(56, 189, 248, 0.3)';
+      gqlAttackerLabel.textContent = 'Legitimate Client';
+      gqlAttackerLabel.style.color = '#38bdf8';
+      gqlAttackerSub.textContent = '{ me { name } }';
+      gqlVerb.style.color = '#38bdf8';
+      gqlBadgeFrom.textContent = 'POST /graphql';
+      gqlBadgeTo.textContent = '{ me }';
+      gqlBadgeTo.className = 'swap-id-badge from';
+      gqlBeamParticle.className = 'flow-beam-particle';
+      gqlFlowStateText.textContent = 'Authorized Query Execution';
+      gqlFlowStateText.style.color = '#38bdf8';
+
+      gqlTargetCard.className = 'target-profile-card';
+      gqlTargetStatus.className = 'target-pill-status safe';
+      gqlTargetStatus.textContent = 'HTTP 200';
+      gqlTargetField1.innerHTML = 'Query: <code style="color:#38bdf8;">me { name }</code>';
+      gqlTargetField2.innerHTML = 'Returned: <code style="color:#34d399;">"Arjun"</code>';
+      gqlTargetField3.innerHTML = 'Depth: <code style="color:#34d399;">1 (Safe)</code>';
+      gqlTargetNote.textContent = '✅ Authorized Field Resolution';
+      gqlTargetNote.style.color = '#34d399';
+    });
+
+    btnGqlExploit.addEventListener('click', () => {
+      btnGqlExploit.classList.add('active', 'exploit');
+      btnGqlNormal.classList.remove('active');
+      gqlAttackerAvatar.textContent = '🥷';
+      gqlAttackerAvatar.style.background = 'rgba(239, 68, 68, 0.15)';
+      gqlAttackerAvatar.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+      gqlAttackerLabel.textContent = 'Attacker (Adversary)';
+      gqlAttackerLabel.style.color = '#f87171';
+      gqlAttackerSub.textContent = '__schema { types }';
+      gqlVerb.style.color = '#ef4444';
+      gqlBadgeFrom.textContent = '{ me }';
+      gqlBadgeTo.textContent = '__schema';
+      gqlBadgeTo.className = 'swap-id-badge to';
+      gqlBeamParticle.className = 'flow-beam-particle exploit';
+      gqlFlowStateText.textContent = 'Full Schema AST Dumped';
+      gqlFlowStateText.style.color = '#f87171';
+
+      gqlTargetCard.className = 'target-profile-card exploit';
+      gqlTargetStatus.className = 'target-pill-status breach';
+      gqlTargetStatus.textContent = 'HTTP 200';
+      gqlTargetField1.innerHTML = 'Query: <code style="color:#f87171;">__schema</code>';
+      gqlTargetField2.innerHTML = 'Discovered: <code style="color:#ef4444;">deleteUser, admin</code>';
+      gqlTargetField3.innerHTML = 'Depth: <code style="color:#ef4444;">Unbounded (DoS)</code>';
+      gqlTargetNote.textContent = '🚨 Hidden Mutations Leaked';
+      gqlTargetNote.style.color = '#ef4444';
+    });
+
+    // 4. Burp Checklist State Manager
+    const checkStates = {};
+    function markCheck(checkId, state) {
+      checkStates[checkId] = state;
+      const box = document.getElementById('chkBox' + checkId);
+      const btnPass = box.querySelector('.btn-audit.pass');
+      const btnFail = box.querySelector('.btn-audit.fail');
+
+      if (state === 'pass') {
+        btnPass.classList.add('active');
+        btnFail.classList.remove('active');
+      } else {
+        btnFail.classList.add('active');
+        btnPass.classList.remove('active');
+      }
+
+      const count = Object.keys(checkStates).length;
+      document.getElementById('auditCounterBadge').textContent = `${count} of 7 Audited`;
+    }
+
+    // 5. Live Lab Simulator Presets & Logic
+    const labPresets = {
+      1: {
+        name: 'Basic User Query',
+        query: `query GetUserProfile {
+  user(id: 101) {
+    id
+    name
+    email
+  }
+}`
+      },
+      2: {
+        name: 'Full Introspection Dump',
+        query: `query IntrospectionDump {
+  __schema {
+    queryType { name }
+    mutationType { name }
+    types {
+      name
+      fields {
+        name
+        args { name }
+      }
+    }
+  }
+}`
+      },
+      3: {
+        name: 'Circular Depth DoS',
+        query: `query DeepCircularNesting {
+  user(id: 101) {
+    posts {
+      author {
+        posts {
+          author {
+            posts {
+              author {
+                id
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}`
+      },
+      4: {
+        name: 'Alias Batching Rate Limit Bypass',
+        query: `query BatchVerifyOTP {
+  a1: verifyOTP(code: "1001") { valid }
+  a2: verifyOTP(code: "1002") { valid }
+  a3: verifyOTP(code: "1003") { valid }
+  a4: verifyOTP(code: "1004") { valid }
+  a5: verifyOTP(code: "1005") { valid }
+}`
+      },
+      5: {
+        name: 'Mutation Privilege Escalation',
+        query: `mutation EscalatePrivileges {
+  updateUserRole(userId: 101, role: "superadmin") {
+    success
+    newRole
+  }
+}`
+      }
+    };
+
+    function loadLabPreset(presetId) {
+      document.querySelectorAll('.preset-btn').forEach((btn, idx) => {
+        btn.classList.toggle('active', idx + 1 === presetId);
+      });
+      document.getElementById('labQueryEditor').value = labPresets[presetId].query;
+      runLabSimulation();
+    }
+
+    function runLabSimulation() {
+      const query = document.getElementById('labQueryEditor').value;
+      const isHardened = document.getElementById('chkHardeningShield').checked;
+      const terminal = document.getElementById('labResponseTerminal');
+      const statusBadge = document.getElementById('labStatusBadge');
+      const metricDepth = document.getElementById('metricDepth');
+      const metricCost = document.getElementById('metricCost');
+      const metricResolvers = document.getElementById('metricResolvers');
+      const metricTime = document.getElementById('metricTime');
+
+      // Simple heuristic for depth calculation
+      const depth = (query.match(/\{/g) || []).length;
+      const hasIntrospection = query.includes('__schema') || query.includes('__type');
+      const aliasesCount = (query.match(/\ba\d+:/g) || []).length;
+
+      metricDepth.textContent = depth;
+      metricDepth.className = depth > 4 ? 'metric-val danger' : 'metric-val';
+
+      if (isHardened) {
+        if (hasIntrospection) {
+          statusBadge.textContent = 'HTTP 400 Bad Request';
+          statusBadge.style.color = '#f87171';
+          statusBadge.style.background = 'rgba(239, 68, 68, 0.15)';
+          metricCost.textContent = 'Blocked';
+          metricResolvers.textContent = '0';
+          metricTime.textContent = '1ms';
+          terminal.innerHTML = `<span style="color:#f87171;">{
+  "errors": [
+    {
+      "message": "GraphQL introspection is not allowed by Apollo Server in production.",
+      "extensions": {
+        "code": "GRAPHQL_INTROSPECTION_FORBIDDEN"
+      }
+    }
+  ]
+}</span>`;
+          return;
+        }
+
+        if (depth > 4) {
+          statusBadge.textContent = 'HTTP 400 Bad Request';
+          statusBadge.style.color = '#f87171';
+          statusBadge.style.background = 'rgba(239, 68, 68, 0.15)';
+          metricCost.textContent = 'Exceeded (Depth: ' + depth + ')';
+          metricResolvers.textContent = '0';
+          metricTime.textContent = '2ms';
+          terminal.innerHTML = `<span style="color:#f87171;">{
+  "errors": [
+    {
+      "message": "Query depth of ${depth} exceeds maximum allowed depth of 4.",
+      "extensions": {
+        "code": "GRAPHQL_DEPTH_LIMIT_EXCEEDED"
+      }
+    }
+  ]
+}</span>`;
+          return;
+        }
+
+        if (aliasesCount > 3) {
+          statusBadge.textContent = 'HTTP 400 Bad Request';
+          statusBadge.style.color = '#f87171';
+          statusBadge.style.background = 'rgba(239, 68, 68, 0.15)';
+          metricCost.textContent = 'Blocked (Aliases: ' + aliasesCount + ')';
+          metricResolvers.textContent = '0';
+          metricTime.textContent = '2ms';
+          terminal.innerHTML = `<span style="color:#f87171;">{
+  "errors": [
+    {
+      "message": "Too many field aliases (${aliasesCount}). Maximum allowed is 3.",
+      "extensions": {
+        "code": "MAX_ALIASES_EXCEEDED"
+      }
+    }
+  ]
+}</span>`;
+          return;
+        }
+      }
+
+      // Successful or Vulnerable Execution
+      statusBadge.textContent = 'HTTP 200 OK';
+      statusBadge.style.color = '#34d399';
+      statusBadge.style.background = 'rgba(16, 185, 129, 0.15)';
+
+      if (hasIntrospection) {
+        metricCost.textContent = '15';
+        metricResolvers.textContent = '35';
+        metricTime.textContent = '38ms';
+        terminal.innerHTML = `<span style="color:#38bdf8;">{
+  "data": {
+    "__schema": {
+      "queryType": { "name": "Query" },
+      "mutationType": { "name": "Mutation" },
+      "types": [
+        {
+          "name": "Mutation",
+          "fields": [
+            { "name": "updateUserRole", "args": [{"name":"userId"}, {"name":"role"}] },
+            { "name": "deleteAccount", "args": [{"name":"id"}] },
+            { "name": "impersonateUser", "args": [{"name":"secretToken"}] }
+          ]
+        },
+        { "name": "User", "fields": [{"name":"id"}, {"name":"email"}, {"name":"role"}] }
+      ]
+    }
+  }
+}</span>`;
+      } else if (depth > 4) {
+        metricCost.textContent = '850 (High)';
+        metricResolvers.textContent = '120';
+        metricTime.textContent = '240ms';
+        terminal.innerHTML = `<span style="color:#f59e0b;">// WARNING: Unbounded Execution - High Database Load!</span>
+<span style="color:#38bdf8;">{
+  "data": {
+    "user": {
+      "posts": [
+        {
+          "author": {
+            "posts": [
+              { "author": { "posts": [ { "author": { "id": 101 } } ] } }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}</span>`;
+      } else if (query.includes('updateUserRole')) {
+        metricCost.textContent = '10';
+        metricResolvers.textContent = '1';
+        metricTime.textContent = '14ms';
+        terminal.innerHTML = `<span style="color:#38bdf8;">{
+  "data": {
+    "updateUserRole": {
+      "success": true,
+      "newRole": "superadmin"
+    }
+  }
+}</span>`;
+      } else if (aliasesCount > 0) {
+        metricCost.textContent = aliasesCount * 15;
+        metricResolvers.textContent = aliasesCount;
+        metricTime.textContent = (aliasesCount * 8) + 'ms';
+        terminal.innerHTML = `<span style="color:#38bdf8;">{
+  "data": {
+    "a1": { "valid": false },
+    "a2": { "valid": false },
+    "a3": { "valid": true },
+    "a4": { "valid": false },
+    "a5": { "valid": false }
+  }
+}</span>`;
+      } else {
+        metricCost.textContent = '4';
+        metricResolvers.textContent = '2';
+        metricTime.textContent = '11ms';
+        terminal.innerHTML = `<span style="color:#38bdf8;">{
+  "data": {
+    "user": {
+      "id": 101,
+      "name": "Arjun Sharma",
+      "email": "arjun@cyberlab.internal"
+    }
+  }
+}</span>`;
+      }
+    }
+
+    // 6. FAQ Accordion Toggle
+    function toggleFaq(btn) {
+      const item = btn.parentElement;
+      item.classList.toggle('open');
+    }
+
+    // Initialize Lab Preset 1 on load
+    loadLabPreset(1);
+  </script>
+</body>
+</html>
