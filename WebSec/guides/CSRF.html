@@ -1,0 +1,2756 @@
+<!DOCTYPE html>
+<html lang="hi" data-theme="dark" data-lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CSRF — Cross-Site Request Forgery</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root[data-theme="dark"] {
+    --bg:#050810;
+    --panel:#0F1524;
+    --panel-2:#1A2338;
+    --border:#263049;
+    --text:#E7ECF5;
+    --text-muted:#8B96AB;
+    --danger:#FF6B5B;
+    --danger-bg:rgba(255,107,91,0.12);
+    --safe:#3ECF8E;
+    --safe-bg:rgba(62,207,142,0.12);
+    --accent:#FFC857;
+    --accent-bg:rgba(255,200,87,0.14);
+    --blue:#4D9EFF;
+    --blue-bg:rgba(77,158,255,0.12);
+    --radius:12px;
+    --mono:'IBM Plex Mono',ui-monospace,monospace;
+    --sans:'IBM Plex Sans',system-ui,sans-serif;
+    --font-code: var(--mono);
+    --glow: rgba(77, 158, 255, 0.05);
+    --shadow-sm: 0 4px 15px rgba(0, 0, 0, 0.25);
+  }
+
+  :root[data-theme="light"] {
+    --bg:#F4F7FB;
+    --panel:#FFFFFF;
+    --panel-2:#E8EEF5;
+    --border:#D1D9E6;
+    --text:#0F172A;
+    --text-muted:#475569;
+    --danger:#E11D48;
+    --danger-bg:rgba(225,29,72,0.12);
+    --safe:#059669;
+    --safe-bg:rgba(5,150,105,0.12);
+    --accent:#D97706;
+    --accent-bg:rgba(217,119,6,0.14);
+    --blue:#2563EB;
+    --blue-bg:rgba(37,99,235,0.12);
+    --radius:12px;
+    --mono:'IBM Plex Mono',ui-monospace,monospace;
+    --sans:'IBM Plex Sans',system-ui,sans-serif;
+    --font-code: var(--mono);
+    --glow: rgba(77, 158, 255, 0.05);
+    --shadow-sm: 0 4px 15px rgba(0, 0, 0, 0.06);
+  }
+
+  html, body { margin: 0; padding: 0; width: 100%; }
+  html[data-lang="hi"] .lang-en { display: none !important; }
+  html[data-lang="en"] .lang-hi { display: none !important; }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--bg);color:var(--text);font-family:var(--sans);
+    line-height:1.7;-webkit-font-smoothing:antialiased;
+    transition: background-color 0.3s, color 0.3s;
+    background-image: 
+      radial-gradient(circle at 15% 50%, var(--glow), transparent 25%),
+      radial-gradient(circle at 85% 30%, var(--glow), transparent 25%);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  ::selection{background:var(--accent-bg);color:var(--accent);}
+  strong{color:var(--text);font-weight:600;}
+  
+  /* --- ENHANCED TYPOGRAPHY & CODE --- */
+  code{
+    font-family:var(--mono);background:var(--panel-2);border:1px solid var(--border);
+    padding:2px 6px;border-radius:6px;font-size:0.88em;color:var(--accent);
+    transition: all 0.2s;
+  }
+  code:hover { background: var(--accent-bg); border-color: var(--accent); }
+
+  h1 code, h2 code, h3 code, .brand code, .brand-text code {
+    background: transparent !important;
+    border: none !important;
+    color: inherit !important;
+    padding: 0 !important;
+    pointer-events: none;
+    box-shadow: none !important;
+  }
+  .brand-text code:hover {
+    background: transparent !important;
+    border: none !important;
+  }
+  
+  pre{
+    background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
+    padding:40px 18px 18px 18px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;
+    line-height:1.6;color:var(--text);margin:18px 0; position: relative;
+    box-shadow: 0 10px 30px -10px rgba(0,0,0,0.2);
+  }
+  pre::before {
+    content: ''; position: absolute; top: 14px; left: 16px;
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--danger); box-shadow: 16px 0 0 var(--accent), 32px 0 0 var(--safe);
+  }
+  pre code{background:none;border:none;padding:0;color:inherit; box-shadow: none;}
+  pre code:hover { background: none; border: none; }
+
+  /* --- TOPBAR --- */
+/* --- TOPBAR : Sticky --- */
+  .topbar {
+    position: sticky; 
+    top: 0;
+    z-index: 999;
+    width: 100%;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 20px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: space-between;
+    gap: 12px; 
+    flex-wrap: wrap; 
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  }
+  
+  .brand{
+    font-family:var(--mono);font-weight:700;font-size:15.5px;
+    display:flex;align-items:center;gap:10px;cursor:pointer;
+    text-decoration:none; color:inherit;
+  }
+  .brand-icon { font-size: 19px; display: inline-block; animation: shield-pulse 2.5s infinite ease-in-out; }
+  
+  .brand-text {
+    background: linear-gradient(90deg, var(--accent), var(--safe));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    transition: all 0.3s ease; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .brand-text code {
+    background: none !important;
+    border: none !important;
+    padding: 0 !important;
+    color: inherit !important;
+    font-size: 1em;
+    box-shadow: none !important;
+    pointer-events: none;
+  }
+  .brand:hover .brand-text { filter: drop-shadow(0 0 10px rgba(62, 207, 142, 0.5)); }
+  @keyframes shield-pulse { 0%, 100% { transform: scale(1); filter: drop-shadow(0 0 3px var(--safe)); } 50% { transform: scale(1.15); filter: drop-shadow(0 0 10px var(--safe)); } }
+
+  .controls-wrapper { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
+
+
+  .theme-toggle {
+    background: var(--bg); border: 1px solid var(--border); color: var(--text);
+    padding: 6px 14px; border-radius: 20px; cursor: pointer; font-weight: 600;
+    font-family: var(--sans); font-size: 12px; transition: all 0.2s ease;
+  }
+  .theme-toggle:hover { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); transform: translateY(-1px); }
+
+  .lang-switch-wrapper {
+    display: flex; align-items: center; gap: 6px; font-family: var(--sans);
+    font-size: 12px; font-weight: 600; color: var(--text); background: var(--bg);
+    padding: 6px 12px; border-radius: 20px; border: 1px solid var(--border);
+  }
+  .lang-active { color: var(--accent); text-shadow: 0 0 8px var(--accent-bg); } 
+  .lang-inactive { color: var(--text-muted); }
+  .switch { position: relative; display: inline-block; width: 32px; height: 18px; margin: 0 4px;}
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider {
+    position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+    background-color: var(--border); transition: .4s; border-radius: 20px;
+  }
+  .slider:before {
+    position: absolute; content: ""; height: 12px; width: 12px; left: 3px; bottom: 3px;
+    background-color: var(--text); transition: .4s; border-radius: 50%;
+  }
+  input:checked + .slider { background-color: var(--accent); }
+  input:checked + .slider:before { transform: translateX(14px); background-color: #fff; }
+
+  main { max-width: 840px; margin: 0 auto; padding: 0 20px 10px; position: relative; z-index: 1; flex: 1; width: 100%; }
+
+  /* --- HERO AREA --- */
+  .hero{padding:40px 0 20px; position: relative;}
+  .hero::after {
+    content: ''; position: absolute; top: -50px; left: 0;
+    width: 100%; height: 100%; background: radial-gradient(ellipse at top, var(--danger-bg), transparent 60%);
+    z-index: -1; pointer-events: none; opacity: 0.5;
+  }
+  .eyebrow{
+    font-family:var(--mono);font-size:12px;letter-spacing:.14em;color:var(--danger);
+    text-transform:uppercase;margin:0 0 16px;display:flex;align-items:center;gap:8px;
+  }
+  .eyebrow::before{content:"●";font-size:9px; animation: blink 1s infinite alternate;}
+  h1.title{
+    font-family:var(--mono);font-weight:700;font-size:clamp(22px,4.5vw,34px);
+    line-height:1.45;margin:0 0 28px;color:var(--text);letter-spacing:-0.01em; text-align: left;
+  }
+  
+  .highlight-danger {
+    color: var(--danger); background: var(--danger-bg); padding: 2px 10px; border-radius: 8px;
+    display: inline-block; border: 1px solid rgba(255,107,91,0.4); animation: pulse-danger 2s infinite;
+    font-family: var(--mono); transform: rotate(-1deg); box-shadow: 0 4px 15px var(--danger-bg);
+  }
+  .highlight-safe {
+    color: var(--safe); background: var(--safe-bg); padding: 2px 10px; border-radius: 8px;
+    border: 1px dashed var(--safe);
+  }
+  @keyframes pulse-danger {
+    0% { box-shadow: 0 0 0 0 rgba(255,107,91, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(255,107,91, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255,107,91, 0); }
+  }
+
+  /* --- REDESIGNED ATTACK SCENE --- */
+  .scene {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 16px;
+    overflow: hidden; margin: 24px 0 20px;
+    box-shadow: 0 20px 50px -12px rgba(0,0,0,0.35);
+    position: relative; animation: scene-glow 4s infinite alternate;
+  }
+  @keyframes scene-glow {
+    0%  { box-shadow: 0 20px 50px -12px rgba(0,0,0,0.25); border-color: var(--border); }
+    100%{ box-shadow: 0 20px 50px -12px rgba(255,107,91,0.3); border-color: rgba(255,107,91,0.5); }
+  }
+  .scene::before {
+    content: "🔴 LIVE ATTACK SIMULATION"; position: absolute; top: -1px; right: 0;
+    background: linear-gradient(90deg, var(--danger), #c0392b);
+    color: #fff; font-size: 10px; font-family: var(--mono); font-weight: 700;
+    padding: 5px 16px 5px 14px; border-radius: 0 16px 0 12px;
+    letter-spacing: 1.2px; z-index: 5; box-shadow: -4px 4px 12px rgba(255,107,91,0.4);
+  }
+
+  /* Browser chrome bar */
+  .scene-browser-bar {
+    background: #1a1e2e;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    padding: 10px 16px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  :root[data-theme="light"] .scene-browser-bar { background: #e8edf5; border-bottom-color: rgba(0,0,0,0.1); }
+
+  .scene-dots { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+  .scene-dot-r { width: 11px; height: 11px; border-radius: 50%; background: var(--danger); }
+  .scene-dot-y { width: 11px; height: 11px; border-radius: 50%; background: var(--accent); }
+  .scene-dot-g { width: 11px; height: 11px; border-radius: 50%; background: var(--safe); }
+
+  .scene-tabs { display: flex; gap: 4px; margin-left: 10px; }
+  .scene-tab {
+    font-family: var(--mono); font-size: 11px; padding: 4px 12px; border-radius: 6px 6px 0 0;
+    white-space: nowrap; cursor: default;
+  }
+  .scene-tab.active { background: var(--panel-2); color: var(--text); border: 1px solid rgba(255,255,255,0.08); border-bottom: none; }
+  .scene-tab.inactive { background: transparent; color: var(--text-muted); }
+  :root[data-theme="light"] .scene-tab.active { background: #f4f7fb; border-color: rgba(0,0,0,0.1); }
+
+  .scene-urlbar {
+    flex: 1; background: rgba(0,0,0,0.2); border-radius: 8px;
+    padding: 5px 12px; font-family: var(--mono); font-size: 11.5px;
+    color: var(--safe); display: flex; align-items: center; gap: 6px;
+    border: 1px solid rgba(255,255,255,0.06); white-space: nowrap; overflow: hidden;
+  }
+  :root[data-theme="light"] .scene-urlbar { background: #fff; border-color: rgba(0,0,0,0.12); }
+  .scene-lock { color: var(--safe); font-size: 10px; }
+
+  /* Timeline body */
+  .scene-body { padding: 20px 20px 16px; background: var(--bg); }
+  :root[data-theme="light"] .scene-body { background: #f8fafc; }
+
+  .scene-timeline { display: flex; flex-direction: column; gap: 0; }
+
+  .scene-step {
+    display: flex; gap: 14px; align-items: stretch;
+    opacity: 0; animation: sceneIn .5s cubic-bezier(0.175,0.885,0.32,1.275) forwards;
+  }
+
+  /* Left column: number + connector line */
+  .scene-step-left {
+    display: flex; flex-direction: column; align-items: center; flex-shrink: 0; width: 36px;
+  }
+  .scene-step-num {
+    width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center;
+    justify-content: center; font-family: var(--mono); font-size: 12px; font-weight: 700;
+    flex-shrink: 0; z-index: 1; border: 2px solid;
+  }
+  .scene-step-line {
+    flex: 1; width: 2px; background: linear-gradient(180deg, rgba(255,255,255,0.08), transparent);
+    margin: 4px 0; min-height: 12px;
+  }
+  .scene-step:last-child .scene-step-line { display: none; }
+
+  /* Right column: actor badge + card */
+  .scene-step-right { flex: 1; padding-bottom: 16px; min-width: 0; }
+  .scene-step:last-child .scene-step-right { padding-bottom: 0; }
+
+  .scene-actor {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--mono); font-size: 10.5px; font-weight: 700;
+    letter-spacing: .08em; padding: 3px 10px 3px 8px; border-radius: 20px;
+    margin-bottom: 8px; border: 1px solid;
+  }
+  .scene-actor-icon { font-size: 13px; }
+
+  .scene-card {
+    border-radius: 10px; padding: 12px 14px;
+    border: 1px solid rgba(255,255,255,0.06);
+    font-size: 13.8px; line-height: 1.65; color: var(--text);
+    text-align: justify;
+  }
+  :root[data-theme="light"] .scene-card { border-color: rgba(0,0,0,0.08); }
+  .scene-card code {
+    white-space: nowrap; word-break: break-word; font-weight: 600;
+    font-size: 0.85em; padding: 1px 5px; border-radius: 5px;
+  }
+
+  /* Actor colour themes */
+  .step-rahul .scene-step-num { background: var(--accent-bg); color: var(--accent); border-color: var(--accent); }
+  .step-rahul .scene-step-line { background: linear-gradient(180deg, var(--accent), transparent); opacity: 0.25; }
+  .step-rahul .scene-actor { background: var(--accent-bg); color: var(--accent); border-color: var(--accent); }
+  .step-rahul .scene-card { background: rgba(255,200,87,0.05); }
+
+  .step-attacker .scene-step-num { background: var(--danger-bg); color: var(--danger); border-color: var(--danger); animation: step-pulse 1s infinite alternate; }
+  .step-attacker .scene-step-line { background: linear-gradient(180deg, var(--danger), transparent); opacity: 0.3; }
+  .step-attacker .scene-actor { background: var(--danger-bg); color: var(--danger); border-color: var(--danger); animation: shake 0.4s infinite alternate; }
+  .step-attacker .scene-card { background: rgba(255,107,91,0.05); border-color: rgba(255,107,91,0.18); }
+
+  .step-browser .scene-step-num { background: rgba(77,158,255,0.12); color: #4d9eff; border-color: #4d9eff; }
+  .step-browser .scene-step-line { background: linear-gradient(180deg, #4d9eff, transparent); opacity: 0.25; }
+  .step-browser .scene-actor { background: rgba(77,158,255,0.12); color: #4d9eff; border-color: rgba(77,158,255,0.5); }
+  .step-browser .scene-card { background: rgba(77,158,255,0.04); border-color: rgba(77,158,255,0.15); }
+
+  .step-server .scene-step-num { background: var(--safe-bg); color: var(--safe); border-color: var(--safe); }
+  .step-server .scene-step-line { background: linear-gradient(180deg, var(--safe), transparent); opacity: 0.25; }
+  .step-server .scene-actor { background: var(--safe-bg); color: var(--safe); border-color: var(--safe); }
+  .step-server .scene-card { background: rgba(62,207,142,0.05); border-color: rgba(62,207,142,0.18); }
+
+  @keyframes step-pulse { 0%{box-shadow:0 0 0 0 rgba(255,107,91,0.5);} 100%{box-shadow:0 0 0 6px rgba(255,107,91,0);} }
+
+  /* Outcome banner */
+  .scene-outcome {
+    margin: 0 20px 16px;
+    background: linear-gradient(135deg, rgba(255,107,91,0.12), rgba(255,107,91,0.05));
+    border: 1px solid rgba(255,107,91,0.4); border-radius: 10px;
+    padding: 13px 18px; display: flex; align-items: center; gap: 14px;
+    animation: sceneIn .5s ease 2.6s both;
+  }
+  .scene-outcome-icon { font-size: 28px; flex-shrink: 0; animation: shake 0.4s infinite alternate; }
+  .scene-outcome-text { font-family: var(--mono); font-size: 13px; color: var(--danger); font-weight: 700; line-height: 1.5; }
+  .scene-outcome-text span { display: block; font-size: 11px; font-weight: 400; color: var(--text-muted); margin-top: 2px; }
+
+  @keyframes sceneIn{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+  @keyframes shake { 0%{transform:translateX(-1.5px);} 100%{transform:translateX(1.5px);} }
+  @keyframes blink{50%{opacity:0.3;}}
+
+  .intro-block {
+    margin-top: 20px; padding: 18px 22px;
+    background: linear-gradient(135deg, var(--panel) 0%, transparent 100%);
+    border: 1px solid var(--border); border-left: 4px solid var(--accent);
+    border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+    position: relative; overflow: hidden;
+  }
+  .intro-block p{margin:0 0 12px;font-size:15px;color:var(--text); text-align: justify; line-height: 1.7;}
+  .intro-block p:last-child{margin-bottom:0;}
+  .intro-block .roadmap{font-family:var(--mono);font-size:13.5px;color:var(--accent); font-weight: 500;}
+
+  .hero-cta{
+    display:inline-flex;align-items:center;gap:10px;margin-top:20px;
+    font-family:var(--mono);font-size:14px;font-weight: 600; color:var(--accent);background:var(--panel);
+    border:1px solid var(--accent);padding:14px 24px;border-radius:10px;
+    text-decoration:none;cursor:pointer;transition:all .3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 6px 20px var(--accent-bg);
+  }
+  .hero-cta:hover{background:var(--accent); color: var(--bg); transform: translateY(-4px); box-shadow: 0 10px 25px rgba(255, 200, 87, 0.4);}
+
+  /* ---------- Section headers ---------- */
+  .sec-head{margin:40px 0 15px;}
+  .sec-eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.15em;color:var(--accent);text-transform:uppercase;margin:0 0 10px; display: flex; align-items: center; gap: 8px;}
+  .sec-eyebrow::after { content: ''; height: 1px; width: 40px; background: var(--accent); opacity: 0.5; }
+  .sec-head h2{
+    font-family:var(--mono);font-size:clamp(20px,4vw,28px);margin:0 0 12px;
+    background: linear-gradient(90deg, var(--text), var(--text-muted));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .sec-head p{font-size:15px;color:var(--text-muted);margin:0 0 18px;max-width:100%; line-height: 1.6; text-align: justify;}
+
+
+
+  /* ---------- Accordion Levels ---------- */
+  .levels{margin-top:20px;display:flex;flex-direction:column;gap:12px;}
+  .level-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);scroll-margin-top:90px;overflow:hidden; transition: all 0.3s;}
+  .level-card:hover { border-color: rgba(255,255,255,0.1); box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
+  .level-card.open { border-color: var(--accent); box-shadow: 0 8px 30px var(--accent-bg); }
+  
+  .level-header{
+    width:100%;background:none;border:none;color:var(--text);display:flex;align-items:center;
+    gap:16px;padding:16px 18px;cursor:pointer;text-align:left;font-family:var(--sans);
+  }
+  .level-header:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;}
+  .level-badge{
+    font-family:var(--mono);font-weight:700;font-size:16px;width:38px;height:38px;flex:none;
+    border-radius:10px;display:flex;align-items:center;justify-content:center;
+    background:var(--panel-2);border:1px solid var(--border);color:var(--text-muted);
+    transition: all 0.3s;
+  }
+  .level-card.open .level-badge { background: var(--accent-bg); color: var(--accent); border-color: var(--accent); }
+  
+  .level-titles{flex:1;min-width:0;}
+  .level-titles h2{margin:0 0 4px;font-size:16.5px;font-weight:600;color:var(--text); transition: color 0.3s;}
+  .level-card.open .level-titles h2 { color: var(--accent); }
+  .level-titles p{margin:0;font-size:13px;color:var(--text-muted);}
+  .level-tag{
+    font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.05em;
+    padding:5px 10px;border-radius:20px;white-space:nowrap;flex:none;
+  }
+  .level-tag.problem{background:var(--danger-bg);color:var(--danger); border: 1px solid rgba(255,107,91,0.2);}
+  .level-tag.solved{background:var(--safe-bg);color:var(--safe); border: 1px solid rgba(62,207,142,0.2);}
+  .level-tag.concept{background:var(--accent-bg);color:var(--accent); border: 1px solid rgba(255,200,87,0.2);}
+  
+  .chevron{flex:none;color:var(--text-muted);transition:transform .3s ease;font-size:14px;}
+  .level-card.open .chevron{transform:rotate(180deg); color: var(--accent);}
+  
+  .level-body{ display: none; }
+  .level-card.open .level-body{ display: block; animation: fadeIn .3s ease; }
+  
+  .level-inner{padding:0 20px 24px;font-size:14.8px; border-top: 1px solid var(--border); margin-top: 4px; padding-top: 16px;}
+  .level-inner p{margin:0 0 14px;color:var(--text); text-align: justify; line-height: 1.7;}
+  .level-inner h4{margin:20px 0 10px;font-size:14px;color:var(--accent);font-weight:600;font-family:var(--mono);letter-spacing:.04em; text-transform: uppercase;}
+  
+  .callout{
+    border-left:4px solid var(--danger);background:linear-gradient(90deg, var(--danger-bg), transparent);
+    border-radius:0 10px 10px 0;padding:16px 20px;margin:16px 0;font-size:14px;
+    box-shadow: inset 0 0 20px rgba(255,107,91,0.05);
+  }
+  .callout.fixnote{border-left-color:var(--safe);background:linear-gradient(90deg, var(--safe-bg), transparent); box-shadow: inset 0 0 20px rgba(62,207,142,0.05);}
+  .callout p{margin:0;color:var(--text); text-align: justify;}
+  .callout p+p{margin-top:10px;}
+  .callout .cal-label{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.06em;display:block;margin-bottom:8px;color:var(--danger);}
+  .callout.fixnote .cal-label{color:var(--safe);}
+
+  .item-divider {
+    border: 0; height: 1px; background: linear-gradient(90deg, var(--border) 0%, transparent 100%);
+    margin: 18px 0; opacity: 0.8;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ---------- VAPT PROXY SIMULATOR STYLES ---------- */
+  .simulator-section {
+    background: #050505; border: 1px solid var(--border); border-radius: 14px;
+    margin-top: 25px; margin-bottom: 10px; overflow: hidden; position: relative;
+    display: flex; flex-direction: column; box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+  }
+  .simulator-section::before {
+    content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px;
+    background: linear-gradient(90deg, transparent, #ff3c3c, transparent);
+    animation: scanline 3s linear infinite;
+  }
+  @keyframes scanline { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+
+  .sim-header-bar {
+    background: #0a0c10; border-bottom: 1px solid #1f242d; padding: 18px 24px;
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;
+  }
+  .sim-title {
+    font-family: var(--font-code); font-size: 16px; font-weight: 700; color: #fff;
+    display: flex; align-items: center; gap: 10px; letter-spacing: 0.5px;
+  }
+  .sim-title span { color: #ff3c3c; animation: pulse-danger 1.5s infinite; border-radius: 50%;}
+  .sim-controls { display: flex; flex-direction: column; gap: 16px; width: 100%; }
+  .sim-control-group { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .sim-control-group label {
+    font-family: var(--font-code); font-size: 11.5px; color: #64748b;
+    text-transform: uppercase; letter-spacing: 1px; min-width: 140px; font-weight: bold;
+  }
+  .sim-btn-group { display: flex; gap: 10px; flex-wrap: wrap; background: #000; padding: 4px; border-radius: 6px; border: 1px solid #1f242d;}
+  .sim-btn {
+    background: transparent; border: none; color: #64748b; padding: 6px 14px;
+    border-radius: 4px; font-family: var(--font-code); font-size: 11.5px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .sim-btn:hover { color: #fff; }
+  .sim-btn.active { background: #1f242d; color: #4d9eff; box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
+
+  .btn-execute {
+    background: rgba(57, 255, 122, 0.1); color: #39ff7a; border: 1px solid #39ff7a;
+    padding: 10px 24px; border-radius: 6px; font-family: var(--font-code); font-size: 13px;
+    font-weight: 700; cursor: pointer; transition: all 0.2s; text-transform: uppercase;
+    align-self: flex-start; letter-spacing: 1px; box-shadow: 0 0 15px rgba(57, 255, 122, 0.15);
+  }
+  .btn-execute:hover { background: #39ff7a; color: #000; box-shadow: 0 0 20px rgba(57, 255, 122, 0.4); transform: translateY(-2px); }
+  .btn-execute:active { transform: scale(0.96); }
+  .btn-execute:disabled { opacity: 0.4; cursor: not-allowed; border-color: #536271; color: #536271; background: transparent; box-shadow: none; transform: none;}
+
+  .workspace { display: flex; padding: 18px; gap: 18px; height: 500px; background: #050505; }
+  @media (max-width: 850px) { .workspace { flex-direction: column; height: auto; min-height: 600px; } }
+
+  .sim-panel {
+    flex: 1; background: #0a0c10; border: 1px solid #1f242d; border-radius: 8px;
+    display: flex; flex-direction: column; overflow: hidden; box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+  }
+  .sim-panel-header {
+    background: #11141a; padding: 10px 14px; font-family: var(--font-code); font-size: 11.5px;
+    font-weight: 700; color: #fff; border-bottom: 1px solid #1f242d; display: flex;
+    align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .sim-panel-body {
+    flex: 1; padding: 14px; font-family: var(--font-code); font-size: 12px;
+    line-height: 1.6; overflow-y: auto; background: #000000;
+  }
+
+  #panel-browser .sim-panel-header { border-top: 2px solid #ffcc00; }
+  #panel-network .sim-panel-header { border-top: 2px solid #4d9eff; }
+  #panel-server .sim-panel-header { border-top: 2px solid #39ff7a; }
+
+  .log-line { opacity: 0; transform: translateX(-5px); animation: slideIn 0.2s forwards; margin-bottom: 6px; word-break: break-word; color: #a9b5c2; }
+  .log-stage {
+    font-family: var(--font-code); font-size: 12.5px; color: #ffcc00; font-weight: bold;
+    margin: 20px 0 8px 0; padding-bottom: 4px; border-bottom: 1px dashed #1f242d;
+    display: block; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  @keyframes slideIn { to { opacity: 1; transform: translateX(0); } }
+  @keyframes slideInUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+  .timestamp { color: #536271; margin-right: 10px; user-select: none; }
+  .c-info { color: #8fa0b3; } .c-warn { color: #ffcc00; } .c-err { color: #ff3c3c; } .c-ok { color: #39ff7a; } .c-blue { color: #4d9eff; } .c-gray { color: #64748b; }
+
+  .http-block { background: rgba(255,255,255,0.03); border-left: 2px solid #4d9eff; padding: 10px; margin: 10px 0; border-radius: 0 6px 6px 0; }
+  .http-method { color: #d782ff; font-weight: bold; } .http-path { color: #fff; } .http-proto { color: #64748b; }
+  .http-header-key { color: #6ab0ff; } .http-header-val { color: #9cdb9e; } .http-body { color: #ff9d66; margin-top: 8px; display: block; }
+  .resp-200 { color: #39ff7a; }
+
+  .sim-verdict-box {
+    margin: 0 18px 18px 18px; background: #0d0f12; border: 1px solid #1f242d;
+    padding: 24px; border-radius: 8px; font-family: var(--sans); display: none;
+  }
+  .sim-verdict-box.show { display: block; animation: slideInUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+  .sim-verdict-title { font-family: var(--font-code); font-size: 17px; font-weight: 700; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;}
+  .sim-verdict-text { font-size: 15px; color: #e2e8f0; line-height: 1.6; text-align: justify;}
+  .v-hacked { border-color: #ff3c3c; background: rgba(255, 60, 60, 0.08); box-shadow: inset 0 0 30px rgba(255,60,60,0.1); }
+  .v-hacked .sim-verdict-title { color: #ff3c3c; }
+  .v-blocked { border-color: #39ff7a; background: rgba(57, 255, 122, 0.08); box-shadow: inset 0 0 30px rgba(57,255,122,0.1);}
+  .v-blocked .sim-verdict-title { color: #39ff7a; }
+
+  .sim-panel-body::-webkit-scrollbar { width: 6px; }
+  .sim-panel-body::-webkit-scrollbar-track { background: #050505; }
+  .sim-panel-body::-webkit-scrollbar-thumb { background: #2a313d; border-radius: 4px; }
+  .sim-panel-body::-webkit-scrollbar-thumb:hover { background: #4d9eff; }
+
+  /* ---------- Unified Container for Glossary & QA ---------- */
+  .checklist {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
+    padding: 24px 22px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); margin-bottom: 20px;
+  }
+  .checklist-head{display:flex;align-items:center;gap:12px;margin-bottom:8px;}
+  .checklist-head h2{margin:0;font-size:20px;color:var(--text);font-family:var(--mono);}
+  .checklist-intro{color:var(--text-muted);font-size:14px;margin:0 0 20px;}
+  
+  .gap-box{margin-top:2px;background:linear-gradient(145deg, var(--panel), var(--bg)); border:1px solid rgba(255,200,87,0.2);border-radius:10px;padding:18px; border-left: 4px solid var(--accent); transition: transform 0.2s; margin-bottom: 12px;}
+  .gap-box:last-child { margin-bottom: 0; }
+  .gap-box:hover { transform: translateX(4px); box-shadow: 0 4px 15px rgba(255,200,87,0.1); border-color: var(--accent); }
+  .gap-box h3{margin:0 0 10px;font-size:15px;color:var(--accent); font-family: var(--mono);}
+  .gap-box p{font-size:14px;color:var(--text);margin:0; text-align: justify; line-height: 1.6;}
+
+  /* ---------- Q&A Accordion ---------- */
+  .qa-list{display:flex;flex-direction:column;gap:10px;}
+  .qa-item{background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow:hidden; transition:all 0.3s ease;}
+  .qa-item:hover { border-color: var(--accent); box-shadow: 0 4px 15px var(--accent-bg); }
+  .qa-q{
+    width:100%;background:none;border:none;color:var(--text);display:flex;align-items:center;
+    gap:14px;padding:14px 18px;cursor:pointer;text-align:left;font-family:var(--sans);font-size:14.5px;font-weight:600;
+  }
+  .qa-q:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;}
+  .qa-mark{font-family:var(--mono);color:var(--accent);flex:none;font-weight:700; background: var(--accent-bg); padding: 4px 8px; border-radius: 6px;}
+  .qa-chevron{margin-left:auto;flex:none;color:var(--text-muted);transition:transform .3s ease;font-size:14px;}
+  .qa-item.open .qa-chevron{transform:rotate(180deg); color: var(--accent);}
+  
+  .qa-a{ display: none; }
+  .qa-item.open .qa-a{ display: block; animation: fadeIn .3s ease; }
+  
+  .qa-a-inner{padding:0 20px 20px 62px;font-size:14px;color:var(--text-muted); text-align: justify; line-height: 1.7;}
+  .qa-a-inner strong{color:var(--text);}
+  .qa-a-inner ul, .qa-a-inner p { margin-top:0; margin-bottom: 10px; }
+  .qa-a-inner pre { margin: 10px 0; padding: 15px; }
+
+  /* ---------- NEW TESTER CHECKLIST ---------- */
+  .tester-checklist-section {
+    background: linear-gradient(145deg, var(--panel), var(--bg));
+    border: 2px solid var(--border);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+    position: relative;
+    padding: 24px 22px;
+    border-radius: 14px;
+    margin-bottom: 20px;
+  }
+  .tester-checklist-section::before {
+    content:''; position:absolute; top:0; left:0; width:100%; height:4px;
+    background: linear-gradient(90deg, var(--safe), var(--accent), var(--danger));
+    border-radius: 12px 12px 0 0;
+  }
+  
+  .audit-card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+    padding: 18px 20px; margin-bottom: 14px; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative; z-index: 1;
+  }
+  .audit-card:last-child { margin-bottom: 0; }
+  .audit-card:hover { transform: translateY(-3px); box-shadow: 0 10px 25px rgba(0,0,0,0.2); border-color: rgba(255,255,255,0.1); }
+  .audit-card h3 { margin: 0 0 14px 0; font-size: 15.5px; color: var(--safe); font-family: var(--mono); display: flex; align-items: center; gap: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+  
+  .check-list { display: flex; flex-direction: column; gap: 8px; }
+  .check-label { display: flex; align-items: flex-start; gap: 14px; cursor: pointer; padding: 10px 14px; border-radius: 8px; transition: background 0.2s ease, transform 0.2s ease; border: 1px solid transparent; }
+  .check-label:hover { background: var(--panel-2); border-color: var(--border); transform: translateX(4px); }
+  .check-input { display: none; }
+  .check-box { width: 20px; height: 20px; border: 2px solid var(--text-muted); border-radius: 5px; flex-shrink: 0; margin-top: 2px; display: flex; align-items: center; justify-content: center; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); background: var(--bg); }
+  .check-input:checked + .check-box { background: var(--safe); border-color: var(--safe); transform: rotate(360deg); }
+  .check-input:checked + .check-box::after { content: '✔'; color: white; font-size: 13px; font-weight: bold; }
+  .check-text { color: var(--text); font-size: 14px; line-height: 1.6; transition: all 0.3s ease; text-align: justify; flex: 1; }
+  .check-input:checked ~ .check-text { color: var(--text-muted); text-decoration: line-through; opacity: 0.6; }
+
+
+
+  @media (max-width:600px){
+    .level-header{padding:14px;gap:10px;}
+    .level-badge{width:30px;height:30px;font-size:13px;}
+    .hero{padding:30px 0 24px;}
+    main{padding:0 14px 10px;}
+    .controls-wrapper { flex-direction: column; align-items: flex-start; gap: 10px; }
+    .scene-line{flex-direction:column;gap:4px;}
+    .qa-a-inner { padding-left: 20px; }
+  }
+  @media (prefers-reduced-motion:reduce){
+    html{scroll-behavior:auto;}
+    *{transition-duration:0.01ms !important; animation: none !important;}
+  }
+  /* ---------- DYNAMIC CYBER BACKGROUND ---------- */
+  .cyber-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+  }
+
+  /* Matrix Dot Grid Overlay with continuous slow drift */
+  .cyber-grid {
+    position: absolute;
+    inset: -120px;
+    background-image: 
+      radial-gradient(rgba(255, 255, 255, 0.12) 1.2px, transparent 1.2px),
+      linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+    background-size: 32px 32px, 96px 96px, 96px 96px;
+    -webkit-mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 100%);
+    mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 100%);
+    opacity: 0.85;
+    animation: gridDrift 60s linear infinite;
+  }
+  :root[data-theme="light"] .cyber-grid {
+    background-image: 
+      radial-gradient(rgba(15, 23, 42, 0.08) 1.2px, transparent 1.2px),
+      linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+    opacity: 0.6;
+  }
+
+  @keyframes gridDrift {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(96px, 96px); }
+  }
+
+  /* Ambient Glowing Floating Orbs */
+  .cyber-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(100px);
+    opacity: 0.35;
+    will-change: transform;
+  }
+  :root[data-theme="light"] .cyber-orb {
+    opacity: 0.18;
+    filter: blur(110px);
+  }
+
+  .orb-1 {
+    width: 650px;
+    height: 650px;
+    background: radial-gradient(circle, #6366f1 0%, rgba(99,102,241,0) 70%);
+    top: -120px;
+    left: -100px;
+    animation: floatOrb1 16s ease-in-out infinite alternate;
+  }
+
+  .orb-2 {
+    width: 700px;
+    height: 700px;
+    background: radial-gradient(circle, #a855f7 0%, rgba(168,85,247,0) 70%);
+    top: 15%;
+    right: -150px;
+    animation: floatOrb2 20s ease-in-out infinite alternate;
+  }
+
+  .orb-3 {
+    width: 560px;
+    height: 560px;
+    background: radial-gradient(circle, #06b6d4 0%, rgba(6,182,212,0) 70%);
+    bottom: -80px;
+    left: 15%;
+    animation: floatOrb3 18s ease-in-out infinite alternate;
+  }
+
+  .orb-4 {
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, #f43f5e 0%, rgba(244,63,94,0) 70%);
+    bottom: 18%;
+    right: 12%;
+    animation: floatOrb4 22s ease-in-out infinite alternate;
+  }
+
+  /* Keyframe Animations for Smooth Floating */
+  @keyframes floatOrb1 {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(120px, 90px) scale(1.15); }
+    100% { transform: translate(-60px, 140px) scale(0.92); }
+  }
+
+  @keyframes floatOrb2 {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(-140px, 110px) scale(1.18); }
+    100% { transform: translate(-80px, -70px) scale(0.9); }
+  }
+
+  @keyframes floatOrb3 {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(90px, -100px) scale(1.14); }
+    100% { transform: translate(-100px, -50px) scale(1.05); }
+  }
+
+  @keyframes floatOrb4 {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(-110px, -80px) scale(1.2); }
+    100% { transform: translate(90px, 70px) scale(0.9); }
+  }
+
+  /* Floating Cyber Data Particles */
+  .cyber-particle {
+    position: absolute;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 0 8px currentColor;
+    opacity: 0;
+    animation: floatParticle 14s infinite ease-in-out;
+  }
+
+  .p-1 { width: 3px; height: 3px; left: 12%; bottom: -20px; color: var(--brand-1); animation-delay: 0s; animation-duration: 15s; }
+  .p-2 { width: 4px; height: 4px; left: 28%; bottom: -20px; color: var(--brand-2); animation-delay: 3s; animation-duration: 18s; }
+  .p-3 { width: 3px; height: 3px; left: 48%; bottom: -20px; color: var(--safe); animation-delay: 6s; animation-duration: 14s; }
+  .p-4 { width: 4px; height: 4px; left: 68%; bottom: -20px; color: var(--danger); animation-delay: 2s; animation-duration: 20s; }
+  .p-5 { width: 3px; height: 3px; left: 84%; bottom: -20px; color: var(--accent); animation-delay: 7s; animation-duration: 16s; }
+  .p-6 { width: 4px; height: 4px; left: 94%; bottom: -20px; color: #38bdf8; animation-delay: 4s; animation-duration: 19s; }
+  .p-7 { width: 3px; height: 3px; left: 38%; bottom: -20px; color: var(--safe); animation-delay: 9s; animation-duration: 17s; }
+  .p-8 { width: 4px; height: 4px; left: 58%; bottom: -20px; color: var(--brand-2); animation-delay: 11s; animation-duration: 21s; }
+
+  @keyframes floatParticle {
+    0% { transform: translateY(0) translateX(0) scale(0.5); opacity: 0; }
+    15% { opacity: 0.8; }
+    85% { opacity: 0.8; }
+    100% { transform: translateY(-105vh) translateX(50px) scale(1.2); opacity: 0; }
+  }
+
+  /* Scanline sweep effect */
+  .cyber-scanline {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 0%, rgba(99, 102, 241, 0.035) 50%, transparent 100%);
+    background-size: 100% 200%;
+    animation: scanSweep 12s linear infinite;
+  }
+
+  @keyframes scanSweep {
+    0% { background-position: 0% 0%; }
+    100% { background-position: 0% 200%; }
+  }
+
+  /* ── REAL-WORLD IMPACT SECTION ── */
+  .impact-section {
+    background: linear-gradient(145deg, var(--panel), var(--bg));
+    border: 2px solid var(--border);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+    position: relative; overflow: hidden;
+    padding: 30px 24px; border-radius: 14px; margin-top: 30px; margin-bottom: 24px;
+    scroll-margin-top: 80px;
+  }
+  .impact-section::before {
+    content:''; position:absolute; top:0; left:0; width:100%; height:4px;
+    background: linear-gradient(90deg, var(--danger), var(--accent), var(--danger));
+  }
+  .impact-card {
+    background: var(--panel); border: 1px solid var(--border); border-left: 4px solid var(--danger);
+    border-radius: 10px; padding: 18px 20px; margin-bottom: 16px; transition: all 0.3s;
+  }
+  .impact-card:last-child{margin-bottom:0;}
+  .impact-card:hover{ transform: translateX(4px); box-shadow: 0 8px 20px rgba(255,60,60,0.08); border-color: rgba(255,255,255,0.1);}
+  .impact-card h3{ margin:0 0 10px; font-size:14.5px; color:var(--danger); font-family:var(--mono); display:flex; align-items:center; gap:10px; text-transform:uppercase; letter-spacing:0.5px;}
+  .impact-card p{margin:0; font-size:14px; color:var(--text); text-align:justify; line-height:1.7;}
+  .impact-card p+p{margin-top:10px;}
+
+  /* Deep Dive Link Design (Matches XSS.html & SQLI.html) */
+  .csp-deep-dive { margin-top: 14px; text-align: left; }
+  .csp-deep-dive a {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--btn-bg, rgba(62, 207, 142, 0.18));
+    color: var(--btn-text, #3ecf8e);
+    border: 1px solid var(--btn-border, rgba(62, 207, 142, 0.45));
+    padding: 6px 14px; border-radius: 20px; font-family: var(--mono); font-weight: 700;
+    font-size: 12px; text-decoration: none; letter-spacing: 0.3px;
+    box-shadow: 0 0 6px var(--btn-glow, rgba(62, 207, 142, 0.2));
+    transition: background-color 0.2s, transform 0.2s, box-shadow 0.2s;
+  }
+  .csp-deep-dive a:hover {
+    background: var(--btn-bg-hover, rgba(62, 207, 142, 0.35));
+    transform: translateY(-1px);
+    box-shadow: 0 0 10px var(--btn-glow-hover, rgba(62, 207, 142, 0.4));
+  }
+  :root[data-theme="light"] .csp-deep-dive a {
+    background: #059669;
+    color: #ffffff;
+    border-color: #059669;
+    box-shadow: 0 0 6px rgba(5, 150, 105, 0.25);
+  }
+  :root[data-theme="light"] .csp-deep-dive a:hover {
+    background: #047857;
+    box-shadow: 0 0 10px rgba(5, 150, 105, 0.4);
+  }
+
+  /* ── Designed and Developed by Footer ── */
+  .modern-footer { padding: 40px 18px 30px; text-align: center; position: relative; z-index: 1; }
+  .footer-badge {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: linear-gradient(145deg, var(--panel-2), var(--panel));
+    padding: 12px 28px; border-radius: 30px; font-family: var(--mono); font-size: 13.5px;
+    color: var(--text-muted); border: 1px solid var(--border);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.25); cursor: default;
+  }
+  .footer-badge:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 30px rgba(239, 68, 68, 0.25);
+    border-color: var(--danger);
+    color: var(--text);
+  }
+  .dev-name {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+    background: linear-gradient(90deg, #3B82F6, #A855F7, #F43F5E, #F59E0B, #3B82F6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    background-size: 200% auto;
+    animation: gradient-flow 4s linear infinite;
+  }
+  @keyframes gradient-flow {
+    0% { background-position: 0% center; }
+    100% { background-position: 200% center; }
+  }
+
+  /* ── SUB-NAV BUTTONS ── */
+  .sub-nav-wrapper {
+    position: relative; background: transparent; border-bottom: none;
+    padding: 16px 20px 0; box-shadow: none;
+  }
+  .sub-nav-bar {
+    max-width: 840px; margin: 0 auto; display: flex; align-items: center;
+    justify-content: space-between; gap: 10px; overflow-x: auto;
+    scrollbar-width: none; -ms-overflow-style: none; padding: 2px 0;
+  }
+  .sub-nav-bar::-webkit-scrollbar { display: none; }
+  .sub-nav-btn {
+    flex: 1 1 0; display: inline-flex; align-items: center; justify-content: center;
+    gap: 8px; background: var(--panel); backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--border); color: var(--text-muted); padding: 9px 14px;
+    border-radius: 24px; text-decoration: none; font-family: var(--mono);
+    font-size: 12.5px; font-weight: 600; white-space: nowrap; transition: all 0.25s ease;
+    box-shadow: var(--shadow-sm);
+  }
+  .sub-nav-btn:hover {
+    color: var(--text); border-color: var(--accent); background: var(--panel-2);
+    transform: translateY(-2px); box-shadow: 0 4px 12px rgba(255, 200, 87, 0.15);
+  }
+  .sub-nav-btn.active {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: var(--panel-2);
+  }
+  .sub-nav-btn.home-nav-btn { border-color: rgba(77, 158, 255, 0.4); color: var(--blue); border-radius: 24px; }
+  .sub-nav-btn.home-nav-btn:hover { border-color: var(--blue); background: var(--blue-bg); color: #fff; box-shadow: 0 4px 12px rgba(77, 158, 255, 0.25); }
+
+  /* ── BOTTOM NAVIGATION ROW ── */
+  .bottom-nav-row {
+    margin-top: 45px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+  }
+  .nav-arrow-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 18px;
+    border-radius: 20px;
+    text-decoration: none;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.25s ease;
+    box-shadow: var(--shadow-sm);
+    white-space: nowrap;
+  }
+  .nav-arrow-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-bg);
+    transform: translateY(-2px);
+  }
+  @media (max-width: 768px) {
+    .bottom-nav-row {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+    }
+    .bottom-nav-row .nav-arrow-btn {
+      justify-content: center;
+      width: 100%;
+      text-align: center;
+      white-space: normal;
+    }
+    .bottom-nav-row .nav-empty {
+      display: none;
+    }
+  }
+
+  /* ── DEFENSE POINT CARDS (Code Fixes section) ── */
+  .defense-points {
+    display: flex; flex-direction: column; gap: 12px; margin-bottom: 4px;
+  }
+  .defense-point {
+    display: flex; gap: 14px; align-items: flex-start;
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px 18px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .defense-point:hover {
+    transform: translateX(4px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+  }
+  .dp-num {
+    width: 36px; height: 36px; border-radius: 50%; border: 2px solid;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 15px; font-weight: 700;
+    flex-shrink: 0; margin-top: 2px;
+  }
+  .dp-body { flex: 1; min-width: 0; }
+  .dp-title {
+    font-family: var(--mono); font-size: 14px; font-weight: 700;
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 8px; letter-spacing: 0.02em;
+  }
+  .dp-icon { font-size: 16px; flex-shrink: 0; }
+  .dp-desc {
+    font-size: 13.8px; color: var(--text); line-height: 1.65; text-align: justify;
+  }
+  .dp-desc code {
+    font-size: 0.84em; padding: 1px 5px; border-radius: 5px;
+  }
+
+</style>
+</head>
+<body data-lang="hi">
+
+<!-- ================= DYNAMIC CYBER BACKGROUND ================= -->
+<div class="cyber-bg" aria-hidden="true">
+  <div class="cyber-orb orb-1"></div>
+  <div class="cyber-orb orb-2"></div>
+  <div class="cyber-orb orb-3"></div>
+  <div class="cyber-orb orb-4"></div>
+  <div class="cyber-grid"></div>
+  <div class="cyber-scanline"></div>
+  <div class="cyber-particle p-1"></div>
+  <div class="cyber-particle p-2"></div>
+  <div class="cyber-particle p-3"></div>
+  <div class="cyber-particle p-4"></div>
+  <div class="cyber-particle p-5"></div>
+  <div class="cyber-particle p-6"></div>
+  <div class="cyber-particle p-7"></div>
+  <div class="cyber-particle p-8"></div>
+</div>
+
+<div class="topbar">
+  <a href="../index.html" class="brand" style="text-decoration:none; color:inherit;" title="Return to Main Hub">
+    <span class="brand-icon">🛡️</span>
+    <span class="brand-text"><code>CSRF :</code> <span class="lang-hi">Cross-Site Request Forgery</span><span class="lang-en">Cross-Site Request Forgery</span></span>
+  </a>
+  <div class="controls-wrapper">
+    <div class="lang-switch-wrapper">
+      <span id="lbl-hi" class="lang-active">Hindi</span>
+      <label class="switch">
+        <input type="checkbox" id="langToggle">
+        <span class="slider"></span>
+      </label>
+      <span id="lbl-en" class="lang-inactive">English</span>
+    </div>
+    <button class="theme-toggle" id="themeBtn">☀️ Light Mode</button>
+  </div>
+</div>
+
+<!-- ================= HORIZONTAL SUB-NAV BAR ================= -->
+<div class="sub-nav-wrapper">
+  <nav class="sub-nav-bar" aria-label="Section Navigation">
+    <a class="sub-nav-btn home-nav-btn" href="../index.html" title="Main Home Page">
+      <span class="sub-nav-icon">🏠</span>
+      <span class="lang-hi">Home</span><span class="lang-en">Home</span>
+    </a>
+    <a class="sub-nav-btn" href="#simulator">
+      <span class="sub-nav-icon">⚡</span>
+      <span class="lang-hi">Simulator</span><span class="lang-en">Simulator</span>
+    </a>
+    <a class="sub-nav-btn" href="#impact">
+      <span class="sub-nav-icon">💥</span>
+      <span class="lang-hi">Attack Vectors</span><span class="lang-en">Attack Vectors</span>
+    </a>
+    <a class="sub-nav-btn" href="#whatiscsrf">
+      <span class="sub-nav-icon">🤔</span>
+      <span class="lang-hi">Concepts</span><span class="lang-en">Concepts</span>
+    </a>
+    <a class="sub-nav-btn" href="#tester-checklist">
+      <span class="sub-nav-icon">📝</span>
+      <span class="lang-hi">Checklist</span><span class="lang-en">Checklist</span>
+    </a>
+  </nav>
+</div>
+
+<main>
+
+  <!-- ================= HERO / COLD OPEN ================= -->
+  <section class="hero" id="hero">
+    <p class="eyebrow"><span class="lang-hi">Web App Security — Ek Live Attack Se Shuruwaat</span><span class="lang-en">Web App Security — Starting With A Live Attack</span></p>
+    <h1 class="title">
+        <span class="lang-hi">Rahul pehle se apne bank account mein logged in hai. Use WhatsApp par kisi ne <span class="highlight-safe">“Free Cashback”</span> ka link bheja. Rahul ne jaise hi link par click kiya, uske bank account se <span class="highlight-danger">₹50,000 deduct ho gaye...</span></span>
+        <span class="lang-en">Rahul is already logged into his bank account. Someone sends him a <span class="highlight-safe">"Free Cashback"</span> link on WhatsApp. As soon as Rahul clicks on the link, <span class="highlight-danger">₹50,000 is deducted from his bank account...</span></span>
+    </h1>
+
+    <div class="scene">
+
+      <!-- Browser chrome header -->
+      <div class="scene-browser-bar">
+        <div class="scene-dots">
+          <div class="scene-dot-r"></div>
+          <div class="scene-dot-y"></div>
+          <div class="scene-dot-g"></div>
+        </div>
+        <div class="scene-tabs">
+          <div class="scene-tab active">🏦 SBI NetBanking</div>
+          <div class="scene-tab inactive">🎁 Free Cashback!</div>
+        </div>
+        <div class="scene-urlbar">
+          <span class="scene-lock">🔒</span>
+          <span>https://sbi.com/dashboard</span>
+        </div>
+      </div>
+
+      <!-- Attack timeline -->
+      <div class="scene-body">
+        <div class="scene-timeline">
+
+          <!-- Step 1 -->
+          <div class="scene-step step-rahul" style="animation-delay:.1s">
+            <div class="scene-step-left">
+              <div class="scene-step-num">1</div>
+              <div class="scene-step-line"></div>
+            </div>
+            <div class="scene-step-right">
+              <div class="scene-actor"><span class="scene-actor-icon">👤</span> RAHUL</div>
+              <div class="scene-card">
+                <span class="lang-hi">Ek tab mein <code>sbi.com</code> (uska bank) mein already logged in hai. Kaam ho gaya, lekin wo tab band nahi karta — sirf minimize kar deta hai.</span>
+                <span class="lang-en">Already logged into <code>sbi.com</code> (his bank) in one tab. Task done — but he doesn't close the tab, just minimizes it.</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 2 -->
+          <div class="scene-step step-rahul" style="animation-delay:.55s">
+            <div class="scene-step-left">
+              <div class="scene-step-num">2</div>
+              <div class="scene-step-line"></div>
+            </div>
+            <div class="scene-step-right">
+              <div class="scene-actor"><span class="scene-actor-icon">💬</span> RAHUL — WHATSAPP</div>
+              <div class="scene-card">
+                <span class="lang-hi">WhatsApp par message aata hai: <code>"🎉 Aapko ₹500 Cashback Mila Hai — Abhi Claim Karo!"</code> Rahul link ko ek naye tab mein khol deta hai.</span>
+                <span class="lang-en">A WhatsApp message arrives: <code>"🎉 You've Received ₹500 Cashback — Claim Now!"</code> Rahul opens the link in a new tab.</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 3 -->
+          <div class="scene-step step-attacker" style="animation-delay:1.05s">
+            <div class="scene-step-left">
+              <div class="scene-step-num">3</div>
+              <div class="scene-step-line"></div>
+            </div>
+            <div class="scene-step-right">
+              <div class="scene-actor"><span class="scene-actor-icon">☠️</span> FREEGIFT.COM — ATTACKER PAGE</div>
+              <div class="scene-card">
+                <span class="lang-hi">Page dikhta toh ek simple cashback-claim jaisa hai — lekin uske HTML ke andar ek invisible <code>&lt;form&gt;</code> chhupa hai, jiska target hai <code>sbi.com/api/transfer-funds</code> endpoint.</span>
+                <span class="lang-en">The page looks like a simple cashback claim — but hidden inside its HTML is an invisible <code>&lt;form&gt;</code>, targeting <code>sbi.com/api/transfer-funds</code>.</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 4 -->
+          <div class="scene-step step-browser" style="animation-delay:1.55s">
+            <div class="scene-step-left">
+              <div class="scene-step-num">4</div>
+              <div class="scene-step-line"></div>
+            </div>
+            <div class="scene-step-right">
+              <div class="scene-actor"><span class="scene-actor-icon">🌐</span> RAHUL'S BROWSER — AUTO-SUBMIT</div>
+              <div class="scene-card">
+                <span class="lang-hi">Page load hote hi JavaScript hidden form submit kar deta hai. Browser dekhta hai ki request <code>sbi.com</code> ko jaa rahi hai — <code>cookie</code> automatically attach ho jaati hai. Ye check nahi hota ki request KIS WEBSITE se aayi.</span>
+                <span class="lang-en">On page load, JavaScript auto-submits the hidden form. The browser sees the destination is <code>sbi.com</code> — and automatically attaches the saved <code>session cookie</code>. It never checks which website originated the request.</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 5 -->
+          <div class="scene-step step-server" style="animation-delay:2.05s">
+            <div class="scene-step-left">
+              <div class="scene-step-num">5</div>
+              <div class="scene-step-line"></div>
+            </div>
+            <div class="scene-step-right">
+              <div class="scene-actor"><span class="scene-actor-icon">🏦</span> SBI.COM — SERVER</div>
+              <div class="scene-card">
+                <span class="lang-hi">Server ko ek fully-authenticated request milti hai — bilkul waisi jaisi Rahul khud "Transfer" button dabakar bhejta. Server ke paas ye jaanne ka koi tarika nahi ki ye request kisi aur site ne karwai hai. Transfer approve ho jaata hai.</span>
+                <span class="lang-en">The server receives a fully-authenticated request — exactly as if Rahul himself hit "Transfer." It has no way to distinguish. The transfer is approved.</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Attack outcome banner -->
+      <div class="scene-outcome">
+        <div class="scene-outcome-icon">💸</div>
+        <div class="scene-outcome-text">
+          <span class="lang-hi">₹50,000 Rahul ke account se deduct ho gaye — bina uski permission ke.</span>
+          <span class="lang-en">₹50,000 deducted from Rahul's account — without his knowledge or consent.</span>
+          <span>Session cookie hijacked via ambient authority. Zero user interaction required.</span>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="intro-block">
+      <p><span class="lang-hi">Rahul ne koi form khud nahi bhara. Koi OTP nahi diya. Password bhi dobara type nahi kiya. Usne sirf ek "cashback" link khola tha, jo bilkul harmless dikh raha tha. Fir bhi uske account se paise nikal gaye. Ye hai <strong>CSRF (Cross-Site Request Forgery) attack</strong> — attacker Rahul ka password ya session KABHI churata nahi. Wo sirf uske ALREADY-LOGGED-IN browser ko use karke, uski taraf se ek request <strong>FORGE (nakli bana request)</strong> kar deta hai.</span>
+      <span class="lang-en">Rahul didn't fill out any form himself. No OTP. Didn't type his password again either. He just opened a "cashback" link that looked completely harmless. And yet, money left his account. This is the real danger of a <strong>CSRF (Cross-Site Request Forgery) attack</strong> — the attacker NEVER steals Rahul's password or session. They simply use his ALREADY-LOGGED-IN browser to <strong>FORGE (create a fake request)</strong> a request on his behalf.</span></p>
+      <p class="roadmap">
+        <span class="lang-hi">Ab rewind karte hain aur samajhte hain: browser cookies is tarah kyun behave karta hai, iske aur kya-kya harm ho sakte hain, developers ne kaunse defense try kiye, aur hackers ne har baar unhe kaise bypass kiya.</span>
+        <span class="lang-en">Now let's rewind and understand: why the browser behaves this way with cookies, what other harm this can cause, which defenses developers tried, and how hackers bypassed each one every time.</span>
+      </p>
+    </div>
+
+    <a class="hero-cta" href="#simulator">⚡ <span class="lang-hi">Iss poore attack ko khud step-by-step simulate karo ↓</span><span class="lang-en">Simulate this entire attack yourself, step-by-step ↓</span></a>
+  </section>
+
+  <!-- ================= REAL-WORLD IMPACT ================= -->
+  <section class="impact-section" id="impact">
+    <div class="sec-head" style="margin-top:0;">
+      <p class="sec-eyebrow"><span class="lang-hi">Isse kya farak padta hai?</span><span class="lang-en">Why does this actually matter?</span></p>
+      <h2>💥 <span class="lang-hi">Real-World Impact — Agar Ye Vulnerability Live Website Mein Ho To Kya Ho Sakta Hai</span><span class="lang-en">Real-World Impact — What Can Happen If A Live Website Has This Bug</span></h2>
+      <p>
+        <span class="lang-hi">Mechanism mein jaane se pehle ye samajhna zaroori hai: agar ek real website mein CSRF bug mil jaaye, to attacker ASAL MEIN kar kya sakta hai? Neeche wo concrete scenarios hain jo real incidents mein baar-baar dekhe gaye hain.</span>
+        <span class="lang-en">Before diving into the mechanism, it's important to understand: if a CSRF bug exists on a real website, what can an attacker ACTUALLY do? Below are concrete scenarios that have repeatedly occurred in real incidents.</span>
+      </p>
+    </div>
+
+    <div class="impact-card">
+      <h3>💸 <span class="lang-hi">1. Unauthorized Fund Transfer (Paisa Transfer Karwana)</span><span class="lang-en">1. Unauthorized Funds Transfer (Stealing Money)</span></h3>
+      <p>
+        <span class="lang-hi">Ye CSRF ka sabse classic aur dangerous impact hai. Agar victim kisi banking portal mein logged in hai, aur attacker use ek attractive bait link (jaise "Claim ₹50,000 Cashback") par bhejta hai, toh page par chhupa hua script bank ke transfer endpoint par background mein authenticated request bhej deta hai. Browser automatically victim ki session cookies attach kar deta hai, aur bina user ke knowledge ke hazaron rupaye attacker ke wallet mein transfer ho jaate hain.</span>
+        <span class="lang-en">This is the most classic and severe impact of CSRF. If a victim is logged into their online bank, and an attacker lures them to an enticing bait link (e.g. "Claim ₹50,000 Cashback"), a hidden script on that page fires an authenticated request to the bank's transfer endpoint. The browser automatically attaches the victim's session cookies, transferring funds to the attacker without the user ever approving it.</span>
+      </p>
+      <div class="csp-deep-dive">
+        <a href="../labs/csrf_funds_transfer.html" target="_blank">
+          <span class="lang-hi">Click here to see the simulation of this attack 💻</span>
+          <span class="lang-en">Click here to see the simulation of this attack 💻</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="impact-card">
+      <h3>🔑 <span class="lang-hi">2. Account Takeover (Email / Password Change)</span><span class="lang-en">2. Account Takeover (Email / Password Change)</span></h3>
+      <p>
+        <span class="lang-hi">Attacker ek aisi cross-site request forge karta hai jo user ka registered email address badal kar attacker ke email par set kar deti hai (<code>POST /api/user/email</code>). Ek baar email change ho gaya, attacker login portal par jaakar "Forgot Password" par click karta hai — reset link attacker ke inbox mein aati hai aur poora account permanently hijack ho jaata hai.</span>
+        <span class="lang-en">The attacker forges a cross-site request that silently updates the victim's registered email address to one owned by the attacker (<code>POST /api/user/email</code>). Once updated, the attacker triggers "Forgot Password" on the login portal — the password reset link arrives directly in the attacker's inbox, leading to complete account takeover.</span>
+      </p>
+    </div>
+
+    <div class="impact-card">
+      <h3>⚙️ <span class="lang-hi">3. Critical Settings & State Modification</span><span class="lang-en">3. Critical Settings & State Modification</span></h3>
+      <p>
+        <span class="lang-hi">SaaS aur Cloud portals mein CSRF ke zariye attacker victim ke account mein apna SSH public key add kar sakta hai, Two-Factor Authentication (2FA) disable kar sakta hai, internal API tokens generate karke leak kar sakta hai, ya normal user account ko Enterprise Admin privileges par elevate kar sakta hai.</span>
+        <span class="lang-en">In SaaS and cloud platforms, CSRF can be abused to inject attacker SSH public keys into developer accounts, disable Two-Factor Authentication (2FA), generate fresh API tokens, or silently escalate standard users to Enterprise Administrator status.</span>
+      </p>
+    </div>
+
+    <div class="impact-card">
+      <h3>📡 <span class="lang-hi">4. Home Router & IoT Device DNS Hijacking</span><span class="lang-en">4. Home Router & IoT Device DNS Hijacking</span></h3>
+      <p>
+        <span class="lang-hi">Bohot se home Wi-Fi routers aur IoT devices default credentials (admin/admin) par chalte hain aur CSRF protection nahi rakhte. Attacker kisi public website par hidden image ya fetch tag daal deta hai jo victim ke local network (<code>http://192.168.1.1/set_dns?primary=attacker_ip</code>) par request bhejta hai. Router ka DNS badal jaata hai aur victim ke poore ghar ke devices ka internet traffic malicious servers par redirect ho jaata hai.</span>
+        <span class="lang-en">Many consumer Wi-Fi routers and IoT devices run on default credentials and lack Anti-CSRF defenses. An attacker embeds a hidden image or fetch tag targeting internal gateway addresses (<code>http://192.168.1.1/set_dns?primary=attacker_ip</code>). When triggered, the router's DNS settings are altered, redirecting the victim's entire local network traffic through attacker-controlled malicious DNS servers.</span>
+      </p>
+      <div class="csp-deep-dive">
+        <a href="../labs/csrf_router_dns_hijack.html" target="_blank">
+          <span class="lang-hi">Click here to see the simulation of this attack 💻</span>
+          <span class="lang-en">Click here to see the simulation of this attack 💻</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="impact-card">
+      <h3>📜 <span class="lang-hi">5. Real-World Example — ING Direct & Netflix CSRF</span><span class="lang-en">5. Real-World Example — ING Direct & Netflix CSRF</span></h3>
+      <p>
+        <span class="lang-hi">2006 mein security researchers ne discover kiya tha ki Netflix ke portal par CSRF bug ki wajah se kisi bhi external site se user ki movie queue modify ki ja sakti thi aur shipping address change kiya ja sakta tha. Ussi dauraan ING Direct banking portal par bhi bina CSRF token ke funds transfer requests allow hoti thi, jisme attackers ne account drains demonstrate kiye the. Iske baad hi modern SameSite cookie aur Anti-CSRF token standard bane.</span>
+        <span class="lang-en">In 2006, researchers uncovered a high-profile CSRF flaw in Netflix where visiting a third-party website could secretly alter a subscriber's DVD queue, change their physical shipping address, or add new login credentials. Similar CSRF flaws were demonstrated against ING Direct and other banks, ultimately driving the industry adoption of Anti-CSRF synchronizer tokens and modern browser SameSite cookie policies.</span>
+      </p>
+    </div>
+  </section>
+
+  <!-- ================= WHAT IS CSRF ================= -->
+  <section id="whatiscsrf">
+    <div class="sec-head">
+      <p class="sec-eyebrow"><span class="lang-hi">Rewind — Part 1</span><span class="lang-en">Rewind — Part 1</span></p>
+      <h2><span class="lang-hi">Ye Hua Kaise? CSRF Ka Asli Mechanism</span><span class="lang-en">How Did This Happen? The Real Mechanism Of CSRF</span></h2>
+    </div>
+
+    <div class="levels">
+      <div class="level-card open" id="level-0" data-level="0">
+        <button class="level-header">
+          <span class="level-badge">🍪</span>
+          <span class="level-titles">
+            <h2><span class="lang-hi">Browser Cookie Bhejte Waqt “request Kahan Se Aayi hai” Nahi Dekhta</span><span class="lang-en">The Browser Doesn't Check "Where It Came From" When Sending A Cookie</span></h2>
+            <p><span class="lang-hi">Root cause, XSS se farak, aur ek tester ke 3 zaroori sawaal</span><span class="lang-en">Root cause, the difference from XSS, and a tester's 3 essential questions</span></p>
+          </span>
+          <span class="level-tag problem"><span class="lang-hi">ROOT CAUSE</span><span class="lang-en">ROOT CAUSE</span></span>
+          <span class="chevron">▾</span>
+        </button>
+        <div class="level-body">
+          <div class="level-inner">
+            <h4><span class="lang-hi">COOKIE KYA HAI AUR BROWSER USE KAISE USE KARTA HAI</span><span class="lang-en">WHAT A COOKIE IS AND HOW THE BROWSER USES IT</span></h4>
+            <p><span class="lang-hi">Cookie ek chhota sa text data hota hai jo user ke login karne ke baad server browser ko <code>Set-Cookie</code> response header ke through bhejta hai, aur browser use save kar leta hai. Uske baad, jab bhi us <strong>SAME domain</strong> par koi request jaati hai, browser automatically wahi cookie request ke saath attach karke bhej deta hai — server ko har request par dobara login karwane ki zaroorat nahi padti, kyunki cookie hi "main already logged in hoon" ka proof ban jaati hai.</span>
+            <span class="lang-en">A Cookie is a small piece of text data that the server sends to the browser (via the <code>Set-Cookie</code> response header) after the user logs in, and the browser saves it. After that, whenever a request goes to that <strong>SAME domain</strong>, the browser automatically attaches that same cookie along with the request — the server doesn't need to make you log in again on every request, because the cookie itself becomes proof that "I'm already logged in."</span></p>
+
+            <hr class="item-divider">
+
+            <h4><span class="lang-hi">YAHI AUTOMATIC ATTACHMENT CSRF KI JAD HAI</span><span class="lang-en">THIS AUTOMATIC ATTACHMENT IS THE ROOT OF CSRF</span></h4>
+            <p><span class="lang-hi">Jab browser decide karta hai ki kis request ke saath kaunsi cookie bhejni hai, wo sirf ek cheez dekhta hai: request <strong>KAHAN JAA RAHI HAI</strong> (destination domain). Wo ye bilkul nahi dekhta ki request <strong>KAHAN SE AA RAHI HAI</strong> — kisi trusted tab se, ya kisi malicious website ke ek chhote se hidden form se. Agar Rahul ke browser mein <code>sbi.com</code> ke liye cookie save hai, toh <code>sbi.com</code> ko jaane wali HAR request — chahe wo asli banking page se ho ya <code>freegift.com</code> ke ek invisible form se — usi cookie ke saath jaayegi.</span>
+            <span class="lang-en">When the browser decides which cookie to send with a request, it looks at exactly one thing: <strong>WHERE the request is GOING</strong> (the destination domain). It does not look at all at <strong>WHERE the request is COMING FROM</strong> — a trusted tab, or a hidden form on some malicious website. If Rahul's browser has a saved cookie for <code>sbi.com</code>, then EVERY request going to <code>sbi.com</code> — whether from the real banking page or from an invisible form on <code>freegift.com</code> — will go out with that same cookie attached.</span></p>
+
+            <div class="callout">
+              <span class="cal-label"><span class="lang-hi">⚠️ ISE "AMBIENT AUTHORITY" KEHTE HAIN</span><span class="lang-en">⚠️ THIS IS CALLED "AMBIENT AUTHORITY"</span></span>
+              <p><span class="lang-hi">Security terminology mein, jab koi credential (jaise cookie) automatically, bina kisi explicit user action ke, har relevant request ke saath attach ho jaaye, use <strong>ambient authority</strong> kehte hain. Password ya API key alag hain — unhe har baar explicitly type ya set karna padta hai. Cookie khud-ba-khud attach hoti hai, isliye browser aur server dono maan lete hain ki request genuine hai — aur wahi assumption CSRF mein galat nikalti hai.</span>
+              <span class="lang-en">In security terminology, when a credential (like a cookie) attaches automatically to every relevant request, without any explicit user action, it's called <strong>ambient authority</strong>. A password or API key are different — they must be explicitly typed or set every single time. A cookie attaches itself automatically, so both the browser and the server assume the request is genuine — and it's exactly that assumption that turns out wrong in CSRF.</span></p>
+            </div>
+
+            <hr class="item-divider">
+
+            <h4><span class="lang-hi">CSRF KAAM KARNE KE LIYE 3 ZAROORI SHART</span><span class="lang-en">3 NECESSARY CONDITIONS FOR CSRF TO WORK</span></h4>
+            <p><span class="lang-hi">Ek web security tester ke nazariye se, kisi bhi endpoint ko CSRF ke liye test karne se pehle ye teen sharton ko check karna zaroori hai:</span>
+            <span class="lang-en">From a web security tester's point of view, before testing any endpoint for CSRF, these three conditions need to be checked:</span></p>
+            <p><strong>1. <span class="lang-hi">RELEVANT ACTION</span><span class="lang-en">RELEVANT ACTION</span></strong> — <span class="lang-hi">kya ye request kuch aisa STATE badalti hai jo attacker ke fayde ka ho (paisa transfer, email change, password change)? Agar request sirf DATA read karti hai (jaise <code>GET /profile</code>), CSRF ka koi practical impact nahi — attacker response padh hi nahi sakta, toh forge karne ka fayda hi nahi.</span><span class="lang-en">does this request change some STATE that benefits the attacker (money transfer, email change, password change)? If the request only READS data (like <code>GET /profile</code>), CSRF has no practical impact — the attacker can't read the response anyway, so there's no point forging it.</span></p>
+            <p><strong>2. <span class="lang-hi">COOKIE-BASED SESSION HANDLING</span><span class="lang-en">COOKIE-BASED SESSION HANDLING</span></strong> — <span class="lang-hi">kya authentication SIRF cookie par depend karta hai? Agar app authentication ke liye ek custom header use karta hai (jaise <code>Authorization: Bearer &lt;token&gt;</code>) jise JavaScript explicitly set karti hai — aur wo cookie mein nahi hai — toh browser wo header automatically attach nahi karega, aur classic CSRF yahan kaam nahi karega.</span><span class="lang-en">does authentication depend ONLY on a cookie? If the app uses a custom header for authentication instead (like <code>Authorization: Bearer &lt;token&gt;</code>) that JavaScript must explicitly set — and it isn't stored in a cookie — the browser won't auto-attach that header, and classic CSRF won't work here.</span></p>
+            <p><strong>3. <span class="lang-hi">NO UNPREDICTABLE PARAMETERS</span><span class="lang-en">NO UNPREDICTABLE PARAMETERS</span></strong> — <span class="lang-hi">kya request ke saare parameters attacker ko pehle se pata hain ya guess kiye ja sakte hain? Agar request mein koi aisi value chahiye jo attacker ko maloom nahi (jaise current password, ya ek session-bound CSRF token), toh attacker poori request bana hi nahi sakta — isi principle par aage ke saare defense based hain.</span><span class="lang-en">are all the request's parameters already known to, or guessable by, the attacker? If the request requires some value the attacker doesn't know (like the current password, or a session-bound CSRF token), the attacker cannot construct the full request at all — every defense covered ahead is built on exactly this principle.</span></p>
+
+            <pre><code>&lt;!-- <span class="lang-hi">freegift.com is hidden form ke zariye ye request forge karta hai</span><span class="lang-en">freegift.com forges this request via a hidden form</span> --&gt;
+&lt;form action="https://sbi.com/api/transfer-funds" method="POST"&gt;
+  &lt;input type="hidden" name="to_account" value="ATK-9921"&gt;
+  &lt;input type="hidden" name="amount" value="50000"&gt;
+&lt;/form&gt;
+&lt;script&gt;document.forms[0].submit();&lt;/script&gt;</code></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+
+  <!-- ================= DEV VS HACKER TIMELINE ================= -->
+  <section id="timeline">
+    
+    <div class="levels">
+      
+      <div style="margin-bottom: 10px; text-align: center; padding: 22px; background: linear-gradient(145deg, var(--panel-2), var(--bg)); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: 0 8px 25px rgba(0,0,0,0.15);">
+        <h3 style="font-family: var(--mono); color: var(--accent); margin: 0 0 8px 0; font-size: 18px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <span class="lang-hi">⚔️ The Evolution of Defence: Fixes & Bypasses</span>
+          <span class="lang-en">⚔️ The Evolution of Defence: Fixes & Bypasses</span>
+        </h3>
+        <p style="font-size: 14px; color: var(--text-muted); margin: 0;">
+          <span class="lang-hi">Kaise developers ne protections lagaye aur kaise attackers ne unhe bypass kiya (Step-by-Step)</span>
+          <span class="lang-en">How developers implemented protections and how attackers bypassed them (Step-by-Step)</span>
+        </p>
+      </div>
+
+      <!-- LEVEL 1 -->
+      <div class="level-card" id="level-1" data-level="1">
+        <button class="level-header">
+          <span class="level-badge">1</span>
+          <span class="level-titles">
+            <h2><span class="lang-hi">Defence 1 — Referer/Origin Header Validation</span><span class="lang-en">Defence 1 — Referer/Origin Header Validation</span></h2>
+            <p><span class="lang-hi">Request kahan se aayi, header dekh kar check karna</span><span class="lang-en">Checking where a request came from, by reading a header</span></p>
+          </span>
+          <span class="level-tag problem"><span class="lang-hi">PROBLEM BAAKI HAI</span><span class="lang-en">PROBLEM REMAINS</span></span>
+          <span class="chevron">▾</span>
+        </button>
+        <div class="level-body">
+          <div class="level-inner">
+            <h4><span class="lang-hi">REFERER AUR ORIGIN HEADER MEIN FARAK</span><span class="lang-en">THE DIFFERENCE BETWEEN REFERER AND ORIGIN HEADERS</span></h4>
+            <p><span class="lang-hi"><code>Origin</code> header sirf <strong>scheme + host + port</strong> batata hai, path nahi. For example, agar request <code>https://evil.com/transfer</code> se aayi hai, to <code>Origin</code> header hoga <code>Origin: https://evil.com</code>. Ye khaas taur par <strong>cross-origin requests</strong>, jaise <code>POST</code>, <code>PUT</code> aur <code>DELETE</code>, mein use hota hai aur server isse check karke dekh sakta hai ki request trusted website se aayi hai ya nahi.</span>
+            <span class="lang-en">The <code>Origin</code> header only tells the <strong>scheme + host + port</strong>, not the path. For example, if a request comes from <code>https://evil.com/transfer</code>, the <code>Origin</code> header will be <code>Origin: https://evil.com</code>. This is specially used in <strong>cross-origin requests</strong>, like <code>POST</code>, <code>PUT</code> and <code>DELETE</code>, and the server can check this to see if the request came from a trusted website.</span></p>
+            <p><span class="lang-hi">Defense idea seedha hai: state-changing request aane par, in headers ko apne khud ke domain se compare karo:</span>
+            <span class="lang-en">The defense idea is straightforward: on a state-changing request, compare these headers to your own domain:</span></p>
+            <pre><code>if (request.headers.origin !== "https://sbi.com") {
+  return reject("Cross-origin request blocked");
+}</code></pre>
+            <div class="callout">
+              <span class="cal-label"><span class="lang-hi">⚠️ PROBLEM — HEADER HAMESHA MAUJOOD NAHI HOTA</span><span class="lang-en">⚠️ PROBLEM — THE HEADER ISN'T ALWAYS PRESENT</span></span>
+              <p><span class="lang-hi">Privacy badhane ke liye aajkal bahut saare Ad-blockers aur VPNs in headers ko raaste mein hi mita (strip) dete hain. Ab server ko ye header milta hi nahi! Agar server strict banega aur bina header wali request ko block karega, toh aam (genuine) users bhi login nahi kar payenge. Is majboori ka fayda utha kar attacker jaanbujh kar in headers ko delete karwa dete hain aur check bypass kar lete hain. Aur haan, agar server code me galti ho (sirf <code>"bank.com"</code> word check kare), toh attacker <code>www.bank.com.attacker.com</code> naam ki website banakar bhi easily dhokha de dete the.</span>
+              <span class="lang-en">To enhance privacy, many modern Ad-blockers and VPNs strip these headers in transit. Now the server doesn't receive the header at all! If the server becomes strict and blocks requests without headers, genuine users won't be able to log in. Attackers exploit this limitation by intentionally stripping the headers to bypass the check. Also, if there's a flaw in the server code (e.g., checking only for the word <code>"bank.com"</code>), attackers can easily deceive it by creating a website named <code>www.bank.com.attacker.com</code>.</span></p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- LEVEL 2 -->
+      <div class="level-card" id="level-2" data-level="2">
+        <button class="level-header">
+          <span class="level-badge">2</span>
+          <span class="level-titles">
+            <h2><span class="lang-hi">Defence 2 — CSRF Token (Synchronizer Token Pattern)</span><span class="lang-en">Defence 2 — CSRF Token (Synchronizer Token Pattern)</span></h2>
+            <p><span class="lang-hi">Ek unpredictable value jo attacker guess ya read nahi kar sakta</span><span class="lang-en">An unpredictable value the attacker can't guess or read</span></p>
+          </span>
+          <span class="level-tag solved"><span class="lang-hi">SOLVED</span><span class="lang-en">SOLVED</span></span>
+          <span class="chevron">▾</span>
+        </button>
+        <div class="level-body">
+          <div class="level-inner">
+            <h4><span class="lang-hi">SYNCHRONIZER TOKEN PATTERN KAISE KAAM KARTA HAI</span><span class="lang-en">HOW THE SYNCHRONIZER TOKEN PATTERN WORKS</span></h4>
+            <p><span class="lang-hi">Server ek random, lambi, guess-na-ho-sakne-wali string generate karta hai, use us user ke session se JODTA hai (server-side store karta hai), aur har state-changing FORM mein ek hidden field ki tarah bhej deta hai:</span>
+            <span class="lang-en">The server generates a random, long, unguessable string, TIES it to that user's session (stores it server-side), and sends it as a hidden field in every state-changing FORM:</span></p>
+            <pre><code>&lt;form action="/api/transfer-funds" method="POST"&gt;
+  &lt;input type="hidden" name="csrf_token" value="8f14e45fceea167a5a36..."&gt;
+  &lt;input type="text" name="amount"&gt;
+&lt;/form&gt;</code></pre>
+            <p><span class="lang-hi">Submit hone par, server submitted token ko us session ke liye stored token se compare karta hai — match na ho toh reject. Attacker ye value kahin se copy nahi kar sakta, kyunki uska apna JavaScript <code>sbi.com</code> ke real page ko cross-origin se READ hi nahi kar sakta (Same-Origin Policy) — isliye wo apne hidden form mein sahi token daal hi nahi sakta.</span>
+            <span class="lang-en">On submit, the server compares the submitted token to the token stored for that session — if it doesn't match, it's rejected. The attacker can't copy this value from anywhere, because their own JavaScript cannot READ <code>sbi.com</code>'s real page cross-origin (the Same-Origin Policy) — so they simply cannot put the correct token into their hidden form.</span></p>
+            <div class="callout">
+              <span class="cal-label"><span class="lang-hi">⚠️ IMPLEMENTATION PITFALLS — CONCEPT NAHI, LAAGU KARNE KI GALTIYAN</span><span class="lang-en">⚠️ IMPLEMENTATION PITFALLS — NOT THE CONCEPT, BUT MISTAKES IN APPLYING IT</span></span>
+              <p><strong><span class="lang-hi">Session se bound nahi</span><span class="lang-en">Not bound to the session</span></strong> — <span class="lang-hi">agar server sirf ye check karta hai ki token "ek valid-looking token hai" (jaise, koi bhi token jo database mein exist karta ho), attacker apne HI account se ek token le kar victim ki forged request mein daal sakta hai.</span><span class="lang-en">if the server only checks that the token "is a valid-looking token" (e.g., any token that exists in the database), the attacker can grab a token from their OWN account and put it into the victim's forged request.</span></p>
+              <p><strong><span class="lang-hi">GET URL mein leak</span><span class="lang-en">Leaking via a GET URL</span></strong> — <span class="lang-hi">agar token query parameter ke through bheja jaata hai (<code>?csrf_token=...</code>), wo browser history, server access-logs, aur third-party <code>Referer</code> header (agar page par koi external resource load hoti hai) mein leak ho sakta hai.</span><span class="lang-en">if the token is sent as a query parameter (<code>?csrf_token=...</code>), it can leak into browser history, server access logs, and a third-party <code>Referer</code> header (if the page loads any external resource).</span></p>
+              <p><strong><span class="lang-hi">Inconsistent coverage</span><span class="lang-en">Inconsistent coverage</span></strong> — <span class="lang-hi">Ye idea isiliye nahi chal paaya kyunki ise server-side store karna padta tha aur har ek form ke liye CSRF check logic baar baar likhna padta tha jisme developer se mistake hone ke zyada chances the.</span><span class="lang-en">This idea failed to scale well because tokens had to be stored server-side, and developers had to repeatedly write CSRF check logic for every single form, which significantly increased the chances of developer mistakes.</span></p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- LEVEL 3 -->
+      <div class="level-card" id="level-3" data-level="3">
+        <button class="level-header">
+          <span class="level-badge">3</span>
+          <span class="level-titles">
+            <h2><span class="lang-hi">Defence 3 — SameSite Cookie Attribute (Lax)</span><span class="lang-en">Defence 3 — SameSite Cookie Attribute (Lax)</span></h2>
+            <p><span class="lang-hi">Defense ab application code se hatkar browser mein chali gayi</span><span class="lang-en">The defense moved from application code into the browser itself</span></p>
+          </span>
+          <span class="level-tag problem"><span class="lang-hi">PROBLEM BAAKI HAI</span><span class="lang-en">PROBLEM REMAINS</span></span>
+          <span class="chevron">▾</span>
+        </button>
+        <div class="level-body">
+          <div class="level-inner">
+            <h4><span class="lang-hi">SAMESITE ATTRIBUTE KE TEEN VALUES</span><span class="lang-en">THE THREE VALUES OF THE SAMESITE ATTRIBUTE</span></h4>
+            <p><span class="lang-hi">Ye ek cookie attribute hai — server <code>Set-Cookie</code> header mein ye bataata hai ki browser is cookie ko CROSS-SITE requests ke saath bheje ya nahi:</span>
+            <span class="lang-en">This is a cookie attribute — the server states in the <code>Set-Cookie</code> header whether the browser should send this cookie with CROSS-SITE requests or not:</span></p>
+            <pre><code>Set-Cookie: session=abc123; SameSite=Lax; Secure; HttpOnly</code></pre>
+            
+            <div style="margin-bottom: 15px;">
+              <strong><code>Strict</code></strong> — <span class="lang-hi">Cookie sirf tab jaati hai jab request usi site ke andar se ho. Kisi bhi doosri site se aane wali request ke saath — chahe wo sirf ek link click karke bhi aayi ho — cookie bilkul nahi jaati. Example: Agar aap <code>bank.com</code> pe login hain aur kisi email mein diye gaye <code>bank.com</code> link pe click karte hain, to bhi cookie nahi jaayegi — aapko dubara login karna pad sakta hai.</span><span class="lang-en">The cookie is only sent when the request originates from within the same site. It is never sent with requests coming from any other site — even if it's just clicking a link. Example: If you are logged into <code>bank.com</code> and click a <code>bank.com</code> link in an email, the cookie won't go — you might have to log in again.</span>
+            </div>
+            
+            <hr class="item-divider">
+            
+            <div style="margin-bottom: 15px;">
+              <strong><code>Lax</code></strong> — <span class="lang-hi">Cookie tab nahi jaati jab koi doosri site background mein silently request bhejti hai (jaise image load, hidden form, ya fetch). Lekin agar aap khud kisi link pe click karke ya URL type karke us site pe jaate hain (top-level navigation) aur request simple <code>GET</code> ho, to cookie chali jaati hai. Saath hi, agar request usi site ke kisi subdomain se aa rahi hai (jaise <code>app.example.com</code> se <code>api.example.com</code> ko request), to use cross-site nahi maana jaata — cookie us case mein bhi chali jaati hai, chahe wo background request ho ya navigation. Ye browsers ka default hai. Example: <code>login.example.com</code> se <code>api.example.com</code> ko fetch request bhejne par cookie chali jaayegi, kyunki dono ek hi "site" (<code>example.com</code>) ke hisse hain — ye same-site request hai, cross-site nahi.</span><span class="lang-en">The cookie is not sent when another site sends a request silently in the background (like an image load, hidden form, or fetch). But if you manually click a link or type a URL to go to that site (top-level navigation) and the request is a simple <code>GET</code>, the cookie is sent. Also, if the request comes from a subdomain of the same site (like a request from <code>app.example.com</code> to <code>api.example.com</code>), it's not considered cross-site — the cookie is sent in that case too, whether it's a background request or navigation. This is the browser default. Example: sending a fetch request from <code>login.example.com</code> to <code>api.example.com</code> will send the cookie, because both are part of the same "site" (<code>example.com</code>) — it's a same-site request, not cross-site.</span>
+            </div>
+            
+            <hr class="item-divider">
+            
+            <div>
+              <strong><code>None</code></strong> — <span class="lang-hi">Purana/original behavior — cookie har jagah jaati hai, chahe request kahin se bhi aayi ho (image, iframe, form, fetch — sab jagah). Isko safe banane ke liye <code>Secure</code> flag zaroori hai (yani cookie sirf HTTPS pe hi bheji jaaye). Example: Agar ye set ho, to attacker ki site se bhi silently forged request ke saath cookie chali jaayegi — CSRF ka poora risk wapas aa jaata hai.</span><span class="lang-en">The old/original behavior — the cookie goes everywhere, regardless of where the request came from (image, iframe, form, fetch — everywhere). To make this safe, the <code>Secure</code> flag is required (meaning the cookie is only sent over HTTPS). Example: If this is set, the cookie will be sent even with a silently forged request from the attacker's site — the full risk of CSRF comes back.</span>
+            </div>
+
+            <p style="margin-top: 18px;"><span class="lang-hi">Browsers ne <strong>Lax</strong> ko default isliye banaya kyunki <strong>Strict</strong> normal cross-site linking ko tod deta — jaise Google search result se click karke kisi logged-in site par jaana, ya ek external link se apni site par aana, in dono mein user ko LOGGED-OUT dikhna galat UX hota.</span>
+            <span class="lang-en">Browsers made <strong>Lax</strong> the default because <strong>Strict</strong> would break normal cross-site linking — like clicking through from a Google search result to a site you're logged into, or arriving at your site from an external link; in both cases, showing the user as LOGGED-OUT would be broken UX.</span></p>
+            
+            <div class="callout">
+              <span class="cal-label"><span class="lang-hi">⚠️ Lax mein bache hue Problems:</span><span class="lang-en">⚠️ Problems remaining in Lax:</span></span>
+              <p><span class="lang-hi"><strong>Problem 1 — GET wali top-level navigation</strong><br>
+              Attacker ek hidden form ya auto-redirect link banata hai jo user ko seedha <code>sbi.com</code> pe <code>GET</code> request ke saath le jaata hai. Ye ek normal navigation lagti hai (jaise link click karna), isliye Lax ise allow kar deta hai aur cookie chali jaati hai. Problem tab hoti hai jab koi state-changing action (jaise fund transfer, password change) galti se <code>GET</code> method accept kar le — aisi situation mein attacker isi navigation trick se attack kar sakta hai.<br>
+              Simple line: Agar sensitive action <code>GET</code> se ho sakta hai, to Lax use CSRF se nahi bacha payega.</span>
+              <span class="lang-en"><strong>Problem 1 — Top-level GET navigation</strong><br>
+              The attacker creates a hidden form or auto-redirect link that takes the user straight to <code>sbi.com</code> with a <code>GET</code> request. This looks like a normal navigation (like clicking a link), so Lax allows it and the cookie goes through. The problem occurs when a state-changing action (like fund transfer, password change) mistakenly accepts the <code>GET</code> method — in such a situation, the attacker can use this exact navigation trick to attack.<br>
+              Simple line: If a sensitive action can be done via <code>GET</code>, Lax won't be able to protect it from CSRF.</span></p>
+              
+              <p><span class="lang-hi"><strong>Problem 2 — Compromised subdomain</strong><br>
+              SameSite "site" ko domain ke base part se define karta hai — matlab <code>a.sbi.com</code> aur <code>b.sbi.com</code> dono ek hi "site" maane jaate hain. Agar attacker kisi ek subdomain (<code>a.sbi.com</code>) ko hack/compromise kar le, to wahan se bheji gayi request bhi "same-site" hi treat hogi — aur SameSite=Lax use block nahi karega.<br>
+              Simple line: Ek weak/compromised subdomain pura SameSite protection bypass kar sakta hai.</span>
+              <span class="lang-en"><strong>Problem 2 — Compromised subdomain</strong><br>
+              SameSite defines "site" based on the base part of the domain — meaning <code>a.sbi.com</code> and <code>b.sbi.com</code> are both considered the same "site". If an attacker hacks/compromises one subdomain (<code>a.sbi.com</code>), a request sent from there will also be treated as "same-site" — and SameSite=Lax will not block it.<br>
+              Simple line: A weak/compromised subdomain can bypass the entire SameSite protection.</span></p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- LEVEL 4 -->
+      <div class="level-card" id="level-4" data-level="4">
+        <button class="level-header">
+          <span class="level-badge">4</span>
+          <span class="level-titles">
+            <h2><span class="lang-hi">Defence 4 — Master Fix: SameSite=Strict + Token + Custom Header</span><span class="lang-en">Defence 4 — Master Fix: SameSite=Strict + Token + Custom Header</span></h2>
+            <p><span class="lang-hi">Teen alag-alag layers, teeno ka problem ek dusre se cover ho jaata hai</span><span class="lang-en">Three separate layers, each one's gap covered by another</span></p>
+          </span>
+          <span class="level-tag solved"><span class="lang-hi">MASTER FIX</span><span class="lang-en">MASTER FIX</span></span>
+          <span class="chevron">▾</span>
+        </button>
+        <div class="level-body">
+          <div class="level-inner">
+            <h4><span class="lang-hi">LAYER 1 — SAMESITE=STRICT</span><span class="lang-en">LAYER 1 — SAMESITE=STRICT</span></h4>
+            <p><span class="lang-hi">Defence 3 ka top-level-GET-navigation problem band karne ke liye, sensitive/state-changing actions ke session cookie par <code>Strict</code> use karo — ab cookie kisi bhi cross-site request (top-level navigation samet) ke saath bilkul nahi jaayegi.</span>
+            <span class="lang-en">To close Defence 3's top-level-GET-navigation gap, use <code>Strict</code> on the session cookie for sensitive/state-changing actions — now the cookie won't go out with any cross-site request at all, including top-level navigation.</span></p>
+
+            <h4><span class="lang-hi">LAYER 2 — DOUBLE-SUBMIT COOKIE PATTERN</span><span class="lang-en">LAYER 2 — DOUBLE-SUBMIT COOKIE PATTERN</span></h4>
+            <p><span class="lang-hi">Server ek random token do jagah bhejta hai: pehla cookie ki tarah, jise browser automatically har request ke saath attach kar deta hai, aur doosra response body ya meta-tag mein, jise page ki JavaScript padh kar explicitly request ke form field ya header mein attach karti hai.
+            Server request accept tabhi karta hai jab dono values match karein.
+            Ye secure kyun hai — SOP ki wajah se:
+            Attacker apni site (<code>evil.com</code>) se forged request to bhej sakta hai, aur cookie bhi browser automatically attach kar dega (kyunki cookies domain-based hain, request kahin se bhi trigger ho). Lekin attacker ko doosri value (jo JS explicitly attach karti hai) khud set karni padegi apne forged request mein — aur uske liye usse pehle asal cookie ki value pata honi chahiye.
+            Yahi par <strong>Same-Origin Policy (SOP)</strong> kaam karti hai: SOP browser ka rule hai ki ek origin ki JavaScript sirf usi origin ka data read kar sakti hai. Isliye <code>evil.com</code> ki JavaScript <code>sbi.com</code> ki cookie ko read nahi kar sakti — chahe cookie automatically request ke saath chali bhi jaaye, uski value attacker ki JS ke liye invisible rehti hai.
+            Result: Attacker cookie to bhijwa sakta hai (uska control nahi), par matching doosri value bhejne ke liye jo asal cookie value chahiye, wo SOP ki wajah se kabhi mil hi nahi sakti — isliye server ka match-check fail ho jaata hai aur forged request reject ho jaati hai.</span>
+            <span class="lang-en">The server sends a random token in two places: first as a cookie, which the browser automatically attaches to every request, and second in the response body or a meta-tag, which the page's JavaScript reads and explicitly attaches to the request's form field or header.
+            The server only accepts the request when both values match.
+            Why this is secure — because of SOP:
+            The attacker can send a forged request from their site (<code>evil.com</code>), and the browser will automatically attach the cookie (because cookies are domain-based, regardless of where the request is triggered). But the attacker has to manually set the second value (which JS explicitly attaches) in their forged request — and for that, they first need to know the actual cookie's value.
+            This is where the <strong>Same-Origin Policy (SOP)</strong> comes into play: SOP is a browser rule stating that JavaScript from one origin can only read data from that same origin. Therefore, <code>evil.com</code>'s JavaScript cannot read <code>sbi.com</code>'s cookie — even if the cookie goes with the request automatically, its value remains invisible to the attacker's JS.
+            Result: The attacker can send the cookie (they don't control that), but to send the matching second value, they need the actual cookie value, which they can never get due to SOP — so the server's match-check fails and the forged request is rejected.</span></p>
+
+            <h4><span class="lang-hi">LAYER 3 — CUSTOM HEADER REQUIREMENT</span><span class="lang-en">LAYER 3 — CUSTOM HEADER REQUIREMENT</span></h4>
+            <p><span class="lang-hi">Server ye bhi require karta hai ki request mein ek custom header ho (jaise <code>X-Csrf-Token</code>). Ek plain HTML <code>&lt;form&gt;</code> KABHI custom header set nahi kar sakta — sirf JavaScript ka <code>fetch</code>/<code>XHR</code> ye kar sakta hai. Aur jab attacker ka cross-origin JS custom header ke saath fetch karne ki koshish karta hai, browser pehle ek <strong>CORS preflight</strong> (<code>OPTIONS</code>) request bhejta hai:</span>
+            <span class="lang-en">The server also requires the request to carry a custom header (like <code>X-Csrf-Token</code>). A plain HTML <code>&lt;form&gt;</code> can NEVER set a custom header — only JavaScript's <code>fetch</code>/<code>XHR</code> can. And when the attacker's cross-origin JS tries to fetch with a custom header, the browser first sends a <strong>CORS preflight</strong> (<code>OPTIONS</code>) request:</span></p>
+            <pre><code>OPTIONS /api/transfer-funds HTTP/1.1
+Origin: https://freegift.com
+Access-Control-Request-Headers: x-csrf-token
+
+<span class="lang-hi">-- sbi.com ka server jawab deta hai --</span><span class="lang-en">-- sbi.com's server responds --</span>
+HTTP/1.1 403 Forbidden
+<span class="lang-hi">(freegift.com is server ki allowed-origins list mein nahi hai)</span><span class="lang-en">(freegift.com is not in the server's allowed-origins list)</span></code></pre>
+            <p><span class="lang-hi">Ek legitimate server ke paas attacker ke random domain ko allow karne ki koi wajah hi nahi hoti, isliye preflight fail hota hai aur actual request kabhi bheji hi nahi jaati.</span>
+            <span class="lang-en">A legitimate server has no reason to allow the attacker's random domain, so the preflight fails and the actual request never even gets sent.</span></p>
+
+            <div class="callout fixnote">
+              <span class="cal-label"><span class="lang-hi">✅ HAR PICHLE PROBLEM KO YE KAISE SOLVE KARTA HAI</span><span class="lang-en">✅ HOW THIS CLOSES EVERY PREVIOUS PROBLEM</span></span>
+              <p><span class="lang-hi">Hidden Form (POST ya GET) — Strict ne cookie hi rok di, aur form custom header set nahi kar sakta. Background Fetch — same-origin nahi hai, cookie phir se rukti hai, aur custom header preflight par hi reject ho jaata hai.</span>
+              <span class="lang-en">Hidden Form (POST or GET) — Strict blocks the cookie outright, and the form can't set the custom header anyway. Background Fetch — not same-origin, the cookie is blocked again, and the custom header gets rejected right at the preflight.</span></p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- LEVEL 5 -->
+      <div class="level-card" id="level-5" data-level="5">
+        <button class="level-header">
+          <span class="level-badge">⚖️</span>
+          <span class="level-titles">
+            <h2><span class="lang-hi">Special Case — Session Cookie Vs CSRF Token: XSS Trade-off</span><span class="lang-en">Special Case — Session Cookie Vs CSRF Token: The XSS Trade-off</span></h2>
+            <p><span class="lang-hi">Ye poora defense stack sirf CROSS-ORIGIN attacks ke against hai</span><span class="lang-en">This entire defense stack only protects against CROSS-ORIGIN attacks</span></p>
+          </span>
+          <span class="level-tag concept"><span class="lang-hi">SPECIAL CASE</span><span class="lang-en">SPECIAL CASE</span></span>
+          <span class="chevron">▾</span>
+        </button>
+        <div class="level-body">
+          <div class="level-inner">
+            <p><span class="lang-hi">Ab tak jitne bhi defense discuss kiye — Referer/Origin check, CSRF Token, SameSite, Double-Submit — sabki EK common assumption hai: attacker ka code ek ALAG origin (evil site) se chal raha hai. Ye assumption tab TOOT jaati hai jab <code>sbi.com</code> khud kahin XSS-vulnerable ho.</span>
+            <span class="lang-en">Every defense discussed so far — Referer/Origin check, CSRF Token, SameSite, Double-Submit — shares ONE common assumption: the attacker's code is running from a DIFFERENT origin (an evil site). That assumption BREAKS the moment <code>sbi.com</code> itself has an XSS vulnerability somewhere.</span></p>
+
+            <h4><span class="lang-hi">AGAR XSS EXIST KARTA HAI TOH KYA HOTA HAI</span><span class="lang-en">WHAT HAPPENS IF XSS EXISTS</span></h4>
+            <p><span class="lang-hi">Attacker ka injected JavaScript ab <code>sbi.com</code> ke SAME-ORIGIN par chal raha hai — bilkul waisa jaisa khud Rahul ka legitimate JavaScript chalta. Isse do cheezein badal jaati hain:</span>
+            <span class="lang-en">The attacker's injected JavaScript now runs on <code>sbi.com</code>'s SAME origin — exactly like Rahul's own legitimate JavaScript would. This changes two things:</span></p>
+            <p><strong><span class="lang-hi">CSRF Token ab secret nahi raha</span><span class="lang-en">The CSRF Token is no longer a secret</span></strong> — <span class="lang-hi">Same-Origin Policy (SOP) jo attacker ko response PADHNE se rokti thi, ab kaam nahi karti, kyunki attacker ka code khud usi origin par hai. Wo seedha DOM se hidden token field ki value nikal sakta hai.</span><span class="lang-en">the Same-Origin Policy (SOP) that stopped the attacker from READING the response no longer applies, because the attacker's code is on that exact origin. It can pull the hidden token field's value straight out of the DOM.</span></p>
+            <p><strong><span class="lang-hi">Cookie bhi normally attach hoti hai</span><span class="lang-en">The Cookie also attaches normally</span></strong> — <span class="lang-hi">SameSite sirf CROSS-site requests ko block karta hai. Attacker ka script <code>sbi.com</code> ke andar se hi ek SAME-site request bhej raha hai — SameSite yahan bilkul irrelevant hai, cookie automatically chali jaati hai.</span><span class="lang-en">SameSite only blocks CROSS-site requests. The attacker's script is sending a SAME-site request from inside <code>sbi.com</code> itself — SameSite is completely irrelevant here, the cookie attaches automatically.</span></p>
+            <pre><code>// <span class="lang-hi">XSS-injected script, sbi.com ke same origin par run ho raha hai</span><span class="lang-en">XSS-injected script, running on sbi.com's own origin</span>
+const token = document.querySelector('[name=csrf_token]').value;
+fetch('/api/transfer-funds', {
+  method: 'POST',
+  headers: {'X-Csrf-Token': token},   // <span class="lang-hi">ab ye bhi attacker ko pata hai</span><span class="lang-en">now the attacker knows this too</span>
+  credentials: 'same-origin',
+  body: 'to_account=ATK-9921&amount=50000'
+});</code></pre>
+            <div class="callout">
+              <span class="cal-label"><span class="lang-hi">⚠️ ISKA MATLAB YE NAHI KI CSRF DEFENSE BEKAR HAI</span><span class="lang-en">⚠️ THIS DOESN'T MEAN CSRF DEFENSES ARE USELESS</span></span>
+              <p><span class="lang-hi">CSRF defense apna kaam — cross-origin request forgery rokna — bilkul theek se karta hai. Wo XSS ko rokne ke liye kabhi design hua hi nahi tha. Dono vulnerabilities alag threat models address karti hain, aur dono ki apni defenses zaroori hain — ek doosri ka substitute nahi ban sakti.</span>
+              <span class="lang-en">The CSRF defense does its actual job — stopping cross-origin request forgery — perfectly well. It was never designed to stop XSS. Both vulnerabilities address different threat models, and both need their own defenses — neither is a substitute for the other.</span></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── VULNERABLE VS SECURE CODE IMPLEMENTATIONS ── -->
+  <section class="sec-head" id="code-fixes">
+    <div class="sec-eyebrow"><span class="lang-hi">Code Level Fixes</span><span class="lang-en">Code Level Fixes</span></div>
+    <h2><span class="lang-hi">Code Level Fixes: Vulnerable vs. Secure Code Implementations</span><span class="lang-en">Code Level Fixes: Vulnerable vs. Secure Code Implementations</span></h2>
+    <!-- Intro -->
+    <p style="max-width:100%; text-align:justify; margin-bottom:20px;">
+      <span class="lang-hi">CSRF attacks isliye safal hote hain kyunki browsers har cross-site request ke sath user ki saved cookies ko automatically attach kar dete hain (<em>Ambient Authority</em>). Simple Referer/Origin headers par rely karna fragile hai — proxies unhe strip karte hain aur top-level GET navigations pe Origin header aata hi nahi. Production-grade defense ke liye neeche <strong>4 layered controls</strong> zaroori hain:</span>
+      <span class="lang-en">CSRF attacks succeed because browsers automatically attach session cookies to every cross-site request (<em>ambient authority</em>). Relying on Referer/Origin headers alone is fragile — proxies strip them and top-level GET navigations omit Origin entirely. Modern production-grade defense requires <strong>4 layered controls</strong>:</span>
+    </p>
+
+    <!-- 4 Defense Point Cards -->
+    <div class="defense-points">
+
+      <div class="defense-point">
+        <div class="dp-num" style="background:rgba(255,200,87,0.12);color:var(--accent);border-color:var(--accent);">1</div>
+        <div class="dp-body">
+          <div class="dp-title" style="color:var(--accent);">
+            <span class="dp-icon">🔑</span>
+            <span class="lang-hi">Anti-CSRF Synchronizer Token Pattern</span>
+            <span class="lang-en">Anti-CSRF Synchronizer Token Pattern</span>
+          </div>
+          <div class="dp-desc">
+            <span class="lang-hi">Har authenticated user session ke liye ek <strong>cryptographically secure, unpredictable random token</strong> generate karo. Ise HTML forms mein hidden field (<code>_csrf</code>) ya AJAX/Fetch requests mein custom header (<code>X-CSRF-Token</code>) ke through bhejo. Server har state-changing <code>POST</code> / <code>PUT</code> / <code>DELETE</code> / <code>PATCH</code> request par is token ko validate kare — bina valid token ke request reject ho.</span>
+            <span class="lang-en">Generate a <strong>cryptographically unpredictable, session-bound random token</strong> for every authenticated user. Embed it in HTML forms as a hidden field (<code>_csrf</code>) or dispatch it via a custom request header (<code>X-CSRF-Token</code>) for AJAX/Fetch calls. The server must strictly validate this token on every state-changing <code>POST</code> / <code>PUT</code> / <code>DELETE</code> / <code>PATCH</code> — requests without a valid token are rejected outright.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="defense-point">
+        <div class="dp-num" style="background:rgba(77,158,255,0.12);color:var(--blue);border-color:var(--blue);">2</div>
+        <div class="dp-body">
+          <div class="dp-title" style="color:var(--blue);">
+            <span class="dp-icon">🍪</span>
+            <span class="lang-hi">SameSite Cookie Attribute Enforcement</span>
+            <span class="lang-en">SameSite Cookie Attribute Enforcement</span>
+          </div>
+          <div class="dp-desc">
+            <span class="lang-hi">Authentication cookies par <code>SameSite=Lax</code> ya <code>SameSite=Strict</code> ke saath <code>Secure</code> aur <code>HttpOnly</code> flags lagao. Isse cross-site requests par browser level par hi ambient session cookies attach nahi hongi — request server tak pahunchne se pehle hi browser block kar deta hai. <code>Strict</code> mode zyada secure hai lekin cross-origin navigations ko bhi block karta hai.</span>
+            <span class="lang-en">Flag authentication cookies with <code>SameSite=Lax</code> or <code>SameSite=Strict</code> alongside <code>Secure</code> and <code>HttpOnly</code>. This ensures ambient session cookies are never attached to cross-site subrequests at the browser level — the browser itself blocks them before the request reaches your server. <code>Strict</code> is stronger but also blocks cross-origin top-level navigations.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="defense-point">
+        <div class="dp-num" style="background:rgba(62,207,142,0.12);color:var(--safe);border-color:var(--safe);">3</div>
+        <div class="dp-body">
+          <div class="dp-title" style="color:var(--safe);">
+            <span class="dp-icon">🔄</span>
+            <span class="lang-hi">Double-Submit Cookie Pattern <em style="font-size:11px;font-weight:400;opacity:0.7;">(Stateless APIs)</em></span>
+            <span class="lang-en">Double-Submit Cookie Pattern <em style="font-size:11px;font-weight:400;opacity:0.7;">(Stateless APIs)</em></span>
+          </div>
+          <div class="dp-desc">
+            <span class="lang-hi">Stateless architectures ke liye: server ek cryptographically signed token ko <strong>cookie aur request header dono mein</strong> bhejta hai. Cross-site attacker cookie automatically bhijwa to sakta hai (browser karta hai), lekin header mein match karne wali value <strong>Same-Origin Policy (SOP)</strong> ki wajah se read ya set nahi kar sakta — isliye server ka match-check fail ho jaata hai aur forged request reject hoti hai.</span>
+            <span class="lang-en">For stateless or decoupled API architectures: send a cryptographically signed token in <strong>both a cookie and a request header</strong>. A cross-site attacker can force the browser to send the cookie, but <strong>Same-Origin Policy (SOP)</strong> prevents them from reading or setting the matching header value — so the server's comparison fails and the forged request is rejected.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="defense-point">
+        <div class="dp-num" style="background:rgba(255,107,91,0.12);color:var(--danger);border-color:var(--danger);">4</div>
+        <div class="dp-body">
+          <div class="dp-title" style="color:var(--danger);">
+            <span class="dp-icon">🔒</span>
+            <span class="lang-hi">Re-Authentication / Step-Up Auth</span>
+            <span class="lang-en">Re-Authentication / Step-Up Auth</span>
+          </div>
+          <div class="dp-desc">
+            <span class="lang-hi">High-risk actions — jaise <strong>password change, funds transfer, email update, 2FA disable</strong> — ke liye re-authentication ya secondary OTP mandatory karo. Isse CSRF bypass hone par bhi asal user ki explicit consent ke bina action complete nahi ho sakta. Ye last-resort safety net hai jo baaki teeno defenses ke bypass hone par bhi protect karta hai.</span>
+            <span class="lang-en">For high-risk actions — <strong>password changes, fund transfers, email updates, 2FA disable</strong> — mandate re-authentication or a secondary out-of-band OTP. Even if all other CSRF defenses are bypassed, the attacker cannot complete the action without the real user's explicit re-confirmation. This is the last-resort safety net of defence-in-depth.</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <p style="max-width:100%; text-align:justify; margin-top:20px; font-size:14px; color:var(--text-muted);">
+      <span class="lang-hi">Neeche Node.js (Express) aur Python / Flask (Flask-WTF) ke real-world <strong style="color:var(--danger)">vulnerable</strong> setups aur unke <strong style="color:var(--safe)">production-grade secure</strong> implementations diye gaye hain:</span>
+      <span class="lang-en">Below are real-world <strong style="color:var(--danger)">vulnerable</strong> setups and their <strong style="color:var(--safe)">production-grade secure</strong> implementations across Node.js (Express) and Python (Flask):</span>
+    </p>
+  </section>
+
+  <!-- NODE.JS CODE FIX DROPDOWN -->
+  <div class="level-card" style="margin-bottom: 16px;">
+    <button class="level-header" type="button" onclick="this.closest('.level-card').classList.toggle('open')">
+      <span class="level-badge" style="background:rgba(104, 160, 99, 0.15); color:#68a063; border-color:#68a063;">JS</span>
+      <span class="level-titles">
+        <h2>
+          <span class="lang-hi">1. Node.js (Express, Anti-CSRF Synchronizer Tokens &amp; SameSite Cookies)</span>
+          <span class="lang-en">1. Node.js (Express, Anti-CSRF Synchronizer Tokens &amp; SameSite Cookies)</span>
+        </h2>
+        <p>
+          <span class="lang-hi">Synchronizer token validation, SameSite=Lax/Strict cookie isolation, aur double-submit API protection</span>
+          <span class="lang-en">Synchronizer token validation, SameSite=Lax/Strict cookie isolation, and double-submit API protection</span>
+        </p>
+      </span>
+      <span class="level-tag solved"><span class="lang-hi">SECURE PATTERN</span><span class="lang-en">SECURE PATTERN</span></span>
+      <span class="chevron">▾</span>
+    </button>
+    <div class="level-body">
+      <div class="level-inner">
+        <pre><code>// =========================================================================
+// 1. Node.js (Express Production CSRF Defense Implementation)
+// =========================================================================
+
+const express = require('express');
+const session = require('express-session');
+const cookieParser = require('cookie-parser');
+const crypto = require('crypto');
+const app = express();
+
+app.use(express.urlencoded({ extended: false }));
+app.use(express.json());
+app.use(cookieParser('strong-cookie-signer-secret'));
+
+// -------------------------------------------------------------------------
+// ❌ INSECURE IMPLEMENTATION (Classic CSRF Vulnerability)
+// -------------------------------------------------------------------------
+// 1. Session cookies lack SameSite attribute (defaults to permissive behavior)
+// 2. State changes permitted via GET requests or unvalidated POST forms
+// 3. No unpredictable Anti-CSRF token verified on incoming requests
+// -------------------------------------------------------------------------
+
+// ❌ VULNERABLE ROUTE: Processes transaction relying solely on ambient session cookie
+app.post('/api/transfer-funds', (req, res) =&gt; {
+    const { toAccount, amount } = req.body;
+    // Ambient cookie automatically forwarded by victim's browser from evil.com!
+    if (!req.session || !req.session.userId) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+    // executeTransfer(req.session.userId, toAccount, amount);
+    return res.json({ status: 'Transfer completed', toAccount, amount });
+});
+
+
+// -------------------------------------------------------------------------
+// ✅ SECURE IMPLEMENTATION (Production Multi-Layered CSRF Defense)
+// -------------------------------------------------------------------------
+// Defense 1: Strict Session Cookie Attributes (SameSite=Lax/Strict, HttpOnly, Secure)
+// Defense 2: Cryptographic Synchronizer Token Middleware (Per-Session CSRF Guard)
+// Defense 3: Stateless Double-Submit Cookie Pattern with Cryptographic HMAC Signature
+// Defense 4: Custom Header Enforcement for Single-Page Application (SPA) REST Endpoints
+// -------------------------------------------------------------------------
+
+// 1. Hardened Session Cookies with SameSite Isolation
+app.use(
+    session({
+        name: '__Host-session', // Prefixed cookie enforces HTTPS and domain binding
+        secret: process.env.SESSION_SECRET || 'super-cryptographic-session-secret-key-32b',
+        resave: false,
+        saveUninitialized: false,
+        cookie: {
+            httpOnly: true,     // Protects against JavaScript theft
+            secure: true,       // Enforces TLS/HTTPS transmission
+            sameSite: 'lax',    // CRITICAL: Blocks cookie attachment on cross-site subrequests
+            maxAge: 3600000     // 1 hour expiration
+        }
+    })
+);
+
+// 2. Synchronizer Token Generator &amp; Validation Middleware
+function generateCsrfToken(req) {
+    if (!req.session.csrfSecret) {
+        req.session.csrfSecret = crypto.randomBytes(32).toString('hex');
+    }
+    // Create an HMAC token tied to the user's secret
+    return crypto.createHmac('sha256', req.session.csrfSecret)
+                 .update('csrf-token-binding')
+                 .digest('hex');
+}
+
+function csrfProtection(req, res, next) {
+    // Exclude safe idempotent HTTP methods per RFC 7231
+    const safeMethods = ['GET', 'HEAD', 'OPTIONS'];
+    if (safeMethods.includes(req.method)) {
+        return next();
+    }
+
+    // Extract CSRF token from multiple possible inputs (Header, Body, Query)
+    const clientToken = req.headers['x-csrf-token'] || 
+                        req.headers['x-xsrf-token'] || 
+                        (req.body &amp;&amp; req.body._csrf);
+
+    if (!req.session || !req.session.csrfSecret) {
+        return res.status(403).json({ error: 'CSRF token missing or session expired' });
+    }
+
+    const expectedToken = generateCsrfToken(req);
+
+    // Cryptographic constant-time comparison prevents timing attacks
+    if (!clientToken || !crypto.timingSafeEqual(Buffer.from(clientToken), Buffer.from(expectedToken))) {
+        return res.status(403).json({ error: 'CSRF validation failed: Invalid token' });
+    }
+
+    next();
+}
+
+// 3. API Custom Header Guard (Enforces CORS preflight on cross-origin requests)
+function requireCustomHeader(req, res, next) {
+    const customHeader = req.headers['x-requested-with'];
+    if (customHeader !== 'XMLHttpRequest') {
+        return res.status(400).json({ error: 'Missing required security header: X-Requested-With' });
+    }
+    next();
+}
+
+// Route to issue token to legitimate frontend forms / SPA clients
+app.get('/api/csrf-token', (req, res) =&gt; {
+    const token = generateCsrfToken(req);
+    res.json({ csrfToken: token });
+});
+
+// ✅ SECURE ROUTE: Protected by Synchronizer Token and Custom Header
+app.post('/api/transfer-funds', csrfProtection, requireCustomHeader, (req, res) =&gt; {
+    const { toAccount, amount } = req.body;
+    // executeTransfer(req.session.userId, toAccount, amount);
+    return res.json({ status: 'Transfer verified and executed securely', toAccount, amount });
+});
+
+app.listen(3000, () =&gt; {
+    console.log('Secure server running on port 3000 with Synchronizer Tokens active');
+});</code></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- PYTHON FLASK CODE FIX DROPDOWN -->
+  <div class="level-card" style="margin-bottom: 24px;">
+    <button class="level-header" type="button" onclick="this.closest('.level-card').classList.toggle('open')">
+      <span class="level-badge" style="background:rgba(53, 114, 165, 0.15); color:#3572A5; border-color:#3572A5;">PY</span>
+      <span class="level-titles">
+        <h2>
+          <span class="lang-hi">2. Python / Flask (Flask-WTF CSRFProtect, Double-Submit &amp; SameSite Cookies)</span>
+          <span class="lang-en">2. Python / Flask (Flask-WTF CSRFProtect, Double-Submit &amp; SameSite Cookies)</span>
+        </h2>
+        <p>
+          <span class="lang-hi">Flask-WTF global CSRFProtect, custom AJAX header validation, aur re-auth decorator</span>
+          <span class="lang-en">Flask-WTF global CSRFProtect, custom AJAX header validation, and re-auth decorator</span>
+        </p>
+      </span>
+      <span class="level-tag solved"><span class="lang-hi">SECURE PATTERN</span><span class="lang-en">SECURE PATTERN</span></span>
+      <span class="chevron">▾</span>
+    </button>
+    <div class="level-body">
+      <div class="level-inner">
+        <pre><code># =========================================================================
+# 2. Python / Flask (Flask-WTF Production CSRF Hardening)
+# =========================================================================
+
+import os
+import secrets
+import hmac
+import hashlib
+from functools import wraps
+from flask import Flask, request, jsonify, session, render_template_string
+from flask_wtf.csrf import CSRFProtect, generate_csrf
+
+app = Flask(__name__)
+
+# Configure session cookies and application secret key
+app.config.update(
+    SECRET_KEY=os.environ.get('SECRET_KEY', secrets.token_hex(32)),
+    # CRITICAL: SameSite Lax blocks ambient session forwarding on cross-site POSTs
+    SESSION_COOKIE_SAMESITE='Lax',
+    SESSION_COOKIE_SECURE=True,     # HTTPS transmission only
+    SESSION_COOKIE_HTTPONLY=True,   # Inaccessible to JavaScript document.cookie
+    WTF_CSRF_TIME_LIMIT=3600        # Token valid for 1 hour
+)
+
+# -------------------------------------------------------------------------
+# ❌ INSECURE IMPLEMENTATION (Common Flask CSRF Flaws)
+# -------------------------------------------------------------------------
+# 1. State changes executed via GET requests (/transfer?account=X&amp;amount=Y)
+# 2. Endpoints exempt from CSRF token validation
+# 3. Session cookies set with SameSite=None without cryptographically bound tokens
+# -------------------------------------------------------------------------
+
+# ❌ VULNERABLE ROUTE: No CSRF verification; vulnerable to form auto-submission
+# @app.route('/api/transfer', methods=['POST'])
+# def vulnerable_transfer():
+#     to_acc = request.form.get('to_account')
+#     amount = request.form.get('amount')
+#     # execute_transfer(session.get('user_id'), to_acc, amount)
+#     return jsonify({'status': 'Transfer successful'})
+
+
+# -------------------------------------------------------------------------
+# ✅ SECURE IMPLEMENTATION (Multi-Tiered Flask Defense)
+# -------------------------------------------------------------------------
+# Defense 1: Flask-WTF CSRFProtect (Global synchronizer token verification)
+# Defense 2: Double-Submit Cookie Pattern Helper for Stateless / Decoupled SPAs
+# Defense 3: Strict Safe-Method Check (Blocks state-changing GET/HEAD requests)
+# Defense 4: Step-Up Re-Authentication Decorator for Sensitive Endpoints
+# -------------------------------------------------------------------------
+
+# Initialize global CSRF protection across all state-changing endpoints
+csrf = CSRFProtect(app)
+
+# Expose CSRF token in an HTTP header for client-side JavaScript / AJAX
+@app.after_request
+def set_csrf_cookie(response):
+    # Set a double-submit CSRF cookie readable by frontend JS for header injection
+    response.set_cookie(
+        'XSRF-TOKEN',
+        generate_csrf(),
+        samesite='Lax',
+        secure=True,
+        httponly=False  # Must be readable by legitimate same-origin JavaScript (Axios/Fetch)
+    )
+    return response
+
+# Custom decorator: Step-Up Re-Authentication Guard
+def step_up_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        sudo_token = request.headers.get('X-Sudo-Token') or request.form.get('sudo_password')
+        if not sudo_token or not verify_sudo_password(session.get('user_id'), sudo_token):
+            return jsonify({
+                'error': 'REAUTH_REQUIRED',
+                'message': 'High-risk operations mandate password re-entry or 2FA verification.'
+            }), 403
+        return f(*args, **kwargs)
+    return decorated_function
+
+def verify_sudo_password(user_id, token):
+    # Verify recent authentication confirmation ticket
+    return token == 'valid-sudo-auth-ticket'
+
+# ✅ SECURE FORM RENDERING (Injecting Hidden CSRF Token Field)
+@app.route('/transfer-form', methods=['GET'])
+def transfer_form():
+    html_form = '''
+    &lt;form action="/api/transfer" method="POST"&gt;
+        &lt;input type="hidden" name="csrf_token" value="{{ csrf_token() }}"&gt;
+        &lt;input type="text" name="to_account" placeholder="Recipient Account" required&gt;
+        &lt;input type="number" name="amount" placeholder="Amount" required&gt;
+        &lt;button type="submit"&gt;Transfer Funds&lt;/button&gt;
+    &lt;/form&gt;
+    '''
+    return render_template_string(html_form)
+
+# ✅ SECURE API ROUTE: Fully guarded by CSRFProtect, SameSite cookies, and Step-Up Auth
+@app.route('/api/transfer', methods=['POST'])
+@step_up_required
+def secure_transfer():
+    to_acc = request.form.get('to_account')
+    amount = request.form.get('amount')
+    user_id = session.get('user_id')
+    
+    # execute_transfer(user_id, to_acc, amount)
+    return jsonify({
+        'status': 'Transfer successful and validated',
+        'from_user': user_id,
+        'to_account': to_acc,
+        'amount': amount
+    })
+
+# Custom CSRF Error Handler
+@app.errorhandler(400)
+def handle_csrf_error(e):
+    if 'CSRF' in str(e.description):
+        return jsonify({
+            'error': 'CSRF_VALIDATION_FAILED',
+            'message': 'Cross-Site Request Forgery detected or token expired.'
+        }), 403
+    return jsonify({'error': 'Bad Request'}), 400
+
+if __name__ == '__main__':
+    app.run(port=5000)</code></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= SIMULATOR ================= -->
+  <section class="simulator-section" id="simulator">
+    <div class="sim-header-bar">
+      <div class="sim-title"><span>[🔴]</span> VAPT_PROXY_INTERCEPTOR</div>
+      <div class="sim-controls">
+        <div class="sim-control-group">
+          <label><span class="lang-hi">Attack Vector</span><span class="lang-en">Attack Vector</span></label>
+          <div class="sim-btn-group" id="opt-vector">
+            <button class="sim-btn active" data-val="form_post">Hidden Form (POST)</button>
+            <button class="sim-btn" data-val="link_get">Malicious Link (GET)</button>
+            <button class="sim-btn" data-val="fetch_js">Background Fetch (JS)</button>
+          </div>
+        </div>
+        <div class="sim-control-group" style="margin-top: 10px;">
+          <label><span class="lang-hi">Defense Level</span><span class="lang-en">Defense Level</span></label>
+          <div class="sim-btn-group" id="opt-defense">
+            <button class="sim-btn active" data-val="0">0: None</button>
+            <button class="sim-btn" data-val="1">1: Referer/Origin</button>
+            <button class="sim-btn" data-val="2">2: CSRF Token</button>
+            <button class="sim-btn" data-val="3">3: SameSite=Lax</button>
+            <button class="sim-btn" data-val="4">4: Full Stack</button>
+          </div>
+        </div>
+        <button class="btn-execute" id="btn-execute" style="margin-top: 15px;">Launch_Attack</button>
+      </div>
+    </div>
+
+    <div class="workspace">
+      <div class="sim-panel" id="panel-browser">
+        <div class="sim-panel-header">💻 Client_DOM_Events</div>
+        <div class="sim-panel-body" id="log-browser"></div>
+      </div>
+      <div class="sim-panel" id="panel-network">
+        <div class="sim-panel-header">🕸️ Raw_HTTP_Traffic</div>
+        <div class="sim-panel-body" id="log-network"></div>
+      </div>
+      <div class="sim-panel" id="panel-server">
+        <div class="sim-panel-header">⚙️ Server_Processing_Steps</div>
+        <div class="sim-panel-body" id="log-server"></div>
+      </div>
+    </div>
+
+    <div id="sim-verdict-box" class="sim-verdict-box">
+      <div id="sim-verdict-title" class="sim-verdict-title"></div>
+      <div id="sim-verdict-text" class="sim-verdict-text"></div>
+    </div>
+  </section>
+
+  <!-- ================= REFERENCE (GLOSSARY + QA) ================= -->
+  <section id="reference" class="reference-section">
+    <!-- GLOSSARY -->
+    <div class="checklist">
+      <div class="checklist-head"><h2>📖 <span class="lang-hi">Zaroori Terms (Glossary)</span><span class="lang-en">Important Terms (Glossary)</span></h2></div>
+
+      <div class="gap-box">
+        <h3><span class="lang-hi">1. CSRF (Cross-Site Request Forgery)</span><span class="lang-en">1. CSRF (Cross-Site Request Forgery)</span></h3>
+        <p>
+          <span class="lang-hi">Ek web attack jahan attacker victim ke already-logged-in browser ko use karke, uski cookie ke sahaare, uski taraf se ek state-changing request forge (nakli bana request) kar deta hai — bina victim ke password ya session ke kabhi churaaye.</span>
+          <span class="lang-en">A web attack where the attacker uses the victim's already-logged-in browser, riding on their cookie, to forge a state-changing request on their behalf — without ever stealing the victim's password or session.</span>
+        </p>
+      </div>
+      <div class="gap-box">
+        <h3><span class="lang-hi">2. State-Changing Request</span><span class="lang-en">2. State-Changing Request</span></h3>
+        <p>
+          <span class="lang-hi">Koi bhi request jo server par data MODIFY karti hai (paisa transfer, password change, settings update) — na ki sirf padhती hai. HTTP spec ke hisaab se GET jaise "safe" methods ko sirf DATA padhne ke liye use hona chahiye, state change ke liye nahi.</span>
+          <span class="lang-en">Any request that MODIFIES data on the server (money transfer, password change, settings update) — as opposed to just reading it. Per the HTTP spec, "safe" methods like GET are meant only for reading data, never for changing state.</span>
+        </p>
+      </div>
+      <div class="gap-box">
+        <h3><span class="lang-hi">3. SameSite Cookie Attribute</span><span class="lang-en">3. SameSite Cookie Attribute</span></h3>
+        <p>
+          <span class="lang-hi">Ek cookie setting (Strict/Lax/None) jo browser ko batati hai ki cross-site requests ke saath ye cookie bheji jaaye ya nahi. Ye application code mein nahi, browser ke andar hi enforce hoti hai.</span>
+          <span class="lang-en">A cookie setting (Strict/Lax/None) that tells the browser whether this cookie should be sent with cross-site requests. It's enforced inside the browser itself, not in application code.</span>
+        </p>
+      </div>
+      <div class="gap-box">
+        <h3><span class="lang-hi">4. CSRF Token (Synchronizer Token)</span><span class="lang-en">4. CSRF Token (Synchronizer Token)</span></h3>
+        <p>
+          <span class="lang-hi">Ek random, session-bound, unpredictable value jo server har state-changing form mein bhejta aur submit hone par validate karta hai. Attacker Same-Origin Policy (SOP) ki wajah se ise cross-origin se padh nahi sakta.</span>
+          <span class="lang-en">A random, session-bound, unpredictable value that the server sends in every state-changing form and validates on submission. The attacker cannot read it cross-origin, thanks to the Same-Origin Policy (SOP).</span>
+        </p>
+      </div>
+      <div class="gap-box">
+        <h3><span class="lang-hi">5. Double-Submit Cookie Pattern</span><span class="lang-en">5. Double-Submit Cookie Pattern</span></h3>
+        <p>
+          <span class="lang-hi">Ek defense jisme ek hi random token DO jagah bheja jaata hai (cookie + custom header/body). Request tabhi valid maani jaati hai jab dono values match karein — attacker cross-origin se na cookie padh sakta hai, na custom header reliably set kar sakta hai.</span>
+          <span class="lang-en">A defense where the same random token is sent in TWO places (a cookie + a custom header/body field). The request is only valid when both values match — the attacker can neither read the cookie cross-origin, nor reliably set the custom header.</span>
+        </p>
+      </div>
+      <div class="gap-box">
+        <h3><span class="lang-hi">6. SOP (Same-Origin Policy)</span><span class="lang-en">6. SOP (Same-Origin Policy)</span></h3>
+        <p>
+          <span class="lang-hi">Ye ek browser security feature hai jo ek origin ki script ko kisi dusre origin ke web page ke data ko padhne (read) se rokti hai. Yehi policy attacker ko cross-origin request bhejte waqt CSRF token read karne se rokti hai.</span>
+          <span class="lang-en">This is a browser security feature that restricts a script on one origin from reading data on a web page belonging to another origin. This policy is what prevents an attacker from reading the CSRF token during a cross-origin request.</span>
+        </p>
+      </div>
+      <div class="gap-box" style="margin-bottom:0;">
+        <h3><span class="lang-hi">7. Top-Level Navigation & Background Requests</span><span class="lang-en">7. Top-Level Navigation & Background Requests</span></h3>
+        <p>
+          <span class="lang-hi"><strong>Top-Level Navigation:</strong> Browser ka pura page jab kisi naye URL pe shift hota hai — chahe link click se, URL bar se, ya redirect se — usse top-level navigation kehte hain. Jab ye shift GET request ke through ho, to wo top-level GET navigation kehlata hai.<br>
+          ➡️ Ye cross-site request hai, lekin <code>SameSite=Lax</code> cookie top-level GET navigation ke saath ja sakti hai.<br><br>
+          <strong>Background Requests:</strong> Iframe ke andar navigation ya JS se background me fetch hona — ye top-level navigation nahi maana jata isliye cookie nhi jaati...<br>
+          <strong>Iframe navigation:</strong> Sirf iframe ke andar ka content badalta hai. Example: <code>news.com</code> pe embedded YouTube iframe.<br>
+          <strong>Background fetch:</strong> JS se data mangwaya jata hai bina page reload ke. Example: Twitter ka infinite scroll.<br>
+          Dono cases me poora page/URL badal nahi raha, isliye <code>SameSite=Lax</code> cookie inme cross-site request pe nahi bhejta.</span>
+          
+          <span class="lang-en"><strong>Top-Level Navigation:</strong> When the browser's entire page shifts to a new URL — whether via a link click, the URL bar, or a redirect — it is called top-level navigation. When this shift happens through a GET request, it is called top-level GET navigation.<br>
+          ➡️ This is a cross-site request, but a <code>SameSite=Lax</code> cookie can be sent along with a top-level GET navigation.<br><br>
+          <strong>Background Requests:</strong> Navigation inside an iframe or fetching data in the background via JS — this is not considered top-level navigation, so the cookie does not go with the request...<br>
+          <strong>Iframe navigation:</strong> Only the content inside the iframe changes. Example: Switching a video inside an embedded YouTube iframe.<br>
+          <strong>Background fetch:</strong> Data is fetched via JS without reloading the page. Example: Twitter's infinite scroll.<br>
+          In both cases, the entire page/URL is not changing, hence <code>SameSite=Lax</code> does not send cookies for these cross-site requests.</span>
+        </p>
+      </div>
+    </div>
+
+    <!-- QA -->
+    <div class="checklist">
+      <div class="checklist-head"><h2>🤔 <span class="lang-hi">Confusing Questions</span><span class="lang-en">Confusing Questions</span></h2></div>
+      <p class="checklist-intro"><span class="lang-hi">Ye wo sawaal hain jo CSRF samajhne ke baad bhi log ghumte rehte hain — expand karke apna concept test karo.</span><span class="lang-en">These are the questions people keep circling even after understanding CSRF — expand to test your concept.</span></p>
+
+      <div class="qa-list">
+        <div class="qa-item">
+          <button class="qa-q"><span class="qa-mark">Q1</span><span><span class="lang-hi"><code>SameSite=Lax</code> lag chuka hai — kya CSRF Token ab bhi zaroori hai?</span><span class="lang-en"><code>SameSite=Lax</code> is already set — is a CSRF Token still needed?</span></span><span class="qa-chevron">▾</span></button>
+          <div class="qa-a"><div class="qa-a-inner">
+            <span class="lang-hi">Haan, zaroori hai. Kyunki Lax akela sab kuch nahi rokta:<br><br>
+            • Top-level GET navigation abhi bhi allowed hai — agar koi state-changing action GET se ho raha ho, attacker link se trigger kar sakta hai.<br>
+            • Same-site subdomains (jaise <code>app.site.com</code>) automatically trusted hote hain — agar koi subdomain compromise ho jaye, Lax wahan protect nahi karta.<br>
+            • Purane browsers SameSite ko sahi se support nahi karte, aur <code>SameSite=None</code> wali cookies to iss protection se bahar hi hain.</span>
+            <span class="lang-en">Yes, it is necessary. Because Lax alone doesn't stop everything:<br><br>
+            • Top-level GET navigation is still allowed — if any state-changing action is done via GET, an attacker can trigger it with a link.<br>
+            • Same-site subdomains (like <code>app.site.com</code>) are automatically trusted — if a subdomain is compromised, Lax does not protect there.<br>
+            • Older browsers do not support SameSite properly, and cookies with <code>SameSite=None</code> are entirely outside this protection.</span>
+          </div></div>
+        </div>
+        <div class="qa-item">
+          <button class="qa-q"><span class="qa-mark">Q2</span><span><span class="lang-hi">Attacker khud HTTP request bhej hi sakta hai — toh CSRF Token chura kyun nahi sakta?</span><span class="lang-en">The attacker can send an HTTP request themselves — so why can't they just steal the CSRF Token?</span></span><span class="qa-chevron">▾</span></button>
+          <div class="qa-a"><div class="qa-a-inner">
+            <span class="lang-hi">Browser me ek rule hota hai — Same-Origin Policy (SOP).<br>Ye rule kehta hai: "Tum kisi doosri site ko request bhej sakte ho, lekin uska jawab (response) padh nahi sakte — sirf apni khud ki site ka response padh sakte ho."<br>Do alag cheezein hain:<br><br>
+            <strong>Request bhejna</strong> → Allowed hai. Attacker <code>bank.com</code> ko request fire kar sakta hai.<br>
+            <strong>Response padhna</strong> → Allowed nahi hai. Attacker ko us request ka jawab (jisme token hota hai) apni JS code me dikhta hi nahi.</span>
+            <span class="lang-en">The browser has a rule — the Same-Origin Policy (SOP).<br>This rule says: "You can send a request to another site, but you cannot read its response — you can only read the response from your own site."<br>There are two different things:<br><br>
+            <strong>Sending a request</strong> → Is allowed. The attacker can fire a request to <code>bank.com</code>.<br>
+            <strong>Reading a response</strong> → Is not allowed. The attacker simply cannot see the response of that request (which contains the token) in their JS code.</span>
+          </div></div>
+        </div>
+        <div class="qa-item">
+          <button class="qa-q"><span class="qa-mark">Q3</span><span><span class="lang-hi">GET requests CSRF se automatically safe hain kya?</span><span class="lang-en">Are GET requests automatically safe from CSRF?</span></span><span class="qa-chevron">▾</span></button>
+          <div class="qa-a"><div class="qa-a-inner"><span class="lang-hi">Bilkul nahi — agar koi state-changing action galti se GET accept kar leta hai, wo utni hi vulnerable hai, balki <code>SameSite=Lax</code> ke exception ki wajah se GET-based CSRF thoda AASAN bhi ho jaata hai. HTTP spec GET ko "safe" (sirf read-only) manta hai — apps ko is convention todna hi nahi chahiye.</span><span class="lang-en">Not at all — if a state-changing action mistakenly accepts GET, it's just as vulnerable, and because of <code>SameSite=Lax</code>'s exception, GET-based CSRF is actually slightly EASIER to pull off. The HTTP spec treats GET as "safe" (read-only only) — apps should never break that convention.</span></div></div>
+        </div>
+        <div class="qa-item">
+          <button class="qa-q"><span class="qa-mark">Q4</span><span><span class="lang-hi">Agar humare paas Double-Submit CSRF Token pehle se available hai, to Origin/Referer check ki kya zaroorat hai?</span><span class="lang-en">If we already have a Double-Submit CSRF Token, what is the need to check Origin/Referer headers?</span></span><span class="qa-chevron">▾</span></button>
+          <div class="qa-a"><div class="qa-a-inner">
+            <span class="lang-hi">Double-submit CSRF token akela perfect nahi hai — kuch specific weaknesses hain jinhe Origin/Referer header check karke cover kiya jata hai:<br><br>
+            <strong>1. Subdomain-level attack:</strong> Agar attacker kisi same-site subdomain se cookie set kar de, to wo CSRF token cookie ko overwrite kar sakta hai. Origin/Referer header is scenario me extra check dete hain.<br>
+            <strong>2. Defense-in-depth:</strong> Double-submit token ek single mechanism hai — agar kisi implementation bug se token compromise ho jaye, to Origin/Referer header ek doosri independent layer bana deta hai.</span>
+            <span class="lang-en">The Double-submit CSRF token alone is not perfect — there are specific weaknesses that are covered by checking Origin/Referer headers:<br><br>
+            <strong>1. Subdomain-level attack:</strong> If an attacker sets a cookie from a same-site subdomain, they can overwrite the CSRF token cookie. The Origin/Referer headers provide an extra check in this scenario.<br>
+            <strong>2. Defense-in-depth:</strong> A double-submit token is a single mechanism — if the token is compromised due to an implementation bug, the Origin/Referer header creates a second independent layer.</span>
+          </div></div>
+        </div>
+        <div class="qa-item">
+          <button class="qa-q"><span class="qa-mark">Q5</span><span><span class="lang-hi">Sirf Referer check karna kaafi kyun nahi hai, Origin header alag kyun zaroori hai?</span><span class="lang-en">Why isn't checking just Referer enough — why is the Origin header separately needed?</span></span><span class="qa-chevron">▾</span></button>
+          <div class="qa-a"><div class="qa-a-inner"><span class="lang-hi">Referer ek full/partial URL hota hai jo privacy policy, browser settings, ya attacker ki apni marzi se suppress ho sakta hai. Origin specifically CSRF-jaise defense ke liye design kiya gaya — sirf domain bhejta hai (isliye kam privacy-leaky), aur state-changing requests par zyada reliably present hota hai.</span><span class="lang-en">Referer is a full URL that can be suppressed by privacy policy, browser settings, or the attacker's own choice. Origin was specifically designed for CSRF-style defense — it only sends the domain (so less privacy-leaky), and is more reliably present on state-changing requests.</span></div></div>
+        </div>
+        <div class="qa-item">
+          <button class="qa-q"><span class="qa-mark">Q6</span><span><span class="lang-hi">Agar site XSS-vulnerable hai, toh CSRF Token/SameSite ka koi fayda hai?</span><span class="lang-en">If a site is XSS-vulnerable, is there any point to CSRF Token/SameSite?</span></span><span class="qa-chevron">▾</span></button>
+          <div class="qa-a"><div class="qa-a-inner"><span class="lang-hi">Haan, poore site ke liye — CSRF defense un requests ko abhi bhi rokta hai jo GENUINELY cross-origin hain (kisi malicious website se). Sirf us EK vulnerable page ke against ye defense kaam nahi karta, kyunki wahan attacker ka code already same-origin chal raha hota hai. Yani XSS ko FIX karna zaroori hai, CSRF defense hatana nahi.</span><span class="lang-en">Yes, for the site as a whole — CSRF defenses still stop requests that are GENUINELY cross-origin (from any malicious website). The defense simply doesn't apply against that ONE vulnerable page, because the attacker's code is already running same-origin there. The takeaway is to FIX the XSS, not to remove the CSRF defense.</span></div></div>
+        </div>
+        <div class="qa-item">
+          <button class="qa-q"><span class="qa-mark">Q7</span><span><span class="lang-hi">Login CSRF, normal session hijacking se kaise alag hai?</span><span class="lang-en">How is Login CSRF different from normal session hijacking?</span></span><span class="qa-chevron">▾</span></button>
+          <div class="qa-a"><div class="qa-a-inner"><span class="lang-hi">Session hijacking mein attacker VICTIM ka session cookie churata hai aur victim BAN kar login karta hai. Login CSRF mein ulta hota hai — attacker VICTIM ko apne (attacker ke) account mein login karwa deta hai. Victim ko lagta hai wo khud hi hai, aur wo jo bhi save karti hai, wo attacker ke account mein jaata hai — koi cookie kabhi churaayi hi nahi jaati.</span><span class="lang-en">In session hijacking, the attacker steals the VICTIM's session cookie and logs in AS the victim. In Login CSRF, it's the reverse — the attacker forces the VICTIM to log into the attacker's own account. The victim believes they're still themselves, and anything they save goes into the attacker's account — no cookie is ever stolen.</span></div></div>
+        </div>
+        <div class="qa-item">
+          <button class="qa-q"><span class="qa-mark">Q8</span><span><span class="lang-hi">JSON APIs (<code>application/json</code>) automatically CSRF-safe hote hain kya?</span><span class="lang-en">Are JSON APIs (<code>application/json</code>) automatically CSRF-safe?</span></span><span class="qa-chevron">▾</span></button>
+          <div class="qa-a"><div class="qa-a-inner"><span class="lang-hi">Sirf tab, jab server STRICTLY <code>application/json</code> require karta hai aur kuch aur reject kar deta hai. Ek plain HTML <code>&lt;form&gt;</code> ye Content-Type bina JavaScript ke set hi nahi kar sakta — isliye ye ek incidental protection banti hai. Lekin agar server LENIENT hai (kisi bhi Content-Type ko parse kar leta hai), ye protection turant khatam ho jaati hai.</span><span class="lang-en">Only when the server STRICTLY requires <code>application/json</code> and rejects anything else. A plain HTML <code>&lt;form&gt;</code> cannot set that Content-Type without JavaScript — so this becomes an incidental protection. But if the server is LENIENT (parses the body regardless of Content-Type), this protection disappears immediately.</span></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= TESTER'S CHECKLIST ================= -->
+  <section class="tester-checklist-section" id="tester-checklist">
+    <div class="checklist-head"><h2>📝 <span class="lang-hi">Security Tester's CSRF Checklist</span><span class="lang-en">Security Tester's CSRF Checklist</span></h2></div>
+    <p class="checklist-intro">
+      <span class="lang-hi">CSRF vulnerabilities test karne ke liye ek step-by-step framework. Testing karte waqt items ko check karein:</span>
+      <span class="lang-en">A step-by-step framework for testing CSRF vulnerabilities. Check off the items as you test:</span>
+    </p>
+
+    <div class="audit-card">
+      <h3><span class="lang-hi">1. Basic Reconnaissance</span><span class="lang-en">1. Basic Reconnaissance</span></h3>
+      <div class="check-list">
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">Identify all state-changing endpoints (<code>POST</code>, <code>PUT</code>, <code>DELETE</code>, <code>PATCH</code>) — password change, email update, fund transfer, delete account, add admin, etc.</span>
+            <span class="lang-en">Identify all state-changing endpoints (<code>POST</code>, <code>PUT</code>, <code>DELETE</code>, <code>PATCH</code>) — password change, email update, fund transfer, delete account, add admin, etc.</span>
+          </div>
+        </label>
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">Check if any state-changing action is done via <code>GET</code> request (bad practice, high risk).</span>
+            <span class="lang-en">Check if any state-changing action is done via <code>GET</code> request (bad practice, high risk).</span>
+          </div>
+        </label>
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">Note which endpoints are authenticated (session cookie based) vs token-based (JWT in header).</span>
+            <span class="lang-en">Note which endpoints are authenticated (session cookie based) vs token-based (JWT in header).</span>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div class="audit-card">
+      <h3><span class="lang-hi">2. CSRF Token Presence & Validation</span><span class="lang-en">2. CSRF Token Presence & Validation</span></h3>
+      <div class="check-list">
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">Check if CSRF token exists in forms/requests (hidden field, header, ya cookie).</span>
+            <span class="lang-en">Check if CSRF token exists in forms/requests (hidden field, header, or cookie).</span>
+          </div>
+        </label>
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">Remove token completely from request — kya request still accept hoti hai? (should fail).</span>
+            <span class="lang-en">Remove token completely from request — is the request still accepted? (should fail).</span>
+          </div>
+        </label>
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">Send empty token — kya server validate karta hai?</span>
+            <span class="lang-en">Send empty token — does the server validate it?</span>
+          </div>
+        </label>
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">Reuse an old/expired token — kya server purane token ko reject karta hai?</span>
+            <span class="lang-en">Reuse an old/expired token — does the server reject the old token?</span>
+          </div>
+        </label>
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">Use another user's valid token — token user-specific hona chahiye, cross-user reuse allowed nahi hona chahiye.</span>
+            <span class="lang-en">Use another user's valid token — token must be user-specific, cross-user reuse should not be allowed.</span>
+          </div>
+        </label>
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">Check if token is tied to session properly, ya sirf randomly generated hai without binding.</span>
+            <span class="lang-en">Check if token is tied to session properly, or if it's just randomly generated without binding.</span>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div class="audit-card">
+      <h3><span class="lang-hi">3. SameSite Cookie Attribute</span><span class="lang-en">3. SameSite Cookie Attribute</span></h3>
+      <div class="check-list">
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">Inspect cookies (DevTools → Application → Cookies) — check SameSite attribute value (Strict, Lax, None, ya missing).</span>
+            <span class="lang-en">Inspect cookies (DevTools → Application → Cookies) — check SameSite attribute value (Strict, Lax, None, or missing).</span>
+          </div>
+        </label>
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">Agar <code>SameSite=None</code> hai, check ki Secure flag bhi set hai ya nahi.</span>
+            <span class="lang-en">If <code>SameSite=None</code>, check whether the Secure flag is also set.</span>
+          </div>
+        </label>
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">Agar attribute missing hai — browser default (Lax) apply hoga, lekin explicit set karna best practice hai.</span>
+            <span class="lang-en">If attribute is missing — browser default (Lax) will apply, but setting it explicitly is best practice.</span>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div class="audit-card">
+      <h3><span class="lang-hi">4. Origin & Referer Header Validation</span><span class="lang-en">4. Origin & Referer Header Validation</span></h3>
+      <div class="check-list">
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">Request bhejo bina Origin header ke — server reject karta hai ya accept?</span>
+            <span class="lang-en">Send request without Origin header — does the server reject or accept?</span>
+          </div>
+        </label>
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">Request bhejo fake/malicious Origin (https://evil.com) — server reject karna chahiye.</span>
+            <span class="lang-en">Send request with fake/malicious Origin (https://evil.com) — server should reject.</span>
+          </div>
+        </label>
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">Referer header remove/strip karke test karo — server ka behavior kya hai (privacy-mode simulate karo).</span>
+            <span class="lang-en">Remove/strip Referer header and test — what is the server's behavior (simulate privacy-mode).</span>
+          </div>
+        </label>
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">Check ki server sirf Referer pe depend to nahi kar raha (chahiye Origin priority ho).</span>
+            <span class="lang-en">Check that the server isn't depending solely on Referer (Origin priority).</span>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div class="audit-card">
+      <h3><span class="lang-hi">5. Double-Submit Cookie Pattern (agar implemented ho)</span><span class="lang-en">5. Double-Submit Cookie Pattern (if implemented)</span></h3>
+      <div class="check-list">
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">Cookie value aur request body/header ka token match ho raha hai ya nahi properly verify hota hai.</span>
+            <span class="lang-en">Verify if the cookie value and the request body/header token match properly.</span>
+          </div>
+        </label>
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">Cookie ko manually tamper karke same value body me daalo — check subdomain se cookie override possible hai kya (agar Domain attribute wide scope pe set hai).</span>
+            <span class="lang-en">Manually tamper the cookie and put the same value in the body — check if cookie override from a subdomain is possible (if Domain attribute is set to a wide scope).</span>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div class="audit-card">
+      <h3><span class="lang-hi">6. Session & Logout Behavior</span><span class="lang-en">6. Session & Logout Behavior</span></h3>
+      <div class="check-list">
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">CSRF token logout ke baad invalidate hota hai kya?</span>
+            <span class="lang-en">Is the CSRF token invalidated after logout?</span>
+          </div>
+        </label>
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">Password change/logout ke baad purane token se request bhejo — reject hona chahiye.</span>
+            <span class="lang-en">Send a request with the old token after a password change/logout — it should be rejected.</span>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div class="audit-card">
+      <h3><span class="lang-hi">7. Header-Based Defense (for APIs)</span><span class="lang-en">7. Header-Based Defense (for APIs)</span></h3>
+      <div class="check-list">
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">Check agar API custom header (jaise <code>X-Requested-With</code>) require karta hai — validate karo ki ye enforce ho raha hai, sirf presence nahi balki value bhi.</span>
+            <span class="lang-en">Check if the API requires a custom header (like <code>X-Requested-With</code>) — validate that this is enforced, not just its presence but also its value.</span>
+          </div>
+        </label>
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">Check preflight (OPTIONS) request properly configured hai — <code>Access-Control-Allow-Origin</code> wildcard (*) to nahi hai sensitive endpoints pe.</span>
+            <span class="lang-en">Check if the preflight (OPTIONS) request is properly configured — <code>Access-Control-Allow-Origin</code> should not be a wildcard (*) on sensitive endpoints.</span>
+          </div>
+        </label>
+      </div>
+    </div>
+  </section>
+
+    <!-- ── BOTTOM NAVIGATION ROW ── -->
+  <div class="bottom-nav-row">
+    <div class="nav-empty"></div>
+    <a href="XSS.html" class="nav-arrow-btn nav-next">2. XSS →</a>
+  </div>
+
+</main>
+
+<footer class="modern-footer">
+  <div class="footer-badge">
+    <span class="footer-text">Designed and developed by <strong class="dev-name">Irshad Akaram</strong></span>
+  </div>
+</footer>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  window.toggleTheme = function() {
+    var html = document.documentElement;
+    var themeBtn = document.getElementById('themeBtn');
+    if (html.getAttribute('data-theme') === 'dark') {
+      html.setAttribute('data-theme', 'light');
+      if (themeBtn) themeBtn.textContent = '🌙 Dark Mode';
+    } else {
+      html.setAttribute('data-theme', 'dark');
+      if (themeBtn) themeBtn.textContent = '☀️ Light Mode';
+    }
+  };
+
+  window.toggleLanguage = function() {
+    var html = document.documentElement;
+    var toggle = document.getElementById('langToggle');
+    var lblHi = document.getElementById('lbl-hi');
+    var lblEn = document.getElementById('lbl-en');
+    
+    if (toggle && toggle.checked) {
+      html.setAttribute('data-lang', 'en');
+      html.setAttribute('lang', 'en');
+      if(lblEn) { lblEn.classList.add('lang-active'); lblEn.classList.remove('lang-inactive'); }
+      if(lblHi) { lblHi.classList.add('lang-inactive'); lblHi.classList.remove('lang-active'); }
+    } else {
+      html.setAttribute('data-lang', 'hi');
+      html.setAttribute('lang', 'hi');
+      if(lblHi) { lblHi.classList.add('lang-active'); lblHi.classList.remove('lang-inactive'); }
+      if(lblEn) { lblEn.classList.add('lang-inactive'); lblEn.classList.remove('lang-active'); }
+    }
+  };
+
+  var themeBtn = document.getElementById('themeBtn');
+  if(themeBtn) themeBtn.addEventListener('click', window.toggleTheme);
+
+  var langToggle = document.getElementById('langToggle');
+  if(langToggle) langToggle.addEventListener('change', window.toggleLanguage);
+
+  /* ---------- Accordion: levels ---------- */
+  document.querySelectorAll('.level-header').forEach(function(header){
+    header.addEventListener('click', function(){
+      var card = header.closest('.level-card');
+      if(card) {
+        card.classList.toggle('open');
+      }
+    });
+  });
+
+  /* ---------- Accordion: Q&A ---------- */
+  document.querySelectorAll('.qa-q').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var item = btn.closest('.qa-item');
+      if(item) {
+        item.classList.toggle('open');
+      }
+    });
+  });
+
+  /* ---------- Sub-Nav Smooth Scroll & Active Highlight (Pixel-Perfect Offset) ---------- */
+  var subNavBtns = document.querySelectorAll('.sub-nav-btn');
+
+  subNavBtns.forEach(function(link){
+    link.addEventListener('click', function(e){
+      var href = link.getAttribute('href');
+      if(href && href.startsWith('#')){
+        e.preventDefault();
+        var targetEl = document.querySelector(href);
+        if(targetEl){
+          var topbar = document.querySelector('.topbar');
+          var totalStickyOffset = (topbar ? topbar.offsetHeight : 50) + 4;
+          var elementPosition = targetEl.getBoundingClientRect().top;
+          var offsetPosition = elementPosition + window.pageYOffset - totalStickyOffset;
+
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: reduceMotion ? 'auto' : 'smooth'
+          });
+        }
+      }
+    });
+  });
+
+  /* ---------- Hero CTA & Sim-Jump Scroll to Simulator Fix ---------- */
+  document.querySelectorAll('.hero-cta, .sim-jump').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      var href = btn.getAttribute('href');
+      if (href && href.startsWith('#')) {
+        e.preventDefault();
+        var targetEl = document.querySelector(href);
+        if (targetEl) {
+          var topbar = document.querySelector('.topbar');
+          var offset = (topbar ? topbar.offsetHeight : 60) + 16;
+          var elementPosition = targetEl.getBoundingClientRect().top;
+          var offsetPosition = elementPosition + window.pageYOffset - offset;
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: reduceMotion ? 'auto' : 'smooth'
+          });
+        }
+      }
+    });
+  });
+
+  function updateSubNavScrollSpy() {
+    var topbar = document.querySelector('.topbar');
+    var totalStickyOffset = (topbar ? topbar.offsetHeight : 50) + 20;
+    var scrollPos = window.scrollY + totalStickyOffset;
+    
+    // Page section IDs corresponding to subnav links in DOM order:
+    var navIds = ['hero', 'impact', 'whatiscsrf', 'timeline', 'code-fixes', 'simulator', 'reference', 'tester-checklist'];
+    var currentActive = null;
+    
+    for (var i = 0; i < navIds.length; i++) {
+      var sec = document.getElementById(navIds[i]);
+      if (sec && sec.offsetTop <= scrollPos) {
+        currentActive = navIds[i];
+      }
+    }
+
+    subNavBtns.forEach(function(btn) {
+      var href = btn.getAttribute('href');
+      if (currentActive && (
+        href === '#' + currentActive ||
+        (currentActive === 'code-fixes' && href === '#simulator') ||
+        (currentActive === 'timeline' && href === '#whatiscsrf') ||
+        (currentActive === 'reference' && href === '#whatiscsrf') ||
+        (currentActive === 'hero' && btn.classList.contains('home-nav-btn'))
+      )) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+  }
+
+  window.addEventListener('scroll', updateSubNavScrollSpy, { passive: true });
+  updateSubNavScrollSpy();
+
+  /* ---------- VAPT-SIM-PRO Simulator Logic ---------- */
+  var currentVector = 'form_post';
+  var currentDefense = '0';
+
+  var vectorInfo = {
+    form_post: { method: 'POST', path: '/api/transfer-funds', topLevelNav: true,  sendsOrigin: true  },
+    link_get:  { method: 'GET',  path: '/api/transfer-funds?to_account=ATK-9921&amount=50000', topLevelNav: true, sendsOrigin: false },
+    fetch_js:  { method: 'POST', path: '/api/transfer-funds', topLevelNav: false, sendsOrigin: true  }
+  };
+
+  function cookieWillAttach(vector, defense) {
+    if (defense === '3') { return vectorInfo[vector].topLevelNav && vectorInfo[vector].method === 'GET'; }
+    if (defense === '4') { return false; }
+    return true;
+  }
+
+  document.querySelectorAll('#opt-vector .sim-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('#opt-vector .sim-btn').forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      currentVector = btn.getAttribute('data-val');
+    });
+  });
+
+  document.querySelectorAll('#opt-defense .sim-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('#opt-defense .sim-btn').forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      currentDefense = btn.getAttribute('data-val');
+    });
+  });
+
+  var btnExecute = document.getElementById('btn-execute');
+  var logBrowser = document.getElementById('log-browser');
+  var logNetwork = document.getElementById('log-network');
+  var logServer = document.getElementById('log-server');
+  var verdictBox = document.getElementById('sim-verdict-box');
+  var verdictTitle = document.getElementById('sim-verdict-title');
+  var verdictText = document.getElementById('sim-verdict-text');
+
+  var sleep = function(ms) { return new Promise(function(resolve){ setTimeout(resolve, ms); }); };
+
+  function appendLog(panel, htmlStrHi, htmlStrEn) {
+    var isEn = document.documentElement.getAttribute('data-lang') === 'en';
+    var div = document.createElement('div');
+    div.className = 'log-line';
+    div.innerHTML = '<span class="timestamp">' + new Date().toISOString().split('T')[1].slice(0,-1) + '</span> <span>' + (isEn ? htmlStrEn : htmlStrHi) + '</span>';
+    panel.appendChild(div);
+    panel.scrollTop = panel.scrollHeight;
+  }
+
+  function appendNetworkLog(panel, htmlStr) {
+    var div = document.createElement('div');
+    div.className = 'log-line';
+    div.innerHTML = '<span class="timestamp">' + new Date().toISOString().split('T')[1].slice(0,-1) + '</span> ' + htmlStr;
+    panel.appendChild(div);
+    panel.scrollTop = panel.scrollHeight;
+  }
+
+  function appendStage(panel, strHi, strEn) {
+    var isEn = document.documentElement.getAttribute('data-lang') === 'en';
+    var div = document.createElement('div');
+    div.className = 'log-line log-stage';
+    div.innerHTML = '<span>' + (isEn ? strEn : strHi) + '</span>';
+    panel.appendChild(div);
+    panel.scrollTop = panel.scrollHeight;
+  }
+
+  function clearLogs() {
+    logBrowser.innerHTML = '';
+    logNetwork.innerHTML = '';
+    logServer.innerHTML = '';
+    verdictBox.className = 'sim-verdict-box';
+    verdictTitle.innerHTML = '';
+    verdictText.innerHTML = '';
+  }
+
+  var vectorTriggerHi = {
+    form_post: `<span class="c-info">Action: Hidden &lt;form method="POST"&gt; freegift.com par load hote hi auto-submit ho rahi hai...</span>`,
+    link_get:  `<span class="c-info">Action: Ek auto-redirecting link poore top-level tab ko sbi.com ki taraf navigate kar raha hai...</span>`,
+    fetch_js:  `<span class="c-info">Action: freegift.com ki JavaScript background mein fetch() call fire kar rahi hai (credentials: 'include')...</span>`
+  };
+  var vectorTriggerEn = {
+    form_post: `<span class="c-info">Action: A hidden &lt;form method="POST"&gt; on freegift.com auto-submits as soon as it loads...</span>`,
+    link_get:  `<span class="c-info">Action: An auto-redirecting link navigates the entire top-level tab to sbi.com...</span>`,
+    fetch_js:  `<span class="c-info">Action: freegift.com's JavaScript fires a background fetch() call (credentials: 'include')...</span>`
+  };
+
+  if (btnExecute) {
+    btnExecute.addEventListener('click', async function() {
+      btnExecute.disabled = true;
+      clearLogs();
+
+      var v = vectorInfo[currentVector];
+      var cookieOK = cookieWillAttach(currentVector, currentDefense);
+      var isPreflightCase = (currentVector === 'fetch_js' && currentDefense === '4');
+
+      /* ---------- STEP 1: BROWSER TRIGGERS THE VECTOR ---------- */
+      appendStage(logBrowser, "▶ STEP 1: ATTACKER PAGE TRIGGERS REQUEST", "▶ STEP 1: ATTACKER PAGE TRIGGERS REQUEST");
+      await sleep(300);
+      appendLog(logBrowser, vectorTriggerHi[currentVector], vectorTriggerEn[currentVector]);
+      await sleep(400);
+
+      appendLog(logBrowser, '<span class="c-warn">Browser SameSite policy check chal raha hai (cookie ka scope: Defense Level ' + currentDefense + ')...</span>', '<span class="c-warn">Browser is running its SameSite policy check (cookie\'s scope: Defense Level ' + currentDefense + ')...</span>');
+      await sleep(400);
+      if (cookieOK) {
+        appendLog(logBrowser, '<span class="c-err">✅ Cookie session=xyz789 is request ke saath ATTACH hogi.</span>', '<span class="c-err">✅ Cookie session=xyz789 WILL be attached to this request.</span>');
+      } else {
+        appendLog(logBrowser, '<span class="c-ok">🚫 Cookie ATTACH nahi hogi — SameSite policy ne rok diya.</span>', '<span class="c-ok">🚫 Cookie will NOT be attached — withheld by SameSite policy.</span>');
+      }
+
+      /* ---------- STEP 2: NETWORK ---------- */
+      await sleep(500);
+      appendStage(logNetwork, "▶ STEP 2: OUTGOING HTTP TRAFFIC", "▶ STEP 2: OUTGOING HTTP TRAFFIC");
+      await sleep(300);
+
+      var writeBlock = async function(parent, text) {
+        var el = document.createElement('div'); el.className = 'log-line'; el.style.opacity = '1'; el.innerHTML = text;
+        parent.appendChild(el); logNetwork.scrollTop = logNetwork.scrollHeight; await sleep(150);
+      };
+
+      var requestNeverSent = false;
+
+      if (isPreflightCase) {
+        appendNetworkLog(logNetwork, '<span class="c-blue">>>> CORS PREFLIGHT (OPTIONS)</span>');
+        var preBlock = document.createElement('div'); preBlock.className = 'http-block'; logNetwork.appendChild(preBlock);
+        await writeBlock(preBlock, '<span class="http-method">OPTIONS</span> <span class="http-path">' + v.path + '</span> <span class="http-proto">HTTP/1.1</span>');
+        await writeBlock(preBlock, '<span class="http-header-key">Origin:</span> <span class="http-header-val">https://freegift.com</span>');
+        await writeBlock(preBlock, '<span class="http-header-key">Access-Control-Request-Headers:</span> <span class="http-header-val">x-csrf-token</span>');
+        await sleep(400);
+        appendNetworkLog(logNetwork, '<span class="c-blue"><<< PREFLIGHT RESPONSE</span>');
+        var respBlock = document.createElement('div'); respBlock.className = 'http-block'; logNetwork.appendChild(respBlock);
+        await writeBlock(respBlock, '<span class="http-proto">HTTP/1.1</span> <span class="c-err">403 Forbidden</span>');
+        await writeBlock(respBlock, '<span class="c-gray">// freegift.com is not in Access-Control-Allow-Origin</span>');
+        requestNeverSent = true;
+      } else {
+        appendNetworkLog(logNetwork, '<span class="c-blue">>>> OUTGOING HTTP REQUEST</span>');
+        var rawReqBlock = document.createElement('div'); rawReqBlock.className = 'http-block'; logNetwork.appendChild(rawReqBlock);
+        await writeBlock(rawReqBlock, '<span class="http-method">' + v.method + '</span> <span class="http-path">' + v.path + '</span> <span class="http-proto">HTTP/1.1</span>');
+        await writeBlock(rawReqBlock, '<span class="http-header-key">Host:</span> <span class="http-header-val">sbi.com</span>');
+        if (v.sendsOrigin) {
+          await writeBlock(rawReqBlock, '<span class="http-header-key">Origin:</span> <span class="http-header-val">https://freegift.com</span>');
+        } else {
+          await writeBlock(rawReqBlock, '<span class="c-gray">// No Origin header (simple top-level GET navigation)</span>');
+        }
+        if (cookieOK) {
+          await writeBlock(rawReqBlock, '<span class="http-header-key">Cookie:</span> <span class="http-header-val">session=xyz789</span>');
+        } else {
+          await writeBlock(rawReqBlock, '<span class="c-gray">// No Cookie header (withheld by SameSite)</span>');
+        }
+        if (v.method === 'POST') {
+          await writeBlock(rawReqBlock, '<span class="http-body">to_account=ATK-9921&amp;amount=50000</span>');
+        }
+      }
+
+      /* ---------- STEP 3: SERVER ---------- */
+      await sleep(500);
+      appendStage(logServer, "▶ STEP 3: SERVER-SIDE VALIDATION", "▶ STEP 3: SERVER-SIDE VALIDATION");
+      await sleep(300);
+
+      var attackSuccess = false;
+
+      if (requestNeverSent) {
+        appendLog(logServer, '<span class="c-ok">Request kabhi pahunchi hi nahi — browser ne khud preflight par rok diya.</span>', '<span class="c-ok">Request never arrived — the browser itself stopped it at the preflight.</span>');
+      } else if (!cookieOK) {
+        appendLog(logServer, '<span class="loader"></span> <span class="c-info">Received request. Checking session...</span>', '<span class="loader"></span> <span class="c-info">Received request. Checking session...</span>');
+        await sleep(400);
+        appendLog(logServer, '<span class="c-ok">No session cookie present. Treating as unauthenticated. Rejecting.</span>', '<span class="c-ok">No session cookie present. Treating as unauthenticated. Rejecting.</span>');
+      } else {
+        appendLog(logServer, '<span class="loader"></span> <span class="c-info">Received request. Valid session cookie found. Running defense checks...</span>', '<span class="loader"></span> <span class="c-info">Received request. Valid session cookie found. Running defense checks...</span>');
+        await sleep(400);
+
+        if (currentDefense === '0') {
+          appendLog(logServer, '<span class="c-err">Koi additional check configured nahi hai. Directly processing.</span>', '<span class="c-err">No additional check is configured. Processing directly.</span>');
+          attackSuccess = true;
+        } else if (currentDefense === '1') {
+          appendLog(logServer, '<span class="c-warn">Validating Origin/Referer header against sbi.com...</span>', '<span class="c-warn">Validating Origin/Referer header against sbi.com...</span>');
+          await sleep(500);
+          if (currentVector === 'link_get') {
+            appendLog(logServer, '<span class="c-err">No Origin header found; Referer also absent (suppressed). Nothing to check against — fail-open. Allowing.</span>', '<span class="c-err">No Origin header found; Referer also absent (suppressed). Nothing to check against — fail-open. Allowing.</span>');
+            attackSuccess = true;
+          } else {
+            appendLog(logServer, '<span class="c-ok">Origin: https://freegift.com — MISMATCH with sbi.com. Rejecting.</span>', '<span class="c-ok">Origin: https://freegift.com — MISMATCH with sbi.com. Rejecting.</span>');
+          }
+        } else if (currentDefense === '2') {
+          appendLog(logServer, '<span class="c-warn">Checking csrf_token field against session-stored value...</span>', '<span class="c-warn">Checking csrf_token field against session-stored value...</span>');
+          await sleep(500);
+          appendLog(logServer, '<span class="c-ok">Token missing or invalid — attacker cannot know the real value. Rejecting.</span>', '<span class="c-ok">Token missing or invalid — attacker cannot know the real value. Rejecting.</span>');
+        } else if (currentDefense === '3') {
+          appendLog(logServer, '<span class="c-warn">SameSite=Lax allowed this cookie through (top-level safe-GET navigation). No token/header configured at this level.</span>', '<span class="c-warn">SameSite=Lax allowed this cookie through (top-level safe-GET navigation). No token/header configured at this level.</span>');
+          await sleep(500);
+          appendLog(logServer, '<span class="c-err">Session looks fully valid to the server. Processing.</span>', '<span class="c-err">Session looks fully valid to the server. Processing.</span>');
+          attackSuccess = true;
+        }
+      }
+
+      /* ---------- STEP 4: RESPONSE ---------- */
+      await sleep(400);
+      appendStage(logNetwork, "▶ STEP 4: INCOMING RESPONSE", "▶ STEP 4: INCOMING RESPONSE");
+      await sleep(300);
+      appendNetworkLog(logNetwork, '<span class="c-blue"><<< INCOMING HTTP RESPONSE</span>');
+      var rawRespBlock = document.createElement('div'); rawRespBlock.className = 'http-block'; logNetwork.appendChild(rawRespBlock);
+      var writeResp = async function(text) { var el = document.createElement('div'); el.className = 'log-line'; el.style.opacity='1'; el.innerHTML = text; rawRespBlock.appendChild(el); logNetwork.scrollTop = logNetwork.scrollHeight; await sleep(150); };
+
+      if (attackSuccess) {
+        await writeResp('<span class="http-proto">HTTP/1.1</span> <span class="resp-200">200 OK</span>');
+        await writeResp('<span class="http-body">{"transfer_status":"success","new_balance":"..."}</span>');
+      } else {
+        await writeResp('<span class="http-proto">HTTP/1.1</span> <span class="c-err">' + (requestNeverSent ? '(browser-blocked, no response)' : '403 Forbidden') + '</span>');
+        if (!requestNeverSent) { await writeResp('<span class="http-body">{"error":"csrf_validation_failed"}</span>'); }
+      }
+
+      /* ---------- STEP 5: FINAL RESULT ---------- */
+      await sleep(500);
+      appendStage(logBrowser, "▶ STEP 5: RESULT", "▶ STEP 5: RESULT");
+      await sleep(300);
+      if (attackSuccess) {
+        appendLog(logBrowser, '<span class="c-err">Rahul ke account se ₹50,000 bina Rahul ko bataye nikal gaye.</span>', '<span class="c-err">₹50,000 left Rahul\'s account without him ever knowing.</span>');
+      } else {
+        appendLog(logBrowser, '<span class="c-ok">Transfer nahi hua. Rahul ka balance safe hai.</span>', '<span class="c-ok">The transfer did not happen. Rahul\'s balance is safe.</span>');
+      }
+
+      await sleep(400);
+      if (attackSuccess) {
+        verdictBox.classList.remove('v-blocked');
+        verdictBox.classList.add('v-hacked', 'show');
+        verdictTitle.innerHTML = '💥 CSRF ATTACK SUCCESSFUL';
+      } else {
+        verdictBox.classList.remove('v-hacked');
+        verdictBox.classList.add('v-blocked', 'show');
+        verdictTitle.innerHTML = '🛡️ CSRF ATTACK BLOCKED';
+      }
+
+      var explanationHi = "", explanationEn = "";
+      if (currentDefense === '0') {
+        explanationHi = "Koi defense nahi tha. Cookie automatically attach hui aur server ne request ko bina check kiye process kar diya.";
+        explanationEn = "No defense was applied. The cookie attached automatically and the server processed the request without any checks.";
+      } else if (currentDefense === '1') {
+        if (currentVector === 'link_get') {
+          explanationHi = "Top-level GET navigation par browser Origin header bhejta hi nahi, aur attacker ne Referer bhi suppress kar diya. Server ke paas check karne ko kuch bacha hi nahi, aur fail-open design ne request allow kar di.";
+          explanationEn = "On a top-level GET navigation, the browser doesn't send an Origin header at all, and the attacker suppressed Referer too. The server had nothing left to check, and its fail-open design let the request through.";
+        } else {
+          explanationHi = "Ye request cross-origin POST/fetch thi, isliye browser ne Origin header zaroor bheja — aur wo sbi.com se match nahi hua. Server ne request reject kar di.";
+          explanationEn = "This request was a cross-origin POST/fetch, so the browser reliably sent an Origin header — and it didn't match sbi.com. The server rejected the request.";
+        }
+      } else if (currentDefense === '2') {
+        explanationHi = "Attacker ke paas sahi CSRF token kabhi nahi ho sakta, kyunki Same-Origin Policy use victim ke real page se token padhne hi nahi deti — chahe vector koi bhi ho.";
+        explanationEn = "The attacker can never have the correct CSRF token, because the Same-Origin Policy never lets them read it from the victim's real page — no matter which vector they use.";
+      } else if (currentDefense === '3') {
+        if (currentVector === 'link_get') {
+          explanationHi = "SameSite=Lax specifically top-level navigation ko, agar method safe (GET) ho, ek exception deta hai. Ye request bilkul us exception mein fit hoti hai, isliye cookie chali gayi aur attack safal ho gaya.";
+          explanationEn = "SameSite=Lax specifically carves out an exception for top-level navigation, if the method is safe (GET). This request fits that exception exactly, so the cookie went out and the attack succeeded.";
+        } else {
+          explanationHi = "Ye vector ya toh unsafe method (POST) use karta hai ya top-level navigation hi nahi hai — Lax ki exception yahan apply nahi hoti, isliye cookie withheld ho gayi aur request unauthenticated fail ho gayi.";
+          explanationEn = "This vector either uses an unsafe method (POST) or isn't a top-level navigation at all — Lax's exception doesn't apply here, so the cookie was withheld and the request failed as unauthenticated.";
+        }
+      } else if (currentDefense === '4') {
+        if (currentVector === 'fetch_js') {
+          explanationHi = "Custom header set karne ki koshish ne ek CORS preflight trigger kar diya. sbi.com ke server ne freegift.com ko allowed origins mein include nahi kiya tha, isliye preflight hi reject ho gaya — asli request kabhi bheji hi nahi gayi.";
+          explanationEn = "Attempting to set the custom header triggered a CORS preflight. sbi.com's server never included freegift.com in its allowed origins, so the preflight itself was rejected — the actual request was never even sent.";
+        } else {
+          explanationHi = "SameSite=Strict ne cookie ko HAR cross-site request par rok diya, top-level GET navigation samet — Defence 3 ka gap yahan band ho gaya. Plain form/link custom header set bhi nahi kar sakte, isliye ye layer bhi doubly safe hai.";
+          explanationEn = "SameSite=Strict withheld the cookie on EVERY cross-site request, including top-level GET navigation — closing Defence 3's gap right here. A plain form/link can't set the custom header either, making this layer doubly safe.";
+        }
+      }
+
+      var isEn = document.documentElement.getAttribute('data-lang') === 'en';
+      verdictText.innerHTML = isEn ? explanationEn : explanationHi;
+      btnExecute.disabled = false;
+    });
+  }
+}); // End DOMContentLoaded
+</script>
+
+</body>
+</html>

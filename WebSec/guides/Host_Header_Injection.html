@@ -1,0 +1,1464 @@
+<!DOCTYPE html>
+<html lang="hi" data-theme="dark" data-lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Host Header Injection — Problem Se Solution Tak</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Poppins:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root[data-theme="dark"] {
+    --bg:#050810;
+    --panel:#0F1524;
+    --panel-2:#1A2338;
+    --border:#263049;
+    --text:#E7ECF5;
+    --text-muted:#8B96AB;
+    --danger:#FF6B5B;
+    --danger-bg:rgba(255,107,91,0.12);
+    --safe:#3ECF8E;
+    --safe-bg:rgba(62,207,142,0.12);
+    --accent:#FFC857;
+    --accent-bg:rgba(255,200,87,0.14);
+    --blue:#4D9EFF;
+    --blue-bg:rgba(77,158,255,0.12);
+    --purple:#A855F7;
+    --radius:12px;
+    --mono:'IBM Plex Mono',ui-monospace,monospace;
+    --sans:'IBM Plex Sans',system-ui,sans-serif;
+    --glow: rgba(77, 158, 255, 0.05);
+    --shadow-sm: 0 4px 15px rgba(0, 0, 0, 0.25);
+  }
+
+  :root[data-theme="light"] {
+    --bg:#F4F7FB;
+    --panel:#FFFFFF;
+    --panel-2:#E8EEF5;
+    --border:#D1D9E6;
+    --text:#0F172A;
+    --text-muted:#475569;
+    --danger:#E11D48;
+    --danger-bg:rgba(225,29,72,0.12);
+    --safe:#059669;
+    --safe-bg:rgba(5,150,105,0.12);
+    --accent:#D97706;
+    --accent-bg:rgba(217,119,6,0.14);
+    --blue:#2563EB;
+    --blue-bg:rgba(37,99,235,0.12);
+    --purple:#9333EA;
+    --radius:12px;
+    --mono:'IBM Plex Mono',ui-monospace,monospace;
+    --sans:'IBM Plex Sans',system-ui,sans-serif;
+    --glow: rgba(77, 158, 255, 0.05);
+    --shadow-sm: 0 4px 15px rgba(0, 0, 0, 0.06);
+  }
+
+  html[data-lang="hi"] .lang-en { display: none !important; }
+  html[data-lang="en"] .lang-hi { display: none !important; }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--bg);color:var(--text);font-family:var(--sans);
+    margin:0;padding:0;line-height:1.7;-webkit-font-smoothing:antialiased;
+    transition: background-color 0.3s, color 0.3s;
+    background-image: 
+      radial-gradient(circle at 15% 50%, var(--glow), transparent 25%),
+      radial-gradient(circle at 85% 30%, var(--glow), transparent 25%);
+  }
+  ::selection{background:var(--accent-bg);color:var(--accent);}
+  strong{color:var(--text);font-weight:600;}
+
+  code{
+    font-family:var(--mono);background:var(--panel-2);border:1px solid var(--border);
+    padding:2px 6px;border-radius:6px;font-size:0.88em;color:var(--accent);
+    transition: all 0.2s;
+  }
+  code:hover { background: var(--accent-bg); border-color: var(--accent); }
+
+  pre{
+    background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
+    padding:40px 18px 18px 18px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;
+    line-height:1.6;color:var(--text);margin:18px 0; position: relative;
+    box-shadow: 0 10px 30px -10px rgba(0,0,0,0.2);
+  }
+  pre::before {
+    content: ''; position: absolute; top: 14px; left: 16px;
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--danger); box-shadow: 16px 0 0 var(--accent), 32px 0 0 var(--safe);
+  }
+  pre code{background:none;border:none;padding:0;color:inherit; box-shadow: none;}
+  pre code:hover { background: none; border: none; }
+
+  /* ── TOPBAR ── */
+  .topbar{
+    position:sticky;top:0;z-index:50;background:rgba(15, 21, 36, 0.7);
+    backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+    border-bottom:1px solid var(--border);
+    padding:14px 20px;display:flex;align-items:center;justify-content:space-between;
+    gap:12px;flex-wrap:wrap; box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  }
+  :root[data-theme="light"] .topbar { background:rgba(255, 255, 255, 0.8); }
+
+  .brand{
+    font-family:var(--mono);font-weight:700;font-size:15.5px;
+    display:flex;align-items:center;gap:10px;cursor:default;
+  }
+  .brand-icon { font-size: 19px; display: inline-block; animation: shield-pulse 2.5s infinite ease-in-out; }
+  .brand-text {
+    background: linear-gradient(90deg, var(--accent), var(--safe));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    transition: all 0.3s ease; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .brand-text code { background: none; border: none; padding: 0; color: inherit; font-size: 1em; box-shadow: none;}
+  .brand:hover .brand-text { filter: drop-shadow(0 0 10px rgba(62, 207, 142, 0.5)); }
+  @keyframes shield-pulse { 0%, 100% { transform: scale(1); filter: drop-shadow(0 0 3px var(--safe)); } 50% { transform: scale(1.15); filter: drop-shadow(0 0 10px var(--safe)); } }
+
+  /* ── SUB-NAV BUTTONS ── */
+  .sub-nav-wrapper {
+    position: relative;
+    background: transparent;
+    border-bottom: none;
+    padding: 16px 20px 0;
+    box-shadow: none;
+  }
+  .sub-nav-bar {
+    max-width: 880px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding: 2px 0;
+    pointer-events: auto;
+  }
+  .sub-nav-bar::-webkit-scrollbar { display: none; }
+
+  .sub-nav-btn {
+    flex: 1 1 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: var(--panel);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    padding: 8px 14px;
+    border-radius: 24px;
+    text-decoration: none;
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    white-space: nowrap;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+    text-align: center;
+  }
+  :root[data-theme="light"] .sub-nav-btn {
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+  }
+  .sub-nav-btn.home-nav-btn {
+    border-color: rgba(59, 130, 246, 0.4);
+    background: rgba(59, 130, 246, 0.08);
+    color: var(--text);
+  }
+  .sub-nav-btn.home-nav-btn:hover {
+    border-color: var(--blue);
+    background: rgba(59, 130, 246, 0.2);
+    color: #93c5fd;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.35);
+  }
+  .sub-nav-btn.topic-btn {
+    border-color: rgba(255, 200, 87, 0.35);
+    background: rgba(255, 200, 87, 0.06);
+    color: var(--accent);
+  }
+  .sub-nav-btn .sub-nav-icon {
+    font-size: 14.5px;
+    display: inline-block;
+    flex-shrink: 0;
+  }
+  .sub-nav-btn:hover {
+    border-color: var(--accent);
+    background: var(--accent-bg);
+    color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px var(--accent-bg);
+  }
+
+  .controls-wrapper { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .theme-toggle {
+    background: var(--panel); border: 1px solid var(--border); color: var(--text);
+    padding: 6px 14px; border-radius: 20px; cursor: pointer; font-weight: 600;
+    font-family: var(--sans); font-size: 12px; transition: all 0.2s ease;
+  }
+  .theme-toggle:hover { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); transform: translateY(-1px); }
+
+  .lang-switch-wrapper {
+    display: flex; align-items: center; gap: 6px; font-family: var(--sans);
+    font-size: 12px; font-weight: 600; color: var(--text); background: var(--panel);
+    padding: 6px 12px; border-radius: 20px; border: 1px solid var(--border);
+  }
+  .lang-active { color: var(--accent); text-shadow: 0 0 8px var(--accent-bg); } 
+  .lang-inactive { color: var(--text-muted); }
+  .switch { position: relative; display: inline-block; width: 32px; height: 18px; margin: 0 4px;}
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider {
+    position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+    background-color: var(--border); transition: .4s; border-radius: 20px;
+  }
+  .slider:before {
+    position: absolute; content: ""; height: 12px; width: 12px; left: 3px; bottom: 3px;
+    background-color: var(--text); transition: .4s; border-radius: 50%;
+  }
+  input:checked + .slider { background-color: var(--accent); }
+  input:checked + .slider:before { transform: translateX(14px); background-color: #fff; }
+
+  main{max-width:880px;margin:0 auto;padding:0 20px 40px; position: relative; z-index: 1;}
+
+  .hero{padding:40px 0 30px; position: relative; border-bottom: 1px solid var(--border); margin-bottom: 35px;}
+  .hero::after {
+    content: ''; position: absolute; top: -50px; left: 50%; transform: translateX(-50%);
+    width: 100vw; height: 100%; background: radial-gradient(ellipse at top, var(--blue-bg), transparent 60%);
+    z-index: -1; pointer-events: none; opacity: 0.6;
+  }
+  .eyebrow{
+    font-family:var(--mono);font-size:12px;letter-spacing:.14em;color:var(--danger);
+    text-transform:uppercase;margin:0 0 14px;display:flex;align-items:center;gap:8px;
+  }
+  .eyebrow::before{content:"●";font-size:9px; animation: blink 1s infinite alternate;}
+  h1.title{
+    font-family:var(--mono);font-weight:700;font-size:clamp(22px,4.2vw,32px);
+    line-height:1.45;margin:0 0 24px;color:var(--text);letter-spacing:-0.01em; text-align: justify;
+  }
+
+  .terminal{
+    background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:hidden;
+    box-shadow:0 10px 30px -10px rgba(0,0,0,0.3); margin-bottom: 24px;
+  }
+  .terminal-bar{display:flex;align-items:center;gap:7px;padding:12px 16px;border-bottom:1px solid var(--border);background:#11141a;}
+  .terminal-dot{width:10px;height:10px;border-radius:50%;background:#3A4460;}
+  .terminal-dot:nth-child(1){background:#FF5F56;}
+  .terminal-dot:nth-child(2){background:#FFBD2E;}
+  .terminal-dot:nth-child(3){background:#27C93F;}
+  .terminal-label{margin-left:8px;font-family:var(--mono);font-size:11.5px;color:var(--text-muted);}
+  .terminal-body{padding:22px 20px 24px;font-family:var(--mono);font-size:13.5px;color:var(--text);min-height:115px; line-height: 1.6;}
+  .terminal-body .prompt{color:var(--safe);}
+  .terminal-body .cursor{display:inline-block;width:8px;height:16px;background:var(--accent);vertical-align:middle;margin-left:2px;animation:blink 1s step-end infinite;}
+  @keyframes blink{50%{opacity:0;}}
+
+  .intro-block {
+    margin-top: 24px; padding: 22px 24px;
+    background: linear-gradient(135deg, var(--panel) 0%, transparent 100%);
+    border: 1px solid var(--border); border-left: 4px solid var(--accent);
+    border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+    position: relative; overflow: hidden;
+  }
+  .intro-block p{margin:0 0 14px;font-size:15px;color:var(--text); text-align: justify; line-height: 1.7;}
+  .intro-block p:last-child{margin-bottom:0;}
+
+  /* ── SECTION HEADINGS & LEVEL CARDS ── */
+  .sec-head{margin:45px 0 10px;}
+  .sec-eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.15em;color:var(--accent);text-transform:uppercase;margin:0 0 8px; display: flex; align-items: center; gap: 8px;}
+  .sec-eyebrow::after { content: ''; height: 1px; width: 40px; background: var(--accent); opacity: 0.5; }
+  .sec-head h2{
+    font-family:var(--mono);font-size:clamp(20px,3.8vw,26px);margin:0 0 12px;
+    background: linear-gradient(90deg, var(--text), var(--text-muted));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .sec-head p{font-size:15px;color:var(--text-muted);margin:0 0 20px;line-height: 1.6; text-align: justify;}
+
+  .levels{margin-top:24px;display:flex;flex-direction:column;gap:16px;}
+  .level-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);scroll-margin-top:90px;overflow:hidden; transition: all 0.3s;}
+  .level-card:hover { border-color: rgba(255,255,255,0.12); box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
+  .level-card.open { border-color: var(--accent); box-shadow: 0 8px 30px var(--accent-bg); }
+
+  .level-header{
+    width:100%;background:none;border:none;color:var(--text);display:flex;align-items:center;
+    gap:16px;padding:18px 20px;cursor:pointer;text-align:left;font-family:var(--sans);
+  }
+  .level-header:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;}
+  .level-badge{
+    font-family:var(--mono);font-weight:700;font-size:15px;width:38px;height:38px;flex:none;
+    border-radius:10px;display:flex;align-items:center;justify-content:center;
+    background:var(--panel-2);border:1px solid var(--border);color:var(--text-muted);
+    transition: all 0.3s;
+  }
+  .level-card.open .level-badge { background: var(--accent-bg); color: var(--accent); border-color: var(--accent); }
+
+  .level-titles{flex:1;min-width:0;}
+  .level-titles h2{margin:0 0 4px;font-size:16px;font-weight:600;color:var(--text); transition: color 0.3s;}
+  .level-card.open .level-titles h2 { color: var(--accent); }
+  .level-titles p{margin:0;font-size:13px;color:var(--text-muted);}
+  .level-tag{
+    font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.05em;
+    padding:4px 10px;border-radius:20px;white-space:nowrap;flex:none;
+  }
+  .level-tag.problem{background:var(--danger-bg);color:var(--danger); border: 1px solid rgba(255,107,91,0.2);}
+  .level-tag.solved{background:var(--safe-bg);color:var(--safe); border: 1px solid rgba(62,207,142,0.2);}
+  .level-tag.concept{background:var(--accent-bg);color:var(--accent); border: 1px solid rgba(255,200,87,0.2);}
+
+  .chevron{flex:none;color:var(--text-muted);transition:transform .3s ease;font-size:14px;}
+  .level-card.open .chevron{transform:rotate(180deg); color: var(--accent);}
+
+  .level-body{ display: none; }
+  .level-card.open .level-body{ display: block; animation: fadeIn .3s ease; }
+
+  .level-inner{padding:0 20px 24px;font-size:14.8px; border-top: 1px solid var(--border); margin-top: 4px; padding-top: 20px;}
+  .level-inner p{margin:0 0 14px;color:var(--text); text-align: justify; line-height: 1.7;}
+  .level-inner h4{margin:22px 0 10px;font-size:14px;color:var(--accent);font-weight:600;font-family:var(--mono);letter-spacing:.04em; text-transform: uppercase;}
+
+  .callout{
+    border-left:4px solid var(--danger);background:linear-gradient(90deg, var(--danger-bg), transparent);
+    border-radius:0 10px 10px 0;padding:16px 20px;margin:18px 0;font-size:14px;
+    box-shadow: inset 0 0 20px rgba(255,107,91,0.05);
+  }
+  .callout.fixnote{border-left-color:var(--safe);background:linear-gradient(90deg, var(--safe-bg), transparent); box-shadow: inset 0 0 20px rgba(62,207,142,0.05);}
+  .callout.analogy{border-left-color:var(--accent);background:linear-gradient(90deg, var(--accent-bg), transparent); box-shadow: inset 0 0 20px rgba(255,200,87,0.05);}
+  .callout.analogy .cal-label{color:var(--accent);}
+  .callout p{margin:0;color:var(--text); text-align: justify;}
+  .callout p+p{margin-top:10px;}
+  .callout .cal-label{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.06em;display:block;margin-bottom:8px;color:var(--danger);}
+  .callout.fixnote .cal-label{color:var(--safe);}
+
+  /* ── SIMULATION LINK BUTTONS INSIDE CARDS ── */
+  .simulation-cta-box {
+    margin-top: 18px; margin-bottom: 12px;
+    background: rgba(255, 200, 87, 0.05); border: 1px dashed var(--accent);
+    padding: 14px 18px; border-radius: 10px; display: flex; align-items: center;
+    justify-content: space-between; flex-wrap: wrap; gap: 12px;
+  }
+  .simulation-cta-box a {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--mono); font-size: 13px; font-weight: 700;
+    color: #000; background: var(--accent); padding: 8px 18px;
+    border-radius: 20px; text-decoration: none;
+    transition: all 0.25s ease; box-shadow: 0 4px 14px rgba(255, 200, 87, 0.3);
+  }
+  .simulation-cta-box a:hover {
+    transform: translateY(-2px); box-shadow: 0 6px 18px rgba(255, 200, 87, 0.5);
+    filter: brightness(1.1);
+  }
+
+  .mini-table{width:100%;border-collapse:collapse;margin:16px 0;font-size:13px; background: var(--panel-2); border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.15);}
+  .mini-table th,.mini-table td{border:1px solid var(--border);padding:12px 14px;text-align:left;}
+  .mini-table th{background:var(--bg);color:var(--accent);font-weight:700;font-family:var(--mono);font-size:12px; text-transform: uppercase; letter-spacing: 0.5px;}
+  .mini-table td{color:var(--text); font-family: var(--mono); font-size: 12.5px;}
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── IMPACT CARDS SECTION ── */
+  .impact-section {
+    background: linear-gradient(145deg, var(--panel), var(--bg));
+    border: 2px solid var(--border);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+    position: relative; overflow: hidden;
+    padding: 30px 24px; border-radius: 14px; margin-top: 35px; margin-bottom: 24px;
+  }
+  .impact-section::before {
+    content:''; position:absolute; top:0; left:0; width:100%; height:4px;
+    background: linear-gradient(90deg, var(--danger), var(--accent), var(--blue));
+  }
+  .impact-card {
+    background: var(--panel); border: 1px solid var(--border); border-left: 4px solid var(--danger);
+    border-radius: 10px; padding: 18px 20px; margin-bottom: 16px; transition: all 0.3s;
+  }
+  .impact-card:last-child{margin-bottom:0;}
+  .impact-card:hover{ transform: translateX(4px); box-shadow: 0 8px 20px rgba(255,107,91,0.08); border-color: rgba(255,255,255,0.1);}
+  .impact-card h3{ margin:0 0 10px; font-size:14.5px; color:var(--danger); font-family:var(--mono); display:flex; align-items:center; gap:10px; text-transform:uppercase; letter-spacing:0.5px;}
+  .impact-card p{margin:0; font-size:14px; color:var(--text); text-align:justify; line-height:1.7;}
+
+  /* ── IN-PAGE INTERACTIVE LAB / SIMULATOR ── */
+  .simulator-section {
+    background: #050505; border: 1px solid var(--border); border-radius: 14px;
+    margin-top: 35px; margin-bottom: 24px; overflow: hidden; position: relative;
+    display: flex; flex-direction: column; box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+  }
+  .simulator-section::before {
+    content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px;
+    background: linear-gradient(90deg, transparent, #ff3c3c, transparent);
+    animation: scanline 3s linear infinite;
+  }
+  .simulator-section::after {
+    content: ''; position: absolute; top: 0; left: -100%; width: 60%; height: 2px;
+    background: linear-gradient(90deg, transparent, #38bdf8, #ef4444, transparent);
+    animation: pipelineLaser 3s linear infinite;
+  }
+  @keyframes scanline { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+  @keyframes pipelineLaser { 0% { left: -60%; } 100% { left: 140%; } }
+
+  .sim-header-bar {
+    background: #0a0c10; border-bottom: 1px solid #1f242d; padding: 18px 24px;
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;
+  }
+  .sim-title {
+    font-family: var(--mono); font-size: 15px; font-weight: 700; color: #fff;
+    display: flex; align-items: center; gap: 10px; letter-spacing: 0.5px;
+  }
+  .sim-controls { display: flex; flex-direction: column; gap: 14px; width: 100%; margin-top: 10px; }
+  .sim-control-group { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .sim-control-group label {
+    font-family: var(--mono); font-size: 11.5px; color: #64748b;
+    text-transform: uppercase; letter-spacing: 1px; min-width: 130px; font-weight: bold;
+  }
+  .sim-btn-group { display: flex; gap: 8px; flex-wrap: wrap; background: #000; padding: 4px; border-radius: 6px; border: 1px solid #1f242d;}
+  .sim-btn {
+    background: transparent; border: none; color: #64748b; padding: 6px 13px;
+    border-radius: 4px; font-family: var(--mono); font-size: 11.5px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .sim-btn:hover { color: #fff; }
+  .sim-btn.active { background: #1f242d; color: #4d9eff; box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
+
+  .btn-execute {
+    background: rgba(57, 255, 122, 0.1); color: #39ff7a; border: 1px solid #39ff7a;
+    padding: 10px 24px; border-radius: 6px; font-family: var(--mono); font-size: 13px;
+    font-weight: 700; cursor: pointer; transition: all 0.2s; text-transform: uppercase;
+    align-self: flex-start; letter-spacing: 1px; box-shadow: 0 0 15px rgba(57, 255, 122, 0.15);
+  }
+  .btn-execute:hover { background: #39ff7a; color: #000; box-shadow: 0 0 20px rgba(57, 255, 122, 0.4); transform: translateY(-2px); }
+
+  .workspace { display: flex; padding: 18px; gap: 16px; height: 460px; background: #050505; }
+  @media (max-width: 850px) { .workspace { flex-direction: column; height: auto; min-height: 600px; } }
+
+  .sim-panel {
+    flex: 1; background: #0a0c10; border: 1px solid #1f242d; border-radius: 8px;
+    display: flex; flex-direction: column; overflow: hidden; box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+  }
+  .sim-panel-header {
+    background: #11141a; padding: 10px 14px; font-family: var(--mono); font-size: 11.5px;
+    font-weight: 700; color: #fff; border-bottom: 1px solid #1f242d; display: flex;
+    align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .sim-panel-body {
+    flex: 1; padding: 14px; font-family: var(--mono); font-size: 12px;
+    line-height: 1.6; overflow-y: auto; background: #000000;
+  }
+
+  #panel-client .sim-panel-header { border-top: 2px solid #ffcc00; }
+  #panel-routing .sim-panel-header { border-top: 2px solid #4d9eff; }
+  #panel-server .sim-panel-header { border-top: 2px solid #39ff7a; }
+
+  .http-block { background: rgba(255,255,255,0.03); border-left: 2px solid #4d9eff; padding: 10px; margin: 8px 0; border-radius: 0 6px 6px 0; }
+  .http-header-key { color: #6ab0ff; } .http-header-val { color: #9cdb9e; } .http-body { color: #ff9d66; margin-top: 8px; display: block; }
+
+  .sim-verdict-box {
+    margin: 0 18px 18px 18px; background: #0d0f12; border: 1px solid #1f242d;
+    padding: 20px 22px; border-radius: 8px; font-family: var(--sans); display: none;
+  }
+  .sim-verdict-box.show { display: block; animation: slideInUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+  .sim-verdict-title { font-family: var(--mono); font-size: 16px; font-weight: 700; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;}
+  .sim-verdict-text { font-size: 14.5px; color: #e2e8f0; line-height: 1.6; text-align: justify;}
+  .v-hacked { border-color: #ff3c3c; background: rgba(255, 60, 60, 0.08); box-shadow: inset 0 0 30px rgba(255,60,60,0.1); }
+  .v-hacked .sim-verdict-title { color: #ff3c3c; }
+  .v-blocked { border-color: #39ff7a; background: rgba(57, 255, 122, 0.08); box-shadow: inset 0 0 30px rgba(57,255,122,0.1);}
+  .v-blocked .sim-verdict-title { color: #39ff7a; }
+  @keyframes slideInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ── FAQ & CHECKLIST ── */
+  .faq-section {
+    background: linear-gradient(145deg, var(--panel), var(--bg));
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 30px 24px;
+    margin-top: 40px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  }
+  .faq-item {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 12px;
+    transition: all 0.3s ease;
+  }
+  .faq-item.active { border-color: var(--accent); box-shadow: 0 4px 15px var(--accent-bg); }
+  .faq-question {
+    width: 100%; text-align: left; background: none; border: none;
+    padding: 16px 20px; display: flex; align-items: center; gap: 14px;
+    cursor: pointer; color: var(--text); font-family: var(--sans); font-size: 14.5px;
+  }
+  .faq-q-badge {
+    font-family: var(--mono); color: var(--accent); font-weight: 700;
+    background: var(--bg); padding: 4px 8px; border-radius: 6px;
+    font-size: 12.5px; flex-shrink: 0; border: 1px solid var(--border);
+  }
+  .faq-item.active .faq-q-badge { background: var(--accent-bg); border-color: var(--accent); }
+  .faq-q-text { flex: 1; line-height: 1.5; font-weight: 500; }
+  .faq-icon { color: var(--text-muted); transition: transform 0.3s ease; font-size: 12px; }
+  .faq-item.active .faq-icon { transform: rotate(180deg); color: var(--accent); }
+  .faq-answer {
+    display: none; padding: 0 20px 20px; border-top: 1px solid var(--border);
+    margin-top: 4px; padding-top: 16px; color: var(--text-muted);
+    font-family: var(--mono); font-size: 13.5px; line-height: 1.7; text-align: justify;
+  }
+  .faq-item.active .faq-answer { display: block; animation: fadeIn 0.3s ease; }
+
+  #tester-checklist {
+    background: linear-gradient(145deg, var(--panel), var(--bg));
+    border: 2px solid var(--border);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+    position: relative; overflow: hidden;
+    padding: 30px 24px; border-radius: 14px; margin-top: 40px;
+  }
+  #tester-checklist::before {
+    content:''; position:absolute; top:0; left:0; width:100%; height:4px;
+    background: linear-gradient(90deg, var(--safe), var(--accent), var(--danger));
+  }
+  .check-label {
+    display: flex; align-items: flex-start; gap: 14px;
+    cursor: pointer; padding: 12px 14px; border-radius: 8px;
+    transition: background 0.2s ease, transform 0.2s ease;
+    border: 1px solid transparent;
+  }
+  .check-label:hover { background: var(--panel-2); border-color: var(--border); transform: translateX(4px); }
+  .check-input { display: none; }
+  .check-box {
+    width: 20px; height: 20px; border: 2px solid var(--text-muted);
+    border-radius: 5px; flex-shrink: 0; margin-top: 2px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    background: var(--bg);
+  }
+  .check-input:checked + .check-box {
+    background: var(--safe); border-color: var(--safe);
+    box-shadow: 0 0 10px var(--safe-bg);
+  }
+  .check-input:checked + .check-box::after {
+    content: "✓"; color: #000; font-size: 13px; font-weight: 900;
+  }
+  .check-text { font-size: 14px; color: var(--text); line-height: 1.6; }
+
+    /* ── BOTTOM NAVIGATION ROW ── */
+  .bottom-nav-row {
+    margin-top: 45px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    gap: 16px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+  }
+  .nav-arrow-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 18px;
+    border-radius: 20px;
+    text-decoration: none;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.25s ease;
+    box-shadow: var(--shadow-sm);
+    white-space: nowrap;
+  }
+  .nav-arrow-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-bg);
+    transform: translateY(-2px);
+  }
+  .bottom-nav-row .nav-prev {
+    grid-column: 1;
+    justify-self: start;
+  }
+  .bottom-nav-row .nav-home {
+    grid-column: 2;
+    justify-self: center;
+    text-align: center;
+  }
+  .bottom-nav-row .nav-next {
+    grid-column: 3;
+    justify-self: end;
+  }
+  @media (max-width: 768px) {
+    .bottom-nav-row {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+    }
+    .bottom-nav-row .nav-arrow-btn {
+      justify-content: center;
+      width: 100%;
+      text-align: center;
+      white-space: normal;
+    }
+    .bottom-nav-row .nav-empty {
+      display: none;
+    }
+  }
+
+
+
+  /* ── Designed and Developed by Footer (Matched with xss.html) ── */
+  .modern-footer { padding: 40px 18px 30px; text-align: center; position: relative; z-index: 1; }
+  .footer-badge {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: linear-gradient(145deg, var(--panel-2), var(--panel));
+    padding: 12px 28px; border-radius: 30px; font-family: var(--mono); font-size: 13.5px;
+    color: var(--text-muted); border: 1px solid var(--border);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.25); cursor: default;
+  }
+  .footer-badge:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 30px rgba(239, 68, 68, 0.25);
+    border-color: var(--danger);
+    color: var(--text);
+  }
+  .dev-name {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+    background: linear-gradient(90deg, #3B82F6, #A855F7, #F43F5E, #F59E0B, #3B82F6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    background-size: 200% auto;
+    animation: gradient-flow 4s linear infinite;
+  }
+  @keyframes gradient-flow {
+    0% { background-position: 0% center; }
+    100% { background-position: 200% center; }
+  }
+
+  /* ── DYNAMIC CYBER BACKGROUND ── */
+  .cyber-bg {
+    position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden;
+  }
+  .cyber-grid {
+    position: absolute; inset: -120px;
+    background-image: 
+      radial-gradient(rgba(255, 255, 255, 0.12) 1.2px, transparent 1.2px),
+      linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+    background-size: 32px 32px, 96px 96px, 96px 96px;
+    opacity: 0.85;
+    animation: gridDrift 60s linear infinite;
+  }
+  @keyframes gridDrift { 0% { transform: translate(0, 0); } 100% { transform: translate(96px, 96px); } }
+  .cyber-orb { position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.35; will-change: transform; }
+  .orb-1 { width: 550px; height: 550px; background: radial-gradient(circle, #ff6b5b 0%, transparent 70%); top: -100px; left: -100px; animation: floatOrb1 16s ease-in-out infinite alternate; }
+  .orb-2 { width: 600px; height: 600px; background: radial-gradient(circle, #ffc857 0%, transparent 70%); bottom: -80px; right: -100px; animation: floatOrb2 20s ease-in-out infinite alternate; }
+  .orb-3 { width: 480px; height: 480px; background: radial-gradient(circle, #3ecf8e 0%, transparent 70%); top: 35%; right: 15%; animation: floatOrb3 18s ease-in-out infinite alternate; }
+  .orb-4 { width: 500px; height: 500px; background: radial-gradient(circle, #4d9eff 0%, transparent 70%); bottom: 15%; left: 10%; animation: floatOrb4 22s ease-in-out infinite alternate; }
+  @keyframes floatOrb1 { 0% { transform: translate(0,0); } 100% { transform: translate(-40px, 100px); } }
+  @keyframes floatOrb2 { 0% { transform: translate(0,0); } 100% { transform: translate(-70px, -60px); } }
+  @keyframes floatOrb3 { 0% { transform: translate(0,0); } 100% { transform: translate(-80px, -40px); } }
+  @keyframes floatOrb4 { 0% { transform: translate(0,0); } 100% { transform: translate(80px, 60px); } }
+</style>
+</head>
+<body>
+
+<div class="cyber-bg" aria-hidden="true">
+  <div class="cyber-orb orb-1"></div>
+  <div class="cyber-orb orb-2"></div>
+  <div class="cyber-orb orb-3"></div>
+  <div class="cyber-orb orb-4"></div>
+  <div class="cyber-grid"></div>
+</div>
+
+<!-- ================= TOPBAR ================= -->
+<div class="topbar">
+  <a href="../index.html" class="brand" style="text-decoration:none; color:inherit;" title="Return to Main Hub">
+    <span class="brand-icon">🛡️</span>
+    <span class="brand-text"><code>INJECTION :</code> Host Header Injection</span>
+  </a>
+  <div class="controls-wrapper">
+    <div class="lang-switch-wrapper">
+      <span id="lbl-hi" class="lang-active">Hindi</span>
+      <label class="switch">
+        <input type="checkbox" id="langToggle" onchange="toggleLanguage()">
+        <span class="slider"></span>
+      </label>
+      <span id="lbl-en" class="lang-inactive">English</span>
+    </div>
+    <button class="theme-toggle" id="themeBtn" onclick="toggleTheme()">☀️ Light Mode</button>
+  </div>
+</div>
+
+<!-- ================= HORIZONTAL SUB-NAV BAR ================= -->
+<div class="sub-nav-wrapper">
+  <nav class="sub-nav-bar" aria-label="Section Navigation">
+    <a class="sub-nav-btn home-nav-btn" href="../index.html" title="Main Home Page">
+      <span class="sub-nav-icon">🏠</span>
+      <span class="lang-hi">Home</span><span class="lang-en">Home</span>
+    </a>
+    <a class="sub-nav-btn" href="#simulator">
+      <span class="sub-nav-icon">⚡</span>
+      <span class="lang-hi">Simulator</span><span class="lang-en">Simulator</span>
+    </a>
+    <a class="sub-nav-btn" href="#impact-vectors">
+      <span class="sub-nav-icon">💥</span>
+      <span class="lang-hi">Attack Vectors</span><span class="lang-en">Attack Vectors</span>
+    </a>
+    <a class="sub-nav-btn" href="#confusing-questions">
+      <span class="sub-nav-icon">🤔</span>
+      <span class="lang-hi">Questions</span><span class="lang-en">Questions</span>
+    </a>
+    <a class="sub-nav-btn" href="#tester-checklist">
+      <span class="sub-nav-icon">📝</span>
+      <span class="lang-hi">Checklist</span><span class="lang-en">Checklist</span>
+    </a>
+  </nav>
+</div>
+
+<main>
+
+  <!-- ── HERO SECTION ── -->
+  <section class="hero">
+    <p class="eyebrow"><span class="lang-hi">Web Security Fundamentals — Deep Dive</span><span class="lang-en">Web Security Fundamentals — Deep Dive</span></p>
+    <h1 class="title">
+      <span class="lang-hi">Host Header Injection: Server Ka Blind Trust Aur Critical Account Takeover</span>
+      <span class="lang-en">Host Header Injection: Server Blind Trust And Critical Account Takeovers</span>
+    </h1>
+
+    <div class="terminal">
+      <div class="terminal-bar">
+        <span class="terminal-dot"></span><span class="terminal-dot"></span><span class="terminal-dot"></span>
+        <span class="terminal-label">server.request_dispatcher</span>
+      </div>
+      <div class="terminal-body">
+        <span class="prompt">&gt;</span> <span id="typewriter"></span><span class="cursor"></span>
+      </div>
+    </div>
+
+    <div class="intro-block">
+      <p><strong><span class="lang-hi">HTTP Host Header</span><span class="lang-en">HTTP Host Header</span></strong>
+        <span class="lang-hi">HTTP/1.1 ka ek mandatory request header hai jo batata hai ki client kis domain ya hostname ko access karna chahta hai (jaise <code>Host: example.com</code>). Virtual Hosting mein ek hi IP address par hazaron websites chalti hain, aur server isi Host header ko dekh kar decide karta hai ki request kis website ke paas bhejna hai.</span>
+        <span class="lang-en">is a mandatory HTTP/1.1 request header specifying which domain or virtual host the client intends to access (e.g. <code>Host: example.com</code>). In Virtual Hosting, thousands of websites run on a single IP, and the web server inspects this header to route traffic to the intended site.</span>
+      </p>
+      <p>
+        <span class="lang-hi"><strong>Host Header Injection tab banti hai</strong> jab backend application ya proxy is <code>Host</code> header ki value ko USER-SUPPLIED INPUT samajhne ke bajaye ek 100% "trusted configuration" maan leti hai. Agar developer password reset link banane, redirects karne, ya scripts include karne mein bina validation ke <code>$_SERVER['HTTP_HOST']</code> use karta hai, toh attacker ise tamper karke <strong>Password Reset Poisoning</strong>, <strong>Web Cache Poisoning</strong>, aur <strong>SSRF</strong> jaise massive attacks execute kar sakta hai!</span>
+        <span class="lang-en"><strong>Host Header Injection occurs</strong> when a backend application or reverse proxy treats the <code>Host</code> header as trusted system configuration rather than untrusted user input. If developers construct password reset links, redirect URLs, or script imports using <code>$_SERVER['HTTP_HOST']</code> without strict validation, attackers manipulate it to trigger <strong>Password Reset Poisoning</strong>, <strong>Web Cache Poisoning</strong>, and <strong>Routing-based SSRF</strong>!</span>
+      </p>
+    </div>
+  </section>
+
+  <!-- ── LEVEL CARDS: CONCEPTS & VECTORS ── -->
+  <section class="sec-head">
+    <div class="sec-eyebrow"><span class="lang-hi">Step-by-Step Learning</span><span class="lang-en">Step-by-Step Learning</span></div>
+    <h2><span class="lang-hi">Vulnerability Levels & Mechanics</span><span class="lang-en">Vulnerability Levels & Mechanics</span></h2>
+    <p>
+      <span class="lang-hi">Host Header kaise kaam karta hai, injection kaise possible hoti hai, aur attackers isse company ke sabse sensitive systems kaise compromise karte hain — sab kuch deeply samjhein.</span>
+      <span class="lang-en">Understand how the Host header functions, how injection vulnerabilities arise, and how attackers compromise sensitive corporate infrastructure step-by-step.</span>
+    </p>
+  </section>
+
+  <div class="levels">
+
+    <!-- LEVEL 0 -->
+    <div class="level-card open" id="lvl0">
+      <button class="level-header" onclick="toggleLevel('lvl0')">
+        <span class="level-badge">00</span>
+        <div class="level-titles">
+          <h2><span class="lang-hi">Host Header Ki Asal Zaroorat Kya Hai?</span><span class="lang-en">Why Does The Host Header Even Exist?</span></h2>
+          <p><span class="lang-hi">HTTP/1.0 vs HTTP/1.1, Virtual Hosting & Single IP Architecture</span><span class="lang-en">HTTP/1.0 vs HTTP/1.1, Virtual Hosting & Single IP Architecture</span></p>
+        </div>
+        <span class="level-tag concept">CONCEPT</span>
+        <span class="chevron">▼</span>
+      </button>
+      <div class="level-body">
+        <div class="level-inner">
+          <p>
+            <span class="lang-hi">Purane HTTP/1.0 ke daur mein har website ke paas ek dedicated unique IP address hota tha. Lekin jaise internet grow hua, IPv4 addresses kam padne lage. Solution nikla: <strong>Virtual Hosting</strong> — jahan ek single physical server aur ek hi IP address par 50 alag-alag domains (e.g. <code>site-a.com</code>, <code>site-b.com</code>, <code>site-c.com</code>) chal sakte hain.</span>
+            <span class="lang-en">In early HTTP/1.0 days, each website possessed its own dedicated IP address. As the web exploded, IPv4 addresses became scarce. The solution was <strong>Virtual Hosting</strong> — hosting dozens of independent websites (e.g. <code>site-a.com</code>, <code>site-b.com</code>) on a single physical server sharing one IP.</span>
+          </p>
+          <div class="callout analogy">
+            <span class="cal-label">🏢 REAL-WORLD ANALOGY</span>
+            <p>
+              <span class="lang-hi">Socho ek badi apartment building hai jiska ek hi street address hai (IP Address). Building ke andar 100 flats hain (Websites). Agar postman ko sirf building ka address diya jaye bina Flat Number (Host Header) ke, toh postman ko kaise pata chalega ki chitthi kis flat me daalni hai? Isliye <code>Host</code> header envelope par likha "Flat Number / Room Name" hota hai!</span>
+              <span class="lang-en">Imagine a large apartment complex with a single building address (IP Address) housing 100 tenants (Websites). If a courier arrives without a specific apartment number (Host Header), they have no idea which door to deliver to. The <code>Host</code> header is the apartment number on the envelope!</span>
+            </p>
+          </div>
+          <h4><span class="lang-hi">RFC 2616 Rule</span><span class="lang-en">RFC 2616 Specification</span></h4>
+          <p>
+            <span class="lang-hi">HTTP/1.1 standard ke hisaab se har request mein <code>Host</code> header aana <strong>compulsory</strong> hai. Agar koi request bina Host header ke aati hai, toh server ko <code>400 Bad Request</code> return karna hota hai.</span>
+            <span class="lang-en">Under RFC 2616, every HTTP/1.1 request MUST include a <code>Host</code> header. Any request lacking a Host header must be rejected with <code>400 Bad Request</code>.</span>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEVEL 1 -->
+    <div class="level-card" id="lvl1">
+      <button class="level-header" onclick="toggleLevel('lvl1')">
+        <span class="level-badge">01</span>
+        <div class="level-titles">
+          <h2><span class="lang-hi">Injection Kaise Hoti Hai? (Root Cause)</span><span class="lang-en">How Does Injection Occur? (Root Cause)</span></h2>
+          <p><span class="lang-hi">Client-Controlled Header Ko Blindly Trust Karne Ki Galti</span><span class="lang-en">The Critical Mistake Of Trusting Client-Controlled Headers</span></p>
+        </div>
+        <span class="level-tag problem">VULNERABILITY</span>
+        <span class="chevron">▼</span>
+      </button>
+      <div class="level-body">
+        <div class="level-inner">
+          <p>
+            <span class="lang-hi">Developers aksar ye soch lete hain ki Host header toh browser khud bhejta hai, isliye yeh safe hoga. Lekin attackers browser ki jagah <strong>Burp Suite</strong>, <strong>curl</strong>, ya custom Python scripts use karte hain. Attacker request bhejte waqt Host header ko kuch bhi likh sakta hai:</span>
+            <span class="lang-en">Developers frequently assume that because browsers generate the Host header automatically, it can be trusted implicitly. However, security researchers and attackers use intercepting proxies like <strong>Burp Suite</strong> or <strong>curl</strong> to replace the Host header with arbitrary domains:</span>
+          </p>
+          <pre><code>POST /forgot-password HTTP/1.1
+Host: evil-attacker.com    &lt;-- [TAMPERED BY ATTACKER]
+User-Agent: Mozilla/5.0
+Content-Type: application/x-www-form-urlencoded
+
+email=victim@company.com</code></pre>
+          <h4><span class="lang-hi">Vulnerable Server Code (PHP Example)</span><span class="lang-en">Vulnerable Server Code (PHP Example)</span></h4>
+          <pre><code>// ❌ VULNERABLE: Server blindly trusts $_SERVER['HTTP_HOST']
+$token = bin2hex(random_bytes(16));
+$reset_link = "https://" . $_SERVER['HTTP_HOST'] . "/reset-password.php?token=" . $token;
+
+// Email generated reset link to the victim
+mail($email, "Password Reset", "Click link to reset: " . $reset_link);</code></pre>
+          <div class="callout">
+            <span class="cal-label">⚠️ DANGER POINT</span>
+            <p>
+              <span class="lang-hi">Agar attacker ne request me <code>Host: evil-attacker.com</code> daala, toh server link banayega: <code>https://evil-attacker.com/reset-password.php?token=abc123secret</code>! Jab victim us link par click karega, uska secret token seedha attacker ke server par chala jayega!</span>
+              <span class="lang-en">If an attacker submits <code>Host: evil-attacker.com</code>, the backend generates: <code>https://evil-attacker.com/reset-password.php?token=abc123secret</code>. When the victim clicks, their confidential token is transmitted straight into the attacker's access logs!</span>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEVEL 2 -->
+    <div class="level-card" id="lvl2">
+      <button class="level-header" onclick="toggleLevel('lvl2')">
+        <span class="level-badge">02</span>
+        <div class="level-titles">
+          <h2><span class="lang-hi">Attack Variants: Proxy Headers & Duplicate Hosts</span><span class="lang-en">Attack Variants: Proxy Headers & Duplicate Hosts</span></h2>
+          <p><span class="lang-hi">X-Forwarded-Host, Multiple Host Headers, Port Overrides</span><span class="lang-en">X-Forwarded-Host, Multiple Host Headers, Port Overrides</span></p>
+        </div>
+        <span class="level-tag problem">TECHNIQUES</span>
+        <span class="chevron">▼</span>
+      </button>
+      <div class="level-body">
+        <div class="level-inner">
+          <p>
+            <span class="lang-hi">Modern websites aksar Reverse Proxies (Cloudflare, AWS ALB, Nginx, Varnish) ke peeche hoti hain. Jab front-end proxy request ko backend server tak forward karta hai, tab alag-alag headers create ya parse hote hain:</span>
+            <span class="lang-en">Modern enterprise architectures sit behind Reverse Proxies, Load Balancers, and CDNs. Forwarding proxies frequently handle and inject auxiliary headers:</span>
+          </p>
+          <table class="mini-table">
+            <thead>
+              <tr>
+                <th>Header / Technique</th>
+                <th>Exploitation Mechanism</th>
+                <th>Impact</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>X-Forwarded-Host</code></td>
+                <td>Backend frameworks (Django, Symfony, Rails) check this proxy header before standard Host.</td>
+                <td>Overrides generated absolute URLs without breaking proxy routing.</td>
+              </tr>
+              <tr>
+                <td><code>Duplicate Host Headers</code></td>
+                <td>Sending two Host headers (e.g. one for target.com, second for evil.com).</td>
+                <td>Proxy routes on the first, backend processes the second!</td>
+              </tr>
+              <tr>
+                <td><code>Host with Arbitrary Port</code></td>
+                <td><code>Host: target.com:@evil.com</code> or <code>Host: target.com:badport</code></td>
+                <td>SSRF, SSRF-based redirection, or parser errors.</td>
+              </tr>
+              <tr>
+                <td><code>Absolute URI in Request Line</code></td>
+                <td><code>GET https://target.com/ HTTP/1.1</code> with <code>Host: evil.com</code></td>
+                <td>Reverse proxy uses the request line; application uses the Host header.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── HIGH-IMPACT EXPLOITATION VECTORS SECTION ── -->
+  <section class="impact-section" id="impact-vectors">
+    <div class="sec-eyebrow"><span class="lang-hi">High-Severity Real-World Attacks</span><span class="lang-en">High-Severity Real-World Attacks</span></div>
+    <h2 style="font-family:var(--mono); color:var(--text); margin-top:0;">
+      <span class="lang-hi">💥 Major Exploitation Scenarios & Dedicated Labs</span>
+      <span class="lang-en">💥 Major Exploitation Scenarios & Dedicated Labs</span>
+    </h2>
+    <p style="color:var(--text-muted); font-size:14.5px; line-height:1.7;">
+      <span class="lang-hi">Host Header Injection koi theoretical bug nahi hai — bug bounties me isse lakho rupaye ke critical bounties mile hain. Neeche diye gaye do sabse famous attacks ko interactively test karein:</span>
+      <span class="lang-en">Host Header Injection is a renowned high-bounty finding in modern bug bounty programs. Explore and test the two most critical real-world attack vectors in our interactive labs:</span>
+    </p>
+
+    <!-- VECTOR 1 -->
+    <div class="impact-card">
+      <h3>🔑 <span class="lang-hi">1. Password Reset Poisoning (Zero-Interaction Account Takeover)</span><span class="lang-en">1. Password Reset Poisoning (Zero-Interaction Account Takeover)</span></h3>
+      <p>
+        <span class="lang-hi">Jab user "Forgot Password" request karta hai, server ek secret cryptographic token generate karta hai aur user ki email par reset link bhejta hai. Agar server link banane ke liye <code>Host</code> ya <code>X-Forwarded-Host</code> use karta hai, toh attacker victim ke email ke sath apna domain inject kar deta hai. Victim jab email me link par click karta hai, secret token attacker ke server par leak ho jata hai, aur victim ka account turant hijack ho jata hai!</span>
+        <span class="lang-en">When a user requests a password reset, the server generates a high-entropy secret token and emails a reset URL. If the server constructs this URL dynamically using the client's <code>Host</code> or <code>X-Forwarded-Host</code>, an attacker submits a reset request for the victim's email while pointing the Host to their own server. Clicking the email link leaks the token directly to the attacker, culminating in total account takeover!</span>
+      </p>
+      <div class="simulation-cta-box">
+        <div>
+          <strong style="color:var(--accent); font-family:var(--mono); font-size:13.5px;">LAB 01 : PASSWORD RESET POISONING LAB</strong><br>
+          <span style="font-size:12.5px; color:var(--text-muted);">Step-by-step account takeover simulation with live email inbox & attacker logs.</span>
+        </div>
+        <a href="../labs/host_header_password_reset_poisoning.html" target="_blank">
+          <span>Click here to see the simulation of this attack 💻</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- VECTOR 2 -->
+    <div class="impact-card">
+      <h3>🌐 <span class="lang-hi">2. Web Cache Poisoning (Mass XSS & Site-Wide Defacement)</span><span class="lang-en">2. Web Cache Poisoning (Mass XSS & Site-Wide Defacement)</span></h3>
+      <p>
+        <span class="lang-hi">Front-end Caching proxies (Varnish, Cloudflare, Akamai) URL ko "Cache Key" maante hain lekin aksar <code>Host</code> header ko cache key me include nahi karte (unkeyed input). Attacker poisoned Host header bhej kar server se malicious JavaScript import (jaise <code>&lt;script src="//evil.com/app.js"&gt;</code>) generate karwata hai. CDN is malicious response ko cache kar leta hai. Ab har legitimate visitor jo site kholega, uske browser me attacker ka script chalega — mass cookie theft aur defacement!</span>
+        <span class="lang-en">Front-end caching reverse proxies determine cache entries using the request path (cache key) but often treat the <code>Host</code> or <code>X-Forwarded-Host</code> header as unkeyed input. If the backend reflects the Host in script tags or import URLs, the poisoned response is saved in the CDN cache. Every subsequent legitimate user visiting the homepage receives the attacker's malicious script — achieving mass Stored XSS!</span>
+      </p>
+      <div class="simulation-cta-box">
+        <div>
+          <strong style="color:var(--accent); font-family:var(--mono); font-size:13.5px;">LAB 02 : WEB CACHE POISONING LAB</strong><br>
+          <span style="font-size:12.5px; color:var(--text-muted);">Interactive CDN cache poisoning lab demonstrating unkeyed Host reflection and mass client exploitation.</span>
+        </div>
+        <a href="../labs/host_header_web_cache_poisoning.html" target="_blank">
+          <span>Click here to see the simulation of this attack 💻</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- VECTOR 3 -->
+    <div class="impact-card">
+      <h3>🚪 <span class="lang-hi">3. Internal Virtual Host Routing & Access Control Bypass</span><span class="lang-en">3. Internal Virtual Host Routing & Access Control Bypass</span></h3>
+      <p>
+        <span class="lang-hi">Kayi enterprise servers par internal admin panels (e.g. <code>localhost:8080/admin</code> ya <code>internal.corp/admin</code>) internet par direct accessible nahi hote. Lekin agar attacker public IP par request bhejte waqt <code>Host: localhost</code> ya <code>Host: internal.corp</code> bhejta hai, toh web server request ko internal private site par route kar deta hai, bypassing all network firewall rules!</span>
+        <span class="lang-en">Many enterprise applications restrict administrative interfaces to local or private networks. However, sending a request to the public gateway with <code>Host: localhost</code> or <code>Host: admin.internal.corp</code> may convince the internal routing layer to grant access to restricted virtual hosts, bypassing IP firewalls!</span>
+      </p>
+    </div>
+
+  </section>
+
+  <!-- ── VULNERABLE VS SECURE CODE SNIPPETS ── -->
+  <section class="sec-head">
+    <div class="sec-eyebrow"><span class="lang-hi">Code Level Fixes</span><span class="lang-en">Code Level Fixes</span></div>
+    <h2><span class="lang-hi">Vulnerable vs. Secure Code Implementations</span><span class="lang-en">Vulnerable vs. Secure Code Implementations</span></h2>
+  </section>
+
+  <div class="level-card open">
+    <div class="level-inner">
+      <h4><span class="lang-hi">1. PHP & Apache / Nginx Configuration</span><span class="lang-en">1. PHP & Apache / Nginx Configuration</span></h4>
+      <pre><code>// ❌ INSECURE: Blindly trusting HTTP_HOST
+$host = $_SERVER['HTTP_HOST'];
+$redirect_url = "https://" . $host . "/dashboard";
+header("Location: " . $redirect_url);
+
+// ✅ SECURE: Use Hardcoded Whitelist or Fixed Base URL from Config
+define('ALLOWED_HOSTS', ['portal.company.com', 'api.company.com']);
+$host = $_SERVER['HTTP_HOST'];
+
+if (!in_array($host, ALLOWED_HOSTS, true)) {
+    http_response_code(400);
+    exit("Invalid Host header");
+}
+$redirect_url = "https://" . $host . "/dashboard";</code></pre>
+
+      <h4><span class="lang-hi">2. Python / Django Framework Setting</span><span class="lang-en">2. Python / Django Framework Setting</span></h4>
+      <pre><code># ❌ INSECURE: Wildcard allowed hosts in settings.py
+ALLOWED_HOSTS = ['*']
+
+# ✅ SECURE: Strict, explicit hostname allowlist
+ALLOWED_HOSTS = ['enterprise.com', 'www.enterprise.com', 'api.enterprise.com']
+# Django automatically validates incoming Host against this list and returns 400 if mismatched!</code></pre>
+
+      <h4><span class="lang-hi">3. Nginx Server Block Protection</span><span class="lang-en">3. Nginx Server Block Protection</span></h4>
+      <pre><code># ✅ SECURE: Default server block to reject unknown or injected Host headers
+server {
+    listen 80 default_server;
+    listen 443 ssl default_server;
+    server_name _;
+    return 444; # Closes connection immediately without responding
+}
+
+server {
+    listen 80;
+    listen 443 ssl;
+    server_name portal.company.com;
+    # Legitimate traffic processing...
+}</code></pre>
+    </div>
+  </div>
+
+  <!-- ── IN-PAGE SIMULATOR SECTION ── -->
+  <section class="simulator-section" id="simulator">
+    <div class="sim-header-bar">
+      <div class="sim-title">
+        <span>⚡</span>
+        <span class="lang-hi">Interactive Host Header Simulator</span>
+        <span class="lang-en">Interactive Host Header Simulator</span>
+      </div>
+      <div class="sim-controls">
+        <div class="sim-control-group">
+          <label><span class="lang-hi">Attack Vector:</span><span class="lang-en">Attack Vector:</span></label>
+          <div class="sim-btn-group">
+            <button class="sim-btn active" data-vector="reset" onclick="setSimVector('reset')">Password Reset Poison</button>
+            <button class="sim-btn" data-vector="cache" onclick="setSimVector('cache')">Cache Poisoning XSS</button>
+            <button class="sim-btn" data-vector="routing" onclick="setSimVector('routing')">Internal Admin SSRF</button>
+            <button class="sim-btn" data-vector="duplicate" onclick="setSimVector('duplicate')">Duplicate Host Header</button>
+          </div>
+        </div>
+        <div class="sim-control-group">
+          <label><span class="lang-hi">Defense Level:</span><span class="lang-en">Defense Level:</span></label>
+          <div class="sim-btn-group">
+            <button class="sim-btn active" data-def="0" onclick="setSimDef('0')">0: None (Trust All)</button>
+            <button class="sim-btn" data-def="1" onclick="setSimDef('1')">1: Regex Substring Check</button>
+            <button class="sim-btn" data-def="2" onclick="setSimDef('2')">2: Strict Host Whitelist</button>
+          </div>
+        </div>
+      </div>
+      <button class="btn-execute" id="btnRunSim" onclick="executeSimulator()">
+        <span class="lang-hi">Send Manipulated Request →</span>
+        <span class="lang-en">Send Manipulated Request →</span>
+      </button>
+    </div>
+
+    <div class="workspace">
+      <!-- PANEL 1: CLIENT REQUEST -->
+      <div class="sim-panel" id="panel-client">
+        <div class="sim-panel-header">
+          <div class="window-controls" style="display:inline-flex; gap:5px; margin-right:6px;">
+            <span style="width:8px; height:8px; border-radius:50%; background:#ef4444; display:inline-block;"></span>
+            <span style="width:8px; height:8px; border-radius:50%; background:#f59e0b; display:inline-block;"></span>
+            <span style="width:8px; height:8px; border-radius:50%; background:#10b981; display:inline-block;"></span>
+          </div>
+          <span>📡</span> <span>Client Request (Burp Suite)</span>
+        </div>
+        <div class="sim-panel-body" id="clientLog">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- PANEL 2: REVERSE PROXY / ROUTING -->
+      <div class="sim-panel" id="panel-routing">
+        <div class="sim-panel-header">
+          <div class="window-controls" style="display:inline-flex; gap:5px; margin-right:6px;">
+            <span style="width:8px; height:8px; border-radius:50%; background:#ef4444; display:inline-block;"></span>
+            <span style="width:8px; height:8px; border-radius:50%; background:#f59e0b; display:inline-block;"></span>
+            <span style="width:8px; height:8px; border-radius:50%; background:#10b981; display:inline-block;"></span>
+          </div>
+          <span>🔀</span> <span>Proxy & Routing Analysis</span>
+        </div>
+        <div class="sim-panel-body" id="routingLog">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- PANEL 3: SERVER EXECUTION -->
+      <div class="sim-panel" id="panel-server">
+        <div class="sim-panel-header">
+          <div class="window-controls" style="display:inline-flex; gap:5px; margin-right:6px;">
+            <span style="width:8px; height:8px; border-radius:50%; background:#ef4444; display:inline-block;"></span>
+            <span style="width:8px; height:8px; border-radius:50%; background:#f59e0b; display:inline-block;"></span>
+            <span style="width:8px; height:8px; border-radius:50%; background:#10b981; display:inline-block;"></span>
+          </div>
+          <span>🖥️</span> <span>Backend Server Execution</span>
+        </div>
+        <div class="sim-panel-body" id="serverLog">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </div>
+
+    <div class="sim-verdict-box" id="simVerdict">
+      <div class="sim-verdict-title" id="verdictTitle"></div>
+      <div class="sim-verdict-text" id="verdictText"></div>
+    </div>
+  </section>
+
+  <!-- ── CONFUSING QUESTIONS / FAQ ── -->
+  <section class="faq-section" id="confusing-questions">
+    <div class="sec-eyebrow"><span class="lang-hi">Critical Clarifications</span><span class="lang-en">Critical Clarifications</span></div>
+    <h2 style="font-family:var(--mono); color:var(--text); margin-top:0;">
+      <span class="lang-hi">🤔 Most Confusing Questions Solved</span>
+      <span class="lang-en">🤔 Most Confusing Questions Solved</span>
+    </h2>
+    <div class="faq-list">
+      
+      <div class="faq-item">
+        <button class="faq-question" onclick="toggleFaq(this)">
+          <span class="faq-q-badge">Q1</span>
+          <span class="faq-q-text">
+            <span class="lang-hi">Browser toh user ko Host header change karne nahi deta, toh yeh real users par kaise attack karega?</span>
+            <span class="lang-en">Standard web browsers don't allow users to modify the Host header, so how does this exploit real users?</span>
+          </span>
+          <span class="faq-icon">▼</span>
+        </button>
+        <div class="faq-answer">
+          <span class="lang-hi">Sahi sawal! Attacker victim ke browser ko manipulate nahi karta. Password Reset Poisoning mein attacker APNE computer se victim ki email daal kar manipulated request bhejta hai. Server email generate karke victim ko bhejta hai. Jab victim click karta hai, wo legit email padh kar click kar raha hota hai! Web Cache Poisoning mein bhi attacker ek baar request bhej kar CDN cache poison karta hai, aur baaki hazaron normal browsers bina kuch badle automatically us cached malicious response ko load kar lete hain!</span>
+          <span class="lang-en">Great question! Attackers do not modify the victim's browser headers. In Password Reset Poisoning, the attacker triggers the reset from their own computer while spoofing the Host header. The backend dispatches the poisoned email to the victim. In Cache Poisoning, the attacker seeds the CDN cache with a single manipulated request; subsequently, thousands of innocent users visiting via standard browsers automatically load the poisoned cached page!</span>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question" onclick="toggleFaq(this)">
+          <span class="faq-q-badge">Q2</span>
+          <span class="faq-q-text">
+            <span class="lang-hi">Host header aur X-Forwarded-Host mein kya farak hai?</span>
+            <span class="lang-en">What is the distinction between Host and X-Forwarded-Host?</span>
+          </span>
+          <span class="faq-icon">▼</span>
+        </button>
+        <div class="faq-answer">
+          <span class="lang-hi"><code>Host</code> standard HTTP/1.1 header hai jo client web server ko bhejta hai. Jab beech mein reverse proxy (jaise Cloudflare ya Nginx) hoti hai, toh proxy original domain ko <code>X-Forwarded-Host</code> header mein wrap karke backend ko pass karti hai. Kayi frameworks (Django, Express, Spring) agar backend par <code>X-Forwarded-Host</code> paate hain, toh standard Host ko ignore karke is proxy header ko use kar lete hain!</span>
+          <span class="lang-en"><code>Host</code> is the standard HTTP/1.1 header sent by the client. When requests traverse reverse proxies or load balancers, the proxy encapsulates the original requested host into <code>X-Forwarded-Host</code>. Many backend frameworks prioritize <code>X-Forwarded-Host</code> when building absolute URLs, making it a fertile vector if proxies don't strip incoming untrusted instances!</span>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question" onclick="toggleFaq(this)">
+          <span class="faq-q-badge">Q3</span>
+          <span class="faq-q-text">
+            <span class="lang-hi">Agar server Host header change karne par 404 ya 400 de raha ho, toh kya bypass possible hai?</span>
+            <span class="lang-en">If altering the Host header produces 400 or 404, are bypasses possible?</span>
+          </span>
+          <span class="faq-icon">▼</span>
+        </button>
+        <div class="faq-answer">
+          <span class="lang-hi">Haan! Bypasses test karein: (1) Duplicate Host headers (ek legit, ek malicious), (2) <code>X-Forwarded-Host: evil.com</code> ya <code>X-Host: evil.com</code>, (3) Request line mein absolute URL <code>GET https://target.com/ HTTP/1.1</code> with <code>Host: evil.com</code>, (4) Port injection jaise <code>Host: target.com:@evil.com</code> ya <code>Host: target.com:1337</code>.</span>
+          <span class="lang-en">Yes! Advanced evasion vectors include: (1) Duplicate Host headers (front-end proxy reads first, backend reads second), (2) Proxy headers like <code>X-Forwarded-Host</code> or <code>X-Host</code>, (3) Specifying absolute URIs in the request line, and (4) Port syntax abuse such as <code>Host: target.com:@evil.com</code>.</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ── TESTER AUDIT CHECKLIST ── -->
+  <section id="tester-checklist">
+    <div class="sec-eyebrow"><span class="lang-hi">Penetration Testing Methodology</span><span class="lang-en">Penetration Testing Methodology</span></div>
+    <h2 style="font-family:var(--mono); color:var(--text); margin-top:0;">
+      <span class="lang-hi">📝 Host Header Injection Security Audit Checklist</span>
+      <span class="lang-en">📝 Host Header Injection Security Audit Checklist</span>
+    </h2>
+    <div class="check-list">
+      <label class="check-label">
+        <input type="checkbox" class="check-input">
+        <span class="check-box"></span>
+        <span class="check-text">
+          <span class="lang-hi">Check password reset functionality with arbitrary <code>Host: attacker.com</code> and inspect outgoing email link.</span>
+          <span class="lang-en">Check password reset functionality with arbitrary <code>Host: attacker.com</code> and inspect outgoing email link.</span>
+        </span>
+      </label>
+      <label class="check-label">
+        <input type="checkbox" class="check-input">
+        <span class="check-box"></span>
+        <span class="check-text">
+          <span class="lang-hi">Test proxy override headers: <code>X-Forwarded-Host</code>, <code>X-Host</code>, <code>X-Forwarded-Server</code>.</span>
+          <span class="lang-en">Test proxy override headers: <code>X-Forwarded-Host</code>, <code>X-Host</code>, <code>X-Forwarded-Server</code>.</span>
+        </span>
+      </label>
+      <label class="check-label">
+        <input type="checkbox" class="check-input">
+        <span class="check-box"></span>
+        <span class="check-text">
+          <span class="lang-hi">Check for Web Cache Poisoning: verify if Host value reflects in script tags and caches with <code>X-Cache: HIT</code>.</span>
+          <span class="lang-en">Check for Web Cache Poisoning: verify if Host value reflects in script tags and caches with <code>X-Cache: HIT</code>.</span>
+        </span>
+      </label>
+      <label class="check-label">
+        <input type="checkbox" class="check-input">
+        <span class="check-box"></span>
+        <span class="check-text">
+          <span class="lang-hi">Test internal vhost routing bypass using <code>Host: localhost</code> or <code>Host: 127.0.0.1</code> on admin endpoints.</span>
+          <span class="lang-en">Test internal vhost routing bypass using <code>Host: localhost</code> or <code>Host: 127.0.0.1</code> on admin endpoints.</span>
+        </span>
+      </label>
+      <label class="check-label">
+        <input type="checkbox" class="check-input">
+        <span class="check-box"></span>
+        <span class="check-text">
+          <span class="lang-hi">Verify Nginx/Apache configuration: Ensure a default server block drops requests with unrecognized hostnames.</span>
+          <span class="lang-en">Verify Nginx/Apache configuration: Ensure a default server block drops requests with unrecognized hostnames.</span>
+        </span>
+      </label>
+    </div>
+  </section>
+
+    <!-- ── BOTTOM NAVIGATION ROW ── -->
+  <div class="bottom-nav-row">
+    <a href="web_cache_poisoning.html" class="nav-arrow-btn nav-prev">← 20. Web Cache Poisoning</a>
+    <a href="../index.html" class="nav-arrow-btn nav-home" style="color:var(--accent); border-color:var(--accent);">🏠 Main Security Hub</a>
+    <a href="LFI.html" class="nav-arrow-btn nav-next">22. LFI →</a>
+  </div>
+
+</main>
+
+<footer class="modern-footer">
+  <div class="footer-badge">
+    <span class="footer-text">Designed and developed by <strong class="dev-name">Irshad Akaram</strong></span>
+  </div>
+</footer>
+
+<script>
+// Typewriter effect
+const phrasesHi = [
+  "Host: attacker-controlled-server.net",
+  "Checking password reset token generation...",
+  "$_SERVER['HTTP_HOST'] blindly trusted without whitelist!",
+  "CRITICAL: Secret token leaked to attacker logs!"
+];
+const phrasesEn = [
+  "Host: attacker-controlled-server.net",
+  "Evaluating password reset URL construction...",
+  "$_SERVER['HTTP_HOST'] trusted without strict whitelist!",
+  "CRITICAL: Account takeover token compromised!"
+];
+
+let phraseIndex = 0;
+let charIndex = 0;
+let isDeleting = false;
+let typewriterElem = document.getElementById("typewriter");
+
+function type() {
+  const isEn = document.documentElement.getAttribute("data-lang") === "en";
+  const phrases = isEn ? phrasesEn : phrasesHi;
+  const currentPhrase = phrases[phraseIndex % phrases.length];
+
+  if (isDeleting) {
+    typewriterElem.textContent = currentPhrase.substring(0, charIndex - 1);
+    charIndex--;
+  } else {
+    typewriterElem.textContent = currentPhrase.substring(0, charIndex + 1);
+    charIndex++;
+  }
+
+  let typingSpeed = isDeleting ? 30 : 60;
+
+  if (!isDeleting && charIndex === currentPhrase.length) {
+    typingSpeed = 2000;
+    isDeleting = true;
+  } else if (isDeleting && charIndex === 0) {
+    isDeleting = false;
+    phraseIndex++;
+    typingSpeed = 500;
+  }
+
+  setTimeout(type, typingSpeed);
+}
+type();
+
+// Theme Toggle
+function toggleTheme() {
+  const currentTheme = document.documentElement.getAttribute("data-theme");
+  const newTheme = currentTheme === "dark" ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", newTheme);
+  document.getElementById("themeBtn").textContent = newTheme === "dark" ? "☀️ Light Mode" : "🌙 Dark Mode";
+  try { localStorage.setItem("site_theme", newTheme); } catch(e) {}
+}
+
+// Language Toggle
+function toggleLanguage() {
+  const checkbox = document.getElementById("langToggle");
+  const newLang = checkbox.checked ? "en" : "hi";
+  document.documentElement.setAttribute("data-lang", newLang);
+  document.getElementById("lbl-hi").className = newLang === "hi" ? "lang-active" : "lang-inactive";
+  document.getElementById("lbl-en").className = newLang === "en" ? "lang-active" : "lang-inactive";
+  try { localStorage.setItem("site_lang", newLang); } catch(e) {}
+}
+
+// Accordion toggles
+function toggleLevel(id) {
+  const card = document.getElementById(id);
+  card.classList.toggle("open");
+}
+function toggleFaq(btn) {
+  const item = btn.closest(".faq-item");
+  item.classList.toggle("active");
+}
+
+// ── In-Page Simulator Logic ──
+let simVector = "reset";
+let simDef = "0";
+
+function setSimVector(vec) {
+  simVector = vec;
+  document.querySelectorAll("[data-vector]").forEach(btn => btn.classList.toggle("active", btn.dataset.vector === vec));
+  renderSimPreview();
+}
+
+function setSimDef(def) {
+  simDef = def;
+  document.querySelectorAll("[data-def]").forEach(btn => btn.classList.toggle("active", btn.dataset.def === def));
+  renderSimPreview();
+}
+
+function renderSimPreview() {
+  const clientLog = document.getElementById("clientLog");
+  const routingLog = document.getElementById("routingLog");
+  const serverLog = document.getElementById("serverLog");
+  const verdict = document.getElementById("simVerdict");
+  verdict.className = "sim-verdict-box";
+
+  let clientHttp = "";
+  if (simVector === "reset") {
+    clientHttp = `<div class="http-block">
+<span class="http-method">POST</span> <span class="http-path">/auth/forgot-password</span> <span class="http-proto">HTTP/1.1</span><br>
+<span class="http-header-key">Host:</span> <span class="http-header-val" style="color:#ff6b5b; font-weight:bold;">attacker-server.net</span><br>
+<span class="http-header-key">User-Agent:</span> <span class="http-header-val">Mozilla/5.0</span><br>
+<span class="http-header-key">Content-Type:</span> <span class="http-header-val">application/x-www-form-urlencoded</span><br>
+<span class="http-body">email=victim%40enterprise.com</span>
+</div>`;
+  } else if (simVector === "cache") {
+    clientHttp = `<div class="http-block">
+<span class="http-method">GET</span> <span class="http-path">/resources/js/main.js</span> <span class="http-proto">HTTP/1.1</span><br>
+<span class="http-header-key">Host:</span> <span class="http-header-val">portal.enterprise.com</span><br>
+<span class="http-header-key">X-Forwarded-Host:</span> <span class="http-header-val" style="color:#ff6b5b; font-weight:bold;">malicious-cdn.org</span><br>
+<span class="http-header-key">Accept:</span> <span class="http-header-val">*/*</span>
+</div>`;
+  } else if (simVector === "routing") {
+    clientHttp = `<div class="http-block">
+<span class="http-method">GET</span> <span class="http-path">/admin/dashboard</span> <span class="http-proto">HTTP/1.1</span><br>
+<span class="http-header-key">Host:</span> <span class="http-header-val" style="color:#ff6b5b; font-weight:bold;">localhost:8080</span><br>
+<span class="http-header-key">Connection:</span> <span class="http-header-val">close</span>
+</div>`;
+  } else if (simVector === "duplicate") {
+    clientHttp = `<div class="http-block">
+<span class="http-method">GET</span> <span class="http-path">/dashboard</span> <span class="http-proto">HTTP/1.1</span><br>
+<span class="http-header-key">Host:</span> <span class="http-header-val">portal.enterprise.com</span><br>
+<span class="http-header-key">Host:</span> <span class="http-header-val" style="color:#ff6b5b; font-weight:bold;">evil-host.com</span>
+</div>`;
+  }
+
+  clientLog.innerHTML = `<span style="color:#64748b;">[Ready to send]</span>` + clientHttp;
+  routingLog.innerHTML = `<span style="color:#64748b;">Awaiting dispatch... Select parameters and click "Send Manipulated Request".</span>`;
+  serverLog.innerHTML = `<span style="color:#64748b;">Idle.</span>`;
+}
+
+function executeSimulator() {
+  const routingLog = document.getElementById("routingLog");
+  const serverLog = document.getElementById("serverLog");
+  const verdict = document.getElementById("simVerdict");
+  const verdictTitle = document.getElementById("verdictTitle");
+  const verdictText = document.getElementById("verdictText");
+  const isEn = document.documentElement.getAttribute("data-lang") === "en";
+
+  let routeLogHtml = "";
+  let serverLogHtml = "";
+  let isExploited = false;
+  let title = "";
+  let explanation = "";
+
+  if (simDef === "0") {
+    // Defense 0: No validation
+    isExploited = true;
+    routeLogHtml = `<div style="color:#ffcc00;">[Proxy] Inspecting Host: header passed directly to backend without sanitization.</div>
+<div style="color:#4d9eff;">[Proxy] Forwarding request to cluster node 10.0.4.12...</div>`;
+
+    if (simVector === "reset") {
+      serverLogHtml = `<div style="color:#ff6b5b;">[Backend] Generating reset token: '7b8f9e01a23c4d5e'</div>
+<div style="color:#ff6b5b;">[Backend] Using Host: 'attacker-server.net'</div>
+<div style="color:#39ff7a;">[Backend] Constructed link: https://attacker-server.net/reset?token=7b8f9e01a23c4d5e</div>
+<div style="color:#4d9eff;">[SMTP] Dispatched password reset email to victim@enterprise.com</div>`;
+      title = isEn ? "💀 Password Reset Poisoned (Account Takeover)" : "💀 Password Reset Link Poisoned (Account Hijack)";
+      explanation = isEn
+        ? "The server trusted the supplied Host header without verification. The password reset email delivered to the victim contains the attacker's URL. Once clicked, the secret cryptographic token leaks to the attacker!"
+        : "Server ne bina kisi check ke attacker ke Host header par bharosa kar liya. Victim ko bheji gayi email mein attacker ka URL chala gaya. Victim ke link kholte hi uska secret token leak ho jayega aur account hack ho jayega!";
+    } else if (simVector === "cache") {
+      serverLogHtml = `<div style="color:#ff6b5b;">[Backend] Reflecting X-Forwarded-Host into asset path:</div>
+<div style="color:#ff6b5b;">&lt;script src="//malicious-cdn.org/resources/js/main.js"&gt;</div>
+<div style="color:#39ff7a;">[CDN Cache] HTTP 200 OK stored with TTL: 3600s</div>
+<div style="color:#ffcc00;">[CDN Cache] Cache Key: GET /resources/js/main.js (Unkeyed Host)</div>`;
+      title = isEn ? "💀 Web Cache Poisoned (Mass Stored XSS)" : "💀 Web Cache Poison Ho Gaya (Mass Stored XSS)";
+      explanation = isEn
+        ? "The reverse proxy cached the backend response containing the reflected attacker script path. All subsequent visitors will execute the attacker's JavaScript, enabling mass session theft!"
+        : "Reverse proxy ne unkeyed Host header reflect karne wale response ko cache kar liya. Ab agle 1 ghante tak har legitimate visitor ke browser me attacker ka script execute hoga!";
+    } else if (simVector === "routing") {
+      serverLogHtml = `<div style="color:#ff6b5b;">[Virtual Host] Host matched internal target 'localhost:8080'</div>
+<div style="color:#39ff7a;">[Admin Controller] Granting local administrative access...</div>
+<div style="color:#ffcc00;">HTTP/1.1 200 OK: Welcome to Master Infrastructure Console</div>`;
+      title = isEn ? "💀 Internal Admin Console Bypassed" : "💀 Internal Admin Panel Bypass Ho Gaya";
+      explanation = isEn
+        ? "The routing layer matched the 'localhost:8080' Host header and bypassed network perimeter restrictions, granting the external attacker direct access to the internal administration panel!"
+        : "Server ke routing layer ne 'localhost:8080' dekh kar request ko internal private console par route kar diya, aur attacker ko direct admin access mil gaya!";
+    } else {
+      serverLogHtml = `<div style="color:#ff6b5b;">[Proxy] Dispatched first Host: portal.enterprise.com</div>
+<div style="color:#ff6b5b;">[Backend] Read second duplicate Host: evil-host.com</div>
+<div style="color:#39ff7a;">[Backend] URL generated using evil-host.com</div>`;
+      title = isEn ? "💀 Duplicate Host Header Desynchronization" : "💀 Duplicate Host Header Desynchronization";
+      explanation = isEn
+        ? "The front-end proxy parsed the first Host header, while the backend application parsed the second, causing routing desynchronization and injection!"
+        : "Front-end proxy ne pehla Host header padha, jabki backend ne doosra Host header evaluate kiya, jisse security bypass ho gaya!";
+    }
+  } else if (simDef === "1") {
+    // Defense 1: Weak Regex
+    if (simVector === "duplicate" || simVector === "cache") {
+      isExploited = true;
+      routeLogHtml = `<div style="color:#ffcc00;">[Filter] Substring regex matched 'enterprise.com' inside payload!</div>
+<div style="color:#4d9eff;">[Proxy] Allowed forward...</div>`;
+      serverLogHtml = `<div style="color:#ff6b5b;">[Backend] Bypassed weak substring filter! Exploit successful.</div>`;
+      title = isEn ? "💀 Partial Substring Filter Bypassed" : "💀 Kamzor Substring Filter Bypass Ho Gaya";
+      explanation = isEn
+        ? "The application checked if 'enterprise.com' exists in the Host, but an attacker used 'portal.enterprise.com.evil-attacker.com' or header spoofing to bypass the check!"
+        : "Application ne sirf yeh check kiya ki kya 'enterprise.com' string maujood hai, aur attacker ne ise asani se bypass kar liya!";
+    } else {
+      isExploited = false;
+      routeLogHtml = `<div style="color:#39ff7a;">[Filter] Detected unrecognized host string.</div>`;
+      serverLogHtml = `<div style="color:#ff6b5b;">HTTP/1.1 400 Bad Request: Host mismatch</div>`;
+      title = isEn ? "🛡️ Attack Blocked By Filter" : "🛡️ Attack Filter Dwara Block";
+      explanation = isEn
+        ? "The basic substring check detected that the Host string did not match expected patterns and aborted the request."
+        : "Basic check ne unrecognized host pakad liya aur request 400 Bad Request ke sath reject kar di.";
+    }
+  } else {
+    // Defense 2: Strict Whitelist
+    isExploited = false;
+    routeLogHtml = `<div style="color:#39ff7a;">[Nginx Security] Validating against ALLOWED_HOSTS whitelist: ['portal.enterprise.com', 'api.enterprise.com']</div>
+<div style="color:#ff3c3c;">[Nginx Security] REJECTED: Host header '${simVector === 'reset' ? 'attacker-server.net' : 'unauthorized'}' is not allowlisted!</div>`;
+    serverLogHtml = `<div style="color:#39ff7a;">HTTP/1.1 400 Bad Request</div>
+<div style="color:#64748b;">Connection dropped immediately. Zero backend execution.</div>`;
+    title = isEn ? "🛡️ Blocked: Strict Allowed-Hosts Whitelist" : "🛡️ Blocked: Strict Host Whitelist Dwara Surakshit";
+    explanation = isEn
+      ? "The request was immediately rejected by the strict server-level hostname allowlist. No dynamic URLs were generated and the attack was completely neutralized!"
+      : "Server ke strict ALLOWED_HOSTS whitelist ne unauthorized host ko turant block kar diya. Koi poisoned link generate nahi hua aur system 100% surakshit raha!";
+  }
+
+  routingLog.innerHTML = routeLogHtml;
+  serverLog.innerHTML = serverLogHtml;
+
+  verdict.classList.remove('v-hacked', 'v-blocked');
+  verdict.classList.add(isExploited ? 'v-hacked' : 'v-blocked', 'show');
+  verdictTitle.innerHTML = title;
+  verdictText.innerHTML = explanation;
+}
+
+// Initial preview
+renderSimPreview();
+
+// Check saved preferences
+try {
+  const savedTheme = localStorage.getItem("site_theme");
+  if (savedTheme) {
+    document.documentElement.setAttribute("data-theme", savedTheme);
+    document.getElementById("themeBtn").textContent = savedTheme === "dark" ? "☀️ Light Mode" : "🌙 Dark Mode";
+  }
+  const savedLang = localStorage.getItem("site_lang");
+  if (savedLang === "en") {
+    document.getElementById("langToggle").checked = true;
+    toggleLanguage();
+  }
+} catch(e) {}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1311 @@
+<!DOCTYPE html>
+<html lang="hi" data-theme="dark" data-lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Web Cache Poisoning — Problem Se Solution Tak</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Poppins:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root[data-theme="dark"] {
+    --bg:#050810;
+    --panel:#0F1524;
+    --panel-2:#1A2338;
+    --border:#263049;
+    --text:#E7ECF5;
+    --text-muted:#8B96AB;
+    --danger:#FF6B5B;
+    --danger-bg:rgba(255,107,91,0.12);
+    --safe:#3ECF8E;
+    --safe-bg:rgba(62,207,142,0.12);
+    --accent:#FFC857;
+    --accent-bg:rgba(255,200,87,0.14);
+    --blue:#4D9EFF;
+    --blue-bg:rgba(77,158,255,0.12);
+    --purple:#A855F7;
+    --purple-bg:rgba(168,85,247,0.14);
+    --radius:12px;
+    --mono:'IBM Plex Mono',ui-monospace,monospace;
+    --sans:'IBM Plex Sans',system-ui,sans-serif;
+    --glow: rgba(77, 158, 255, 0.05);
+    --shadow-sm: 0 4px 15px rgba(0, 0, 0, 0.25);
+  }
+
+  :root[data-theme="light"] {
+    --bg:#F4F7FB;
+    --panel:#FFFFFF;
+    --panel-2:#E8EEF5;
+    --border:#D1D9E6;
+    --text:#0F172A;
+    --text-muted:#475569;
+    --danger:#E11D48;
+    --danger-bg:rgba(225,29,72,0.12);
+    --safe:#059669;
+    --safe-bg:rgba(5,150,105,0.12);
+    --accent:#D97706;
+    --accent-bg:rgba(217,119,6,0.14);
+    --blue:#2563EB;
+    --blue-bg:rgba(37,99,235,0.12);
+    --purple:#9333EA;
+    --radius:12px;
+    --mono:'IBM Plex Mono',ui-monospace,monospace;
+    --sans:'IBM Plex Sans',system-ui,sans-serif;
+    --glow: rgba(77, 158, 255, 0.05);
+    --shadow-sm: 0 4px 15px rgba(0, 0, 0, 0.06);
+  }
+
+  html[data-lang="hi"] .lang-en { display: none !important; }
+  html[data-lang="en"] .lang-hi { display: none !important; }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--bg);color:var(--text);font-family:var(--sans);
+    margin:0;padding:0;line-height:1.7;-webkit-font-smoothing:antialiased;
+    transition: background-color 0.3s, color 0.3s;
+    background-image: 
+      radial-gradient(circle at 15% 50%, var(--glow), transparent 25%),
+      radial-gradient(circle at 85% 30%, var(--glow), transparent 25%);
+  }
+  ::selection{background:var(--accent-bg);color:var(--accent);}
+  strong{color:var(--text);font-weight:600;}
+
+  code{
+    font-family:var(--mono);background:var(--panel-2);border:1px solid var(--border);
+    padding:2px 6px;border-radius:6px;font-size:0.88em;color:var(--accent);
+    transition: all 0.2s;
+  }
+  code:hover { background: var(--accent-bg); border-color: var(--accent); }
+
+  pre{
+    background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
+    padding:40px 18px 18px 18px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;
+    line-height:1.6;color:var(--text);margin:18px 0; position: relative;
+    box-shadow: 0 10px 30px -10px rgba(0,0,0,0.2);
+  }
+  pre::before {
+    content: ''; position: absolute; top: 14px; left: 16px;
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--danger); box-shadow: 16px 0 0 var(--accent), 32px 0 0 var(--safe);
+  }
+  pre code{background:none;border:none;padding:0;color:inherit; box-shadow: none;}
+  pre code:hover { background: none; border: none; }
+
+  /* ── TOPBAR ── */
+  .topbar{
+    position:sticky;top:0;z-index:50;background:rgba(15, 21, 36, 0.7);
+    backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+    border-bottom:1px solid var(--border);
+    padding:14px 20px;display:flex;align-items:center;justify-content:space-between;
+    gap:12px;flex-wrap:wrap; box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  }
+  :root[data-theme="light"] .topbar { background:rgba(255, 255, 255, 0.8); }
+
+  .brand{
+    font-family:var(--mono);font-weight:700;font-size:15.5px;
+    display:flex;align-items:center;gap:10px;cursor:default;
+  }
+  .brand-icon { font-size: 19px; display: inline-block; animation: shield-pulse 2.5s infinite ease-in-out; }
+  .brand-text {
+    background: linear-gradient(90deg, var(--accent), var(--safe));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    transition: all 0.3s ease; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .brand-text code { background: none; border: none; padding: 0; color: inherit; font-size: 1em; box-shadow: none;}
+  .brand:hover .brand-text { filter: drop-shadow(0 0 10px rgba(62, 207, 142, 0.5)); }
+  @keyframes shield-pulse { 0%, 100% { transform: scale(1); filter: drop-shadow(0 0 3px var(--safe)); } 50% { transform: scale(1.15); filter: drop-shadow(0 0 10px var(--safe)); } }
+
+  /* ── SUB-NAV BUTTONS ── */
+  .sub-nav-wrapper {
+    position: relative; background: transparent; border-bottom: none;
+    padding: 16px 20px 0; box-shadow: none;
+  }
+  .sub-nav-bar {
+    max-width: 880px; margin: 0 auto; display: flex; align-items: center;
+    justify-content: space-between; gap: 10px; overflow-x: auto;
+    scrollbar-width: none; -ms-overflow-style: none; padding: 2px 0;
+  }
+  .sub-nav-bar::-webkit-scrollbar { display: none; }
+
+  .sub-nav-btn {
+    flex: 1 1 0; display: inline-flex; align-items: center; justify-content: center;
+    gap: 8px; background: var(--panel); backdrop-filter: blur(16px);
+    border: 1px solid var(--border); color: var(--text-muted); padding: 8px 14px;
+    border-radius: 8px; text-decoration: none; font-family: var(--mono);
+    font-size: 12.5px; font-weight: 600; white-space: nowrap; transition: all 0.25s ease;
+  }
+  .sub-nav-btn:hover {
+    color: var(--text); border-color: var(--accent); background: var(--panel-2);
+    transform: translateY(-2px); box-shadow: 0 4px 12px rgba(255, 200, 87, 0.15);
+  }
+  .sub-nav-btn.home-nav-btn { border-color: rgba(77, 158, 255, 0.4); color: var(--blue); }
+  .sub-nav-btn.home-nav-btn:hover { border-color: var(--blue); background: var(--blue-bg); color: #fff; }
+
+  .controls-wrapper { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
+  .lang-switch-wrapper { display: flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 12px; font-weight: 600; }
+  .lang-active { color: var(--accent); }
+  .lang-inactive { color: var(--text-muted); }
+  .switch { position: relative; display: inline-block; width: 34px; height: 18px; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider {
+    position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+    background-color: var(--panel-2); border: 1px solid var(--border);
+    transition: .3s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 18px;
+  }
+  .slider:before {
+    position: absolute; content: ""; height: 12px; width: 12px; left: 2px; bottom: 2px;
+    background-color: var(--text-muted); transition: .3s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 50%;
+  }
+  input:checked + .slider { background-color: var(--accent-bg); border-color: var(--accent); }
+  input:checked + .slider:before { transform: translateX(16px); background-color: var(--accent); }
+
+  .theme-toggle {
+    background: var(--panel); border: 1px solid var(--border); color: var(--text);
+    padding: 6px 14px; border-radius: 8px; cursor: pointer; font-family: var(--mono);
+    font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 6px;
+    transition: all 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+  .theme-toggle:hover { background: var(--panel-2); border-color: var(--text-muted); }
+
+  /* ── LAYOUT ── */
+  main{max-width:880px;margin:0 auto;padding:40px 20px 80px; position: relative; z-index: 1;}
+  
+  .hero{
+    text-align:center;padding:30px 0 45px;
+    border-bottom:1px solid var(--border);margin-bottom:45px;
+  }
+  .eyebrow{
+    font-family:var(--mono);font-size:12px;letter-spacing:.15em;text-transform:uppercase;
+    color:var(--accent);margin-bottom:12px;display:inline-block;
+    background:var(--accent-bg);padding:4px 12px;border-radius:20px;border:1px solid rgba(255, 200, 87, 0.3);
+  }
+  .title{font-size:clamp(26px,4.5vw,38px);font-weight:700;margin:0 0 16px;letter-spacing:-.02em;line-height:1.25;}
+  
+  .terminal{
+    background:#080C16;border:1px solid #1E2840;border-radius:10px;
+    padding:16px 20px;font-family:var(--mono);font-size:13px;color:#7DD3FC;
+    text-align:left;margin:24px auto 0;max-width:640px;box-shadow: 0 15px 35px -10px rgba(0,0,0,0.5);
+  }
+  .terminal-bar{display:flex;gap:7px;margin-bottom:12px;align-items:center;}
+  .terminal-dot{width:10px;height:10px;border-radius:50%;background:#2A3756;}
+  .terminal-dot:nth-child(1){background:#EF4444;}
+  .terminal-dot:nth-child(2){background:#F59E0B;}
+  .terminal-dot:nth-child(3){background:#10B981;}
+  .terminal-label{margin-left:auto;font-size:11px;color:#4B5563;}
+  .terminal-body{display:flex;align-items:center;gap:8px;}
+  .prompt{color:#A78BFA;}
+  .cursor{display:inline-block;width:8px;height:15px;background:#7DD3FC;animation:blink 1s infinite;}
+  @keyframes blink{50%{opacity:0;}}
+
+  .intro-block {
+    background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 24px; margin: 30px 0 0; text-align: left; font-size: 14.5px;
+    box-shadow: 0 8px 30px -10px rgba(0,0,0,0.2);
+  }
+  .intro-block p { margin: 0 0 14px; text-align: justify; }
+  .intro-block p:last-child { margin: 0; }
+
+  /* ── SECTION HEADINGS ── */
+  .sec-head{margin-bottom:28px;}
+  .sec-head h2{font-size:22px;font-weight:700;margin:0 0 6px;letter-spacing:-.01em;}
+  .sec-head p{margin:0;color:var(--text-muted);font-size:14px;}
+  .sec-eyebrow{font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px;}
+
+  /* ── LEVEL CARDS ── */
+  .levels{display:flex;flex-direction:column;gap:18px;}
+  .level-card{
+    background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
+    overflow:hidden;transition:border-color .3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow .3s;
+    box-shadow: var(--shadow-sm);
+  }
+  .level-card:hover{border-color:rgba(255,200,87,0.4); box-shadow: 0 8px 30px -5px rgba(0,0,0,0.3);}
+  .level-card.open{border-color:var(--border);}
+  .level-header{
+    width:100%;background:none;border:none;color:inherit;font:inherit;
+    padding:20px 24px;display:flex;align-items:center;gap:16px;
+    cursor:pointer;text-align:left;transition:background .2s;
+  }
+  .level-header:hover{background:var(--panel-2);}
+  .level-badge{
+    font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.08em;
+    padding:4px 10px;border-radius:6px;background:var(--panel-2);color:var(--accent);
+    border:1px solid var(--border);flex-shrink:0;
+  }
+  .level-titles{flex:1;min-width:0;}
+  .level-titles h2{margin:0 0 4px;font-size:15.5px;font-weight:600;line-height:1.4;}
+  .level-titles p{margin:0;color:var(--text-muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .level-tag{
+    font-family:var(--mono);font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;
+    flex-shrink:0;letter-spacing:.05em;
+  }
+  .level-tag.concept{background:rgba(77, 158, 255, 0.12);color:#4D9EFF;border:1px solid rgba(77, 158, 255, 0.3);}
+  .level-tag.problem{background:var(--danger-bg);color:var(--danger);border:1px solid rgba(255,107,91,0.3);}
+  .level-tag.fix{background:var(--safe-bg);color:var(--safe);border:1px solid rgba(62,207,142,0.3);}
+  .chevron{color:var(--text-muted);font-size:12px;transition:transform .3s cubic-bezier(0.4, 0, 0.2, 1);flex-shrink:0;}
+  .level-card.open .chevron{transform:rotate(180deg); color:var(--accent);}
+
+  .level-body{display:none;border-top:1px solid var(--border);background:var(--bg);}
+  .level-card.open .level-body{display:block;}
+  .level-inner{padding:24px;font-size:14px;}
+  .level-inner p{margin:0 0 16px;line-height:1.7;text-align:justify;}
+  .level-inner p:last-child{margin-bottom:0;}
+  .level-inner h4{
+    font-size:13px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;
+    color:var(--accent);margin:24px 0 10px;display:flex;align-items:center;gap:8px;
+  }
+  .level-inner h4::after{content:'';flex:1;height:1px;background:var(--border);}
+
+  .callout{
+    border-left:4px solid var(--danger);background:linear-gradient(90deg, var(--danger-bg), transparent);
+    border-radius:0 10px 10px 0;padding:16px 20px;margin:18px 0;font-size:14px;
+    box-shadow: inset 0 0 20px rgba(255,107,91,0.05);
+  }
+  .callout.fixnote{border-left-color:var(--safe);background:linear-gradient(90deg, var(--safe-bg), transparent); box-shadow: inset 0 0 20px rgba(62,207,142,0.05);}
+  .callout.analogy{border-left-color:var(--accent);background:linear-gradient(90deg, var(--accent-bg), transparent); box-shadow: inset 0 0 20px rgba(255,200,87,0.05);}
+  .callout.analogy .cal-label{color:var(--accent);}
+  .callout p{margin:0;color:var(--text); text-align: justify;}
+  .callout p+p{margin-top:10px;}
+  .callout .cal-label{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.06em;display:block;margin-bottom:8px;color:var(--danger);}
+  .callout.fixnote .cal-label{color:var(--safe);}
+
+  /* ── SIMULATION LINK BUTTONS INSIDE CARDS ── */
+  .simulation-cta-box {
+    margin-top: 18px; margin-bottom: 12px;
+    background: rgba(255, 200, 87, 0.05); border: 1px dashed var(--accent);
+    padding: 14px 18px; border-radius: 10px; display: flex; align-items: center;
+    justify-content: space-between; flex-wrap: wrap; gap: 12px;
+  }
+  .simulation-cta-box a {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--mono); font-size: 13px; font-weight: 700;
+    color: #000; background: var(--accent); padding: 8px 18px;
+    border-radius: 20px; text-decoration: none;
+    transition: all 0.25s ease; box-shadow: 0 4px 14px rgba(255, 200, 87, 0.3);
+  }
+  .simulation-cta-box a:hover {
+    transform: translateY(-2px); box-shadow: 0 6px 18px rgba(255, 200, 87, 0.5);
+    filter: brightness(1.1);
+  }
+
+  .mini-table{width:100%;border-collapse:collapse;margin:16px 0;font-size:13px; background: var(--panel-2); border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.15);}
+  .mini-table th,.mini-table td{border:1px solid var(--border);padding:12px 14px;text-align:left;}
+  .mini-table th{background:var(--bg);color:var(--accent);font-weight:700;font-family:var(--mono);font-size:12px; text-transform: uppercase; letter-spacing: 0.5px;}
+  .mini-table td{color:var(--text); font-family: var(--mono); font-size: 12.5px;}
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── IMPACT CARDS SECTION ── */
+  .impact-section {
+    background: linear-gradient(145deg, var(--panel), var(--bg));
+    border: 2px solid var(--border);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+    position: relative; overflow: hidden;
+    padding: 30px 24px; border-radius: 14px; margin-top: 35px; margin-bottom: 24px;
+  }
+  .impact-section::before {
+    content:''; position:absolute; top:0; left:0; width:100%; height:4px;
+    background: linear-gradient(90deg, var(--danger), var(--accent), var(--blue));
+  }
+  .impact-card {
+    background: var(--panel); border: 1px solid var(--border); border-left: 4px solid var(--danger);
+    border-radius: 10px; padding: 18px 20px; margin-bottom: 16px; transition: all 0.3s;
+  }
+  .impact-card:last-child{margin-bottom:0;}
+  .impact-card:hover{ transform: translateX(4px); box-shadow: 0 8px 20px rgba(255,107,91,0.08); border-color: rgba(255,255,255,0.1);}
+  .impact-card h3{ margin:0 0 10px; font-size:14.5px; color:var(--danger); font-family:var(--mono); display:flex; align-items:center; gap:10px; text-transform:uppercase; letter-spacing:0.5px;}
+  .impact-card p{margin:0; font-size:14px; color:var(--text); text-align:justify; line-height:1.7;}
+
+  /* ── IN-PAGE INTERACTIVE LAB / SIMULATOR ── */
+  .simulator-section {
+    background: #050505; border: 1px solid var(--border); border-radius: 14px;
+    margin-top: 35px; margin-bottom: 24px; overflow: hidden; position: relative;
+    display: flex; flex-direction: column; box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+  }
+  .simulator-section::before {
+    content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px;
+    background: linear-gradient(90deg, transparent, #ff3c3c, transparent);
+    animation: scanline 3s linear infinite;
+  }
+  .simulator-section::after {
+    content: ''; position: absolute; top: 0; left: -100%; width: 60%; height: 2px;
+    background: linear-gradient(90deg, transparent, #38bdf8, #ef4444, transparent);
+    animation: pipelineLaser 3s linear infinite;
+  }
+  @keyframes scanline { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+  @keyframes pipelineLaser { 0% { left: -60%; } 100% { left: 140%; } }
+
+  .sim-header-bar {
+    background: #0a0c10; border-bottom: 1px solid #1f242d; padding: 18px 24px;
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;
+  }
+  .sim-title {
+    font-family: var(--mono); font-size: 15px; font-weight: 700; color: #fff;
+    display: flex; align-items: center; gap: 10px; letter-spacing: 0.5px;
+  }
+  .sim-controls { display: flex; flex-direction: column; gap: 14px; width: 100%; margin-top: 10px; }
+  .sim-control-group { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .sim-control-group label {
+    font-family: var(--mono); font-size: 11.5px; color: #64748b;
+    text-transform: uppercase; letter-spacing: 1px; min-width: 130px; font-weight: bold;
+  }
+  .sim-btn-group { display: flex; gap: 8px; flex-wrap: wrap; background: #000; padding: 4px; border-radius: 6px; border: 1px solid #1f242d;}
+  .sim-btn {
+    background: transparent; border: none; color: #64748b; padding: 6px 13px;
+    border-radius: 4px; font-family: var(--mono); font-size: 11.5px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .sim-btn:hover { color: #fff; }
+  .sim-btn.active { background: #1f242d; color: #4d9eff; box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
+
+  .btn-execute {
+    background: rgba(57, 255, 122, 0.1); color: #39ff7a; border: 1px solid #39ff7a;
+    padding: 10px 24px; border-radius: 6px; font-family: var(--mono); font-size: 13px;
+    font-weight: 700; cursor: pointer; transition: all 0.2s; text-transform: uppercase;
+    align-self: flex-start; letter-spacing: 1px; box-shadow: 0 0 15px rgba(57, 255, 122, 0.15);
+  }
+  .btn-execute:hover { background: #39ff7a; color: #000; box-shadow: 0 0 20px rgba(57, 255, 122, 0.4); transform: translateY(-2px); }
+
+  .workspace { display: flex; padding: 18px; gap: 16px; height: 460px; background: #050505; }
+  @media (max-width: 850px) { .workspace { flex-direction: column; height: auto; min-height: 600px; } }
+
+  .sim-panel {
+    flex: 1; background: #0a0c10; border: 1px solid #1f242d; border-radius: 8px;
+    display: flex; flex-direction: column; overflow: hidden; box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+  }
+  .sim-panel-header {
+    background: #11141a; padding: 10px 14px; font-family: var(--mono); font-size: 11.5px;
+    font-weight: 700; color: #fff; border-bottom: 1px solid #1f242d; display: flex;
+    align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .sim-panel-body {
+    flex: 1; padding: 14px; font-family: var(--mono); font-size: 12px;
+    line-height: 1.6; overflow-y: auto; background: #000000;
+  }
+
+  #panel-client .sim-panel-header { border-top: 2px solid #ffcc00; }
+  #panel-gateway .sim-panel-header { border-top: 2px solid #38bdf8; }
+  #panel-server .sim-panel-header { border-top: 2px solid #ef4444; }
+
+  .sim-verdict-box {
+    background: #0d1117; border-top: 1px solid #1f242d; padding: 16px 20px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .sim-verdict-title { font-family: var(--mono); font-size: 13px; font-weight: 700; }
+  .sim-verdict-text { font-family: var(--sans); font-size: 13px; color: #94a3b8; }
+
+  /* ── FAQ ACCORDION ── */
+  .faq-section {
+    background: linear-gradient(145deg, var(--panel), var(--bg));
+    border: 2px solid var(--border);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+    position: relative; overflow: hidden;
+    padding: 30px 24px; border-radius: 14px; margin-top: 35px; margin-bottom: 24px;
+  }
+  .faq-section::before {
+    content:''; position:absolute; top:0; left:0; width:100%; height:4px;
+    background: linear-gradient(90deg, var(--accent), var(--safe), var(--blue));
+  }
+  .faq-list { display: flex; flex-direction: column; gap: 12px; margin-top: 18px; }
+  .faq-item {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 8px; overflow: hidden; transition: all 0.25s;
+  }
+  .faq-item.active { border-color: var(--accent); }
+  .faq-question {
+    width: 100%; background: none; border: none; color: var(--text); font: inherit;
+    padding: 16px 18px; display: flex; align-items: center; justify-content: space-between;
+    cursor: pointer; text-align: left; gap: 12px;
+  }
+  .faq-question:hover { background: var(--panel-2); }
+  .faq-q-badge {
+    font-family: var(--mono); font-size: 11px; font-weight: 700;
+    color: var(--accent); background: var(--accent-bg); padding: 3px 8px; border-radius: 4px;
+  }
+  .faq-q-text { font-size: 14.5px; font-weight: 600; flex: 1; }
+  .faq-icon { color: var(--text-muted); transition: transform 0.3s ease; font-size: 12px; }
+  .faq-item.active .faq-icon { transform: rotate(180deg); color: var(--accent); }
+  .faq-answer {
+    display: none; padding: 0 20px 20px; border-top: 1px solid var(--border);
+    margin-top: 4px; padding-top: 16px; color: var(--text-muted);
+    font-family: var(--mono); font-size: 13.5px; line-height: 1.7; text-align: justify;
+  }
+  .faq-item.active .faq-answer { display: block; animation: fadeIn 0.3s ease; }
+
+  /* ── AUDIT CHECKLIST ── */
+  #tester-checklist {
+    background: linear-gradient(145deg, var(--panel), var(--bg));
+    border: 2px solid var(--border);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+    position: relative; overflow: hidden;
+    padding: 30px 24px; border-radius: 14px; margin-top: 40px;
+  }
+  #tester-checklist::before {
+    content:''; position:absolute; top:0; left:0; width:100%; height:4px;
+    background: linear-gradient(90deg, var(--safe), var(--accent), var(--danger));
+  }
+  .check-label {
+    display: flex; align-items: flex-start; gap: 14px;
+    cursor: pointer; padding: 12px 14px; border-radius: 8px;
+    transition: background 0.2s ease, transform 0.2s ease;
+    border: 1px solid transparent;
+  }
+  .check-label:hover { background: var(--panel-2); border-color: var(--border); transform: translateX(4px); }
+  .check-input { display: none; }
+  .check-box {
+    width: 20px; height: 20px; border: 2px solid var(--text-muted);
+    border-radius: 5px; flex-shrink: 0; margin-top: 2px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    background: var(--bg);
+  }
+  .check-input:checked + .check-box {
+    background: var(--safe); border-color: var(--safe);
+    box-shadow: 0 0 10px var(--safe-bg);
+  }
+  .check-input:checked + .check-box::after {
+    content: "✓"; color: #000; font-size: 13px; font-weight: 900;
+  }
+  .check-text { font-size: 14px; color: var(--text); line-height: 1.6; }
+
+    /* ── BOTTOM NAVIGATION ROW ── */
+  .bottom-nav-row {
+    margin-top: 45px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    gap: 16px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+  }
+  .nav-arrow-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 18px;
+    border-radius: 20px;
+    text-decoration: none;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.25s ease;
+    box-shadow: var(--shadow-sm);
+    white-space: nowrap;
+  }
+  .nav-arrow-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-bg);
+    transform: translateY(-2px);
+  }
+  .bottom-nav-row .nav-prev {
+    grid-column: 1;
+    justify-self: start;
+  }
+  .bottom-nav-row .nav-home {
+    grid-column: 2;
+    justify-self: center;
+    text-align: center;
+  }
+  .bottom-nav-row .nav-next {
+    grid-column: 3;
+    justify-self: end;
+  }
+  @media (max-width: 768px) {
+    .bottom-nav-row {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+    }
+    .bottom-nav-row .nav-arrow-btn {
+      justify-content: center;
+      width: 100%;
+      text-align: center;
+      white-space: normal;
+    }
+    .bottom-nav-row .nav-empty {
+      display: none;
+    }
+  }
+
+
+
+  /* ── Modern Footer ── */
+  .modern-footer { padding: 40px 18px 30px; text-align: center; position: relative; z-index: 1; }
+  .footer-badge {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: linear-gradient(145deg, var(--panel-2), var(--panel));
+    padding: 12px 28px; border-radius: 30px; font-family: var(--mono); font-size: 13.5px;
+    color: var(--text-muted); border: 1px solid var(--border);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.25); cursor: default;
+  }
+  .footer-badge:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 30px rgba(239, 68, 68, 0.25);
+    border-color: var(--danger);
+    color: var(--text);
+  }
+  .dev-name {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+    background: linear-gradient(90deg, #3B82F6, #A855F7, #F43F5E, #F59E0B, #3B82F6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    background-size: 200% auto;
+    animation: gradient-flow 4s linear infinite;
+  }
+  @keyframes gradient-flow { 0% { background-position: 0% center; } 100% { background-position: 200% center; } }
+
+  /* ── DYNAMIC CYBER BACKGROUND ── */
+  .cyber-bg { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+  .cyber-grid {
+    position: absolute; inset: -120px;
+    background-image: 
+      radial-gradient(rgba(255, 255, 255, 0.12) 1.2px, transparent 1.2px),
+      linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+    background-size: 32px 32px, 96px 96px, 96px 96px;
+    opacity: 0.85; animation: gridDrift 60s linear infinite;
+  }
+  @keyframes gridDrift { 0% { transform: translate(0, 0); } 100% { transform: translate(96px, 96px); } }
+  .cyber-orb { position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.35; will-change: transform; }
+  .orb-1 { width: 550px; height: 550px; background: radial-gradient(circle, #ff6b5b 0%, transparent 70%); top: -100px; left: -100px; animation: floatOrb1 16s ease-in-out infinite alternate; }
+  .orb-2 { width: 600px; height: 600px; background: radial-gradient(circle, #ffc857 0%, transparent 70%); bottom: -80px; right: -100px; animation: floatOrb2 20s ease-in-out infinite alternate; }
+  .orb-3 { width: 480px; height: 480px; background: radial-gradient(circle, #3ecf8e 0%, transparent 70%); top: 35%; right: 15%; animation: floatOrb3 18s ease-in-out infinite alternate; }
+  .orb-4 { width: 500px; height: 500px; background: radial-gradient(circle, #4d9eff 0%, transparent 70%); bottom: 15%; left: 10%; animation: floatOrb4 22s ease-in-out infinite alternate; }
+  @keyframes floatOrb1 { 0% { transform: translate(0,0); } 100% { transform: translate(-40px, 100px); } }
+  @keyframes floatOrb2 { 0% { transform: translate(0,0); } 100% { transform: translate(-70px, -60px); } }
+  @keyframes floatOrb3 { 0% { transform: translate(0,0); } 100% { transform: translate(-80px, -40px); } }
+  @keyframes floatOrb4 { 0% { transform: translate(0,0); } 100% { transform: translate(80px, 60px); } }
+</style>
+</head>
+<body>
+
+<div class="cyber-bg" aria-hidden="true">
+  <div class="cyber-orb orb-1"></div>
+  <div class="cyber-orb orb-2"></div>
+  <div class="cyber-orb orb-3"></div>
+  <div class="cyber-orb orb-4"></div>
+  <div class="cyber-grid"></div>
+</div>
+
+<!-- ================= TOPBAR ================= -->
+<div class="topbar">
+  <a href="../index.html" class="brand" style="text-decoration:none; color:inherit;" title="Return to Main Hub">
+    <span class="brand-icon">🛡️</span>
+    <span class="brand-text"><code>CACHE SECURITY :</code> Web Cache Poisoning</span>
+  </a>
+  <div class="controls-wrapper">
+    <div class="lang-switch-wrapper">
+      <span id="lbl-hi" class="lang-active">Hindi</span>
+      <label class="switch">
+        <input type="checkbox" id="langToggle" onchange="toggleLanguage()">
+        <span class="slider"></span>
+      </label>
+      <span id="lbl-en" class="lang-inactive">English</span>
+    </div>
+    <button class="theme-toggle" id="themeBtn" onclick="toggleTheme()">☀️ Light Mode</button>
+  </div>
+</div>
+
+<!-- ================= HORIZONTAL SUB-NAV BAR ================= -->
+<div class="sub-nav-wrapper">
+  <nav class="sub-nav-bar" aria-label="Section Navigation">
+    <a class="sub-nav-btn home-nav-btn" href="../index.html" title="Main Home Page">
+      <span class="sub-nav-icon">🏠</span>
+      <span class="lang-hi">Home</span><span class="lang-en">Home</span>
+    </a>
+    <a class="sub-nav-btn" href="#simulator">
+      <span class="sub-nav-icon">⚡</span>
+      <span class="lang-hi">Simulator</span><span class="lang-en">Simulator</span>
+    </a>
+    <a class="sub-nav-btn" href="#impact-vectors">
+      <span class="sub-nav-icon">💥</span>
+      <span class="lang-hi">Attack Vectors</span><span class="lang-en">Attack Vectors</span>
+    </a>
+    <a class="sub-nav-btn" href="#confusing-questions">
+      <span class="sub-nav-icon">🤔</span>
+      <span class="lang-hi">Questions</span><span class="lang-en">Questions</span>
+    </a>
+    <a class="sub-nav-btn" href="#tester-checklist">
+      <span class="sub-nav-icon">📝</span>
+      <span class="lang-hi">Checklist</span><span class="lang-en">Checklist</span>
+    </a>
+  </nav>
+</div>
+
+<main>
+
+  <!-- ── HERO SECTION ── -->
+  <section class="hero">
+    <p class="eyebrow"><span class="lang-hi">CDN & Reverse Proxy Security — Deep Dive</span><span class="lang-en">CDN & Reverse Proxy Security — Deep Dive</span></p>
+    <h1 class="title">
+      <span class="lang-hi">Web Cache Poisoning: Unkeyed Inputs Se Mass Client Exploitation</span>
+      <span class="lang-en">Web Cache Poisoning: Mass Client Exploitation via Unkeyed Inputs</span>
+    </h1>
+
+    <div class="terminal">
+      <div class="terminal-bar">
+        <span class="terminal-dot"></span><span class="terminal-dot"></span><span class="terminal-dot"></span>
+        <span class="terminal-label">cache.request_hasher</span>
+      </div>
+      <div class="terminal-body">
+        <span class="prompt">&gt;</span> <span id="typewriter"></span><span class="cursor"></span>
+      </div>
+    </div>
+
+    <div class="intro-block">
+      <p><strong><span class="lang-hi">Web Cache Poisoning</span><span class="lang-en">Web Cache Poisoning</span></strong>
+        <span class="lang-hi">ek advanced web security attack hai jisme attacker ek aisi HTTP request craft karta hai jiska response malicious ho (jaise Stored XSS payload ya defacement), aur caching system (Cloudflare, Akamai, Varnish, Fastly) us response ko apne edge storage me save kar leta hai. Iske baad har innocent user jo us URL ko open karega, usko attacker ka malicious response deliver hota hai!</span>
+        <span class="lang-en">is an advanced exploitation technique where an attacker crafts an HTTP request eliciting a dangerous response (e.g. Stored XSS payload or site defacement), tricking the web cache (Cloudflare, Akamai, Varnish) into storing it under a common Cache Key. Consequently, every subsequent legitimate visitor requesting that page receives the cached exploit!</span>
+      </p>
+      <p>
+        <span class="lang-hi"><strong>Root cause hoti hai Cache Key vs Unkeyed Inputs ka mismatch:</strong> Caching proxy sirf method aur path (jaise <code>GET /index.html</code>) ko Cache Key banata hai, lekin application <code>X-Forwarded-Host</code>, <code>X-Original-URL</code>, ya unkeyed query parameters ko response HTML me render kar deti hai. Attacker sirf 1 request se hazaron users ko victim bana sakta hai!</span>
+        <span class="lang-en"><strong>The root cause stems from the mismatch between Cache Keys and Unkeyed Inputs:</strong> The caching proxy hashes only the HTTP method and path into its Cache Key, while backend applications dynamically reflect unkeyed headers (like <code>X-Forwarded-Host</code>) into the page body. A single poisoned request compromises thousands of users globally!</span>
+      </p>
+    </div>
+  </section>
+
+  <!-- ── LEVEL CARDS: CONCEPTS & VECTORS ── -->
+  <section class="sec-head">
+    <div class="sec-eyebrow"><span class="lang-hi">Step-by-Step Learning</span><span class="lang-en">Step-by-Step Learning</span></div>
+    <h2><span class="lang-hi">Vulnerability Levels & Cache Architecture</span><span class="lang-en">Vulnerability Levels & Cache Architecture</span></h2>
+    <p>
+      <span class="lang-hi">Edge caching proxies kaise kaam karti hain, cache key hashing me kya loopholes aate hain, aur unkeyed reflection kaise exploit hoti hai.</span>
+      <span class="lang-en">Explore how edge caching proxies function, the anatomy of cache key hashing, and how unkeyed input reflections lead to mass exploitation.</span>
+    </p>
+  </section>
+
+  <div class="levels">
+
+    <!-- LEVEL 0 -->
+    <div class="level-card open" id="lvl0">
+      <button class="level-header" onclick="toggleLevel('lvl0')">
+        <span class="level-badge">00</span>
+        <div class="level-titles">
+          <h2><span class="lang-hi">Web Caching Ki Architecture & Cache Key Mechanics</span><span class="lang-en">Web Caching Architecture & Cache Key Mechanics</span></h2>
+          <p><span class="lang-hi">Under The Hood: CDN Edge Nodes, Cache Keys, Cache-Control, Vary</span><span class="lang-en">Under The Hood: CDN Edge Nodes, Cache Keys, Cache-Control, Vary</span></p>
+        </div>
+        <span class="level-tag concept">CONCEPT</span>
+        <span class="chevron">▼</span>
+      </button>
+      <div class="level-body">
+        <div class="level-inner">
+          <h4><span class="lang-hi">1. Kyun Banayi Gayi? (The Architectural Problem Solved)</span><span class="lang-en">1. Why Was It Engineered? (The Architectural Problem Solved)</span></h4>
+          <p>
+            <span class="lang-hi">Jab millions of global users ek website (e.g. <code>e-commerce-portal.com</code>) access karte hain, har request ko direct backend application aur database tak bhejna slow hota hai (high network latency, high CPU load, expensive SQL queries). Solution nikla: <strong>Edge Caching Proxies & CDNs (Content Delivery Networks)</strong>. CDN servers geographically users ke paas hote hain. Jab pehla user request bhejta hai, CDN response ko save kar leta hai aur next 10,000 users ko direct RAM/Disk cache se serve kar deta hai bina origin database ko touch kiye!</span>
+            <span class="lang-en">When millions of users globally visit an application, routing every single request back to the origin database causes massive latency spikes, CPU exhaustion, and slow page loads. The architectural remedy is <strong>Edge Caching Reverse Proxies & CDNs</strong>. Positioned close to users globally, CDNs save copies of web pages, serving thousands of subsequent requests directly from edge memory without burdening the origin server.</span>
+          </p>
+
+          <h4><span class="lang-hi">2. Kaise Kaam Karta Hai? (Under The Hood Mechanics)</span><span class="lang-en">2. Under The Hood Mechanics (Cache Keys & Lifecycles)</span></h4>
+          <p>
+            <span class="lang-hi">Caching proxy decide karne ke liye ki do requests same hain ya alag, ek <strong>Cache Key</strong> create karti hai (usually HTTP Method + Host + Request URI). Baki sabhi headers (User-Agent, Cookies, X-Forwarded-Host) <em>Unkeyed Inputs</em> kehlate hain aur cache key hash me count nahi hote:</span>
+            <span class="lang-en">To determine whether two incoming HTTP requests can share a cached response, the proxy computes a cryptographic <strong>Cache Key</strong> (typically Method + Host + Request Path). All other request headers (User-Agent, Cookies, custom headers) are <em>Unkeyed Inputs</em> and omitted from the cache key lookup:</span>
+          </p>
+          <pre><code>// Standard Cache Key Calculation:
+Cache Key = Hash(HTTP_METHOD + "://" + HOST_HEADER + REQUEST_URI)
+// Example: Hash("GET://example.com/products/view?id=42") -> 9b8d23fa01e</code></pre>
+          <p>
+            <span class="lang-hi">Agar incoming request ka hash already memory me hai, toh proxy origin ko bypass karke <code>X-Cache: HIT</code> header ke sath instant response return karti hai. Agar nahi hai, toh origin server se fetch karke <code>X-Cache: MISS</code> karti hai aur <code>Cache-Control: max-age=3600</code> ke anusaar store kar leti hai.</span>
+            <span class="lang-en">If the computed hash exists in edge memory, the CDN immediately returns the cached document stamped with <code>X-Cache: HIT</code>. If missing, it dispatches the request to origin (<code>X-Cache: MISS</code>) and caches the response dictated by <code>Cache-Control: public, max-age=3600</code>.</span>
+          </p>
+
+          <h4><span class="lang-hi">3. Kya Kya Vulnerabilities Milti Hain & Technical Examples</span><span class="lang-en">3. What Vulnerabilities Emerge & Technical Examples</span></h4>
+          <p>
+            <span class="lang-hi">Jab backend origin kisi <em>unkeyed input</em> ko response body me execute ya reflect karta hai, toh yeh major vulnerability classes banti hain:</span>
+            <span class="lang-en">When backend origin servers incorporate <em>unkeyed inputs</em> into cached responses, critical vulnerability classes emerge:</span>
+          </p>
+          <table class="mini-table">
+            <thead>
+              <tr>
+                <th>Vulnerability Class</th>
+                <th>Underlying Failure Mechanism</th>
+                <th>Technical Example</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Unkeyed Header Reflection</strong></td>
+                <td>Backend reflects unkeyed headers (<code>X-Forwarded-Host</code>, <code>X-Original-URL</code>) in script imports.</td>
+                <td>Attacker injects <code>X-Forwarded-Host: evil.com</code>; cached page serves <code>&lt;script src="//evil.com/app.js"&gt;</code> to all users!</td>
+              </tr>
+              <tr>
+                <td><strong>Parameter Cloaking & Fat GET</strong></td>
+                <td>Proxy ignores request body on GET requests, but backend parses query parameters from both body and URL.</td>
+                <td>Attacker sends GET with duplicate parameter in body; CDN caches poisoned response under clean URL key.</td>
+              </tr>
+              <tr>
+                <td><strong>Cache Key Normalization Flaw</strong></td>
+                <td>Proxy decodes URL characters (e.g. <code>%2f</code>) while backend treats them as path traversal.</td>
+                <td>Discrepancy causes administrative or forbidden content to be cached for unauthenticated public users.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEVEL 1 -->
+    <div class="level-card" id="lvl1">
+      <button class="level-header" onclick="toggleLevel('lvl1')">
+        <span class="level-badge">01</span>
+        <div class="level-titles">
+          <h2><span class="lang-hi">Unkeyed Headers Se Cache Poisoning (Root Cause)</span><span class="lang-en">Unkeyed Header Cache Poisoning (Root Cause)</span></h2>
+          <p><span class="lang-hi">X-Forwarded-Host & Unkeyed Reflection Leading to Stored XSS</span><span class="lang-en">X-Forwarded-Host & Unkeyed Reflection Leading to Stored XSS</span></p>
+        </div>
+        <span class="level-tag problem">VULNERABILITY</span>
+        <span class="chevron">▼</span>
+      </button>
+      <div class="level-body">
+        <div class="level-inner">
+          <p>
+            <span class="lang-hi">Kayi frameworks (Express, Django, Rails) backend par JavaScript ya CSS resource URLs dynamically construct karte waqt <code>X-Forwarded-Host</code> ko check karte hain. Agar caching proxy is header ko cache key me include nahi karti, toh attacker poison inject karta hai:</span>
+            <span class="lang-en">Many backend frameworks dynamically construct static asset script paths using <code>X-Forwarded-Host</code>. If front-end caching proxies exclude this header from the Cache Key, attackers execute a classic poisoning maneuver:</span>
+          </p>
+          <pre><code>// 1. Attacker Request (Cache Miss):
+GET /en/home HTTP/1.1
+Host: portal.company.com
+X-Forwarded-Host: evil-attacker.com
+
+// 2. Origin Server Generates Poisoned HTML:
+HTTP/1.1 200 OK
+Cache-Control: public, max-age=1800
+X-Cache: MISS
+
+&lt;html&gt;
+  &lt;script src="https://evil-attacker.com/static/bundle.js"&gt;&lt;/script&gt;
+&lt;/html&gt;</code></pre>
+          <div class="callout">
+            <span class="cal-label">⚠️ MASS XSS IMPACT</span>
+            <p>
+              <span class="lang-hi">Ab agle 30 minute tak jitne bhi real users <code>https://portal.company.com/en/home</code> open karenge, unka browser CDN se wahi cached response receive karega! Har user ke browser me attacker ka malicious <code>bundle.js</code> execute hoga — mass session hijacking aur credentials theft!</span>
+              <span class="lang-en">For the next 30 minutes, every genuine user visiting <code>https://portal.company.com/en/home</code> receives the poisoned edge cache entry! The attacker's malicious <code>bundle.js</code> executes in thousands of user browsers, yielding mass cookie theft!</span>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEVEL 2 -->
+    <div class="level-card" id="lvl2">
+      <button class="level-header" onclick="toggleLevel('lvl2')">
+        <span class="level-badge">02</span>
+        <div class="level-titles">
+          <h2><span class="lang-hi">Parameter Cloaking & Fat GET Attacks</span><span class="lang-en">Parameter Cloaking & Fat GET Attacks</span></h2>
+          <p><span class="lang-hi">Proxy Query Parsing vs Backend Body Parsing Mismatch</span><span class="lang-en">Proxy Query Parsing vs Backend Body Parsing Mismatch</span></p>
+        </div>
+        <span class="level-tag problem">TECHNIQUES</span>
+        <span class="chevron">▼</span>
+      </button>
+      <div class="level-body">
+        <div class="level-inner">
+          <p>
+            <span class="lang-hi">Kuch frameworks (jaise Ruby on Rails ya PHP) <code>GET</code> requests me bhi HTTP body parameters ko parse kar lete hain ("Fat GET"). Caching proxies GET requests ki body ko completely ignore kar deti hain aur sirf URL path ko key banati hain:</span>
+            <span class="lang-en">Certain web application frameworks inspect and parse form bodies even on <code>GET</code> requests ("Fat GET"). However, front-end caching proxies strictly evaluate only the query string in the request line, completely discarding request bodies when generating cache keys:</span>
+          </p>
+          <pre><code>// Fat GET Poison Request:
+GET /catalog/items?category=shoes HTTP/1.1
+Host: shop.com
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 35
+
+category=shoes&amp;callback=evilScript()</code></pre>
+          <p>
+            <span class="lang-hi">Proxy Cache Key banati hai: <code>GET://shop.com/catalog/items?category=shoes</code>. Backend server body ke parameter <code>callback=evilScript()</code> ko process karke response me inject kar deta hai. Innocent users jo simple shoes category browse karenge, unko poisoned response serve ho jayega!</span>
+            <span class="lang-en">The proxy calculates the key for <code>/catalog/items?category=shoes</code>. Meanwhile, the backend prioritizes the body parameter <code>callback=evilScript()</code>, rendering an exploit into the response. Subsequent users browsing the standard shoes catalog execute the payload!</span>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEVEL 3 -->
+    <div class="level-card" id="lvl3">
+      <button class="level-header" onclick="toggleLevel('lvl3')">
+        <span class="level-badge">03</span>
+        <div class="level-titles">
+          <h2><span class="lang-hi">DOM-Based Web Cache Poisoning</span><span class="lang-en">DOM-Based Web Cache Poisoning</span></h2>
+          <p><span class="lang-hi">Poisoned JSON Payloads Fueling Client-Side DOM XSS Sinks</span><span class="lang-en">Poisoned JSON Payloads Fueling Client-Side DOM XSS Sinks</span></p>
+        </div>
+        <span class="level-tag problem">ADVANCED</span>
+        <span class="chevron">▼</span>
+      </button>
+      <div class="level-body">
+        <div class="level-inner">
+          <p>
+            <span class="lang-hi">Modern Single Page Applications (React, Vue, Angular) frontend par dynamic JSON configuration files (e.g. <code>/api/i18n/en.json</code>) fetch karti hain. Agar attacker header tampering se is JSON data ke kisi unkeyed translation string me XSS payload daal de aur use cache karwa de, toh frontend application jab us JSON ko <code>innerHTML</code> me bind karegi, toh DOM XSS trigger hoga pure website par!</span>
+            <span class="lang-en">Modern client-side Single Page Applications fetch static configuration and language bundles (e.g. <code>/api/i18n/en.json</code>). If an attacker seeds the cache of that JSON endpoint with an unkeyed payload, the client-side framework binds the untrusted string into the DOM via sinks like <code>dangerouslySetInnerHTML</code>, triggering persistent DOM XSS for all clients!</span>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEVEL 4 -->
+    <div class="level-card" id="lvl4">
+      <button class="level-header" onclick="toggleLevel('lvl4')">
+        <span class="level-badge">04</span>
+        <div class="level-titles">
+          <h2><span class="lang-hi">Production Defense & Secure Cache Architecture</span><span class="lang-en">Production Defense & Secure Cache Architecture</span></h2>
+          <p><span class="lang-hi">Keying Headers, Strip Unkeyed Headers at Proxy, Strict Vary Header</span><span class="lang-en">Keying Headers, Strip Unkeyed Headers at Proxy, Strict Vary Header</span></p>
+        </div>
+        <span class="level-tag fix">DEFENSE</span>
+        <span class="chevron">▼</span>
+      </button>
+      <div class="level-body">
+        <div class="level-inner">
+          <p>
+            <span class="lang-hi">Web Cache Poisoning ko eliminate karne ke 3 fundamental rules:</span>
+            <span class="lang-en">Three fundamental architectural rules to eliminate Web Cache Poisoning:</span>
+          </p>
+          <table class="mini-table">
+            <thead>
+              <tr>
+                <th>Defensive Layer</th>
+                <th>Mitigation Strategy</th>
+                <th>Production Implementation</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Reverse Proxy Header Stripping</strong></td>
+                <td>Front-end reverse proxy par sabhi incoming client-supplied unkeyed headers ko drop karein.</td>
+                <td>Nginx: <code>proxy_set_header X-Forwarded-Host $host;</code> (Overrides client input with authentic host).</td>
+              </tr>
+              <tr>
+                <td><strong>Vary Header Pinning</strong></td>
+                <td>Agar koi header response ko change karta hai, toh use <code>Vary</code> header me shamil karein.</td>
+                <td><code>Vary: Accept-Encoding, User-Agent, X-Requested-With</code> (Forces separate cache entries).</td>
+              </tr>
+              <tr>
+                <td><strong>Disable Fat GET Processing</strong></td>
+                <td>Backend server par GET requests me body payloads ko parse karna completely block karein.</td>
+                <td>Reject or ignore HTTP request bodies when HTTP Method is GET or HEAD.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── HIGH-IMPACT EXPLOITATION VECTORS SECTION ── -->
+  <section class="impact-section" id="impact-vectors">
+    <div class="sec-eyebrow"><span class="lang-hi">High-Severity Real-World Attacks</span><span class="lang-en">High-Severity Real-World Attacks</span></div>
+    <h2 style="font-family:var(--mono); color:var(--text); margin-top:0;">
+      <span class="lang-hi">💥 Major Exploitation Scenarios & Dedicated Labs</span>
+      <span class="lang-en">💥 Major Exploitation Scenarios & Dedicated Labs</span>
+    </h2>
+    <p style="color:var(--text-muted); font-size:14.5px; line-height:1.7;">
+      <span class="lang-hi">Web Cache Poisoning ke dono sabse famous attack vectors ko explore karein aur hamare dedicated standalone interactive simulation labs me test karein:</span>
+      <span class="lang-en">Explore two of the most critical real-world Web Cache Poisoning vectors and test them live in our dedicated standalone interactive simulation labs:</span>
+    </p>
+
+    <!-- VECTOR 1 -->
+    <div class="impact-card">
+      <h3>🌐 <span class="lang-hi">1. Unkeyed Header Poisoning (X-Forwarded-Host to Mass XSS)</span><span class="lang-en">1. Unkeyed Header Poisoning (X-Forwarded-Host to Mass XSS)</span></h3>
+      <p>
+        <span class="lang-hi">Attacker unkeyed <code>X-Forwarded-Host: evil-cdn.com</code> ke sath request bhej kar CDN cache ko poison karta hai. Backend script src import <code>&lt;script src="//evil-cdn.com/app.js"&gt;</code> generate karta hai jo CDN me cache ho jati hai. Har visitor victim ban jata hai!</span>
+        <span class="lang-en">The attacker crafts an unkeyed <code>X-Forwarded-Host: evil-cdn.com</code> request. The origin injects an external script source tag into the response, which is stored in edge cache. Every legitimate visitor subsequently downloads the attacker's script!</span>
+      </p>
+      <div class="simulation-cta-box">
+        <div>
+          <strong style="color:var(--accent); font-family:var(--mono); font-size:13.5px;">LAB 01 : UNKEYED HEADER CACHE POISONING LAB</strong><br>
+          <span style="font-size:12.5px; color:var(--text-muted);">Step-by-step edge cache poisoning & mass victim execution simulation.</span>
+        </div>
+        <a href="../labs/cache_poisoning_unkeyed_header_simulation.html" target="_blank">
+          <span>Click here to see the simulation of this attack 💻</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- VECTOR 2 -->
+    <div class="impact-card">
+      <h3>📦 <span class="lang-hi">2. Parameter Cloaking & Fat GET Request Poisoning</span><span class="lang-en">2. Parameter Cloaking & Fat GET Request Poisoning</span></h3>
+      <p>
+        <span class="lang-hi">Caching proxy sirf URL query string inspect karti hai jabki backend server GET request ki HTTP body se parameter read karta hai. Attacker innocent URL cache key ke under malicious body parameter inject karke edge cache poison kar deta hai.</span>
+        <span class="lang-en">The caching proxy constructs its cache key strictly from the URL query string while the backend application parses conflicting parameters from the HTTP request body ("Fat GET"). The attacker poisons the innocent cache key with exploit parameters!</span>
+      </p>
+      <div class="simulation-cta-box">
+        <div>
+          <strong style="color:var(--accent); font-family:var(--mono); font-size:13.5px;">LAB 02 : FAT GET & PARAMETER CLOAKING LAB</strong><br>
+          <span style="font-size:12.5px; color:var(--text-muted);">Interactive parameter cloaking & query mismatch exploitation lab.</span>
+        </div>
+        <a href="../labs/cache_poisoning_fat_get_param_cloaking_simulation.html" target="_blank">
+          <span>Click here to see the simulation of this attack 💻</span>
+        </a>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ── VULNERABLE VS SECURE CODE IMPLEMENTATIONS ── -->
+  <section class="sec-head">
+    <div class="sec-eyebrow"><span class="lang-hi">Code Level Fixes</span><span class="lang-en">Code Level Fixes</span></div>
+    <h2><span class="lang-hi">Vulnerable vs. Secure Code Implementations</span><span class="lang-en">Vulnerable vs. Secure Code Implementations</span></h2>
+  </section>
+
+  <div class="level-card open">
+    <div class="level-inner">
+      <h4><span class="lang-hi">1. Nginx Reverse Proxy Header Override</span><span class="lang-en">1. Nginx Reverse Proxy Header Override</span></h4>
+      <pre><code># ❌ INSECURE: Blindly passing client-supplied X-Forwarded-Host to backend
+proxy_set_header X-Forwarded-Host $http_x_forwarded_host;
+
+# ✅ SECURE: Overwrite with authentic server hostname or drop untrusted headers
+proxy_set_header X-Forwarded-Host $host;
+proxy_hide_header X-Forwarded-Host; # Or strip completely if not required</code></pre>
+
+      <h4><span class="lang-hi">2. Express.js / Node.js Host Configuration</span><span class="lang-en">2. Express.js / Node.js Host Configuration</span></h4>
+      <pre><code>// ❌ INSECURE: Using client-supplied header to construct script URLs
+app.get('/home', (req, res) => {
+    const cdnHost = req.headers['x-forwarded-host'] || req.headers.host;
+    res.send(`&lt;script src="https://${cdnHost}/static/app.js"&gt;&lt;/script&gt;`);
+});
+
+// ✅ SECURE: Use Hardcoded Static CDN Domain from Environment Config
+const TRUSTED_CDN = process.env.CDN_DOMAIN || "static.company-assets.com";
+app.get('/home', (req, res) => {
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.send(`&lt;script src="https://${TRUSTED_CDN}/static/app.js"&gt;&lt;/script&gt;`);
+});</code></pre>
+    </div>
+  </div>
+
+  <!-- ── IN-PAGE INTERACTIVE SIMULATOR SECTION ── -->
+  <section class="simulator-section" id="simulator">
+    <div class="sim-header-bar">
+      <div class="sim-title">
+        <span>⚡</span>
+        <span class="lang-hi">Interactive Web Cache Poisoning Simulator</span>
+        <span class="lang-en">Interactive Web Cache Poisoning Simulator</span>
+      </div>
+      <div class="sim-controls">
+        <div class="sim-control-group">
+          <label><span class="lang-hi">Attack Vector:</span><span class="lang-en">Attack Vector:</span></label>
+          <div class="sim-btn-group">
+            <button class="sim-btn active" data-vector="xfh" onclick="setSimVector('xfh')">X-Forwarded-Host Injection</button>
+            <button class="sim-btn" data-vector="fatget" onclick="setSimVector('fatget')">Fat GET Parameter Cloaking</button>
+            <button class="sim-btn" data-vector="origurl" onclick="setSimVector('origurl')">X-Original-URL Route Override</button>
+          </div>
+        </div>
+        <div class="sim-control-group">
+          <label><span class="lang-hi">Defense Level:</span><span class="lang-en">Defense Level:</span></label>
+          <div class="sim-btn-group">
+            <button class="sim-btn active" data-def="0" onclick="setSimDef('0')">0: None (Unkeyed Reflection)</button>
+            <button class="sim-btn" data-def="1" onclick="setSimDef('1')">1: Include in Cache Key</button>
+            <button class="sim-btn" data-def="2" onclick="setSimDef('2')">2: Strip Unkeyed Headers at Proxy</button>
+          </div>
+        </div>
+      </div>
+      <button class="btn-execute" id="btnRunSim" onclick="executeSimulator()">
+        <span class="lang-hi">Dispatch Cache Probe Request →</span>
+        <span class="lang-en">Dispatch Cache Probe Request →</span>
+      </button>
+    </div>
+
+    <div class="workspace">
+      <!-- PANEL 1: CLIENT REQUEST -->
+      <div class="sim-panel" id="panel-client">
+        <div class="sim-panel-header">
+          <div class="window-controls" style="display:inline-flex; gap:5px; margin-right:6px;">
+            <span style="width:8px; height:8px; border-radius:50%; background:#ef4444; display:inline-block;"></span>
+            <span style="width:8px; height:8px; border-radius:50%; background:#f59e0b; display:inline-block;"></span>
+            <span style="width:8px; height:8px; border-radius:50%; background:#10b981; display:inline-block;"></span>
+          </div>
+          <span>📡</span> <span>Attacker HTTP Request</span>
+        </div>
+        <div class="sim-panel-body" id="clientLog"></div>
+      </div>
+
+      <!-- PANEL 2: CDN EDGE CACHE STATE -->
+      <div class="sim-panel" id="panel-gateway">
+        <div class="sim-panel-header">
+          <div class="window-controls" style="display:inline-flex; gap:5px; margin-right:6px;">
+            <span style="width:8px; height:8px; border-radius:50%; background:#ef4444; display:inline-block;"></span>
+            <span style="width:8px; height:8px; border-radius:50%; background:#f59e0b; display:inline-block;"></span>
+            <span style="width:8px; height:8px; border-radius:50%; background:#10b981; display:inline-block;"></span>
+          </div>
+          <span>🔀</span> <span>CDN Edge Cache Lookup</span>
+        </div>
+        <div class="sim-panel-body" id="gatewayLog"></div>
+      </div>
+
+      <!-- PANEL 3: BACKEND SERVER RESPONSE -->
+      <div class="sim-panel" id="panel-server">
+        <div class="sim-panel-header">
+          <div class="window-controls" style="display:inline-flex; gap:5px; margin-right:6px;">
+            <span style="width:8px; height:8px; border-radius:50%; background:#ef4444; display:inline-block;"></span>
+            <span style="width:8px; height:8px; border-radius:50%; background:#f59e0b; display:inline-block;"></span>
+            <span style="width:8px; height:8px; border-radius:50%; background:#10b981; display:inline-block;"></span>
+          </div>
+          <span>🖥️</span> <span>Backend Server HTML Generator</span>
+        </div>
+        <div class="sim-panel-body" id="serverLog"></div>
+      </div>
+    </div>
+
+    <div class="sim-verdict-box" id="simVerdict">
+      <div class="sim-verdict-title" id="verdictTitle"></div>
+      <div class="sim-verdict-text" id="verdictText"></div>
+    </div>
+  </section>
+
+  <!-- ── CONFUSING QUESTIONS / FAQ ── -->
+  <section class="faq-section" id="confusing-questions">
+    <div class="sec-eyebrow"><span class="lang-hi">Critical Clarifications</span><span class="lang-en">Critical Clarifications</span></div>
+    <h2 style="font-family:var(--mono); color:var(--text); margin-top:0;">
+      <span class="lang-hi">🤔 Most Confusing Questions Solved</span>
+      <span class="lang-en">🤔 Most Confusing Questions Solved</span>
+    </h2>
+    <div class="faq-list">
+      
+      <div class="faq-item">
+        <button class="faq-question" onclick="toggleFaq(this)">
+          <span class="faq-q-badge">Q1</span>
+          <span class="faq-q-text">
+            <span class="lang-hi">Cache Buster query parameter (e.g. ?cb=123) bug hunting me kyun zaroori hota hai?</span>
+            <span class="lang-en">Why is a Cache Buster query parameter (e.g. ?cb=123) essential while bug hunting?</span>
+          </span>
+          <span class="faq-icon">▼</span>
+        </button>
+        <div class="faq-answer">
+          <span class="lang-hi">Agar aap production site par bina cache buster ke poison inject kar denge, toh real users ke liye site deface ya break ho sakti hai (out-of-scope damage). Cache Buster (jaise <code>/page?mybuster=test1</code>) ek unique cache key create karta hai jisse aapka test response sirf aapke unique URL par cache hota hai aur public users harm nahi hote!</span>
+          <span class="lang-en">If you inject payloads without a cache buster, you risk poisoning the live production homepage for genuine users, violating bug bounty rules. Appending a random query parameter creates a fresh isolated cache key, allowing safe verification without impacting real users!</span>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question" onclick="toggleFaq(this)">
+          <span class="faq-q-badge">Q2</span>
+          <span class="faq-q-text">
+            <span class="lang-hi">Vary header cache poisoning ko kaise rokta hai?</span>
+            <span class="lang-en">How does the HTTP Vary header prevent cache poisoning?</span>
+          </span>
+          <span class="faq-icon">▼</span>
+        </button>
+        <div class="faq-answer">
+          <span class="lang-hi"><code>Vary: X-Forwarded-Host</code> proxy ko instruct karta hai ki har alag header value ke liye alag cache entry banao. Jab attacker <code>evil.com</code> bhejega, toh wo sirf evil.com walon ko dikhega, aur normal users jinka header normal hai unko clean cache milegi!</span>
+          <span class="lang-en">The <code>Vary</code> header tells edge caches to incorporate specific request headers into the Cache Key calculation. If an attacker injects <code>evil.com</code>, the cached payload is bound strictly to requests carrying that exact header value, protecting regular visitors!</span>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question" onclick="toggleFaq(this)">
+          <span class="faq-q-badge">Q3</span>
+          <span class="faq-q-text">
+            <span class="lang-hi">Cache Poisoning aur Cache Deception me kya antar hai?</span>
+            <span class="lang-en">What is the distinction between Web Cache Poisoning and Web Cache Deception?</span>
+          </span>
+          <span class="faq-icon">▼</span>
+        </button>
+        <div class="faq-answer">
+          <span class="lang-hi">Web Cache Poisoning me attacker cache me MALICIOUS DATA DALTA HAI jo doosre users ko harm karta hai. Web Cache Deception me attacker victim ko trick karke VICTIM KA SENSITIVE DATA (profile, credit cards) cache karwata hai aur fir attacker khud use public cache se read kar leta hai!</span>
+          <span class="lang-en">In Cache Poisoning, the attacker pushes malicious data INTO the cache to harm visitors. In Cache Deception, the attacker tricks the victim into saving their own private account data into a public cache for the attacker to steal!</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ── TESTER AUDIT CHECKLIST ── -->
+  <section id="tester-checklist">
+    <div class="sec-eyebrow"><span class="lang-hi">Penetration Testing Methodology</span><span class="lang-en">Penetration Testing Methodology</span></div>
+    <h2 style="font-family:var(--mono); color:var(--text); margin-top:0;">
+      <span class="lang-hi">📝 Web Cache Poisoning Security Audit Checklist</span>
+      <span class="lang-en">📝 Web Cache Poisoning Security Audit Checklist</span>
+    </h2>
+    <div class="check-list">
+      <label class="check-label">
+        <input type="checkbox" class="check-input">
+        <span class="check-box"></span>
+        <span class="check-text">
+          <span class="lang-hi">Identify caching headers: Look for <code>X-Cache: HIT/MISS</code>, <code>Age</code>, and <code>CF-Cache-Status</code>.</span>
+          <span class="lang-en">Identify caching headers: Look for <code>X-Cache: HIT/MISS</code>, <code>Age</code>, and <code>CF-Cache-Status</code>.</span>
+        </span>
+      </label>
+      <label class="check-label">
+        <input type="checkbox" class="check-input">
+        <span class="check-box"></span>
+        <span class="check-text">
+          <span class="lang-hi">Fuzz for unkeyed headers using Param Miner: <code>X-Forwarded-Host</code>, <code>X-Original-URL</code>, <code>X-Rewrite-URL</code>.</span>
+          <span class="lang-en">Fuzz for unkeyed headers using Param Miner: <code>X-Forwarded-Host</code>, <code>X-Original-URL</code>, <code>X-Rewrite-URL</code>.</span>
+        </span>
+      </label>
+      <label class="check-label">
+        <input type="checkbox" class="check-input">
+        <span class="check-box"></span>
+        <span class="check-text">
+          <span class="lang-hi">Verify reflection: Check if unkeyed headers reflect into script tags, link tags, or meta tags.</span>
+          <span class="lang-en">Verify reflection: Check if unkeyed headers reflect into script tags, link tags, or meta tags.</span>
+        </span>
+      </label>
+      <label class="check-label">
+        <input type="checkbox" class="check-input">
+        <span class="check-box"></span>
+        <span class="check-text">
+          <span class="lang-hi">Test Fat GET support: Dispatch GET requests with body parameters and verify if backend parses them.</span>
+          <span class="lang-en">Test Fat GET support: Dispatch GET requests with body parameters and verify if backend parses them.</span>
+        </span>
+      </label>
+    </div>
+  </section>
+
+    <!-- ── BOTTOM NAVIGATION ROW ── -->
+  <div class="bottom-nav-row">
+    <a href="Race_Conditions.html" class="nav-arrow-btn nav-prev">← 19. Race Conditions</a>
+    <a href="../index.html" class="nav-arrow-btn nav-home" style="color:var(--accent); border-color:var(--accent);">🏠 Main Security Hub</a>
+    <a href="Host_Header_Injection.html" class="nav-arrow-btn nav-next">21. Host Header Injection →</a>
+  </div>
+
+</main>
+
+<footer class="modern-footer">
+  <div class="footer-badge">
+    <span class="footer-text">Designed and developed by <strong class="dev-name">Irshad Akaram</strong></span>
+  </div>
+</footer>
+
+<script>
+// Typewriter Effect
+const phrases = [
+  "cache_key: Hash(GET + /static/app.js) -> HIT",
+  "unkeyed_header: X-Forwarded-Host -> reflected in <script src>",
+  "cdn_edge: storing poisoned response -> TTL 3600s",
+  "victim_browser: executing attacker bundle.js -> cookies exfiltrated"
+];
+let pIdx = 0, charIdx = 0, isDeleting = false;
+function type() {
+  const el = document.getElementById("typewriter");
+  if (!el) return;
+  const current = phrases[pIdx];
+  if (isDeleting) {
+    el.innerText = current.substring(0, charIdx - 1);
+    charIdx--;
+  } else {
+    el.innerText = current.substring(0, charIdx + 1);
+    charIdx++;
+  }
+  if (!isDeleting && charIdx === current.length) {
+    isDeleting = true;
+    setTimeout(type, 2000);
+  } else if (isDeleting && charIdx === 0) {
+    isDeleting = false;
+    pIdx = (pIdx + 1) % phrases.length;
+    setTimeout(type, 500);
+  } else {
+    setTimeout(type, isDeleting ? 30 : 60);
+  }
+}
+type();
+
+// Theme Toggle
+function toggleTheme() {
+  const html = document.documentElement;
+  const current = html.getAttribute('data-theme') || 'dark';
+  const next = current === 'dark' ? 'light' : 'dark';
+  html.setAttribute('data-theme', next);
+  document.getElementById('themeBtn').innerText = next === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
+}
+
+// Language Switch
+function toggleLanguage() {
+  const toggle = document.getElementById('langToggle');
+  const isEn = toggle.checked;
+  document.documentElement.setAttribute('data-lang', isEn ? 'en' : 'hi');
+  document.getElementById('lbl-hi').className = isEn ? 'lang-inactive' : 'lang-active';
+  document.getElementById('lbl-en').className = isEn ? 'lang-active' : 'lang-inactive';
+}
+
+// Level Card Accordion
+function toggleLevel(id) {
+  const card = document.getElementById(id);
+  card.classList.toggle('open');
+}
+
+// FAQ Accordion
+function toggleFaq(btn) {
+  const item = btn.parentElement;
+  item.classList.toggle('active');
+}
+
+// ── Interactive In-Page Simulator Logic ──
+let currentVector = 'xfh';
+let currentDef = '0';
+
+function setSimVector(vec) {
+  currentVector = vec;
+  document.querySelectorAll('[data-vector]').forEach(b => b.classList.remove('active'));
+  document.querySelector(`[data-vector="${vec}"]`).classList.add('active');
+  renderSimState();
+}
+
+function setSimDef(def) {
+  currentDef = def;
+  document.querySelectorAll('[data-def]').forEach(b => b.classList.remove('active'));
+  document.querySelector(`[data-def="${def}"]`).classList.add('active');
+  renderSimState();
+}
+
+function renderSimState() {
+  const client = document.getElementById('clientLog');
+  const gateway = document.getElementById('gatewayLog');
+  const server = document.getElementById('serverLog');
+  const vBox = document.getElementById('simVerdict');
+
+  if (currentVector === 'xfh') {
+    client.innerHTML = `<span style="color:#7dd3fc">GET /en/home HTTP/1.1</span><br><span style="color:#fdba74">Host:</span> portal.company.com<br><span style="color:#f43f5e">X-Forwarded-Host:</span> evil-cdn.com`;
+    gateway.innerHTML = `<span style="color:#94a3b8">Cache Key:</span> Hash(GET + portal.company.com + /en/home)<br><span style="color:#38bdf8">Edge State:</span> Cache MISS -> Forwarding to backend.`;
+    server.innerHTML = `<span style="color:#94a3b8">Backend Engine:</span> Reading X-Forwarded-Host to build script import path.`;
+  } else if (currentVector === 'fatget') {
+    client.innerHTML = `<span style="color:#7dd3fc">GET /catalog/items?category=shoes HTTP/1.1</span><br><span style="color:#fdba74">Host:</span> portal.company.com<br><span style="color:#fdba74">Content-Type:</span> application/x-www-form-urlencoded<br><br><span style="color:#f43f5e">category=shoes&callback=alert(document.cookie)</span>`;
+    gateway.innerHTML = `<span style="color:#94a3b8">Cache Key:</span> Hash(GET + portal.company.com + /catalog/items?category=shoes)<br><span style="color:#94a3b8">Note:</span> Request body ignored by edge cache key!`;
+    server.innerHTML = `<span style="color:#94a3b8">Backend Engine:</span> Fat GET body parsed. Parameter 'callback' injected.`;
+  } else {
+    client.innerHTML = `<span style="color:#7dd3fc">GET /public/info HTTP/1.1</span><br><span style="color:#fdba74">Host:</span> portal.company.com<br><span style="color:#f43f5e">X-Original-URL:</span> /admin/secrets.json`;
+    gateway.innerHTML = `<span style="color:#94a3b8">Cache Key:</span> Hash(GET + portal.company.com + /public/info)<br><span style="color:#38bdf8">Edge State:</span> Cache MISS -> Routing to origin.`;
+    server.innerHTML = `<span style="color:#94a3b8">Backend Engine:</span> Framework routes to /admin/secrets.json.`;
+  }
+
+  vBox.style.display = 'none';
+}
+
+function executeSimulator() {
+  const gateway = document.getElementById('gatewayLog');
+  const server = document.getElementById('serverLog');
+  const vBox = document.getElementById('simVerdict');
+  const vTitle = document.getElementById('verdictTitle');
+  const vText = document.getElementById('verdictText');
+
+  vBox.style.display = 'block';
+
+  if (currentDef === '2') {
+    gateway.innerHTML = `<span style="color:#10b981">🛡️ PROXY HEADER SANITIZER ACTIVE:</span><br>• Stripped unkeyed 'X-Forwarded-Host'/'X-Original-URL'<br>• Ignored body on GET requests.<br>• Clean request sent to origin.`;
+    server.innerHTML = `<span style="color:#10b981">🛡️ SECURE ORIGIN:</span><br>• Using trusted config CDN: static.company.com<br>• Generated clean asset tag: &lt;script src="//static.company.com/app.js"&gt;`;
+    vTitle.innerHTML = `<span style="color:#10b981">✅ DEFENSE SUCCESSFUL: ZERO UNKEYED REFLECTION</span>`;
+    vText.innerHTML = `Reverse proxy sanitized all unkeyed headers at the edge. Cached response contains purely legitimate asset links.`;
+  } else if (currentDef === '1') {
+    gateway.innerHTML = `<span style="color:#f59e0b">⚠️ DYNAMIC KEYING ENFORCED:</span><br>• Header included in Cache Key hash.<br>• Cache Key: Hash(GET + /en/home + evil-cdn.com)`;
+    server.innerHTML = `<span style="color:#f59e0b">⚠️ ISOLATED CACHE:</span><br>• Response stored in isolated cache partition.<br>• Standard visitors will NOT receive this entry.`;
+    vTitle.innerHTML = `<span style="color:#f59e0b">⚠️ ISOLATED: POISON CANNOT SPREAD TO REAL USERS</span>`;
+    vText.innerHTML = `Keying the unkeyed header prevents cross-user pollution, though cache fragmentation may increase origin load.`;
+  } else {
+    gateway.innerHTML = `<span style="color:#ef4444">💀 CACHE POISONED (TTL: 3600s):</span><br>Saved response under public key: Hash(GET + portal.company.com + /en/home)<br><span style="color:#34d399">X-Cache: HIT for all subsequent visitors!</span>`;
+    server.innerHTML = `<span style="color:#ef4444">🚨 MALICIOUS SCRIPT REFLECTED:</span><br>&lt;script src="https://evil-cdn.com/static/bundle.js"&gt;&lt;/script&gt;`;
+    vTitle.innerHTML = `<span style="color:#ef4444">💀 CRITICAL EXPLOIT: MASS CLIENT-SIDE STORED XSS</span>`;
+    vText.innerHTML = `Edge cache is now weaponized! Thousands of innocent visitors opening the page will execute the attacker's script immediately!`;
+  }
+}
+
+renderSimState();
+</script>
+</body>
+</html>

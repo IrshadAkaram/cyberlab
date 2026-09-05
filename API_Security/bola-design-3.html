@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="hi" data-theme="dark" data-lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Design 3: Pentester Academy Mission — BOLA | API Security</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="assets/css/style.css">
+  <style>
+    /* Design Selector Banner */
+    .design-switcher-bar {
+      background: #059669;
+      color: #fff;
+      padding: 8px 16px;
+      font-size: 0.85rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+    }
+    .design-switcher-pills {
+      display: flex;
+      gap: 8px;
+    }
+    .design-pill {
+      background: rgba(255,255,255,0.2);
+      color: #fff;
+      padding: 3px 12px;
+      border-radius: 20px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.78rem;
+      transition: all 0.2s;
+    }
+    .design-pill.active, .design-pill:hover {
+      background: #fff;
+      color: #047857;
+    }
+
+    /* Mission Briefing Card */
+    .mission-briefing {
+      background: linear-gradient(145deg, #062b1e, #0a1726);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      border-radius: var(--radius-lg);
+      padding: 1.8rem;
+      margin: 2rem 0;
+      box-shadow: 0 10px 30px rgba(16, 185, 129, 0.15);
+      position: relative;
+    }
+
+    .mission-status-chip {
+      position: absolute;
+      top: 1.5rem;
+      right: 1.5rem;
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+      border: 1px solid #10b981;
+      padding: 4px 12px;
+      border-radius: var(--radius-pill);
+      font-size: 0.75rem;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Phase Stepper Bar */
+    .phase-stepper {
+      display: flex;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-pill);
+      padding: 6px;
+      gap: 6px;
+      margin-bottom: 2rem;
+      overflow-x: auto;
+    }
+
+    .phase-step-btn {
+      flex: 1;
+      padding: 10px 16px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      border-radius: var(--radius-pill);
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .phase-step-btn.active {
+      background: #059669;
+      color: #fff;
+      box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+    }
+
+    .phase-step-btn .step-num {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.72rem;
+    }
+
+    /* Interactive Quiz Box */
+    .quiz-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 1.4rem;
+      margin: 1.5rem 0;
+    }
+
+    .quiz-opt {
+      display: block;
+      background: #0b1120;
+      border: 1px solid var(--border-subtle);
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
+      margin-top: 8px;
+      color: #cbd5e1;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+
+    .quiz-opt:hover {
+      border-color: var(--cyan);
+      background: rgba(56, 189, 248, 0.05);
+    }
+
+    .quiz-opt.correct {
+      border-color: #10b981;
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Switcher -->
+  <div class="design-switcher-bar">
+    <div>
+      <strong>Design 3: Pentester Academy & Mission Stepper</strong> (PortSwigger / TryHackMe Style)
+    </div>
+    <div class="design-switcher-pills">
+      <a href="bola-design-1.html" class="design-pill">Design 1 (Tabs)</a>
+      <a href="bola-design-2.html" class="design-pill">Design 2 (Docs / Sticky Split)</a>
+      <a href="bola-design-3.html" class="design-pill active">Design 3 (Academy / Stepper)</a>
+      <a href="bola-design-4.html" class="design-pill" style="background:#facc15; color:#0f172a; font-weight:800;">Design 4 (Sidebar Dashboard) ★</a>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="container">
+      <div class="nav-wrapper">
+        <a href="index.html" class="brand-logo">
+          <div class="brand-icon" style="background:linear-gradient(135deg, #10b981, #065f46);">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+            </svg>
+          </div>
+          <div class="brand-text">API Security <span>Academy</span></div>
+        </a>
+
+        <div class="nav-breadcrumbs">
+          <a href="index.html">Lab Missions</a>
+          <span class="sep">›</span>
+          <span class="current">Lab 01: BOLA Account Takeover</span>
+        </div>
+
+        <div class="nav-actions">
+          <div class="lang-switch-wrapper">
+            <span id="lbl-hi" class="lang-label active">Hindi</span>
+            <label class="switch">
+              <input type="checkbox" id="langToggle">
+              <span class="slider"></span>
+            </label>
+            <span id="lbl-en" class="lang-label">English</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Mission Briefing -->
+    <div class="mission-briefing">
+      <div class="mission-status-chip">
+        <span class="pulse-dot"></span>
+        <span>LAB ACTIVE</span>
+      </div>
+
+      <div style="font-size:0.8rem; text-transform:uppercase; letter-spacing:0.08em; color:#34d399; font-weight:700; margin-bottom:6px;">
+        MISSION BRIEFING • OWASP API1:2023
+      </div>
+      <h1 style="font-family:var(--font-heading); font-size:2rem; font-weight:800; color:#fff; margin-bottom:0.6rem;">
+        Exploiting Broken Object Level Authorization (BOLA)
+      </h1>
+      <p style="font-size:0.95rem; color:#cbd5e1; max-width:850px; line-height:1.6;">
+        <span class="lang-hi"><strong>Target Environment:</strong> <code>api.corp-internal.net</code><br>
+        <strong>Mission Goal:</strong> Aap User 1001 (Alice) ke credentials ke saath authenticated hain. BOLA vulnerability ka use karke User 1002 (John Doe) ke account me ghusein aur confidential data leak karein.</span>
+        <span class="lang-en"><strong>Target Environment:</strong> <code>api.corp-internal.net</code><br>
+        <strong>Mission Goal:</strong> You are authenticated as standard user Alice (ID: 1001). Exploit the object-level authorization flaw to exfiltrate John Doe's (ID: 1002) confidential data.</span>
+      </p>
+    </div>
+
+    <!-- Stepper Navigation -->
+    <div class="phase-stepper">
+      <button class="phase-step-btn active tab-btn" data-tab="phase-1">
+        <span class="step-num">1</span>
+        <span>Recon & Theory</span>
+      </button>
+      <button class="phase-step-btn tab-btn" data-tab="phase-2">
+        <span class="step-num">2</span>
+        <span>Exploit Lab</span>
+      </button>
+      <button class="phase-step-btn tab-btn" data-tab="phase-3">
+        <span class="step-num">3</span>
+        <span>4 Attack Vectors</span>
+      </button>
+      <button class="phase-step-btn tab-btn" data-tab="phase-4">
+        <span class="step-num">4</span>
+        <span>Patch & Defense</span>
+      </button>
+      <button class="phase-step-btn tab-btn" data-tab="phase-5">
+        <span class="step-num">5</span>
+        <span>Quiz & Checklist</span>
+      </button>
+    </div>
+
+    <!-- Phase 1: Recon -->
+    <div id="phase-1" class="tab-content active">
+      <article class="content-card">
+        <div class="section-head">
+          <div class="num-badge" style="background:#059669;">1</div>
+          <h2 class="section-title">Phase 1: Reconnaissance & Theory</h2>
+        </div>
+        <p class="text-para">
+          <span class="lang-hi">BOLA tab hota hai jab server client ki aayi ID par bharosa kar leta hai bina ye dekhe ki token kiska hai.</span>
+          <span class="lang-en">BOLA occurs when an API accepts client-provided IDs without asserting token tenant ownership.</span>
+        </p>
+        <div class="callout-box">
+          <div class="callout-icon">🎯</div>
+          <div class="callout-content">
+            <h4>AuthN vs AuthZ</h4>
+            <p>AuthN verifies credentials (Login). AuthZ validates access rights to records (Object Ownership).</p>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <!-- Phase 2: Live Exploit Lab -->
+    <div id="phase-2" class="tab-content">
+      <article class="content-card">
+        <div class="section-head">
+          <div class="num-badge" style="background:#059669;">2</div>
+          <h2 class="section-title">Phase 2: Live Exploit Execution Lab</h2>
+        </div>
+        <div class="lab-simulator">
+          <div class="auth-token-box">
+            <div>Active Session: Alice (<code>1001</code>)</div>
+            <div style="color:var(--cyan);">Bearer token loaded</div>
+          </div>
+          <div class="interactive-control-bar">
+            <select class="http-method-select"><option>GET</option></select>
+            <span style="font-family:var(--font-mono); color:#64748b;">/api/users/</span>
+            <input type="text" id="sim-id-input" class="url-input-field" value="1002">
+            <button id="sim-send-btn" class="btn-send">Fire Payload</button>
+          </div>
+          <div id="sim-alert-banner" style="display:none; padding:10px 14px; border-radius:var(--radius-sm); border-left:4px solid #ef4444; margin-bottom:1rem; font-size:0.86rem;"></div>
+          <div class="terminal-pane">
+            <div class="terminal-header">
+              <span class="terminal-label">HTTP Intercept Response</span>
+              <span id="sim-status" style="font-size:0.8rem; color:#34d399; font-family:var(--font-mono);">Ready</span>
+            </div>
+            <div class="code-container">
+              <pre id="sim-response-body" style="font-family:var(--font-mono); font-size:0.85rem; color:#cbd5e1; margin:0;">// Enter 1002 and click Fire Payload</pre>
+            </div>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <!-- Phase 3: Vectors -->
+    <div id="phase-3" class="tab-content">
+      <article class="content-card">
+        <div class="section-head">
+          <div class="num-badge" style="background:#059669;">3</div>
+          <h2 class="section-title">Phase 3: 4 Industrial Attack Vectors</h2>
+        </div>
+        <div class="scenarios-container">
+          <div class="scenario-card">
+            <div class="scenario-header">
+              <div class="scenario-title">💳 1. Sequential Invoice Enumeration</div>
+              <span class="scenario-impact crit">Critical</span>
+            </div>
+            <div class="scenario-body"><p class="text-para">Fuzzing <code>GET /invoices/9410</code> to 9500 to extract customer PII.</p></div>
+          </div>
+          <div class="scenario-card">
+            <div class="scenario-header">
+              <div class="scenario-title">🏢 2. Multi-Tenant Tenant Hop</div>
+              <span class="scenario-impact crit">Critical</span>
+            </div>
+            <div class="scenario-body"><p class="text-para">Swapping <code>tenant_id=418</code> to 419 to breach another enterprise organization.</p></div>
+          </div>
+          <div class="scenario-card">
+            <div class="scenario-header">
+              <div class="scenario-title">🔥 3. State-Changing Account Takeover</div>
+              <span class="scenario-impact crit">Critical</span>
+            </div>
+            <div class="scenario-body"><p class="text-para">Using <code>PUT /api/users/1002</code> to overwrite victim account email.</p></div>
+          </div>
+          <div class="scenario-card">
+            <div class="scenario-header">
+              <div class="scenario-title">🧩 4. Blind BOLA via Leaked UUIDs</div>
+              <span class="scenario-impact crit">High</span>
+            </div>
+            <div class="scenario-body"><p class="text-para">Querying document APIs using UUIDs discovered in public threads.</p></div>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <!-- Phase 4: Patch -->
+    <div id="phase-4" class="tab-content">
+      <article class="content-card">
+        <div class="section-head">
+          <div class="num-badge" style="background:#059669;">4</div>
+          <h2 class="section-title">Phase 4: Defensive Patching</h2>
+        </div>
+        <div class="code-compare-grid">
+          <div class="compare-box vulnerable">
+            <div class="compare-box-header"><span class="compare-tag vuln">❌ Vulnerable</span></div>
+            <div class="code-container">
+              <div class="code-line"><span class="code-text">doc = db.query(Doc).filter(Doc.id == doc_id).first()</span></div>
+            </div>
+          </div>
+          <div class="compare-box secure">
+            <div class="compare-box-header"><span class="compare-tag safe">✅ Patched (Scoped)</span></div>
+            <div class="code-container">
+              <div class="code-line"><span class="code-text">doc = db.query(Doc).filter(Doc.id == doc_id, Doc.owner_id == current_user.id).first()</span></div>
+            </div>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <!-- Phase 5: Quiz & Checklist -->
+    <div id="phase-5" class="tab-content">
+      <article class="content-card">
+        <div class="section-head">
+          <div class="num-badge" style="background:#059669;">5</div>
+          <h2 class="section-title">Phase 5: Knowledge Check Mini-Quiz</h2>
+        </div>
+        <div class="quiz-card">
+          <h4 style="color:#fff; margin-bottom:8px;">Q: Agar developer database me auto-increment integer ID ki jagah UUID v4 use kar le, toh kya BOLA fix ho jayega?</h4>
+          <div class="quiz-opt" onclick="this.style.borderColor='#ef4444'; this.style.color='#f87171'; alert('Galat! UUID guess karna rokta hai, par authorization nahi karta. Agar UUID leak ho gaya toh data fir se chori ho jayega.');">A) Haan, kyunki UUID guess karna mathematically impossible hai.</div>
+          <div class="quiz-opt" onclick="this.classList.add('correct'); alert('Shabash! Bilkul sahi. UUID security through obscurity hai. Authorization hamesha backend query me check hona chahiye!');">B) Nahi, kyunki UUIDs leak ho sakte hain aur backend authorization ke bina attack ho sakta hai.</div>
+          <div class="quiz-opt" onclick="this.style.borderColor='#ef4444'; this.style.color='#f87171'; alert('Galat! UUID kisi bhi endpoint me use kiya ja sakta hai.');">C) Sirf tab solve hoga jab GraphQL use karein.</div>
+        </div>
+      </article>
+    </div>
+
+    <!-- Footer -->
+    <footer class="note-footer">
+      <div class="pagination-controls">
+        <a href="index.html" class="page-nav-btn">
+          <span class="nav-direction">← Back to Overview</span>
+          <span class="nav-target-title">Master API Security Hub</span>
+        </a>
+        <a href="#" class="page-nav-btn next">
+          <span class="nav-direction">Next Lab Mission →</span>
+          <span class="nav-target-title">Lab 02: Broken Function Level Auth</span>
+        </a>
+      </div>
+    </footer>
+  </main>
+
+  <script src="assets/js/main.js"></script>
+</body>
+</html>

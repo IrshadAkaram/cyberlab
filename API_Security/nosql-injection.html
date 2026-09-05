@@ -1,0 +1,2856 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Module 09: NoSQL Injection (NoSQLi) - API Security Notes</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Sora:wght@400;500;600;700;800&family=Fira+Code:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+
+  <style>
+
+    /* ==========================================================================
+       Module 08: SSRF Custom Styling - Exact Match with Module 07 Typography & Colors
+       ========================================================================== */
+    body {
+      background: #040814;
+      color: #f1f5f9;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      overflow-y: visible;
+      font-family: var(--font-sans);
+      font-size: 1rem;
+      line-height: 1.7;
+    }
+
+    /* Master Layout: Sidebar + Main Area */
+    .app-dashboard-layout {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* Left Sidebar */
+    .dashboard-sidebar {
+      width: 280px;
+      background: #070d1c;
+      border-right: 1px solid rgba(255, 255, 255, 0.07);
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      position: sticky;
+      top: 0;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #1e293b transparent;
+    }
+
+    .sidebar-header {
+      padding: 1.5rem 1.4rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .sidebar-brand-title {
+      font-family: var(--font-heading);
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.02em;
+    }
+    .sidebar-brand-title span {
+      color: #38bdf8;
+    }
+
+    .sidebar-section-heading {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #64748b;
+      padding: 0.8rem 1.4rem 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .vuln-nav-list {
+      list-style: none;
+      padding: 0 0.8rem;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin: 0;
+    }
+
+    .vuln-nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      border-radius: var(--radius-pill);
+      color: #f1f5f9;
+      text-decoration: none;
+      font-size: 0.86rem;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .vuln-nav-item:hover {
+      background: rgba(255, 255, 255, 0.04);
+      color: #f1f5f9;
+    }
+
+    .vuln-nav-item.active {
+      background: #1d4ed8;
+      color: #ffffff;
+      font-weight: 700;
+      box-shadow: 0 4px 14px rgba(29, 78, 216, 0.4);
+    }
+
+    .nav-num-badge {
+      font-size: 0.72rem;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 2px 7px;
+      border-radius: var(--radius-pill);
+      color: inherit;
+    }
+
+    .vuln-nav-item.active .nav-num-badge {
+      background: rgba(0, 0, 0, 0.25);
+      color: #fff;
+    }
+
+    /* Main Content Body */
+    .dashboard-main {
+      flex: 1;
+      padding: 1.4rem 2.4rem 0;
+      max-width: 1480px;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* Top Action Bar */
+    .main-top-actionbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      padding-bottom: 12px;
+    }
+
+    /* Header Hero Grid */
+    .hero-top-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 1fr;
+      gap: 1.8rem;
+      margin-bottom: 1.4rem;
+      align-items: center;
+    }
+
+    @media (max-width: 1024px) {
+      .hero-top-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+      }
+    }
+
+    .category-tag-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 0.75rem;
+    }
+
+    .pill-index-tag {
+      font-family: var(--font-mono);
+      background: #dc2626;
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.75rem;
+      padding: 2px 8px;
+      border-radius: var(--radius-pill);
+    }
+
+    .pill-category-name {
+      color: #f1f5f9;
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+
+    .main-vuln-h1 {
+      font-family: var(--font-heading);
+      font-size: 2.35rem;
+      font-weight: 800;
+      line-height: 1.2;
+      color: #ffffff;
+      margin-bottom: 0.6rem;
+      letter-spacing: -0.02em;
+    }
+
+    .main-vuln-h1 span.title-blue {
+      color: #38bdf8;
+    }
+    .main-vuln-h1 span.title-red {
+      color: #f87171;
+    }
+
+    .main-vuln-desc {
+      font-size: 1.05rem;
+      color: #f1f5f9;
+      margin-bottom: 1.2rem;
+      line-height: 1.65;
+    }
+
+    /* Meta Badges */
+    .meta-tags-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 1.2rem;
+    }
+
+    .meta-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 10px;
+      border-radius: var(--radius-pill);
+      font-size: 0.74rem;
+      white-space: nowrap;
+      font-weight: 600;
+    }
+
+    .meta-chip.danger {
+      background: rgba(239, 68, 68, 0.12);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.35);
+    }
+
+    .meta-chip.info {
+      background: rgba(56, 189, 248, 0.12);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+
+    .meta-chip.purple {
+      background: rgba(168, 85, 247, 0.12);
+      color: #c084fc;
+      border: 1px solid rgba(168, 85, 247, 0.3);
+    }
+
+    /* Quote Bubble */
+    .quote-bubble {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      border-radius: var(--radius-md);
+      padding: 0.9rem 1.3rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 0.94rem;
+      color: #f1f5f9;
+      line-height: 1.6;
+    }
+    .quote-icon-box {
+      font-size: 1.15rem;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* Hero Glass Graphic (SSRF Simulator) */
+    .hero-glass-graphic {
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.85), rgba(7, 13, 28, 0.95));
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: var(--radius-lg);
+      padding: 1.2rem 1.4rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      position: relative;
+    }
+
+    .hero-widget-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 10px;
+    }
+
+    .hero-widget-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .pulse-live-dot {
+      width: 8px;
+      height: 8px;
+      background: #ef4444;
+      border-radius: 50%;
+      box-shadow: 0 0 8px #ef4444;
+      animation: pulseAnim 2s infinite;
+    }
+
+    @keyframes pulseAnim {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    .hero-badge-title {
+      font-family: var(--font-heading);
+      font-size: 0.84rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      letter-spacing: 0.02em;
+    }
+
+    .hero-sim-pills {
+      display: flex;
+      gap: 6px;
+    }
+
+    .hero-sim-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #94a3b8;
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: var(--radius-pill);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s;
+    }
+
+    .hero-sim-btn.active.exploit {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: #ef4444;
+      color: #fca5a5;
+    }
+
+    .hero-sim-btn.active.safe {
+      background: rgba(16, 185, 129, 0.2);
+      border-color: #10b981;
+      color: #6ee7b7;
+    }
+
+    .hero-widget-body {
+      display: grid;
+      grid-template-columns: 110px 1fr 140px;
+      gap: 12px;
+      align-items: center;
+      padding: 6px 0;
+    }
+
+    .attacker-graphic-node {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 4px;
+    }
+
+    .attacker-avatar-circle {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid #ef4444;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+    }
+
+    .attacker-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #fca5a5;
+    }
+    .attacker-sub {
+      font-size: 0.68rem;
+      color: #64748b;
+    }
+
+    .graphic-center-flow {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      background: rgba(0, 0, 0, 0.25);
+      padding: 8px 10px;
+      border-radius: var(--radius-md);
+      border: 1px dashed rgba(255, 255, 255, 0.1);
+    }
+
+    .graphic-url-pill {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      padding: 3px 8px;
+      border-radius: 4px;
+      color: #38bdf8;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .flow-beam-track {
+      width: 100%;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 2px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .flow-beam-particle {
+      position: absolute;
+      top: 0;
+      height: 100%;
+      width: 40%;
+      background: linear-gradient(90deg, transparent, #ef4444, transparent);
+      animation: flowAnim 1.8s infinite linear;
+    }
+
+    @keyframes flowAnim {
+      0% { left: -40%; }
+      100% { left: 100%; }
+    }
+
+    .flow-state-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+
+    .target-profile-card {
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      border-radius: var(--radius-md);
+      padding: 8px 10px;
+      font-size: 0.72rem;
+      color: #cbd5e1;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .target-profile-card.exploit {
+      border-color: rgba(239, 68, 68, 0.5);
+      background: rgba(239, 68, 68, 0.05);
+    }
+    .target-profile-card.safe {
+      border-color: rgba(16, 185, 129, 0.5);
+      background: rgba(16, 185, 129, 0.05);
+    }
+
+    .target-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2px;
+    }
+    .target-card-top h4 {
+      margin: 0;
+      font-size: 0.76rem;
+      color: #f1f5f9;
+    }
+
+    .target-pill-status {
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: var(--radius-pill);
+    }
+    .target-pill-status.breach {
+      background: #ef4444;
+      color: #fff;
+    }
+    .target-pill-status.blocked {
+      background: #10b981;
+      color: #fff;
+    }
+
+    /* Underline Navigation Tabs Bar */
+    .tab-underline-nav {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      border-bottom: 2px solid rgba(255, 255, 255, 0.08);
+      margin-bottom: 1.8rem;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .tab-underline-nav::-webkit-scrollbar {
+      display: none;
+    }
+
+    .tab-underline-btn {
+      background: none;
+      border: none;
+      color: #94a3b8;
+      font-family: var(--font-sans);
+      font-size: 0.95rem;
+      font-weight: 600;
+      padding: 0.8rem 0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      position: relative;
+      white-space: nowrap;
+      transition: color 0.2s;
+    }
+
+    .tab-underline-btn:hover {
+      color: #f1f5f9;
+    }
+
+    .tab-underline-btn.active {
+      color: #38bdf8;
+    }
+
+    .tab-underline-btn.active::after {
+      content: "";
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background: #38bdf8;
+      box-shadow: 0 0 10px #38bdf8;
+    }
+
+    /* Tab Content Switcher */
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+      animation: fadeInTab 0.25s ease-out;
+    }
+
+    @keyframes fadeInTab {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Cards Panels (Exact Module 07 Theme) */
+    .card-panel {
+      background: rgba(7, 14, 28, 0.90);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(56, 189, 248, 0.18);
+      border-radius: var(--radius-lg);
+      padding: 1.8rem;
+      margin-bottom: 0.5rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .card-title-badge-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 1.4rem;
+    }
+    .card-title-badge-row .panel-header-title {
+      margin: 0;
+    }
+
+    .blue-circle-num {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #1d4ed8, #0284c7);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 0.95rem;
+      flex-shrink: 0;
+      box-shadow: 0 0 12px rgba(2, 132, 199, 0.4);
+    }
+
+    .panel-header-title {
+      font-family: var(--font-heading);
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #38bdf8;
+      letter-spacing: -0.01em;
+    }
+
+    /* Exact Module 07 Typography Enforcement */
+    .panel-body-text {
+      font-size: 0.98rem;
+      color: #f1f5f9;
+      line-height: 1.75;
+      margin-bottom: 1.2rem;
+    }
+
+    .def-lead-card {
+      background: rgba(14, 165, 233, 0.05);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      border-radius: var(--radius-md);
+      padding: 1.3rem 1.6rem;
+      margin-bottom: 1.6rem;
+    }
+
+    .def-lead-title {
+      font-family: var(--font-heading);
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 0.8rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .def-lead-text,
+    .def-lead-text span,
+    .def-lead-text p {
+      color: #f1f5f9 !important;
+      font-size: 1.02rem !important;
+      line-height: 1.75 !important;
+      margin: 0;
+      text-align: justify !important;
+      text-justify: inter-word !important;
+    }
+
+    .def-lead-text strong,
+    .def-lead-text b {
+      color: #ffffff !important;
+      font-weight: 700;
+    }
+
+    /* Story Card */
+    .story-card-box {
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.5), rgba(15, 23, 42, 0.8));
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      border-left: 4px solid #38bdf8;
+      border-radius: var(--radius-md);
+      padding: 1.4rem;
+      margin-bottom: 1.6rem;
+    }
+
+    .dialogue-turn {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 1rem;
+      align-items: flex-start;
+    }
+    .dialogue-turn:last-child {
+      margin-bottom: 0;
+    }
+
+    .char-avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+    .char-asif {
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid #38bdf8;
+      color: #38bdf8;
+    }
+    .char-atharva {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid #ef4444;
+      color: #f87171;
+    }
+
+    .dialogue-bubble {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-md);
+      padding: 0.9rem 1.2rem;
+      font-size: 0.98rem;
+      line-height: 1.7;
+      color: #f1f5f9;
+      flex: 1;
+    }
+    .dialogue-bubble strong {
+      color: #38bdf8;
+    }
+
+    /* Visual Architecture Box */
+    .arch-flow-box {
+      background: #030712;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: var(--radius-md);
+      padding: 1.4rem;
+      margin: 1.4rem 0;
+    }
+
+    .arch-step-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      position: relative;
+    }
+
+    @media (max-width: 900px) {
+      .arch-step-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .arch-node {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 6px;
+    }
+    .arch-node.danger-node {
+      border-color: rgba(239, 68, 68, 0.4);
+      background: rgba(239, 68, 68, 0.05);
+    }
+    .arch-node.target-node {
+      border-color: rgba(245, 158, 11, 0.4);
+      background: rgba(245, 158, 11, 0.05);
+    }
+
+    .arch-node-title {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: #f1f5f9;
+    }
+    .arch-node-desc {
+      font-size: 0.78rem;
+      color: #cbd5e1;
+      line-height: 1.5;
+    }
+
+    /* Section 2 Lifecycle Colored Blocks */
+    .lifecycle-phase-box {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-left-width: 4px;
+      border-radius: var(--radius-md);
+      padding: 1.1rem 1.3rem;
+      margin-bottom: 12px;
+    }
+    .lifecycle-phase-box h4 {
+      margin: 0 0 0.4rem;
+      font-size: 1.05rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Code Comparison Grid & Boxes (Module 07) */
+    .code-compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.2rem;
+      margin: 1.2rem 0;
+    }
+
+    @media (max-width: 900px) {
+      .code-compare-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .compare-box {
+      background: #060b18;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .compare-box.vulnerable {
+      border-top: 3px solid #ef4444;
+    }
+    .compare-box.secure {
+      border-top: 3px solid #10b981;
+    }
+
+    .compare-header {
+      padding: 10px 14px;
+      background: #0a1124;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .compare-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .compare-dot.red { background: #ef4444; }
+    .compare-dot.green { background: #10b981; }
+
+    .compare-title {
+      font-size: 0.86rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      font-family: var(--font-sans);
+    }
+
+    .term-copy-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #94a3b8;
+      font-size: 0.72rem;
+      font-family: var(--font-mono);
+      padding: 3px 9px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-left: auto;
+    }
+
+    .term-copy-btn:hover {
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      border-color: rgba(56, 189, 248, 0.3);
+    }
+
+    .compare-box pre {
+      margin: 0;
+      padding: 1rem 1.15rem;
+      font-family: var(--font-mono);
+      font-size: 0.83rem;
+      line-height: 1.65;
+      color: #e2e8f0;
+      overflow-x: auto;
+      flex: 1;
+      white-space: pre;
+      word-break: normal;
+      tab-size: 2;
+    }
+
+    .compare-box pre code {
+      background: transparent !important;
+      border: none !important;
+      padding: 0 !important;
+      font-size: inherit !important;
+      font-family: inherit !important;
+      color: inherit !important;
+      display: block;
+      white-space: pre !important;
+    }
+
+    /* Code Syntax Tokens */
+    .t-comm { color: #64748b; font-style: italic; }
+    .t-kw { color: #c084fc; font-weight: 700; }
+    .t-fn { color: #38bdf8; font-weight: 600; }
+    .t-str { color: #a3e635; }
+    .t-num { color: #f472b6; }
+    .t-key { color: #38bdf8; }
+    .t-bool { color: #f472b6; font-weight: 700; }
+    .t-cls { color: #facc15; font-weight: 700; }
+
+    /* Code Language Switcher Buttons (Tab 4) */
+    .code-lang-pills-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 1.4rem;
+      flex-wrap: wrap;
+    }
+
+    .code-lang-btn {
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 8px !important;
+      padding: 8px 18px !important;
+      background: rgba(255, 255, 255, 0.05) !important;
+      border: 1px solid rgba(255, 255, 255, 0.15) !important;
+      color: #cbd5e1 !important;
+      border-radius: var(--radius-pill, 9999px) !important;
+      font-family: var(--font-heading, inherit) !important;
+      font-size: 0.86rem !important;
+      font-weight: 600 !important;
+      cursor: pointer !important;
+      line-height: 1 !important;
+      transition: all 0.2s ease !important;
+      outline: none !important;
+      text-decoration: none !important;
+    }
+
+    .code-lang-btn:hover {
+      background: rgba(56, 189, 248, 0.15) !important;
+      border-color: #38bdf8 !important;
+      color: #ffffff !important;
+      transform: translateY(-1px) !important;
+    }
+
+    .code-lang-btn.active {
+      background: linear-gradient(135deg, #0284c7, #2563eb) !important;
+      border-color: #38bdf8 !important;
+      color: #ffffff !important;
+      box-shadow: 0 0 14px rgba(56, 189, 248, 0.4) !important;
+    }
+
+    /* Golden Rules Card */
+    .golden-rules-card {
+      background: rgba(14, 165, 233, 0.04);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      border-radius: var(--radius-md);
+      padding: 1.4rem;
+      margin-top: 1.8rem;
+    }
+
+    .golden-rules-title {
+      font-family: var(--font-heading);
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #38bdf8;
+      margin-top: 0;
+      margin-bottom: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* HW Step Box (Used in FAQ matching Module 07) */
+    .hw-step-box {
+      border-radius: var(--radius-md);
+      padding: 1.2rem 1.4rem;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-left-width: 4px;
+      transition: all 0.2s ease;
+    }
+    .hw-step-box h4 {
+      margin: 0 0 0.5rem;
+      font-size: 1.05rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .hw-step-box p {
+      margin: 0;
+      font-size: 0.96rem;
+      line-height: 1.7;
+      color: #f1f5f9;
+      text-align: justify !important;
+      text-justify: inter-word !important;
+    }
+
+    .hw-step-box.step-1 {
+      border-left-color: #10b981;
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(15, 23, 42, 0.6));
+    }
+    .hw-step-box.step-1 h4 { color: #34d399; }
+
+    .hw-step-box.step-2 {
+      border-left-color: #f59e0b;
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(15, 23, 42, 0.6));
+    }
+    .hw-step-box.step-2 h4 { color: #fbbf24; }
+
+    .hw-step-box.step-3 {
+      border-left-color: #0ea5e9;
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.08), rgba(15, 23, 42, 0.6));
+    }
+    .hw-step-box.step-3 h4 { color: #38bdf8; }
+
+    .hw-step-box.step-4 {
+      border-left-color: #ef4444;
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(15, 23, 42, 0.6));
+    }
+    .hw-step-box.step-4 h4 { color: #f87171; }
+
+    .hw-step-box.step-5 {
+      border-left-color: #a855f7;
+      background: linear-gradient(135deg, rgba(168, 85, 247, 0.08), rgba(15, 23, 42, 0.6));
+    }
+    .hw-step-box.step-5 h4 { color: #c084fc; }
+
+    /* Live Lab Styles */
+    .lab-container {
+      background: rgba(10, 16, 32, 0.85);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: var(--radius-lg);
+      padding: 1.6rem;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    }
+
+    .lab-controls-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.2rem;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .lab-mode-switch {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 4px 10px;
+      border-radius: var(--radius-pill);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .lab-preset-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 10px;
+      margin-bottom: 1.2rem;
+    }
+
+    .lab-preset-btn {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: var(--radius-md);
+      padding: 10px 12px;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: #e2e8f0;
+    }
+    .lab-preset-btn:hover {
+      border-color: #38bdf8;
+      background: rgba(56, 189, 248, 0.08);
+    }
+    .lab-preset-btn.active {
+      border-color: #ef4444;
+      background: rgba(239, 68, 68, 0.1);
+    }
+
+    .lab-preset-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 3px;
+    }
+    .lab-preset-url {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: #94a3b8;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .lab-input-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 1.4rem;
+    }
+    .lab-url-input {
+      flex: 1;
+      background: #030712;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: var(--radius-md);
+      padding: 10px 14px;
+      color: #f1f5f9;
+      font-family: var(--font-mono);
+      font-size: 0.86rem;
+    }
+    .lab-url-input:focus {
+      outline: none;
+      border-color: #38bdf8;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+    }
+
+    .lab-execute-btn {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      border: none;
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.86rem;
+      padding: 0 20px;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+    .lab-execute-btn:hover {
+      filter: brightness(1.15);
+      transform: translateY(-1px);
+    }
+
+    .lab-console-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    @media (max-width: 860px) {
+      .lab-console-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .lab-panel-card {
+      background: #030712;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+    .lab-panel-head {
+      background: #0a1124;
+      padding: 8px 12px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #cbd5e1;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .lab-panel-body {
+      padding: 12px;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      line-height: 1.5;
+      color: #cbd5e1;
+      max-height: 280px;
+      overflow-y: auto;
+    }
+
+    .lab-stepper {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .lab-step-item {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      font-size: 0.78rem;
+    }
+    .step-icon-badge {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .step-icon-badge.ok { background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid #10b981; }
+    .step-icon-badge.fail { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444; }
+    .step-icon-badge.info { background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid #38bdf8; }
+  
+    .char-kartik {
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid #38bdf8;
+      color: #38bdf8;
+    }
+    .char-gyanendra {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid #ef4444;
+      color: #f87171;
+    }
+
+  
+    /* ==========================================================================
+       Checklist Interactive Pass / Fail Theme (Exact Module 07 Rate Limiting Parity)
+       ========================================================================== */
+    .checklist-meta-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .checklist-counter-badge {
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      color: #38bdf8;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+    }
+    .checklist-item {
+      position: relative;
+      transition: all 0.25s ease;
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      padding: 1rem 1.2rem;
+      border-radius: var(--radius-md);
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      margin-bottom: 1rem;
+      cursor: pointer;
+    }
+    .checklist-item:hover {
+      border-color: rgba(56, 189, 248, 0.35);
+      background: rgba(15, 23, 42, 0.75);
+    }
+    .checklist-item.item-passed {
+      border-color: rgba(16, 185, 129, 0.6) !important;
+      background: rgba(16, 185, 129, 0.07) !important;
+    }
+    .checklist-item.item-failed {
+      border-color: rgba(239, 68, 68, 0.6) !important;
+      background: rgba(239, 68, 68, 0.07) !important;
+    }
+    .checklist-item.item-passed .check-box-circle {
+      background: #10b981 !important;
+      border-color: #10b981 !important;
+      color: #ffffff !important;
+    }
+    .checklist-item.item-failed .check-box-circle {
+      background: #ef4444 !important;
+      border-color: #ef4444 !important;
+      color: #ffffff !important;
+    }
+    .check-box-circle {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 3px;
+      font-weight: 700;
+      color: #94a3b8;
+      transition: all 0.2s;
+    }
+    .check-content {
+      flex: 1;
+    }
+    .check-content h5 {
+      margin: 0 0 6px 0;
+      font-size: 1.02rem;
+      color: #38bdf8;
+    }
+    .check-how-to-box {
+      margin-top: 10px;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px dashed rgba(56, 189, 248, 0.25);
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 0.84rem;
+      color: #cbd5e1;
+    }
+    .check-how-to-title {
+      font-size: 0.76rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #38bdf8;
+      margin-bottom: 4px;
+    }
+    .check-actions-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .check-status-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(15, 23, 42, 0.8);
+      color: #94a3b8;
+      transition: all 0.2s ease;
+    }
+    .check-status-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #f1f5f9;
+    }
+    .check-status-btn.pass-btn.active {
+      background: rgba(16, 185, 129, 0.25) !important;
+      border-color: #10b981 !important;
+      color: #34d399 !important;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+    }
+    .check-status-btn.fail-btn.active {
+      background: rgba(239, 68, 68, 0.25) !important;
+      border-color: #ef4444 !important;
+      color: #f87171 !important;
+      box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+    }
+
+  </style>
+</head>
+<body>
+
+  <div class="app-dashboard-layout">
+
+    <!-- ====================================================================
+         LEFT SIDEBAR NAVIGATION (Exact ssrf.html Parity)
+         ==================================================================== -->
+    <aside class="dashboard-sidebar">
+      <div class="sidebar-header">
+        <a href=\"index.html\" class=\"sidebar-brand-title\" style=\"text-decoration:none; display:block;\">API <span>SECURITY</span></a>
+      </div>
+
+      <div class="sidebar-section-heading">Foundations</div>
+      <ul class="vuln-nav-list" style="margin-bottom: 0.5rem;">
+        <li><a href="api-intro.html" class="vuln-nav-item"><span class="nav-num-badge">00</span> API Fundamentals</a></li>
+      </ul>
+
+      <div class="sidebar-section-heading">Common Vulnerabilities</div>
+      <ul class="vuln-nav-list">
+        <li><a href="bola.html" class="vuln-nav-item"><span class="nav-num-badge">01</span> BOLA</a></li>
+        <li><a href="bfla.html" class="vuln-nav-item"><span class="nav-num-badge">02</span> BFLA</a></li>
+        <li><a href="idor.html" class="vuln-nav-item"><span class="nav-num-badge">03</span> IDOR</a></li>
+        <li><a href="jwt.html" class="vuln-nav-item"><span class="nav-num-badge">04</span> JWT Vulnerabilities</a></li>
+        <li><a href="mass-assignment.html" class="vuln-nav-item"><span class="nav-num-badge">05</span> Mass Assignment</a></li>
+        <li><a href="excessive-data-exposure.html" class="vuln-nav-item"><span class="nav-num-badge">06</span> Excessive Data Exposure</a></li>
+        <li><a href="rate-limiting.html" class="vuln-nav-item"><span class="nav-num-badge">07</span> Rate Limiting</a></li>
+        <li><a href="ssrf.html" class="vuln-nav-item"><span class="nav-num-badge">08</span> SSRF</a></li>
+        <li><a href="nosql-injection.html" class="vuln-nav-item active"><span class="nav-num-badge">09</span> NoSQL Injection</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">10</span> Command Injection</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">11</span> XXE</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">12</span> GraphQL Security</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">13</span> Business Logic Issues</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">14</span> CORS Misconfiguration</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">15</span> API Key Security</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">16</span> OAuth & OpenID Security</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">17</span> Webhooks Security</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">18</span> Race Conditions</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">19</span> File Upload Vulnerabilities</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">20</span> Deserialization Issues</a></li>
+      </ul>
+    </aside>
+
+    <!-- ====================================================================
+         MAIN CONTENT AREA
+         ==================================================================== -->
+    <main class="dashboard-main">
+
+      <!-- Top Action Bar -->
+      <div class="main-top-actionbar">
+        <div style="font-size: 0.84rem; color: #94a3b8;">
+          <a href="api-intro.html" style="color:#38bdf8; text-decoration:none;">Modules</a> &rsaquo;
+          <span>09 / 20 NoSQL Injection (NoSQLi)</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <!-- Dark / Light Mode Toggle Button -->
+          <button class="theme-toggle-btn" id="themeToggleBtn" title="Switch Theme">
+            <span>☀️</span> <span class="theme-label">Light Mode</span>
+          </button>
+
+          <!-- Dual Language Switcher -->
+          <div class="lang-switch-wrapper">
+            <span id="lbl-hi" class="lang-label active">Hindi</span>
+            <label class="switch">
+              <input type="checkbox" id="langToggle">
+              <span class="slider"></span>
+            </label>
+            <span id="lbl-en" class="lang-label">English</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hero Section (Exact 2-Column Grid from ssrf.html) -->
+      <section class="hero-top-grid">
+        <div>
+          <div class="category-tag-row">
+            <span class="pill-index-tag">09</span>
+            <span class="pill-category-name">Database Injection Vulnerabilities</span>
+          </div>
+
+          <h1 class="main-vuln-h1">
+            NoSQL Query<br>
+            <span class="title-red">Injection (NoSQLi)</span>
+          </h1>
+
+          <p class="main-vuln-desc">
+            <span class="lang-hi">NoSQL Injection tab hota hai jab backend API user ke untrusted JSON inputs ko bina strict type validation ke document database (MongoDB, CouchDB) query filter me pass kar deti hai, jisse attacker BSON operators (<code>$ne</code>, <code>$gt</code>, <code>$regex</code>, <code>$where</code>) inject karke authentication bypass, blind data exfiltration, aur server-side JavaScript execution execute kar leta hai.</span>
+            <span class="lang-en">NoSQL Injection occurs when a backend API accepts untrusted structured JSON inputs into document database queries (such as MongoDB) without strict schema type enforcement, allowing attackers to inject BSON operators ($ne, $gt, $regex, $where) to invert query logic, bypass authentication gates, exfiltrate data, and execute arbitrary server JavaScript.</span>
+          </p>
+
+          <!-- Meta tags row -->
+          <div class="meta-tags-row">
+            <span class="meta-chip danger">
+              <span class="badge-dot" style="background:#ef4444; width:6px; height:6px; border-radius:50%;"></span> Critical Auth Bypass & Takeover
+            </span>
+            <span class="meta-chip info">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+              CWE-943 / OWASP API8:2023
+            </span>
+            <span class="meta-chip purple">
+              ★ MongoDB BSON Operators & $where RCE
+            </span>
+          </div>
+
+          <!-- Highlight Insight Quote Bubble -->
+          <div class="quote-bubble">
+            <div class="quote-icon-box">💡</div>
+            <div>
+              <span class="lang-hi"><strong>Core Insight:</strong> "SQL Injection syntax todta hai, jabki NoSQL Injection query logic ka datatype hijack karta hai!" Developer sochta hai password string hai, lekin attacker object bhej kar database engine ko bol deta hai ki <em>password is not equal to empty string</em>—aur database admin document return kar deta hai.</span>
+              <span class="lang-en"><strong>Core Insight:</strong> "SQL Injection breaks query syntax grammar, whereas NoSQL Injection hijacks query evaluation data types!" Developers anticipate a primitive string, but attackers supply an object operator telling the engine to match any non-empty password—and the database yields the administrator document.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Box (Interactive Hero Widget matching ssrf.html) -->
+        <div class="hero-glass-graphic" id="nosqlHeroWidget">
+          <div class="hero-widget-header">
+            <div class="hero-widget-badge">
+              <span class="pulse-live-dot"></span>
+              <span class="hero-badge-title">Interactive NoSQL Injection Simulator</span>
+            </div>
+            <div class="hero-sim-pills">
+              <button type="button" class="hero-sim-btn" id="btnNosqlSafe" title="Protected: Zod & mongo-sanitize Active">
+                <span>🛡️</span> <span>Schema Guard (Safe)</span>
+              </button>
+              <button type="button" class="hero-sim-btn active exploit" id="btnNosqlExploit" title="Vulnerable: $ne Operator Bypass">
+                <span>⚠️</span> <span>$ne Bypass (Exploit)</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="hero-widget-body">
+            <div class="attacker-graphic-node">
+              <div class="attacker-avatar-circle">🥷</div>
+              <div class="attacker-label">Gyanendra (Attacker)</div>
+              <div class="attacker-sub">Injecting {"$ne": ""}</div>
+            </div>
+
+            <div class="graphic-center-flow">
+              <div class="graphic-url-pill" id="heroUrlPill">
+                <span style="color:#ef4444; font-weight:700;">POST</span> <span>/api/v1/auth/login</span>
+              </div>
+              <div style="font-size:0.7rem; color:#fca5a5; font-family:var(--font-mono);" id="heroPayloadText">
+                pass: {"$ne": "wrong_guess"}
+              </div>
+              <div class="flow-beam-track">
+                <div class="flow-beam-particle" id="heroBeamParticle"></div>
+              </div>
+              <span class="flow-state-label" id="heroFlowState" style="color:#ef4444;">Operator Inverting Query Logic</span>
+            </div>
+
+            <div class="target-profile-card exploit" id="heroTargetCard">
+              <div class="target-card-top">
+                <h4 id="heroTargetName">MongoDB Users Collection</h4>
+                <span class="target-pill-status breach" id="heroTargetStatus">BYPASSED</span>
+              </div>
+              <p>Filter: <code id="heroField1" style="color:#ef4444;">username: "admin"</code></p>
+              <p>Operator: <code id="heroField2" style="color:#ef4444;">$ne: "wrong_guess" (TRUE)</code></p>
+              <p>Result: <code id="heroField3" style="color:#ef4444;">Admin Document Returned</code></p>
+              <span style="color:#f87171; font-size:0.68rem; font-weight:700;" id="heroTargetNote">🚨 Admin JWT Token Minted!</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           UNDERLINE TAB NAVIGATION BAR (Exact ssrf.html Parity)
+           ==================================================================== -->
+      <nav class="tab-underline-nav">
+        <button type="button" class="tab-underline-btn active" data-tab="tab-overview">📖 1. Overview</button>
+        <button type="button" class="tab-underline-btn" data-tab="tab-how-it-works">⚙️ 2. How It Works</button>
+        <button type="button" class="tab-underline-btn" data-tab="tab-scenarios">🎯 3. Attack Scenarios</button>
+        <button type="button" class="tab-underline-btn" data-tab="tab-code">💻 4. Code & Fix</button>
+        <button type="button" class="tab-underline-btn" data-tab="tab-checklist">📋 5. Review Checklist</button>
+        <button type="button" class="tab-underline-btn" data-tab="tab-lab">⚡ 6. Live Lab</button>
+        <button type="button" class="tab-underline-btn" data-tab="tab-questions">❓ 7. FAQ</button>
+      </nav>
+
+      <!-- ====================================================================
+           TAB 1: OVERVIEW & FUNDAMENTALS
+           ==================================================================== -->
+      <div class="tab-content active" id="tab-overview">
+
+        <!-- Real-Life Example Card -->
+        <div class="def-lead-card" style="border-left:4px solid #f59e0b; background:rgba(245, 158, 11, 0.05); border-color:rgba(245, 158, 11, 0.25);">
+          <div class="def-lead-title" style="color:#f59e0b;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+            <span class="lang-hi">Real-Life Example: Library Locker aur Rulebook Manipulation</span>
+            <span class="lang-en">Real-Life Example: The Library Locker and Rulebook Manipulation</span>
+          </div>
+          <div class="def-lead-text">
+            <p class="lang-hi">
+              Sochiye ek automated high-security library locker system hai. Rules ke mutabiq har student ko apna Roll Number aur 4-digit secret PIN enter karna hota hai (e.g. <code>PIN: "5678"</code>). Normal systems me locker machine input ko strictly 4-digit number samajhkar check karti hai ki kya number exactly match karta hai.<br><br>
+              Lekin ek smart attacker (Gyanendra) locker machine ke scanner me number dalne ke bajaye system ke software rules ki ek slip ghusata hai: <code>"Condition: PIN IS NOT EQUAL TO '0000'"</code> (<code>{"$ne": "0000"}</code>). Locker machine ka computer boolean rule evaluate karta hai: <em>"Student ka password kuch bhi ho, bas 0000 na ho toh locker khol do!"</em> Aur bina kisi real password ke locker open ho jata hai!<br><br>
+              <strong>Yahi NoSQL Injection Hai:</strong> Application developer expect karta hai ki user literal value (string) dega, lekin attacker data ke badle database query engine ka command/operator (object) bhej deta hai, jisse database security check invert hokar pass ho jata hai!
+            </p>
+            <p class="lang-en">
+              Imagine an automated high-security library locker. Students enter their Student ID and 4-digit secret PIN (e.g. <code>PIN: "5678"</code>). A strongly typed system checks whether the submitted value equals the stored pin string.<br><br>
+              However, in a loosely typed document system, an attacker (Gyanendra) slips a rulebook card into the scanner: <code>"Condition: PIN IS NOT EQUAL TO '0000'"</code> (<code>{"$ne": "0000"}</code>). The locker logic evaluates the rule: <em>"As long as the student's PIN is not '0000', unlock the vault!"</em> The locker opens immediately without the attacker knowing the real password!<br><br>
+              <strong>This is NoSQL Injection:</strong> The developer assumes incoming input is always a literal string, but the adversary supplies an operational object containing BSON selectors, inverting query logic to grant access!
+            </p>
+          </div>
+        </div>
+
+        <!-- Story Dialogue Card: Kartik vs Gyanendra -->
+        <div class="story-card-box">
+          <div class="def-lead-title" style="color:#38bdf8;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            <span class="lang-hi">Real-World Case Study: Kartik (Backend Developer) vs Gyanendra (Security Pentester)</span>
+            <span class="lang-en">Real-World Case Study: Kartik (Backend Developer) vs Gyanendra (Security Pentester)</span>
+          </div>
+
+          <div class="dialogue-turn">
+            <div class="char-avatar char-kartik">👨‍💻</div>
+            <div class="dialogue-bubble">
+              <strong>Kartik (Backend Developer):</strong><br>
+              <span class="lang-hi">"Gyanendra, maine hamare sabhi microservices ko PostgreSQL se MongoDB par migrate kar diya hai. SQL Injection ka zamana gaya kyunki MongoDB me koi SQL syntax concatenation hoti hi nahi hai—hum raw queries banate hi nahi, structured JSON documents use karte hain, toh injection ka koi chance hi nahi banta!"</span>
+              <span class="lang-en">"Gyanendra, I've migrated all our microservices from PostgreSQL to MongoDB. SQL Injection is officially dead in our stack because MongoDB uses structured JSON documents rather than string-concatenated SQL queries, eliminating any chance of injection!"</span>
+            </div>
+          </div>
+
+          <div class="dialogue-turn">
+            <div class="char-avatar char-gyanendra">🕵️‍♂️</div>
+            <div class="dialogue-bubble">
+              <strong>Gyanendra (Security Pentester):</strong><br>
+              <span class="lang-hi">"Kartik, ye modern backend development ka sabse bada myth hai! SQL Injection me SQL keywords inject hote the, lekin NoSQL me attacker <strong>BSON Query Operators</strong> inject karta hai! Tumhara Express server <code>express.json()</code> se request body parse karke direct <code>db.users.findOne({ username: req.body.username, password: req.body.password })</code> me pass kar raha hai. Main password me string ke badle object bhejkar bina password jaane tumhara admin account login kar sakta hoon!"</span>
+              <span class="lang-en">"Kartik, that is the most dangerous myth in modern backend engineering! While SQL injection targets SQL grammar, NoSQL injection targets <strong>BSON Query Operators</strong>. Your Express API uses <code>express.json()</code> and passes raw unvalidated body properties straight into <code>db.users.findOne({ username: req.body.username, password: req.body.password })</code>. I can supply an object instead of a string and log into your administrator account without knowing the password!"</span>
+            </div>
+          </div>
+
+          <div class="dialogue-turn">
+            <div class="char-avatar char-kartik">👨‍💻</div>
+            <div class="dialogue-bubble">
+              <strong>Kartik (Backend Developer):</strong><br>
+              <span class="lang-hi">"Lekin agar tum password me string ki jagah <code>{"$ne": "wrong"}</code> bhejoge toh MongoDB error throw nahi karega?"</span>
+              <span class="lang-en">"Wait, if you send <code>{"$ne": "wrong"}</code> instead of a string, won't MongoDB throw an error?"</span>
+            </div>
+          </div>
+
+          <div class="dialogue-turn">
+            <div class="char-avatar char-gyanendra">🕵️‍♂️</div>
+            <div class="dialogue-bubble">
+              <strong>Gyanendra (Security Pentester):</strong><br>
+              <span class="lang-hi">"Bilkul nahi! MongoDB use query filter operator samjhega. Engine evaluate karega: <em>'Find user where username is admin AND password is NOT equal to wrong'</em>. Admin ka password 'wrong' nahi hai, isliye condition TRUE evaluate hogi, database admin document return kar dega, aur tumhara server mujhe full admin access ka JWT token return kar dega!"</span>
+              <span class="lang-en">"Not at all! MongoDB evaluates it as an internal query operator: <em>'Match user where username == admin AND password != wrong'</em>. Since admin's password is not 'wrong', the predicate is satisfied, returning the admin record and causing your server to issue me a root administrative JWT token!"</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section: Visual Architecture Diagram -->
+        <div class="arch-flow-box">
+          <div class="def-lead-title" style="color:#38bdf8; margin-bottom:1.2rem;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+            <span class="lang-hi">NoSQL Injection Attack Flow Architecture: Client Se Database Execution Tak</span>
+            <span class="lang-en">NoSQL Injection Attack Flow Architecture: From Untrusted Client to Database Engine</span>
+          </div>
+
+          <div class="arch-step-grid">
+            <div class="arch-node danger-node">
+              <span style="font-size:1.8rem;">🥷</span>
+              <div class="arch-node-title">1. Attacker (Gyanendra)</div>
+              <div class="arch-node-desc">
+                Sends JSON payload with BSON operator:<br>
+                <code>{"user": "admin", "pass": {"$ne": ""}}</code>
+              </div>
+            </div>
+
+            <div class="arch-node">
+              <span style="font-size:1.8rem;">⚙️</span>
+              <div class="arch-node-title">2. Express Body Parser</div>
+              <div class="arch-node-desc">
+                Deserializes raw JSON into nested JS object without checking if password is a string.
+              </div>
+            </div>
+
+            <div class="arch-node danger-node">
+              <span style="font-size:1.8rem;">🍃</span>
+              <div class="arch-node-title">3. MongoDB Driver (Kartik)</div>
+              <div class="arch-node-desc">
+                Raw object passed into <code>findOne()</code> filter predicate; engine executes <code>$ne</code> operator!
+              </div>
+            </div>
+
+            <div class="arch-node target-node">
+              <span style="font-size:1.8rem;">👑</span>
+              <div class="arch-node-title">4. Auth Bypass & JWT Issue</div>
+              <div class="arch-node-desc">
+                Admin document returned! Server signs JWT session token and returns full admin privileges.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section: Comparison Table (SQLi vs NoSQLi) -->
+        <div class="card-panel" style="margin-top:1.6rem;">
+          <div class="card-title-badge-row">
+            <div class="blue-circle-num" style="background:#f59e0b;">VS</div>
+            <h3 class="panel-header-title" style="color:#f59e0b;">
+              <span class="lang-hi">SQL Injection (SQLi) vs NoSQL Injection (NoSQLi) Technical Comparison</span>
+              <span class="lang-en">SQL Injection (SQLi) vs NoSQL Injection (NoSQLi) Technical Comparison</span>
+            </h3>
+          </div>
+          <div style="overflow-x:auto;">
+            <table style="width:100%; border-collapse:collapse; font-size:0.92rem; color:#f1f5f9;">
+              <thead>
+                <tr style="background:rgba(255,255,255,0.06); border-bottom:1px solid rgba(255,255,255,0.12);">
+                  <th style="padding:12px 14px; text-align:left; color:#38bdf8;">Dimension</th>
+                  <th style="padding:12px 14px; text-align:left; color:#fbbf24;">SQL Injection (SQLi)</th>
+                  <th style="padding:12px 14px; text-align:left; color:#f87171;">NoSQL Injection (NoSQLi)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                  <td style="padding:12px 14px; font-weight:600; color:#38bdf8;">Underlying Mechanism</td>
+                  <td style="padding:12px 14px;">String concatenation breaks SQL syntax grammar.</td>
+                  <td style="padding:12px 14px;">Object/Type injection alters query filter logic via BSON operators.</td>
+                </tr>
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                  <td style="padding:12px 14px; font-weight:600; color:#38bdf8;">Payload Structure</td>
+                  <td style="padding:12px 14px;"><code>' OR '1'='1</code>, <code>' UNION SELECT...</code></td>
+                  <td style="padding:12px 14px;"><code>{"$ne": null}</code>, <code>{"$gt": ""}</code>, <code>{"$regex": "^a"}</code></td>
+                </tr>
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                  <td style="padding:12px 14px; font-weight:600; color:#38bdf8;">Data Transport</td>
+                  <td style="padding:12px 14px;">Usually URL query strings, form fields, headers.</td>
+                  <td style="padding:12px 14px;">JSON body payloads, URL query objects (<code>?user[$ne]=x</code>).</td>
+                </tr>
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                  <td style="padding:12px 14px; font-weight:600; color:#38bdf8;">Arbitrary Execution</td>
+                  <td style="padding:12px 14px;">Stacked queries, <code>xp_cmdshell</code>.</td>
+                  <td style="padding:12px 14px;">Server-side JS execution via <code>$where</code> / <code>mapReduce</code>.</td>
+                </tr>
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                  <td style="padding:12px 14px; font-weight:600; color:#38bdf8;">Primary Defense</td>
+                  <td style="padding:12px 14px;">Prepared Statements / Parameterized Queries.</td>
+                  <td style="padding:12px 14px;">Strict Schema Type Validation (Zod), <code>mongo-sanitize</code>, No <code>$where</code>.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ====================================================================
+           TAB 2: HOW IT WORKS (5 Color-Coded Phases Exact ssrf.html Parity)
+           ==================================================================== -->
+      <div class="tab-content" id="tab-how-it-works">
+        <div class="card-panel">
+          <div class="card-title-badge-row">
+            <div class="blue-circle-num">2</div>
+            <h2 class="panel-header-title">
+              <span class="lang-hi">How NoSQL Injection Works (Deep Technical Architecture)</span>
+              <span class="lang-en">How NoSQL Injection Works (Deep Technical Architecture)</span>
+            </h2>
+          </div>
+
+          <p class="panel-body-text">
+            <span class="lang-hi">NoSQL Injection tab execute hota hai jab client ka structured input database query filter me as a literal value bind hone ke bajaye direct execution tree ka functional control ban jata hai. Niche iske 5 distinct phases explain kiye gaye hain:</span>
+            <span class="lang-en">NoSQL Injection occurs when client input transitions from passive data into active execution control parameters inside document database query trees. Inspect the 5 technical lifecycle phases below:</span>
+          </p>
+
+          <div style="margin-top:1.4rem;">
+            <!-- Phase 1: Cyan -->
+            <div class="lifecycle-phase-box" style="border-left:4px solid #0284c7; background:rgba(2,132,199,0.04);">
+              <h4>
+                <span>🔹</span> <span style="color:#38bdf8;">1. JSON / BSON Payload Deserialization & Type Confusion:</span>
+              </h4>
+              <div class="def-lead-text">
+                <span class="lang-hi">Web framework (Express <code>express.json()</code> ya Python FastAPI) incoming HTTP body ko parse karta hai. Developer expect karta hai ki <code>req.body.password</code> ek primitive string hogi (e.g. <code>"MySecretPass"</code>). Lekin attacker JSON body me nested object bhejta hai: <code>{"password": {"$ne": ""}}</code>. JSON parser bina kisi type assertion ke is nested object ko JavaScript runtime object me convert kar deta hai.</span>
+                <span class="lang-en">The web framework (such as Express <code>express.json()</code> or Python FastAPI) deserializes the incoming HTTP body. The developer assumes <code>req.body.password</code> is a primitive string. However, the adversary sends a nested object: <code>{"password": {"$ne": ""}}</code>. The parser creates a live object representation without type enforcement.</span>
+              </div>
+            </div>
+
+            <!-- Phase 2: Amber -->
+            <div class="lifecycle-phase-box" style="border-left:4px solid #f59e0b; background:rgba(245,158,11,0.04);">
+              <h4>
+                <span>⚡</span> <span style="color:#fbbf24;">2. Query Object Construction Without Strict Schema Typing:</span>
+              </h4>
+              <div class="def-lead-text">
+                <span class="lang-hi">Developer raw parsed object ko seedha database query builder me pass kar deta hai: <code>db.collection('users').findOne({ username: req.body.username, password: req.body.password })</code>. Kyunki yahan explicit string casting (<code>String(req.body.password)</code>) ya schema validation (Zod / Joi) missing hai, JavaScript runtime database driver ko ye query structure send karta hai: <code>{ username: "admin", password: { $ne: "" } }</code>.</span>
+                <span class="lang-en">The controller passes the unvalidated object directly into the query driver: <code>db.collection('users').findOne({ username: req.body.username, password: req.body.password })</code>. Without explicit type coercion or schema contract enforcement, the driver accepts the nested operator object as a valid query tree component.</span>
+              </div>
+            </div>
+
+            <!-- Phase 3: Crimson Red -->
+            <div class="lifecycle-phase-box" style="border-left:4px solid #ef4444; background:rgba(239,68,68,0.04);">
+              <h4>
+                <span>🚨</span> <span style="color:#f87171;">3. MongoDB BSON Query Engine Operator Evaluation ($ne, $gt, $regex, $where):</span>
+              </h4>
+              <div class="def-lead-text">
+                <span class="lang-hi">Jab MongoDB BSON query engine is document tree ko process karta hai, toh keys jo <code>$</code> character se start hoti hain unhe special internal operators treat kiya jata hai. Engine <code>password</code> field ke value ko compare karne ke bajaye operator rule evaluate karta hai: <em>"Check if password field is not equal to empty string"</em>.</span>
+                <span class="lang-en">When the MongoDB BSON engine parses the filter document, keys prefixed with <code>$</code> are reserved as functional query selectors. Rather than comparing the password field value to a string, the engine invokes the operator logic: evaluating whether the document's password field is not equal to empty string.</span>
+              </div>
+            </div>
+
+            <!-- Phase 4: Purple -->
+            <div class="lifecycle-phase-box" style="border-left:4px solid #a855f7; background:rgba(168,85,247,0.04);">
+              <h4>
+                <span>🌐</span> <span style="color:#c084fc;">4. Query Predicate Inversion & Unrestricted Document Matching:</span>
+              </h4>
+              <div class="def-lead-text">
+                <span class="lang-hi">Database collection scan karta hai aur user <code>admin</code> ko locate karta hai. Admin ka password hash (e.g. bcrypt hash <code>$2b$12$...</code>) empty string nahi hai, isliye <code>$ne: ""</code> condition TRUE evaluate ho jati hai! Query successfully admin document return kar deti hai, bilkul waise jaise attacker ne sahi password diya ho.</span>
+                <span class="lang-en">The database scans the users collection and matches the record where <code>username == "admin"</code>. Because the admin's bcrypt hash is indeed not equal to an empty string, the <code>$ne</code> operator yields TRUE! The database returns the full admin user document to the application controller.</span>
+              </div>
+            </div>
+
+            <!-- Phase 5: Emerald Green -->
+            <div class="lifecycle-phase-box" style="border-left:4px solid #10b981; background:rgba(16,185,129,0.04);">
+              <h4>
+                <span>💎</span> <span style="color:#34d399;">5. Unauthorized Access, Admin JWT Generation & Session Hijack:</span>
+              </h4>
+              <div class="def-lead-text">
+                <span class="lang-hi">Controller check karta hai <code>if (user) { issueToken(user); }</code>. Kyunki database ne valid user object return kiya hai, application server samajhta hai ki credentials verify ho gaye. Server attacker ko high-privileged JWT token mint karke response me de deta hai, jisse poora API infrastructure compromise ho jata hai!</span>
+                <span class="lang-en">The application logic simply checks <code>if (user) { generateJWT(user); }</code>. Because MongoDB returned the matched administrator record, the application assumes successful authentication, signing and returning a root administrative JWT session token to the attacker!</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- BSON Operators Breakdown Table -->
+          <div style="margin-top:1.6rem; overflow-x:auto;">
+            <div class="def-lead-title" style="color:#38bdf8; margin-bottom:0.8rem; font-size:1.05rem;">
+              <span>🛠️</span>
+              <span class="lang-hi">Dangerous BSON Query Operators Cheatsheet</span>
+              <span class="lang-en">Dangerous BSON Query Operators Cheatsheet</span>
+            </div>
+            <table style="width:100%; border-collapse:collapse; font-size:0.92rem; color:#f1f5f9;">
+              <thead>
+                <tr style="background:rgba(255,255,255,0.06); border-bottom:1px solid rgba(255,255,255,0.12);">
+                  <th style="padding:10px 14px; text-align:left; color:#38bdf8;">Operator</th>
+                  <th style="padding:10px 14px; text-align:left; color:#fbbf24;">Description</th>
+                  <th style="padding:10px 14px; text-align:left; color:#ef4444;">Exploit Utility</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                  <td style="padding:10px 14px; font-family:var(--font-mono); color:#38bdf8;">$ne</td>
+                  <td style="padding:10px 14px;">Matches all values not equal to specified value.</td>
+                  <td style="padding:10px 14px; color:#f87171;">Bypasses password/token matching: <code>{"$ne": null}</code></td>
+                </tr>
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                  <td style="padding:10px 14px; font-family:var(--font-mono); color:#38bdf8;">$gt / $gte</td>
+                  <td style="padding:10px 14px;">Matches values greater than (or equal to) specified value.</td>
+                  <td style="padding:10px 14px; color:#f87171;">Matches any non-empty string: <code>{"$gt": ""}</code></td>
+                </tr>
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                  <td style="padding:10px 14px; font-family:var(--font-mono); color:#38bdf8;">$regex</td>
+                  <td style="padding:10px 14px;">Executes regular expression pattern match on string field.</td>
+                  <td style="padding:10px 14px; color:#f87171;">Blind character-by-character password exfiltration: <code>{"$regex": "^a"}</code></td>
+                </tr>
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                  <td style="padding:10px 14px; font-family:var(--font-mono); color:#38bdf8;">$where</td>
+                  <td style="padding:10px 14px;">Executes arbitrary JavaScript expression on MongoDB server.</td>
+                  <td style="padding:10px 14px; color:#f87171;">Remote Code Execution / Blind timing attacks via <code>sleep()</code></td>
+                </tr>
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                  <td style="padding:10px 14px; font-family:var(--font-mono); color:#38bdf8;">$exists</td>
+                  <td style="padding:10px 14px;">Matches documents that contain the specified field.</td>
+                  <td style="padding:10px 14px; color:#f87171;">Hidden schema & sensitive field discovery: <code>{"mfa_secret": {"$exists": true}}</code></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           TAB 3: ATTACK SCENARIOS & EXPLOIT WORKFLOWS
+           ==================================================================== -->
+      <div class="tab-content" id="tab-scenarios">
+        <div class="card-panel">
+          <div class="card-title-badge-row">
+            <div class="blue-circle-num">3</div>
+            <h2 class="panel-header-title">
+              <span class="lang-hi">Attack Scenarios & Exploit Workflows (Gyanendra vs. Kartik)</span>
+              <span class="lang-en">Attack Scenarios & Exploit Workflows (Gyanendra vs. Kartik)</span>
+            </h2>
+          </div>
+
+          <p class="panel-body-text">
+            <span class="lang-hi">Real-world production environments me unvalidated JSON inputs aur weak query builders ke sath attackers NoSQL Injection ka use karke accounts take over, blind data dump, aur server-side JS run kaise karte hain:</span>
+            <span class="lang-en">Examine 4 battle-tested attack scenarios demonstrating how adversaries leverage unvalidated document queries to bypass auth gates, exfiltrate data character-by-character, and execute arbitrary server JavaScript:</span>
+          </p>
+
+          <!-- Scenario 1: Authentication Bypass via $ne -->
+          <div class="def-lead-card" style="margin-top:1.5rem; border-left:4px solid #ef4444;">
+            <div class="def-lead-title" style="color:#f87171;">
+              <span>🚨</span>
+              <span class="lang-hi">Scenario 1: Authentication Gate Bypass via $ne / $gt Operator Injection</span>
+              <span class="lang-en">Scenario 1: Authentication Gate Bypass via $ne / $gt Operator Injection</span>
+            </div>
+            <p class="def-lead-text" style="margin-bottom:1rem;">
+              <span class="lang-hi">Developer <strong>Kartik</strong> ne standard login endpoint deploy kiya: <code>POST /api/v1/auth/login</code>. Body parser JSON ko deserialize karta hai aur code directly check karta hai: <code>db.users.findOne({ username: req.body.username, password: req.body.password })</code>. Pentester <strong>Gyanendra</strong> Burp Suite se JSON payload ko modify karta hai: <code>{"username": "admin", "password": {"$ne": "random_guess"}}</code>. Kyunki admin ka password <code>"random_guess"</code> ke equal nahi hai, query succeed ho jati hai aur server admin role ka session token return kar deta hai!</span>
+              <span class="lang-en">Developer <strong>Kartik</strong> deploys an authentication endpoint: <code>POST /api/v1/auth/login</code>. The controller invokes <code>db.users.findOne({ username: req.body.username, password: req.body.password })</code>. Security pentester <strong>Gyanendra</strong> modifies the request body in Burp Suite: <code>{"username": "admin", "password": {"$ne": "random_guess"}}</code>. Since the administrator's password is not equal to the guess, the condition evaluates to true, instantly returning the admin record and signing an administrative JWT!</span>
+            </p>
+            <div style="background:#070e1e; border:1px solid rgba(239,68,68,0.3); border-radius:6px; padding:10px 14px; font-family:var(--font-mono); font-size:0.84rem; color:#f87171;">
+              EXPLOIT LOG: POST /api/v1/auth/login | Payload: {"username":"admin","password":{"$ne":""}} | Status: 200 OK | Admin JWT Bearer Token Issued!
+            </div>
+          </div>
+
+          <!-- Scenario 2: Blind Data Exfiltration via $regex -->
+          <div class="def-lead-card" style="margin-top:1.5rem; border-left:4px solid #f59e0b;">
+            <div class="def-lead-title" style="color:#fbbf24;">
+              <span>⚡</span>
+              <span class="lang-hi">Scenario 2: Blind Data Exfiltration via $regex Character Brute-Forcing</span>
+              <span class="lang-en">Scenario 2: Blind Data Exfiltration via $regex Character Brute-Forcing</span>
+            </div>
+            <p class="def-lead-text" style="margin-bottom:1rem;">
+              <span class="lang-hi">Jab application password return nahi karti aur sirf HTTP 200 (Success) ya HTTP 401 (Failed) deti hai, tab attacker <strong>$regex</strong> operator inject karta hai. Attacker password reset token ya secret API key ko character-by-character leak karta hai. Jaise <code>{"username": "admin", "token": {"$regex": "^a"}}</code> ➔ HTTP 401, <code>{"token": {"$regex": "^s"}}</code> ➔ HTTP 200 (Matlab first char 's' hai!). Ek simple python script se attacker 10 seconds me 32-character secret token extract kar leta hai!</span>
+              <span class="lang-en">Even when an API only returns boolean outcomes (HTTP 200 vs 401), an attacker uses the <strong>$regex</strong> operator to extract secret tokens, password hashes, or API keys character by character. Testing <code>{"token": {"$regex": "^a"}}</code> yields HTTP 401, while <code>{"token": {"$regex": "^s"}}</code> yields HTTP 200. Using an automated script, the attacker recovers a 32-byte secret token in under 10 seconds!</span>
+            </p>
+            <div style="background:#070e1e; border:1px solid rgba(245,158,11,0.3); border-radius:6px; padding:10px 14px; font-family:var(--font-mono); font-size:0.84rem; color:#fbbf24;">
+              BLIND REGEX EXTRACTION: ^s... [200] -> ^se... [200] -> ^sec... [200] -> ^secret_token_99 [200] | Extracted admin password reset token!
+            </div>
+          </div>
+
+          <!-- Scenario 3: Server-Side JavaScript Execution via $where -->
+          <div class="def-lead-card" style="margin-top:1.5rem; border-left:4px solid #a855f7;">
+            <div class="def-lead-title" style="color:#c084fc;">
+              <span>🥷</span>
+              <span class="lang-hi">Scenario 3: Server-Side JavaScript Execution via $where Clause Injection</span>
+              <span class="lang-en">Scenario 3: Server-Side JavaScript Execution via $where Clause Injection</span>
+            </div>
+            <p class="def-lead-text" style="margin-bottom:1rem;">
+              <span class="lang-hi">MongoDB me <code>$where</code> operator allow karta hai raw JavaScript code ko database server par execute karna. Agar developer user input ko dynamic query string me concatenate karta hai: <code>db.users.find({ $where: "this.username == '" + input + "'" })</code>, toh attacker payload bhejta hai: <code>admin' || sleep(5000) || '</code>. Database engine pause ho jata hai (Blind Time-based SQLi ki tarah), aur vulnerable configurations me server memory se internal documents leak ho jate hain!</span>
+              <span class="lang-en">MongoDB's <code>$where</code> operator evaluates raw JavaScript expressions directly inside the database process. If a developer concatenates user input into a dynamic evaluation string: <code>db.users.find({ $where: "this.username == '" + input + "'" })</code>, the adversary supplies: <code>admin' || sleep(5000) || '</code>. This forces the database engine to hang (time-based inference) and can lead to arbitrary JavaScript execution!</span>
+            </p>
+            <div style="background:#070e1e; border:1px solid rgba(168,85,247,0.3); border-radius:6px; padding:10px 14px; font-family:var(--font-mono); font-size:0.84rem; color:#c084fc;">
+              JAVASCRIPT INJECTION: { $where: "this.username == 'admin' || sleep(5000)" } | Latency: 5042ms | Verified blind time-based JavaScript execution!
+            </div>
+          </div>
+
+          <!-- Scenario 4: Hidden Schema & Field Enumeration via $exists -->
+          <div class="def-lead-card" style="margin-top:1.5rem; border-left:4px solid #38bdf8;">
+            <div class="def-lead-title" style="color:#38bdf8;">
+              <span>🔍</span>
+              <span class="lang-hi">Scenario 4: Hidden Schema Discovery & Sensitive Field Enumeration via $exists</span>
+              <span class="lang-en">Scenario 4: Hidden Schema Discovery & Sensitive Field Enumeration via $exists</span>
+            </div>
+            <p class="def-lead-text" style="margin-bottom:1rem;">
+              <span class="lang-hi">NoSQL databases schema-less hote hain, jisse different documents me alag-alag hidden fields ho sakte hain (e.g. <code>is_superadmin</code>, <code>totp_secret</code>, <code>internal_notes</code>). Attacker <code>$exists: true</code> inject karke pata lagata hai ki database schema me kaun-kaun se internal fields maujood hain: <code>{"username": "admin", "totp_secret": {"$exists": true}}</code>. Agar user match hota hai toh attacker ko pata chal jata hai ki is user ka 2FA secret database me stored hai!</span>
+              <span class="lang-en">NoSQL databases are schema-free, meaning individual records can contain undocumented attributes like <code>totp_secret</code>, <code>backup_codes</code>, or <code>is_superadmin</code>. An adversary injects <code>$exists: true</code> predicates to map the private schema: <code>{"username": "admin", "totp_secret": {"$exists": true}}</code>. If the API returns positive match status, the attacker maps the existence of private sensitive properties!</span>
+            </p>
+            <div style="background:#070e1e; border:1px solid rgba(56,189,248,0.3); border-radius:6px; padding:10px 14px; font-family:var(--font-mono); font-size:0.84rem; color:#38bdf8;">
+              SCHEMA RECON: Probed "totp_secret" with $exists:true | Match: TRUE | Target administrator has MFA secret field in database.
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           TAB 4: CODE & FIX (Node.js, Python, Go Exact ssrf.html Parity)
+           ==================================================================== -->
+      <div class="tab-content" id="tab-code">
+        <div class="card-panel">
+          <div class="card-title-badge-row">
+            <div class="blue-circle-num">4</div>
+            <h2 class="panel-header-title">
+              <span class="lang-hi">Vulnerable vs. Secure Code Implementations</span>
+              <span class="lang-en">Vulnerable vs. Secure Code Implementations</span>
+            </h2>
+          </div>
+
+          <p class="panel-body-text">
+            <span class="lang-hi">NoSQL Injection se bachne ke liye 3 multi-layered defenses zaroori hain: Strict Type Casting/Schema Validation (Zod/Joi), <code>mongo-sanitize</code> middleware jo <code>$</code> aur <code>.</code> keys ko strip karta hai, aur <code>$where</code> operator ka complete ban. Niche Node.js, Python, aur Go ke production examples diye gaye hain:</span>
+            <span class="lang-en">Bulletproof NoSQL injection defense requires strict type contracts (Zod/Pydantic), sanitizing operators with <code>mongo-sanitize</code>, and avoiding dynamic JavaScript evaluation ($where). Compare implementations across Node.js, Python, and Go:</span>
+          </p>
+
+          <!-- Language Switcher Pills -->
+          <div class="code-lang-pills-row">
+            <button type="button" class="code-lang-btn active" onclick="switchCodeLang(this, 'code-lang-node')">
+              <span>🟢</span> Node.js (Express + Mongoose)
+            </button>
+            <button type="button" class="code-lang-btn" onclick="switchCodeLang(this, 'code-lang-python')">
+              <span>🐍</span> Python (FastAPI + PyMongo)
+            </button>
+            <button type="button" class="code-lang-btn" onclick="switchCodeLang(this, 'code-lang-go')">
+              <span>🔵</span> Go (mongo-go-driver)
+            </button>
+          </div>
+
+          <!-- Code Section: Node.js -->
+          <div class="code-lang-section" id="code-lang-node">
+            <div class="code-compare-grid">
+              <div class="compare-box vulnerable">
+                <div class="compare-header">
+                  <span class="compare-dot red"></span>
+                  <span class="compare-title">❌ Vulnerable: Raw JSON Object into Query Filter</span>
+                  <button type="button" class="term-copy-btn" onclick="copyTerm(this)">Copy</button>
+                </div>
+                <pre><code><span class="t-comm">// ❌ VULNERABLE (Node.js Express + MongoDB Native)</span>
+<span class="t-kw">const</span> express = <span class="t-fn">require</span>(<span class="t-str">'express'</span>);
+<span class="t-kw">const</span> app = <span class="t-fn">express</span>();
+app.<span class="t-fn">use</span>(express.<span class="t-fn">json</span>()); <span class="t-comm">// Parses raw JSON object</span>
+
+app.<span class="t-fn">post</span>(<span class="t-str">'/api/v1/auth/login'</span>, <span class="t-kw">async</span> (req, res) => {
+  <span class="t-comm">// DANGER: req.body.password can be {"$ne": ""}</span>
+  <span class="t-comm">// Raw object passed into query filter directly!</span>
+  <span class="t-kw">const</span> user = <span class="t-kw">await</span> db.<span class="t-fn">collection</span>(<span class="t-str">'users'</span>).<span class="t-fn">findOne</span>({
+    <span class="t-key">username</span>: req.body.username,
+    <span class="t-key">password</span>: req.body.password <span class="t-comm">// 🚨 Operator injected here!</span>
+  });
+
+  <span class="t-kw">if</span> (!user) {
+    <span class="t-kw">return</span> res.<span class="t-fn">status</span>(<span class="t-num">401</span>).<span class="t-fn">json</span>({ <span class="t-key">error</span>: <span class="t-str">'Invalid credentials'</span> });
+  }
+
+  <span class="t-kw">const</span> token = jwt.<span class="t-fn">sign</span>({ <span class="t-key">id</span>: user._id, <span class="t-key">role</span>: user.role }, SECRET);
+  res.<span class="t-fn">json</span>({ <span class="t-key">success</span>: <span class="t-bool">true</span>, token });
+});</code></pre>
+              </div>
+
+              <div class="compare-box secure">
+                <div class="compare-header">
+                  <span class="compare-dot green"></span>
+                  <span class="compare-title">✅ Secure: Zod Schema Contract + Mongo-Sanitize</span>
+                  <button type="button" class="term-copy-btn" onclick="copyTerm(this)">Copy</button>
+                </div>
+                <pre><code><span class="t-comm">// ✅ SECURE (Zod Strict Types + mongo-sanitize)</span>
+<span class="t-kw">const</span> mongoSanitize = <span class="t-fn">require</span>(<span class="t-str">'express-mongo-sanitize'</span>);
+<span class="t-kw">const</span> { z } = <span class="t-fn">require</span>(<span class="t-str">'zod'</span>);
+
+<span class="t-comm">// 1. Strip $ and . from all request inputs</span>
+app.<span class="t-fn">use</span>(<span class="t-fn">mongoSanitize</span>());
+
+<span class="t-comm">// 2. Enforce strict string schema contract</span>
+<span class="t-kw">const</span> LoginSchema = z.<span class="t-fn">object</span>({
+  <span class="t-key">username</span>: z.<span class="t-fn">string</span>().<span class="t-fn">min</span>(<span class="t-num">3</span>).<span class="t-fn">max</span>(<span class="t-num">50</span>),
+  <span class="t-key">password</span>: z.<span class="t-fn">string</span>().<span class="t-fn">min</span>(<span class="t-num">8</span>).<span class="t-fn">max</span>(<span class="t-num">128</span>) <span class="t-comm">// MUST be string!</span>
+});
+
+app.<span class="t-fn">post</span>(<span class="t-str">'/api/v1/auth/login'</span>, <span class="t-kw">async</span> (req, res) => {
+  <span class="t-comm">// Throws validation error if password is an object!</span>
+  <span class="t-kw">const</span> parsed = LoginSchema.<span class="t-fn">safeParse</span>(req.body);
+  <span class="t-kw">if</span> (!parsed.success) {
+    <span class="t-kw">return</span> res.<span class="t-fn">status</span>(<span class="t-num">400</span>).<span class="t-fn">json</span>({ <span class="t-key">error</span>: <span class="t-str">'Invalid payload structure'</span> });
+  }
+
+  <span class="t-comm">// 3. Query user by username only, verify hash separately!</span>
+  <span class="t-kw">const</span> user = <span class="t-kw">await</span> db.<span class="t-fn">collection</span>(<span class="t-str">'users'</span>).<span class="t-fn">findOne</span>({
+    <span class="t-key">username</span>: <span class="t-fn">String</span>(parsed.data.username)
+  });
+
+  <span class="t-kw">if</span> (!user || !<span class="t-kw">await</span> bcrypt.<span class="t-fn">compare</span>(parsed.data.password, user.passwordHash)) {
+    <span class="t-kw">return</span> res.<span class="t-fn">status</span>(<span class="t-num">401</span>).<span class="t-fn">json</span>({ <span class="t-key">error</span>: <span class="t-str">'Invalid credentials'</span> });
+  }
+
+  <span class="t-kw">const</span> token = jwt.<span class="t-fn">sign</span>({ <span class="t-key">id</span>: user._id, <span class="t-key">role</span>: user.role }, SECRET);
+  res.<span class="t-fn">json</span>({ <span class="t-key">success</span>: <span class="t-bool">true</span>, token });
+});</code></pre>
+              </div>
+            </div>
+          </div>
+
+          <!-- Code Section: Python -->
+          <div class="code-lang-section" id="code-lang-python" style="display:none;">
+            <div class="code-compare-grid">
+              <div class="compare-box vulnerable">
+                <div class="compare-header">
+                  <span class="compare-dot red"></span>
+                  <span class="compare-title">❌ Vulnerable: Raw Dict into PyMongo Filter</span>
+                  <button type="button" class="term-copy-btn" onclick="copyTerm(this)">Copy</button>
+                </div>
+                <pre><code><span class="t-comm"># ❌ VULNERABLE (Python Flask + PyMongo)</span>
+<span class="t-kw">from</span> flask <span class="t-kw">import</span> Flask, request, jsonify
+<span class="t-kw">from</span> pymongo <span class="t-kw">import</span> MongoClient
+
+app = <span class="t-fn">Flask</span>(__name__)
+client = <span class="t-fn">MongoClient</span>(<span class="t-str">"mongodb://localhost:27017"</span>)
+db = client.production_db
+
+<span class="t-cls">@app.route</span>(<span class="t-str">"/api/v1/auth/login"</span>, methods=[<span class="t-str">"POST"</span>])
+<span class="t-kw">def</span> <span class="t-fn">login</span>():
+    data = request.<span class="t-fn">get_json</span>()
+    <span class="t-comm"># DANGER: data['password'] can be {"$gt": ""}</span>
+    user = db.users.<span class="t-fn">find_one</span>({
+        <span class="t-str">"username"</span>: data.get(<span class="t-str">"username"</span>),
+        <span class="t-str">"password"</span>: data.get(<span class="t-str">"password"</span>) <span class="t-comm"># 🚨 Operator injection!</span>
+    })
+    <span class="t-kw">if</span> <span class="t-kw">not</span> user:
+        <span class="t-kw">return</span> <span class="t-fn">jsonify</span>({"error": "Unauthorized"}), <span class="t-num">401</span>
+    <span class="t-kw">return</span> <span class="t-fn">jsonify</span>({"token": "secret_token_123"})</code></pre>
+              </div>
+
+              <div class="compare-box secure">
+                <div class="compare-header">
+                  <span class="compare-dot green"></span>
+                  <span class="compare-title">✅ Secure: Pydantic Schema Type Validation</span>
+                  <button type="button" class="term-copy-btn" onclick="copyTerm(this)">Copy</button>
+                </div>
+                <pre><code><span class="t-comm"># ✅ SECURE (Python FastAPI + Pydantic Strict Typing)</span>
+<span class="t-kw">from</span> fastapi <span class="t-kw">import</span> FastAPI, HTTPException, status
+<span class="t-kw">from</span> pydantic <span class="t-kw">import</span> BaseModel, Field
+<span class="t-kw">import</span> bcrypt
+
+app = <span class="t-fn">FastAPI</span>()
+
+<span class="t-kw">class</span> <span class="t-cls">LoginRequest</span>(BaseModel):
+    <span class="t-comm"># Enforce primitive string; rejects dict / nested object</span>
+    username: <span class="t-cls">str</span> = Field(..., min_length=<span class="t-num">3</span>, max_length=<span class="t-num">50</span>)
+    password: <span class="t-cls">str</span> = Field(..., min_length=<span class="t-num">8</span>, max_length=<span class="t-num">128</span>)
+
+<span class="t-cls">@app.post</span>(<span class="t-str">"/api/v1/auth/login"</span>)
+<span class="t-kw">async def</span> <span class="t-fn">login</span>(payload: LoginRequest):
+    <span class="t-comm"># 1. Guaranteed primitive string by Pydantic</span>
+    user = db.users.<span class="t-fn">find_one</span>({"username": payload.username})
+    
+    <span class="t-comm"># 2. Verify hashed password out-of-band via bcrypt</span>
+    <span class="t-kw">if not</span> user <span class="t-kw">or not</span> bcrypt.<span class="t-fn">checkpw</span>(
+        payload.password.<span class="t-fn">encode</span>(), user["passwordHash"].<span class="t-fn">encode</span>()
+    ):
+        <span class="t-kw">raise</span> <span class="t-fn">HTTPException</span>(status_code=<span class="t-num">401</span>, detail=<span class="t-str">"Invalid credentials"</span>)
+    
+    <span class="t-kw">return</span> {"token": <span class="t-fn">generate_jwt</span>(user)}</code></pre>
+              </div>
+            </div>
+          </div>
+
+          <!-- Code Section: Go -->
+          <div class="code-lang-section" id="code-lang-go" style="display:none;">
+            <div class="code-compare-grid">
+              <div class="compare-box vulnerable">
+                <div class="compare-header">
+                  <span class="compare-dot red"></span>
+                  <span class="compare-title">❌ Vulnerable: Unchecked bson.M Map</span>
+                  <button type="button" class="term-copy-btn" onclick="copyTerm(this)">Copy</button>
+                </div>
+                <pre><code><span class="t-comm">// ❌ VULNERABLE (Go - mongo-go-driver)</span>
+<span class="t-kw">func</span> <span class="t-fn">LoginHandler</span>(w http.ResponseWriter, r *http.Request) {
+    <span class="t-comm">// Raw JSON unmarshaled into generic map interface</span>
+    <span class="t-kw">var</span> payload <span class="t-kw">map</span>[<span class="t-cls">string</span>]<span class="t-kw">interface</span>{}
+    json.<span class="t-fn">NewDecoder</span>(r.Body).<span class="t-fn">Decode</span>(&payload)
+
+    <span class="t-comm">// 🚨 DANGER: payload["password"] can be map[string]interface{"$ne": ""}</span>
+    filter := bson.M{
+        <span class="t-str">"username"</span>: payload[<span class="t-str">"username"</span>],
+        <span class="t-str">"password"</span>: payload[<span class="t-str">"password"</span>],
+    }
+    <span class="t-kw">var</span> user User
+    err := collection.<span class="t-fn">FindOne</span>(ctx, filter).<span class="t-fn">Decode</span>(&user)
+    <span class="t-kw">if</span> err != <span class="t-bool">nil</span> {
+        http.<span class="t-fn">Error</span>(w, <span class="t-str">"Unauthorized"</span>, <span class="t-num">401</span>)
+        <span class="t-kw">return</span>
+    }
+}</code></pre>
+              </div>
+
+              <div class="compare-box secure">
+                <div class="compare-header">
+                  <span class="compare-dot green"></span>
+                  <span class="compare-title">✅ Secure: Strongly Typed Struct Deserialization</span>
+                  <button type="button" class="term-copy-btn" onclick="copyTerm(this)">Copy</button>
+                </div>
+                <pre><code><span class="t-comm">// ✅ SECURE (Go - Strongly Typed Struct Deserialization)</span>
+<span class="t-kw">type</span> LoginRequest <span class="t-kw">struct</span> {
+    Username <span class="t-cls">string</span> `json:"username" validate:"required,min=3,max=50"`
+    Password <span class="t-cls">string</span> `json:"password" validate:"required,min=8,max=128"`
+}
+
+<span class="t-kw">func</span> <span class="t-fn">LoginHandler</span>(w http.ResponseWriter, r *http.Request) {
+    <span class="t-kw">var</span> req LoginRequest
+    <span class="t-comm">// Unmarshaling fails with 400 if password is a JSON object!</span>
+    <span class="t-kw">if</span> err := json.<span class="t-fn">NewDecoder</span>(r.Body).<span class="t-fn">Decode</span>(&req); err != <span class="t-bool">nil</span> {
+        http.<span class="t-fn">Error</span>(w, <span class="t-str">"Invalid JSON payload"</span>, <span class="t-num">400</span>)
+        <span class="t-kw">return</span>
+    }
+
+    <span class="t-comm">// Query strictly by string username</span>
+    filter := bson.M{"username": req.Username}
+    <span class="t-kw">var</span> user User
+    <span class="t-kw">if</span> err := collection.<span class="t-fn">FindOne</span>(ctx, filter).<span class="t-fn">Decode</span>(&user); err != <span class="t-bool">nil</span> {
+        http.<span class="t-fn">Error</span>(w, <span class="t-str">"Invalid credentials"</span>, <span class="t-num">401</span>)
+        <span class="t-kw">return</span>
+    }
+
+    <span class="t-comm">// Secure bcrypt comparison out of database query engine</span>
+    <span class="t-kw">if</span> err := bcrypt.<span class="t-fn">CompareHashAndPassword</span>([]<span class="t-cls">byte</span>(user.Hash), []<span class="t-cls">byte</span>(req.Password)); err != <span class="t-bool">nil</span> {
+        http.<span class="t-fn">Error</span>(w, <span class="t-str">"Invalid credentials"</span>, <span class="t-num">401</span>)
+        <span class="t-kw">return</span>
+    }
+}</code></pre>
+              </div>
+            </div>
+          </div>
+
+          <!-- Golden Rules Card -->
+          <div class="golden-rules-card">
+            <div class="golden-rules-title">
+              <span>🛡️</span>
+              <span class="lang-hi">5 Golden Rules for Bulletproof NoSQL Injection Remediation</span>
+              <span class="lang-en">5 Golden Rules for Bulletproof NoSQL Injection Remediation</span>
+            </div>
+            <ul style="padding-left:1.2rem; color:var(--text-main); font-size:0.92rem; line-height:1.7;">
+              <li><strong>1. Strict Primitive Type Validation:</strong> Use Zod, Joi, or Pydantic schemas to enforce that inputs are strictly <code>string</code>. Reject objects immediately.</li>
+              <li><strong>2. Deploy `mongo-sanitize`:</strong> Strip all object keys starting with <code>$</code> or containing <code>.</code> in application gateway middleware.</li>
+              <li><strong>3. Decouple Credential Verification:</strong> Never query both username and password in MongoDB filter. Query solely by username, then verify hash using <code>bcrypt.compare()</code> in server runtime.</li>
+              <li><strong>4. Permanently Disable `$where`:</strong> In MongoDB configuration (<code>security.javascriptEnabled: false</code>), block JavaScript runtime execution.</li>
+              <li><strong>5. Reject Unknown URL Query Objects:</strong> Ensure Express <code>extended: false</code> is configured for query string parser so attackers cannot inject <code>?user[$ne]=x</code> via GET parameters.</li>
+            </ul>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           TAB 5: REVIEW CHECKLIST (Exact ssrf.html Parity)
+           ==================================================================== -->
+      <div class="tab-content" id="tab-checklist">
+        <div class="card-panel">
+          <div class="card-title-badge-row">
+            <div class="blue-circle-num">5</div>
+            <h2 class="panel-header-title">
+              <span class="lang-hi">Review & Pentesting Checklist</span>
+              <span class="lang-en">Review & Pentesting Checklist</span>
+            </h2>
+          </div>
+
+          <div class="checklist-meta-header">
+            <span class="checklist-guide-msg">
+              <span class="lang-hi">Har test case ko inspect karein aur Pass (Secure) ya Fail (Vulnerable) mark karein:</span>
+              <span class="lang-en">Inspect each audit checkpoint and mark as Pass (Secure) or Fail (Vulnerable):</span>
+            </span>
+            <span class="checklist-counter-badge" id="checklist-progress-counter">0 / 6 Checks Tested</span>
+          </div>
+
+          <div class="checklist-grid">
+
+            <!-- Check 1 -->
+            <div class="checklist-item" id="check-item-1" onclick="handleCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail"><span class="check-mark-icon">●</span></div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">1. Authentication JSON Operator Injection ($ne & $gt)</span>
+                  <span class="lang-en">1. Authentication JSON Operator Injection ($ne & $gt)</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Verify karein ki login endpoint JSON body me <code>{"password": {"$ne": ""}}</code> ya <code>{"password": {"$gt": ""}}</code> pass karne par HTTP 400 Bad Request throw karta hai aur login allow nahi karta.</span>
+                  <span class="lang-en">Verify that submitting <code>{"password": {"$ne": ""}}</code> or <code>{"password": {"$gt": ""}}</code> to authentication routes returns HTTP 400 Bad Request instead of logging in.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test:</div>
+                  <div class="check-how-to-code">
+                    curl -X POST https://api.target.com/api/v1/login -H "Content-Type: application/json" -d '{"username":"admin","password":{"$ne":"random"}}'
+                  </div>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Check 2 -->
+            <div class="checklist-item" id="check-item-2" onclick="handleCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail"><span class="check-mark-icon">●</span></div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">2. URL Query Parameter Object Parsing (?username[$ne]=x)</span>
+                  <span class="lang-en">2. URL Query Parameter Object Parsing (?username[$ne]=x)</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Check karein ki GET search endpoints me bracket notation query parameters (jaise <code>qs</code> ya Express <code>extended: true</code>) nested objects create karke filters bypass toh nahi kar rahe.</span>
+                  <span class="lang-en">Ensure GET endpoints using bracket notation (e.g. <code>?username[$ne]=test</code>) cannot construct nested query objects that bypass filtering.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test:</div>
+                  <div class="check-how-to-code">
+                    curl "https://api.target.com/api/v1/users?role[$ne]=guest&active=true"
+                  </div>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Check 3 -->
+            <div class="checklist-item" id="check-item-3" onclick="handleCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail"><span class="check-mark-icon">●</span></div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">3. Blind Regex Exfiltration Probing ($regex & $options)</span>
+                  <span class="lang-en">3. Blind Regex Exfiltration Probing ($regex & $options)</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Test karein ki sensitive fields (reset token, API key, phone number) me <code>{"$regex": "^[0-9]"}</code> bhejkar differential response codes (200 vs 404/401) se data leak toh nahi ho raha.</span>
+                  <span class="lang-en">Test if sensitive fields (reset tokens, API keys) return differential status codes when injected with <code>{"$regex": "^[0-9]"}</code>.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test:</div>
+                  <div class="check-how-to-code">
+                    curl -X POST https://api.target.com/api/v1/verify-token -H "Content-Type: application/json" -d '{"token":{"$regex":"^sec"}}'
+                  </div>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Check 4 -->
+            <div class="checklist-item" id="check-item-4" onclick="handleCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail"><span class="check-mark-icon">●</span></div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">4. Server-Side JavaScript Execution ($where & sleep Injection)</span>
+                  <span class="lang-en">4. Server-Side JavaScript Execution ($where & sleep Injection)</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Verify karein ki MongoDB configuration me server-side JavaScript disabled hai (<code>security.javascriptEnabled: false</code>) aur <code>$where</code> injection block hota hai.</span>
+                  <span class="lang-en">Verify that MongoDB runs with <code>security.javascriptEnabled: false</code> and all <code>$where</code> queries are dropped with HTTP 400.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test:</div>
+                  <div class="check-how-to-code">
+                    curl -X POST https://api.target.com/api/v1/search -H "Content-Type: application/json" -d '{"$where":"sleep(5000)"}'
+                  </div>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Check 5 -->
+            <div class="checklist-item" id="check-item-5" onclick="handleCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail"><span class="check-mark-icon">●</span></div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">5. Schema Probing via $exists & Type Identification</span>
+                  <span class="lang-en">5. Schema Probing via $exists & Type Identification</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Audit karein ki kya attacker <code>{"mfa_secret": {"$exists": true}}</code> inject karke internal database schema structure map kar sakta hai.</span>
+                  <span class="lang-en">Audit whether attackers can probe for non-public schema attributes using <code>{"mfa_secret": {"$exists": true}}</code>.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test:</div>
+                  <div class="check-how-to-code">
+                    curl -X POST https://api.target.com/api/v1/user/search -H "Content-Type: application/json" -d '{"is_admin":{"$exists":true}}'
+                  </div>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Check 6 -->
+            <div class="checklist-item" id="check-item-6" onclick="handleCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail"><span class="check-mark-icon">●</span></div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">6. Middleware Sanitization & Global Type Assertions</span>
+                  <span class="lang-en">6. Middleware Sanitization & Global Type Assertions</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Confirm karein ki application gateway par <code>express-mongo-sanitize</code> middleware globally mounted hai aur saari API routes par Zod / Pydantic schema validation enabled hai.</span>
+                  <span class="lang-en">Confirm that global sanitization middleware is active and all controllers utilize strict schema contracts before querying data.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test:</div>
+                  <div class="check-how-to-code">
+                    Inspect backend source code for app.use(mongoSanitize()) and Zod/Pydantic validation schemas.
+                  </div>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           TAB 6: LIVE LAB (Exact ssrf.html Parity)
+           ==================================================================== -->
+      <div class="tab-content" id="tab-lab">
+        <div class="card-panel">
+          <div class="card-title-badge-row">
+            <div class="blue-circle-num">6</div>
+            <h2 class="panel-header-title">
+              <span class="lang-hi">Live Lab: MongoDB Query Injection Playground</span>
+              <span class="lang-en">Live Lab: MongoDB Query Injection Playground</span>
+            </h2>
+          </div>
+
+          <p class="panel-body-text">
+            <span class="lang-hi">Niche live simulated MongoDB environment me NoSQL Injection payloads execute karke dekhein. Different attack presets select karein ya custom JSON type karein. Defense Mode toggle karke dekhein ki sanitization middleware attack ko kaise block karta hai:</span>
+            <span class="lang-en">Experiment with live NoSQL Injection payloads inside an emulated MongoDB runtime. Choose attack presets or edit raw JSON. Toggle Defense Mode to observe how sanitization middleware mitigates operator attacks:</span>
+          </p>
+
+          <div class="lab-container">
+            <!-- Controls Bar -->
+            <div class="lab-controls-bar">
+              <div style="display:flex; align-items:center; gap:10px;">
+                <span style="font-size:0.85rem; font-weight:700; color:#38bdf8;">Target Endpoint:</span>
+                <code style="background:rgba(0,0,0,0.4); padding:3px 8px; border-radius:4px; font-size:0.82rem; color:#f87171;">POST /api/v1/auth/login</code>
+              </div>
+
+              <!-- Defense Mode Buttons (Exact SSRF Lab Mode Toggle) -->
+              <div class="lab-mode-switch">
+                <span style="font-size:0.75rem; color:#cbd5e1; font-weight:700; margin-right:4px;">Protection Mode:</span>
+                <button type="button" class="hero-sim-btn active exploit" id="labModeVulnBtn" onclick="setLabMode('vuln')">
+                  <span>⚠️</span> <span>Vulnerable (No Types)</span>
+                </button>
+                <button type="button" class="hero-sim-btn" id="labModeSafeBtn" onclick="setLabMode('safe')">
+                  <span>🛡️</span> <span>Protected (mongo-sanitize + Zod)</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Preset Buttons -->
+            <div class="lab-preset-grid">
+              <button type="button" class="lab-preset-btn active" onclick="loadLabPreset(1)">
+                <div class="lab-preset-title"><span>🚨</span> Preset 1: $ne Auth Bypass</div>
+                <div class="lab-preset-url">{"username":"admin","password":{"$ne":"guess"}}</div>
+              </button>
+              <button type="button" class="lab-preset-btn" onclick="loadLabPreset(2)">
+                <div class="lab-preset-title"><span>⚡</span> Preset 2: Blind $regex Extraction</div>
+                <div class="lab-preset-url">{"username":"admin","token":{"$regex":"^sec"}}</div>
+              </button>
+              <button type="button" class="lab-preset-btn" onclick="loadLabPreset(3)">
+                <div class="lab-preset-title"><span>🥷</span> Preset 3: $where JavaScript</div>
+                <div class="lab-preset-url">{"$where":"this.username == 'admin' || 1==1"}</div>
+              </button>
+              <button type="button" class="lab-preset-btn" onclick="loadLabPreset(4)">
+                <div class="lab-preset-title"><span>✅</span> Preset 4: Legitimate Login</div>
+                <div class="lab-preset-url">{"username":"admin","password":"ValidSecret2026!"}</div>
+              </button>
+            </div>
+
+            <!-- Input Group with Execute Button -->
+            <div class="lab-input-group">
+              <input type="text" class="lab-url-input" id="labUrlInput" value='{"username": "admin", "password": {"$ne": "random_guess"}}' spellcheck="false">
+              <button type="button" class="lab-execute-btn" onclick="executeLabRequest()">
+                <span>⚡</span> <span>Execute Query</span>
+              </button>
+            </div>
+
+            <!-- Console Diagnostics Grid (Exact ssrf.html Parity) -->
+            <div class="lab-console-grid">
+              <div class="lab-panel-card">
+                <div class="lab-panel-head">
+                  <span>BSON QUERY RESOLUTION STEPPER</span>
+                  <span id="labExecStatusBadge" style="color:#10b981;">READY</span>
+                </div>
+                <div class="lab-panel-body" id="labDiagnosticsLog">
+                  <div class="lab-stepper">
+                    <div class="lab-step-item">
+                      <span class="step-icon-badge info">ℹ</span>
+                      <span>Ready to evaluate BSON input. Click "Execute Query" above.</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="lab-panel-card">
+                <div class="lab-panel-head">
+                  <span>MONGODB RESULT & HTTP RESPONSE</span>
+                  <span id="labHttpStatusBadge" style="color:#10b981;">WAITING</span>
+                </div>
+                <div class="lab-panel-body" id="labResponseBody">
+                  <span style="color:#64748b;">// Awaiting request execution...</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           TAB 7: FREQUENTLY ASKED QUESTIONS (Exact ssrf.html Parity)
+           ==================================================================== -->
+      <div class="tab-content" id="tab-questions">
+        <div class="card-panel">
+          <div class="card-title-badge-row">
+            <div class="blue-circle-num">7</div>
+            <h2 class="panel-header-title">
+              <span class="lang-hi">Frequently Asked Questions (FAQ)</span>
+              <span class="lang-en">Frequently Asked Questions (FAQ)</span>
+            </h2>
+          </div>
+
+          <p class="panel-body-text">
+            <span class="lang-hi">Top Security Engineer & Pentester interview questions on NoSQL Injection concepts, modern bypasses, and enterprise remediation:</span>
+            <span class="lang-en">High-yield technical and interview questions covering NoSQL Injection mechanics, BSON operator exploitation, and production hardening:</span>
+          </p>
+
+          <div style="margin-top:1.4rem;">
+            <!-- FAQ 1 -->
+            <div class="hw-step-box step-1">
+              <h4>
+                <span class="lang-hi">Q1: Kya Mongoose ORM use karne se NoSQL Injection automatically prevent ho jata hai?</span>
+                <span class="lang-en">Q1: Does using the Mongoose ODM automatically prevent NoSQL Injection?</span>
+              </h4>
+              <p>
+                <span class="lang-hi"><strong>Answer:</strong> <strong>Nahi!</strong> Ye sabse common galatfehmi hai. Mongoose strict schema use karta hai, lekin agar query me operator pass kiya jaye (jaise <code>User.findOne({ email: req.body.email, password: req.body.password })</code>) aur schema me password <code>String</code> define ho, toh Mongoose <code>$ne</code> operator ko reject nahi karta—balki use valid MongoDB filter query samajh kar execute kar deta hai! Isliye Mongoose ke sath bhi Zod validation aur <code>mongo-sanitize</code> mandatory hai.</span>
+                <span class="lang-en"><strong>Answer:</strong> <strong>No!</strong> This is a prevalent misconception. While Mongoose enforces schema typing for model documents, it treats query filter objects permissively. If an adversary passes <code>{"$ne": ""}</code> into <code>User.findOne({ password: req.body.password })</code>, Mongoose forwards the operator directly to MongoDB unless explicit schema validation or sanitization blocks it.</span>
+              </p>
+            </div>
+
+            <!-- FAQ 2 -->
+            <div class="hw-step-box step-2">
+              <h4>
+                <span class="lang-hi">Q2: SQL Injection aur NoSQL Injection ke impact me kya difference hai?</span>
+                <span class="lang-en">Q2: How does the business impact of NoSQL Injection compare to SQL Injection?</span>
+              </h4>
+              <p>
+                <span class="lang-hi"><strong>Answer:</strong> Dono attacks me high severity data exposure aur authentication bypass hota hai. Lekin SQLi me <code>UNION SELECT</code> se poora database dump kiya ja sakta hai aur multi-statement injection possible hota hai. NoSQLi me primary threat <strong>Authentication Logic Bypasses</strong>, <strong>Blind Regex Exfiltration</strong>, aur vulnerable setups me <code>$where</code> clause ke through <strong>Remote Server-Side JavaScript Execution</strong> hota hai.</span>
+                <span class="lang-en"><strong>Answer:</strong> Both attacks yield critical business consequences including full administrative account takeover. While SQL injection often leverages <code>UNION</code> techniques or stacked statements, NoSQL injection excels at <strong>Authentication Bypass via logic inversion ($ne, $gt)</strong>, <strong>Blind Character-by-Character Exfiltration ($regex)</strong>, and <strong>Remote Server-Side JavaScript Execution ($where)</strong>.</span>
+              </p>
+            </div>
+
+            <!-- FAQ 3 -->
+            <div class="hw-step-box step-3">
+              <h4>
+                <span class="lang-hi">Q3: Blind NoSQL Injection me $regex operator se secret data kaise extract hota hai?</span>
+                <span class="lang-en">Q3: How does blind data exfiltration work using the $regex operator?</span>
+              </h4>
+              <p>
+                <span class="lang-hi"><strong>Answer:</strong> Jab API screen par database data return nahi karti, tab attacker binary boolean feedback (HTTP 200 vs 401 ya response time) par depend karta hai. Attacker <code>{"token": {"$regex": "^a"}}</code> bhejta hai. Agar match nahi hota toh 401 milta hai. Jab character match hota hai (e.g. <code>^s</code>), toh 200 milta hai. Phir attacker agle character par move karta hai (<code>^se</code>, <code>^sec</code>) jab tak poora 64-character token extract na ho jaye.</span>
+                <span class="lang-en"><strong>Answer:</strong> When an API withholds query result sets, an adversary monitors boolean responses (HTTP 200 vs 401 or response latency). By testing anchor regex patterns like <code>{"token": {"$regex": "^a"}}</code> through <code>^z</code>, a positive HTTP 200 confirms the first character. The adversary iteratively extends the prefix (<code>^se...</code>) until the full 64-character hash or token is recovered.</span>
+              </p>
+            </div>
+
+            <!-- FAQ 4 -->
+            <div class="hw-step-box step-4">
+              <h4>
+                <span class="lang-hi">Q4: Kya sirf JSON body me hi NoSQLi hota hai ya URL query parameters me bhi?</span>
+                <span class="lang-en">Q4: Does NoSQL Injection only happen in JSON bodies or also in URL query parameters?</span>
+              </h4>
+              <p>
+                <span class="lang-hi"><strong>Answer:</strong> <strong>Dono me!</strong> Express me agar <code>app.use(express.urlencoded({ extended: true }))</code> use ho raha hai, toh standard query string library bracket notation ko object parse kar leti hai. Example: <code>GET /api/v1/users?username[$ne]=null</code> automatically <code>req.query.username = { "$ne": "null" }</code> ban jata hai! Isliye URL query parameters par bhi strict type casting zaroori hai.</span>
+                <span class="lang-en"><strong>Answer:</strong> <strong>Both!</strong> When web frameworks employ nested query parsers (such as Express with <code>extended: true</code>), bracket notation query strings are automatically deserialized into objects. Submitting <code>GET /api/v1/users?username[$ne]=null</code> yields <code>req.query.username = { "$ne": "null" }</code>. Query parameters require identical sanitization contracts.</span>
+              </p>
+            </div>
+
+            <!-- FAQ 5 -->
+            <div class="hw-step-box step-5">
+              <h4>
+                <span class="lang-hi">Q5: MongoDB me $where operator ko secure kaise kiya jata hai?</span>
+                <span class="lang-en">Q5: How should the dangerous $where operator be secured in production?</span>
+              </h4>
+              <p>
+                <span class="lang-hi"><strong>Answer:</strong> Best practice hai ki <code>$where</code> operator ko production me use hi na kiya jaye! Modern MongoDB me aggregation pipelines (<code>$expr</code>) standard query operators provide karti hain jo JavaScript engine execute nahi karti. Sath hi MongoDB configuration file (<code>mongod.conf</code>) me <code>security.javascriptEnabled: false</code> configure karein taaki server-side JavaScript engine completely shut down ho jaye.</span>
+                <span class="lang-en"><strong>Answer:</strong> The definitive industry best practice is completely banning <code>$where</code>. Modern aggregation pipelines with <code>$expr</code> accomplish dynamic comparisons without invoking the JavaScript engine. Furthermore, set <code>security.javascriptEnabled: false</code> in <code>mongod.conf</code> to completely disable server-side script evaluation.</span>
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Global JavaScript -->
+  <script src="assets/js/main.js"></script>
+
+  <script>
+    /* ==========================================================================
+       Module 09: NoSQL Injection Interactive JavaScript Logic (Exact ssrf.html Parity)
+       ========================================================================== */
+
+    // 1. Tab Navigation Handling
+    document.querySelectorAll('.tab-underline-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetId = btn.getAttribute('data-tab');
+        document.querySelectorAll('.tab-underline-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        const content = document.getElementById(targetId);
+        if (content) content.classList.add('active');
+      });
+    });
+
+    // 2. Code Language Switcher (Matching ssrf.html)
+    function switchCodeLang(btn, targetId) {
+      document.querySelectorAll('.code-lang-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.code-lang-section').forEach(s => s.style.display = 'none');
+      btn.classList.add('active');
+      const target = document.getElementById(targetId);
+      if (target) target.style.display = 'block';
+    }
+
+    // 3. Copy Term Code Helper (Matching ssrf.html)
+    function copyTerm(btn) {
+      const parent = btn.closest('.compare-box') || btn.closest('.terminal-box');
+      if (!parent) return;
+      const pre = parent.querySelector('pre');
+      if (!pre) return;
+      navigator.clipboard.writeText(pre.innerText).then(() => {
+        const orig = btn.innerText;
+        btn.innerText = 'Copied!';
+        setTimeout(() => { btn.innerText = orig; }, 1500);
+      });
+    }
+
+    // 4. Hero Widget Interactive Toggle (Matching ssrf.html)
+    const btnNosqlSafe = document.getElementById('btnNosqlSafe');
+    const btnNosqlExploit = document.getElementById('btnNosqlExploit');
+    const heroUrlPill = document.getElementById('heroUrlPill');
+    const heroPayloadText = document.getElementById('heroPayloadText');
+    const heroBeamParticle = document.getElementById('heroBeamParticle');
+    const heroFlowState = document.getElementById('heroFlowState');
+    const heroTargetCard = document.getElementById('heroTargetCard');
+    const heroTargetName = document.getElementById('heroTargetName');
+    const heroTargetStatus = document.getElementById('heroTargetStatus');
+    const heroField1 = document.getElementById('heroField1');
+    const heroField2 = document.getElementById('heroField2');
+    const heroField3 = document.getElementById('heroField3');
+    const heroTargetNote = document.getElementById('heroTargetNote');
+
+    if (btnNosqlSafe && btnNosqlExploit) {
+      btnNosqlSafe.addEventListener('click', () => {
+        btnNosqlSafe.classList.add('active', 'safe');
+        btnNosqlExploit.classList.remove('active', 'exploit');
+
+        heroUrlPill.innerHTML = '<span style="color:#10b981; font-weight:700;">POST</span> <span>/api/v1/auth/login</span>';
+        heroPayloadText.textContent = 'pass: "ValidUserStringPass123"';
+        heroPayloadText.style.color = '#6ee7b7';
+        heroBeamParticle.style.background = 'linear-gradient(90deg, transparent, #10b981, transparent)';
+        heroFlowState.textContent = 'Schema Validated (Zod + sanitize)';
+        heroFlowState.style.color = '#10b981';
+
+        heroTargetCard.className = 'target-profile-card safe';
+        heroTargetName.textContent = 'MongoDB Users Collection';
+        heroTargetStatus.className = 'target-pill-status blocked';
+        heroTargetStatus.textContent = 'PROTECTED';
+        heroField1.textContent = 'username: "admin"';
+        heroField1.style.color = '#10b981';
+        heroField2.textContent = 'Type: String Only (Verified)';
+        heroField2.style.color = '#10b981';
+        heroField3.textContent = 'bcrypt.compare() Verified';
+        heroField3.style.color = '#10b981';
+        heroTargetNote.textContent = '🛡️ Zero Injection Allowed';
+        heroTargetNote.style.color = '#10b981';
+      });
+
+      btnNosqlExploit.addEventListener('click', () => {
+        btnNosqlExploit.classList.add('active', 'exploit');
+        btnNosqlSafe.classList.remove('active', 'safe');
+
+        heroUrlPill.innerHTML = '<span style="color:#ef4444; font-weight:700;">POST</span> <span>/api/v1/auth/login</span>';
+        heroPayloadText.textContent = 'pass: {"$ne": "wrong_guess"}';
+        heroPayloadText.style.color = '#fca5a5';
+        heroBeamParticle.style.background = 'linear-gradient(90deg, transparent, #ef4444, transparent)';
+        heroFlowState.textContent = 'Operator Inverting Query Logic';
+        heroFlowState.style.color = '#ef4444';
+
+        heroTargetCard.className = 'target-profile-card exploit';
+        heroTargetName.textContent = 'MongoDB Users Collection';
+        heroTargetStatus.className = 'target-pill-status breach';
+        heroTargetStatus.textContent = 'BYPASSED';
+        heroField1.textContent = 'username: "admin"';
+        heroField1.style.color = '#ef4444';
+        heroField2.textContent = '$ne: "wrong_guess" (TRUE)';
+        heroField2.style.color = '#ef4444';
+        heroField3.textContent = 'Admin Document Returned';
+        heroField3.style.color = '#ef4444';
+        heroTargetNote.textContent = '🚨 Admin JWT Token Minted!';
+        heroTargetNote.style.color = '#f87171';
+      });
+    }
+
+    // 5. Checklist Interactive Logic
+
+    /* ==========================================================================
+       Checklist Interactive Pass (Check) & Fail (Cross) Handler
+       ========================================================================== */
+    window.setChecklistStatus = function(event, btn, status) {
+      if (event) event.stopPropagation();
+      const item = btn.closest('.checklist-item');
+      if (!item) return;
+      const itemId = item.id;
+      const passBtn = item.querySelector('.pass-btn');
+      const failBtn = item.querySelector('.fail-btn');
+      const circleIcon = item.querySelector('.check-mark-icon');
+
+      const isCurrent = (status === 'pass' && item.classList.contains('item-passed')) ||
+                        (status === 'fail' && item.classList.contains('item-failed'));
+
+      if (isCurrent) {
+        item.classList.remove('item-passed', 'item-failed');
+        if (passBtn) passBtn.classList.remove('active');
+        if (failBtn) failBtn.classList.remove('active');
+        const itemNum = itemId.replace('check-item-', '');
+        if (circleIcon) circleIcon.innerText = itemNum;
+      } else {
+        if (status === 'pass') {
+          item.classList.add('item-passed');
+          item.classList.remove('item-failed');
+          if (passBtn) passBtn.classList.add('active');
+          if (failBtn) failBtn.classList.remove('active');
+          if (circleIcon) circleIcon.innerText = '✓';
+        } else {
+          item.classList.add('item-failed');
+          item.classList.remove('item-passed');
+          if (failBtn) failBtn.classList.add('active');
+          if (passBtn) passBtn.classList.remove('active');
+          if (circleIcon) circleIcon.innerText = '✕';
+        }
+      }
+
+      updateChecklistCounter();
+    };
+
+    window.toggleCheckCircle = function(event, el) {
+      if (event) event.stopPropagation();
+      const item = el.closest('.checklist-item');
+      if (!item) return;
+      if (item.classList.contains('item-passed')) {
+        setChecklistStatus(null, item.querySelector('.fail-btn'), 'fail');
+      } else if (item.classList.contains('item-failed')) {
+        setChecklistStatus(null, item.querySelector('.fail-btn'), 'fail');
+      } else {
+        setChecklistStatus(null, item.querySelector('.pass-btn'), 'pass');
+      }
+    };
+
+    window.handleCheckItemClick = function(event, item) {
+      if (event.target.closest('.check-actions-bar') || event.target.closest('code') || event.target.closest('.check-how-to-box')) {
+        return;
+      }
+      toggleCheckCircle(event, item);
+    };
+
+    function updateChecklistCounter() {
+      const items = document.querySelectorAll('.checklist-item');
+      const total = items.length;
+      let passCount = 0;
+      let failCount = 0;
+      items.forEach(item => {
+        if (item.classList.contains('item-passed')) passCount++;
+        if (item.classList.contains('item-failed')) failCount++;
+      });
+      const evaluated = passCount + failCount;
+      const counterEl = document.getElementById('checklist-progress-counter');
+      if (counterEl) {
+        counterEl.innerHTML = `${evaluated} of ${total} Checks Audited (<span style="color:#10b981;">✓ ${passCount} Passed</span> | <span style="color:#ef4444;">✕ ${failCount} Vulnerable</span>)`;
+      }
+    }
+
+    // 6. Live Lab Simulator Engine (Exact ssrf.html Parity)
+    let currentLabMode = 'vuln'; // 'vuln' or 'safe'
+
+    window.setLabMode = function(mode) {
+      currentLabMode = mode;
+      const vulnBtn = document.getElementById('labModeVulnBtn');
+      const safeBtn = document.getElementById('labModeSafeBtn');
+      if (mode === 'vuln') {
+        vulnBtn.classList.add('active', 'exploit');
+        safeBtn.classList.remove('active', 'safe');
+      } else {
+        safeBtn.classList.add('active', 'safe');
+        vulnBtn.classList.remove('active', 'exploit');
+      }
+    };
+
+    const labPresets = {
+      1: {
+        payload: '{"username": "admin", "password": {"$ne": "random_guess"}}',
+        title: '$ne Auth Bypass'
+      },
+      2: {
+        payload: '{"username": "admin", "token": {"$regex": "^sec"}}',
+        title: 'Blind $regex Extraction'
+      },
+      3: {
+        payload: '{"$where": "this.username == \'admin\' || 1==1"}',
+        title: '$where JavaScript Evaluation'
+      },
+      4: {
+        payload: '{"username": "admin", "password": "ValidSecret2026!"}',
+        title: 'Legitimate Login'
+      }
+    };
+
+    window.loadLabPreset = function(id) {
+      document.querySelectorAll('.lab-preset-btn').forEach((b, idx) => {
+        b.classList.toggle('active', idx === id - 1);
+      });
+      const input = document.getElementById('labUrlInput');
+      if (input && labPresets[id]) {
+        input.value = labPresets[id].payload;
+      }
+    };
+
+    window.executeLabRequest = function() {
+      const inputPayload = document.getElementById('labUrlInput').value.trim();
+      const diagLog = document.getElementById('labDiagnosticsLog');
+      const respBody = document.getElementById('labResponseBody');
+      const execStatus = document.getElementById('labExecStatusBadge');
+      const httpBadge = document.getElementById('labHttpStatusBadge');
+
+      execStatus.textContent = 'EXECUTING...';
+      execStatus.style.color = '#38bdf8';
+
+      setTimeout(() => {
+        let isBlocked = false;
+        let blockReason = '';
+        let hasOperator = inputPayload.includes('"$ne"') || inputPayload.includes('"$gt"') || inputPayload.includes('"$regex"') || inputPayload.includes('"$where"');
+
+        if (currentLabMode === 'safe') {
+          if (hasOperator) {
+            isBlocked = true;
+            blockReason = 'Zod Contract Violation: Expected string primitive for credentials, received nested operational object.';
+          }
+        }
+
+        let diagHtml = '<div class="lab-stepper">';
+        diagHtml += `<div class="lab-step-item"><span class="step-icon-badge info">1</span><span>Parsed Request Body: <code>${inputPayload}</code></span></div>`;
+        diagHtml += `<div class="lab-step-item"><span class="step-icon-badge info">2</span><span>BSON Query Construction: <code>db.users.findOne(${inputPayload})</code></span></div>`;
+
+        if (isBlocked) {
+          diagHtml += `<div class="lab-step-item"><span class="step-icon-badge fail">✕</span><span style="color:#ef4444; font-weight:700;">Security Blocker: ${blockReason}</span></div>`;
+          diagHtml += `<div class="lab-step-item"><span class="step-icon-badge ok">✓</span><span>mongoSanitize stripped operators. Request rejected with HTTP 400 Bad Request before database execution.</span></div>`;
+          execStatus.textContent = 'BLOCKED (400)';
+          execStatus.style.color = '#10b981';
+          httpBadge.textContent = '400 Bad Request';
+          httpBadge.style.color = '#ef4444';
+
+          respBody.innerHTML = `<span style="color:#ef4444;">HTTP/1.1 400 Bad Request</span>
+<span style="color:#94a3b8;">Content-Type: application/json</span>
+
+{
+  <span class="t-key">"error"</span>: <span class="t-str">"Validation Error: Field 'password' must be of type string"</span>,
+  <span class="t-key">"code"</span>: <span class="t-str">"INVALID_TYPE_PAYLOAD"</span>,
+  <span class="t-key">"protection"</span>: <span class="t-str">"ZodSchema + mongoSanitize Enabled"</span>
+}`;
+        } else {
+          diagHtml += `<div class="lab-step-item"><span class="step-icon-badge ${hasOperator ? 'fail' : 'ok'}">${hasOperator ? '⚠️' : '✓'}</span><span>Query dispatched to MongoDB BSON Execution Engine</span></div>`;
+          diagHtml += `<div class="lab-step-item"><span class="step-icon-badge ${hasOperator ? 'fail' : 'ok'}">${hasOperator ? '🚨' : '✓'}</span><span>Query filter matched administrator record. HTTP 200 returned.</span></div>`;
+
+          execStatus.textContent = hasOperator ? 'VULNERABILITY CONFIRMED' : 'SUCCESS (200)';
+          execStatus.style.color = hasOperator ? '#ef4444' : '#10b981';
+          httpBadge.textContent = '200 OK';
+          httpBadge.style.color = '#10b981';
+
+          if (inputPayload.includes('$ne')) {
+            respBody.innerHTML = `<span style="color:#10b981;">HTTP/1.1 200 OK</span>
+<span style="color:#94a3b8;">Content-Type: application/json</span>
+
+{
+  <span class="t-key">"status"</span>: <span class="t-str">"success"</span>,
+  <span class="t-key">"message"</span>: <span class="t-str">"Authentication successful via query inversion"</span>,
+  <span class="t-key">"user"</span>: {
+    <span class="t-key">"username"</span>: <span class="t-str">"admin"</span>,
+    <span class="t-key">"role"</span>: <span class="t-str">"ROOT_ADMINISTRATOR"</span>,
+    <span class="t-key">"passwordHash"</span>: <span class="t-str">"$2b$12$e8Y1.99eWkG8Z4pQ..."</span>
+  },
+  <span class="t-key">"token"</span>: <span class="t-str">"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY0ZmE1... [ADMIN PRIVILEGE GRANTED]"</span>
+}`;
+          } else if (inputPayload.includes('$regex')) {
+            respBody.innerHTML = `<span style="color:#10b981;">HTTP/1.1 200 OK</span>
+<span style="color:#94a3b8;">Content-Type: application/json</span>
+
+{
+  <span class="t-key">"status"</span>: <span class="t-str">"success"</span>,
+  <span class="t-key">"matched"</span>: <span class="t-bool">true</span>,
+  <span class="t-key">"pattern"</span>: <span class="t-str">"^sec"</span>,
+  <span class="t-key">"note"</span>: <span class="t-str">"Character prefix matched in secret reset token. Extracted token char-by-char!"</span>
+}`;
+          } else if (inputPayload.includes('$where')) {
+            respBody.innerHTML = `<span style="color:#10b981;">HTTP/1.1 200 OK</span>
+<span style="color:#94a3b8;">Content-Type: application/json</span>
+
+{
+  <span class="t-key">"status"</span>: <span class="t-str">"success"</span>,
+  <span class="t-key">"js_evaluated"</span>: <span class="t-bool">true</span>,
+  <span class="t-key">"matchedDocuments"</span>: <span class="t-num">1</span>,
+  <span class="t-key">"note"</span>: <span class="t-str">"Arbitrary JavaScript expression evaluated on MongoDB host process!"</span>
+}`;
+          } else {
+            respBody.innerHTML = `<span style="color:#10b981;">HTTP/1.1 200 OK</span>
+<span style="color:#94a3b8;">Content-Type: application/json</span>
+
+{
+  <span class="t-key">"status"</span>: <span class="t-str">"success"</span>,
+  <span class="t-key">"authenticated"</span>: <span class="t-bool">true</span>,
+  <span class="t-key">"user"</span>: <span class="t-str">"admin"</span>,
+  <span class="t-key">"token"</span>: <span class="t-str">"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."</span>
+}`;
+          }
+        }
+
+        diagHtml += '</div>';
+        diagLog.innerHTML = diagHtml;
+      }, 350);
+    };
+
+    // Auto-init checklist counter on load
+    document.addEventListener('DOMContentLoaded', () => {
+      if (typeof updateChecklistCounter === 'function') {
+        updateChecklistCounter();
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,2199 @@
+<!DOCTYPE html>
+<html lang="hi" data-theme="dark" data-lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IDOR — Insecure Direct Object Reference</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Poppins:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root[data-theme="dark"] {
+    --bg:#050810;
+    --panel:#0F1524;
+    --panel-2:#1A2338;
+    --border:#263049;
+    --text:#E7ECF5;
+    --text-muted:#8B96AB;
+    --danger:#FF6B5B;
+    --danger-bg:rgba(255,107,91,0.12);
+    --safe:#3ECF8E;
+    --safe-bg:rgba(62,207,142,0.12);
+    --accent:#FFC857;
+    --accent-bg:rgba(255,200,87,0.14);
+    --radius:12px;
+    --mono:'IBM Plex Mono',ui-monospace,monospace;
+    --sans:'IBM Plex Sans',system-ui,sans-serif;
+    --blue:#4D9EFF;
+    --blue-bg:rgba(77,158,255,0.12);
+    --glow: rgba(77, 158, 255, 0.05);
+  }
+
+  :root[data-theme="light"] {
+    --bg:#F4F7FB;
+    --panel:#FFFFFF;
+    --panel-2:#E8EEF5;
+    --border:#D1D9E6;
+    --text:#0F172A;
+    --text-muted:#475569;
+    --danger:#E11D48;
+    --danger-bg:rgba(225,29,72,0.12);
+    --safe:#059669;
+    --safe-bg:rgba(5,150,105,0.12);
+    --accent:#D97706;
+    --accent-bg:rgba(217,119,6,0.14);
+    --radius:12px;
+    --mono:'IBM Plex Mono',ui-monospace,monospace;
+    --sans:'IBM Plex Sans',system-ui,sans-serif;
+    --blue:#2563EB;
+    --blue-bg:rgba(37,99,235,0.12);
+    --glow: rgba(77, 158, 255, 0.05);
+  }
+
+  /* Language Toggle Logic */
+  html[data-lang="hi"] .lang-en { display: none !important; }
+  html[data-lang="en"] .lang-hi { display: none !important; }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--bg);color:var(--text);font-family:var(--sans);
+    margin:0;padding:0;line-height:1.7;-webkit-font-smoothing:antialiased;
+    transition: background-color 0.3s, color 0.3s;
+    background-image: 
+      radial-gradient(circle at 15% 50%, var(--glow), transparent 25%),
+      radial-gradient(circle at 85% 30%, var(--glow), transparent 25%);
+  }
+  ::selection{background:var(--accent-bg);color:var(--accent);}
+  strong{color:var(--text);font-weight:600;}
+  
+  /* --- TYPOGRAPHY & CODE --- */
+  code{
+    font-family:var(--mono);background:var(--panel-2);border:1px solid var(--border);
+    padding:2px 6px;border-radius:6px;font-size:0.88em;color:var(--accent);
+    transition: all 0.2s;
+  }
+  code:hover { background: var(--accent-bg); border-color: var(--accent); }
+  
+  pre{
+    background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
+    padding:40px 18px 18px 18px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;
+    line-height:1.6;color:var(--text);margin:18px 0; position: relative;
+    box-shadow: 0 10px 30px -10px rgba(0,0,0,0.2);
+  }
+  pre::before {
+    content: ''; position: absolute; top: 14px; left: 16px;
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--danger); box-shadow: 16px 0 0 var(--accent), 32px 0 0 var(--safe);
+  }
+  pre code{background:none;border:none;padding:0;color:inherit; box-shadow: none;}
+  pre code:hover { background: none; border: none; }
+
+  /* --- TOPBAR --- */
+  .topbar{
+    position:sticky;top:0;z-index:50;background:rgba(15, 21, 36, 0.7);
+    backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+    border-bottom:1px solid var(--border);
+    padding:14px 20px;display:flex;align-items:center;justify-content:space-between;
+    gap:12px;flex-wrap:wrap; box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  }
+  :root[data-theme="light"] .topbar { background:rgba(255, 255, 255, 0.8); }
+  
+  .brand{
+    font-family:var(--mono);font-weight:700;font-size:16px;
+    display:flex;align-items:center;gap:10px;cursor:default;
+  }
+  .brand-icon { font-size: 19px; display: inline-block; animation: shield-pulse 2.5s infinite ease-in-out; }
+  
+  .brand-text {
+    background: linear-gradient(90deg, var(--accent), var(--safe));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .brand-text code { background: none; border: none; padding: 0; color: inherit; font-size: 1em; box-shadow: none;}
+  .brand:hover .brand-text { filter: drop-shadow(0 0 10px rgba(255, 200, 87, 0.5)); }
+  @keyframes shield-pulse { 0%, 100% { transform: scale(1); filter: drop-shadow(0 0 3px var(--safe)); } 50% { transform: scale(1.15); filter: drop-shadow(0 0 10px var(--safe)); } }
+
+  .controls-wrapper { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
+  .progress-dots{display:none;}
+
+  .theme-toggle {
+    background: var(--panel); border: 1px solid var(--border); color: var(--text);
+    padding: 6px 14px; border-radius: 20px; cursor: pointer; font-weight: 600;
+    font-family: var(--sans); font-size: 12px; transition: all 0.2s ease;
+  }
+  .theme-toggle:hover { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); transform: translateY(-1px); }
+
+  .lang-switch-wrapper {
+    display: flex; align-items: center; gap: 6px; font-family: var(--sans);
+    font-size: 12px; font-weight: 600; color: var(--text); background: var(--panel);
+    padding: 6px 12px; border-radius: 20px; border: 1px solid var(--border);
+  }
+  .lang-active { color: var(--accent); text-shadow: 0 0 8px var(--accent-bg); } 
+  .lang-inactive { color: var(--text-muted); }
+  .switch { position: relative; display: inline-block; width: 32px; height: 18px; margin: 0 4px;}
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider {
+    position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+    background-color: var(--border); transition: .4s; border-radius: 20px;
+  }
+  .slider:before {
+    position: absolute; content: ""; height: 12px; width: 12px; left: 3px; bottom: 3px;
+    background-color: var(--text); transition: .4s; border-radius: 50%;
+  }
+  input:checked + .slider { background-color: var(--accent); }
+  input:checked + .slider:before { transform: translateX(14px); background-color: #fff; }
+
+  main{max-width:840px;margin:0 auto;padding:0 20px 20px; position: relative; z-index: 1;}
+
+  /* --- HERO AREA --- */
+  .hero{padding:50px 0 40px; position: relative;}
+  .hero::after {
+    content: ''; position: absolute; top: -50px; left: 50%; transform: translateX(-50%);
+    width: 100vw; height: 100%; background: radial-gradient(ellipse at top, var(--danger-bg), transparent 60%);
+    z-index: -1; pointer-events: none; opacity: 0.5;
+  }
+  .eyebrow{
+    font-family:var(--mono);font-size:12px;letter-spacing:.14em;color:var(--danger);
+    text-transform:uppercase;margin:0 0 16px;display:flex;align-items:center;gap:8px;
+  }
+  .eyebrow::before{content:"●";font-size:9px; animation: blink 1s infinite alternate;}
+  h1.title{
+    font-family:var(--mono);font-weight:700;font-size:clamp(22px,4.5vw,34px);
+    line-height:1.45;margin:0 0 28px;color:var(--text);letter-spacing:-0.01em; text-align: justify;
+  }
+  @keyframes blink{50%{opacity:0.3;}}
+
+  .terminal{
+    background:var(--panel);border:1px solid var(--danger);border-radius:12px;overflow:hidden;
+    box-shadow: 0 15px 40px -10px rgba(255, 107, 91, 0.2); margin-bottom: 24px; animation: scene-glow 3s infinite alternate;
+  }
+  @keyframes scene-glow {
+    0% { box-shadow: 0 12px 35px -10px rgba(255, 107, 91, 0.15); border-color: var(--border); }
+    100% { box-shadow: 0 12px 35px -10px rgba(255, 107, 91, 0.4); border-color: var(--danger); }
+  }
+  .terminal-bar{display:flex;align-items:center;gap:7px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--panel-2);}
+  .terminal-dot{width:10px;height:10px;border-radius:50%;background:#3A4460;}
+  .terminal-dot:nth-child(1){background:#FF5F56;}
+  .terminal-dot:nth-child(2){background:#FFBD2E;}
+  .terminal-dot:nth-child(3){background:#27C93F;}
+  .terminal-label{margin-left:8px;font-family:var(--mono);font-size:11.5px;color:var(--text-muted);}
+  .terminal-body{padding:24px 22px 26px;font-family:var(--mono);font-size:14px;color:var(--text);min-height:120px; line-height: 1.6;}
+  .terminal-body .prompt{color:var(--safe);}
+  .terminal-body .cursor{display:inline-block;width:8px;height:16px;background:var(--accent);vertical-align:middle;margin-left:2px;animation:blink 1s step-end infinite;}
+
+  .intro-block {
+    margin-top: 28px; padding: 22px 24px;
+    background: linear-gradient(135deg, var(--panel) 0%, transparent 100%);
+    border: 1px solid var(--border); border-left: 4px solid var(--accent);
+    border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+    position: relative; overflow: hidden;
+  }
+  .intro-block::after {
+    content:''; position:absolute; right:-20px; bottom:-20px; width:100px; height:100px;
+    background: radial-gradient(circle, var(--accent-bg) 0%, transparent 70%); pointer-events: none;
+  }
+  .intro-block p{margin:0 0 14px;font-size:15px;color:var(--text); text-align: justify; line-height: 1.7;}
+  .intro-block p:last-child{margin-bottom:0;}
+  .intro-block .roadmap{font-family:var(--mono);font-size:13.5px;color:var(--accent); font-weight: 500;}
+
+  .hero-cta{
+    display:inline-flex;align-items:center;gap:10px;margin-top:26px;
+    font-family:var(--mono);font-size:14px;font-weight: 600; color:var(--accent);background:var(--panel);
+    border:1px solid var(--accent);padding:14px 24px;border-radius:10px;
+    text-decoration:none;cursor:pointer;transition:all .3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 6px 20px var(--accent-bg);
+  }
+  .hero-cta:hover{background:var(--accent); color: var(--bg); transform: translateY(-4px); box-shadow: 0 10px 25px rgba(255, 200, 87, 0.4);}
+
+  /* ---------- Accordion Levels ---------- */
+  .levels{margin-top:30px;display:flex;flex-direction:column;gap:16px;}
+  .level-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);scroll-margin-top:90px;overflow:hidden; transition: all 0.3s;}
+  .level-card:hover { border-color: rgba(255,255,255,0.1); box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
+  .level-card.open { border-color: var(--accent); box-shadow: 0 8px 30px var(--accent-bg); }
+  
+  .level-header{
+    width:100%;background:none;border:none;color:var(--text);display:flex;align-items:center;
+    gap:16px;padding:18px 20px;cursor:pointer;text-align:left;font-family:var(--sans);
+  }
+  .level-header:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;}
+  .level-badge{
+    font-family:var(--mono);font-weight:700;font-size:16px;width:38px;height:38px;flex:none;
+    border-radius:10px;display:flex;align-items:center;justify-content:center;
+    background:var(--panel-2);border:1px solid var(--border);color:var(--text-muted);
+    transition: all 0.3s;
+  }
+  .level-card.open .level-badge { background: var(--accent-bg); color: var(--accent); border-color: var(--accent); }
+  
+  .level-titles{flex:1;min-width:0;}
+  .level-titles h2{margin:0 0 4px;font-size:16.5px;font-weight:600;color:var(--text); transition: color 0.3s;}
+  .level-card.open .level-titles h2 { color: var(--accent); }
+  .level-titles p{margin:0;font-size:13px;color:var(--text-muted);}
+  .level-tag{
+    font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.05em;
+    padding:5px 10px;border-radius:20px;white-space:nowrap;flex:none;
+  }
+  .level-tag.problem{background:var(--danger-bg);color:var(--danger); border: 1px solid rgba(255,107,91,0.2);}
+  .level-tag.solved{background:var(--safe-bg);color:var(--safe); border: 1px solid rgba(62,207,142,0.2);}
+  .level-tag.concept{background:var(--accent-bg);color:var(--accent); border: 1px solid rgba(255,200,87,0.2);}
+  
+  .chevron{flex:none;color:var(--text-muted);transition:transform .3s ease;font-size:14px;}
+  .level-card.open .chevron{transform:rotate(180deg); color: var(--accent);}
+  
+  .level-body{ display: none; }
+  .level-card.open .level-body{ display: block; animation: fadeIn .3s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+  
+  .level-inner{padding:0 20px 24px;font-size:14.8px; border-top: 1px solid var(--border); margin-top: 4px; padding-top: 20px;}
+  .level-inner p{margin:0 0 14px;color:var(--text); text-align: justify; line-height: 1.7;}
+  .level-inner h4{margin:22px 0 10px;font-size:14px;color:var(--accent);font-weight:600;font-family:var(--mono);letter-spacing:.04em; text-transform: uppercase;}
+  .level-inner ul{margin:0 0 14px 20px;color:var(--text); text-align: justify; line-height: 1.7;}
+  
+  .callout{
+    border-left:4px solid var(--danger);background:linear-gradient(90deg, var(--danger-bg), transparent);
+    border-radius:0 10px 10px 0;padding:16px 20px;margin:18px 0;font-size:14px;
+    box-shadow: inset 0 0 20px rgba(255,107,91,0.05);
+  }
+  .callout.fixnote{border-left-color:var(--safe);background:linear-gradient(90deg, var(--safe-bg), transparent); box-shadow: inset 0 0 20px rgba(62,207,142,0.05);}
+  .callout p{margin:0;color:var(--text); text-align: justify;}
+  .callout p+p{margin-top:10px;}
+  .callout .cal-label{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.06em;display:block;margin-bottom:8px;color:var(--danger);}
+  .callout.fixnote .cal-label{color:var(--safe);}
+
+  .sim-jump{
+    display:inline-flex;align-items:center;gap:6px;margin-top:4px;font-family:var(--mono);
+    font-size:12px;color:var(--accent);background:var(--accent-bg);
+    border:1px solid rgba(255,200,87,0.3);padding:8px 13px;border-radius:7px;cursor:pointer;text-decoration:none;
+  }
+
+  /* ---------- VAPT PROXY SIMULATOR STYLES ---------- */
+  .simulator-section {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 14px;
+    margin-top: 40px; margin-bottom: 24px; overflow: hidden; position: relative;
+    display: flex; flex-direction: column; box-shadow: 0 15px 40px rgba(0,0,0,0.1);
+  }
+  .simulator-section::before {
+    content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    animation: scanline 3s linear infinite;
+  }
+  @keyframes scanline { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+
+  .sim-header-bar {
+    background: var(--panel-2); border-bottom: 1px solid var(--border); padding: 18px 24px;
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;
+  }
+  .sim-title {
+    font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--text);
+    display: flex; align-items: center; gap: 10px; letter-spacing: 0.5px;
+  }
+  .sim-title span { color: var(--danger); animation: pulse-danger 1.5s infinite; border-radius: 50%;}
+  .sim-controls { display: flex; flex-direction: column; gap: 16px; width: 100%; }
+  .sim-control-group { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .sim-control-group label {
+    font-family: var(--mono); font-size: 11.5px; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 1px; min-width: 140px; font-weight: bold;
+  }
+  .sim-btn-group { display: flex; gap: 10px; flex-wrap: wrap; background: var(--panel); padding: 4px; border-radius: 6px; border: 1px solid var(--border);}
+  .sim-btn {
+    background: transparent; border: none; color: var(--text-muted); padding: 6px 14px;
+    border-radius: 4px; font-family: var(--mono); font-size: 11.5px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .sim-btn:hover { color: var(--text); }
+  .sim-btn.active { background: var(--accent-bg); color: var(--accent); box-shadow: none; border: 1px solid var(--accent); }
+
+  .btn-execute {
+    background: rgba(57, 255, 122, 0.1); color: var(--safe); border: 1px solid var(--safe);
+    padding: 10px 24px; border-radius: 6px; font-family: var(--mono); font-size: 13px;
+    font-weight: 700; cursor: pointer; transition: all 0.2s; text-transform: uppercase;
+    align-self: flex-start; letter-spacing: 1px; box-shadow: 0 0 15px rgba(57, 255, 122, 0.15);
+  }
+  .btn-execute:hover { background: var(--safe); color: var(--bg); box-shadow: 0 0 20px rgba(57, 255, 122, 0.4); transform: translateY(-2px); }
+  .btn-execute:active { transform: scale(0.96); }
+  .btn-execute:disabled { opacity: 0.4; cursor: not-allowed; border-color: var(--text-muted); color: var(--text-muted); background: transparent; box-shadow: none; transform: none;}
+
+  .workspace { display: flex; padding: 18px; gap: 18px; height: 500px; background: var(--bg); }
+  @media (max-width: 850px) { .workspace { flex-direction: column; height: auto; min-height: 600px; } }
+
+  .sim-panel {
+    flex: 1; background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+    display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+  }
+  .sim-panel-header {
+    background: var(--panel-2); padding: 10px 14px; font-family: var(--mono); font-size: 11.5px;
+    font-weight: 700; color: var(--text); border-bottom: 1px solid var(--border); display: flex;
+    align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .sim-panel-body {
+    flex: 1; padding: 14px; font-family: var(--mono); font-size: 12px;
+    line-height: 1.6; overflow-y: auto; background: var(--bg);
+  }
+
+  #panel-browser .sim-panel-header { border-top: 2px solid #ffcc00; }
+  #panel-network .sim-panel-header { border-top: 2px solid #4d9eff; }
+  #panel-server .sim-panel-header { border-top: 2px solid #39ff7a; }
+
+  .log-line { opacity: 0; transform: translateX(-5px); animation: slideIn 0.2s forwards; margin-bottom: 6px; word-break: break-word; color: var(--text-muted); }
+  .log-stage {
+    font-family: var(--mono); font-size: 12.5px; color: var(--accent); font-weight: bold;
+    margin: 20px 0 8px 0; padding-bottom: 4px; border-bottom: 1px dashed var(--border);
+    display: block; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  @keyframes slideIn { to { opacity: 1; transform: translateX(0); } }
+  @keyframes slideInUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+  .timestamp { color: var(--text-muted); margin-right: 10px; user-select: none; }
+  .c-info { color: #4d9eff; } .c-warn { color: var(--accent); } .c-err { color: var(--danger); } .c-ok { color: var(--safe); } .c-blue { color: #3b82f6; } .c-gray { color: var(--text-muted); }
+  :root[data-theme="light"] .c-info { color: #0284c7; }
+  :root[data-theme="light"] .c-blue { color: #2563eb; }
+
+  .http-block { background: var(--panel-2); border-left: 2px solid #4d9eff; padding: 10px; margin: 10px 0; border-radius: 0 6px 6px 0; }
+  .http-method { color: #d782ff; font-weight: bold; } 
+  :root[data-theme="light"] .http-method { color: #9c27b0; }
+  .http-path { color: var(--text); } .http-proto { color: var(--text-muted); }
+  .http-header-key { color: #6ab0ff; } 
+  :root[data-theme="light"] .http-header-key { color: #0ea5e9; }
+  .http-header-val { color: var(--safe); } .http-body { color: var(--accent); margin-top: 8px; display: block; }
+  .resp-200 { color: var(--safe); }
+  .resp-err { color: var(--danger); }
+
+  .sim-verdict-box {
+    margin: 0 18px 18px 18px; background: var(--panel); border: 1px solid var(--border);
+    padding: 24px; border-radius: 8px; font-family: var(--sans); display: none;
+  }
+  .sim-verdict-box.show { display: block; animation: slideInUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+  .sim-verdict-title { font-family: var(--mono); font-size: 17px; font-weight: 700; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;}
+  .sim-verdict-text { font-size: 15px; color: var(--text); line-height: 1.6; text-align: justify;}
+  .v-hacked { border-color: var(--danger); background: rgba(255, 107, 91, 0.05); }
+  .v-hacked .sim-verdict-title { color: var(--danger); }
+  .v-blocked { border-color: var(--safe); background: rgba(62, 207, 142, 0.05); }
+  .v-blocked .sim-verdict-title { color: var(--safe); }
+
+  .sim-panel-body::-webkit-scrollbar { width: 6px; }
+  .sim-panel-body::-webkit-scrollbar-track { background: var(--bg); }
+  .sim-panel-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  .sim-panel-body::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+  /* ---------- GLOSSARY & QA ---------- */
+  .checklist{margin-top:40px;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:30px 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);}
+  .checklist-head{display:flex;align-items:center;gap:12px;margin-bottom:10px;}
+  .checklist-head h2{margin:0;font-size:20px;color:var(--text);font-family:var(--mono);}
+  .checklist-intro{font-family: var(--mono);color:var(--text-muted);font-size:14px;margin:0 0 26px; line-height: 1.6;}
+  
+  .gap-box{margin-top:2px;background:linear-gradient(145deg, var(--panel), var(--bg)); border:1px solid rgba(255,200,87,0.2);border-radius:10px;padding:20px; border-left: 4px solid var(--accent); transition: transform 0.2s; margin-bottom: 15px;}
+  .gap-box:last-child { margin-bottom: 0; }
+  .gap-box:hover { transform: translateX(4px); box-shadow: 0 4px 15px rgba(255,200,87,0.1); }
+  .gap-box h3{margin:0 0 14px;font-size:15px;color:var(--accent); font-family: var(--mono);}
+  .gap-box p{font-family: var(--mono);font-size:14px;color:var(--text);margin:0; text-align: justify; line-height: 1.6;}
+
+  .qa-list{display:flex;flex-direction:column;gap:12px;}
+  .qa-item{background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow:hidden; transition:all 0.3s ease;}
+  .qa-item:hover { border-color: var(--accent); box-shadow: 0 4px 15px var(--accent-bg); }
+  .qa-q{
+    width:100%;background:none;border:none;color:var(--text);display:flex;align-items:center;
+    gap:14px;padding:18px 20px;cursor:pointer;text-align:left;font-family:var(--sans);font-size:14.5px;font-weight:600;
+  }
+  .qa-q:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;}
+  .qa-mark{font-family:var(--mono);color:var(--accent);flex:none;font-weight:700; background: var(--accent-bg); padding: 4px 8px; border-radius: 6px;}
+  .qa-chevron{margin-left:auto;flex:none;color:var(--text-muted);transition:transform .3s ease;font-size:14px;}
+  .qa-item.open .qa-chevron{transform:rotate(180deg); color: var(--accent);}
+  .qa-a{ display: none; }
+  .qa-item.open .qa-a{ display: block; animation: fadeIn .3s ease; }
+  .qa-a-inner{padding:0 20px 20px 62px;font-size:14px;color:var(--text-muted); text-align: justify; line-height: 1.7;}
+  .qa-a-inner strong{color:var(--text);}
+  
+  /* ---------- NEW TESTER CHECKLIST (Interactive Audit Cards) ---------- */
+  #tester-checklist {
+    background: linear-gradient(145deg, var(--panel), var(--bg)); border: 2px solid var(--border);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.15); position: relative; overflow: hidden;
+    padding: 30px 24px; border-radius: 14px; margin-top: 40px;
+  }
+  #tester-checklist::before {
+    content:''; position:absolute; top:0; left:0; width:100%; height:4px;
+    background: linear-gradient(90deg, var(--safe), var(--accent), var(--danger));
+  }
+  .audit-card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+    padding: 20px 22px; margin-bottom: 18px; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative; z-index: 1;
+  }
+  .audit-card:last-child { margin-bottom: 0; }
+  .audit-card:hover {
+    transform: translateY(-3px); box-shadow: 0 10px 25px rgba(0,0,0,0.2); border-color: rgba(255,255,255,0.1);
+  }
+  .audit-card h3 {
+    margin: 0 0 18px 0; font-size: 15.5px; color: var(--safe); font-family: var(--mono);
+    display: flex; align-items: center; gap: 10px; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .check-list-ul { display: flex; flex-direction: column; gap: 12px; margin:0; padding:0; list-style: none;}
+  .check-label {
+    display: flex; align-items: flex-start; gap: 14px; cursor: pointer; padding: 12px 14px; border-radius: 8px;
+    transition: background 0.2s ease, transform 0.2s ease; border: 1px solid transparent;
+  }
+  .check-label:hover { background: var(--panel-2); border-color: var(--border); transform: translateX(4px); }
+  .check-input { display: none; }
+  .check-box {
+    width: 20px; height: 20px; border: 2px solid var(--text-muted); border-radius: 5px; flex-shrink: 0; margin-top: 2px;
+    display: flex; align-items: center; justify-content: center; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    background: var(--bg);
+  }
+  .check-input:checked + .check-box { background: var(--safe); border-color: var(--safe); transform: rotate(360deg); }
+  .check-input:checked + .check-box::after { content: '✔'; color: white; font-size: 13px; font-weight: bold; }
+  .check-text { color: var(--text); font-size: 14px; line-height: 1.6; transition: all 0.3s ease; text-align: justify; flex: 1; }
+  .check-input:checked ~ .check-text { color: var(--text-muted); text-decoration: line-through; opacity: 0.6; }
+
+    /* ── Designed and Developed by Footer ── */
+  .modern-footer { padding: 40px 18px 30px; text-align: center; position: relative; z-index: 1; }
+  .footer-badge {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: linear-gradient(145deg, var(--panel-2), var(--panel));
+    padding: 12px 28px; border-radius: 30px; font-family: var(--mono); font-size: 13.5px;
+    color: var(--text-muted); border: 1px solid var(--border);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.25); cursor: default;
+  }
+  .footer-badge:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 30px rgba(239, 68, 68, 0.25);
+    border-color: var(--danger);
+    color: var(--text);
+  }
+  .dev-name {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+    background: linear-gradient(90deg, #3B82F6, #A855F7, #F43F5E, #F59E0B, #3B82F6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    background-size: 200% auto;
+    animation: gradient-flow 4s linear infinite;
+  }
+  @keyframes gradient-flow {
+    0% { background-position: 0% center; }
+    100% { background-position: 200% center; }
+  }
+
+  @media (max-width:600px){
+    .level-header{padding:14px;gap:10px;}
+    .level-badge{width:30px;height:30px;font-size:13px;}
+    .hero{padding:30px 0 24px;}
+    main{padding:0 14px 20px;}
+    .controls-wrapper { flex-direction: column; align-items: flex-start; gap: 10px; }
+  }
+  @media (prefers-reduced-motion:reduce){
+    html{scroll-behavior:auto;}
+    *{transition-duration:0.01ms !important; animation: none !important;}
+  }
+  /* ---------- DYNAMIC CYBER BACKGROUND ---------- */
+  .cyber-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+  }
+
+  /* Matrix Dot Grid Overlay with continuous slow drift */
+  .cyber-grid {
+    position: absolute;
+    inset: -120px;
+    background-image: 
+      radial-gradient(rgba(255, 255, 255, 0.12) 1.2px, transparent 1.2px),
+      linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+    background-size: 32px 32px, 96px 96px, 96px 96px;
+    -webkit-mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 100%);
+    mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 100%);
+    opacity: 0.85;
+    animation: gridDrift 60s linear infinite;
+  }
+  :root[data-theme="light"] .cyber-grid {
+    background-image: 
+      radial-gradient(rgba(15, 23, 42, 0.08) 1.2px, transparent 1.2px),
+      linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+    opacity: 0.6;
+  }
+
+  @keyframes gridDrift {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(96px, 96px); }
+  }
+
+  /* Ambient Glowing Floating Orbs */
+  .cyber-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(100px);
+    opacity: 0.35;
+    will-change: transform;
+  }
+  :root[data-theme="light"] .cyber-orb {
+    opacity: 0.18;
+    filter: blur(110px);
+  }
+
+  .orb-1 {
+    width: 650px;
+    height: 650px;
+    background: radial-gradient(circle, #6366f1 0%, rgba(99,102,241,0) 70%);
+    top: -120px;
+    left: -100px;
+    animation: floatOrb1 16s ease-in-out infinite alternate;
+  }
+
+  .orb-2 {
+    width: 700px;
+    height: 700px;
+    background: radial-gradient(circle, #a855f7 0%, rgba(168,85,247,0) 70%);
+    top: 15%;
+    right: -150px;
+    animation: floatOrb2 20s ease-in-out infinite alternate;
+  }
+
+  .orb-3 {
+    width: 560px;
+    height: 560px;
+    background: radial-gradient(circle, #06b6d4 0%, rgba(6,182,212,0) 70%);
+    bottom: -80px;
+    left: 15%;
+    animation: floatOrb3 18s ease-in-out infinite alternate;
+  }
+
+  .orb-4 {
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, #f43f5e 0%, rgba(244,63,94,0) 70%);
+    bottom: 18%;
+    right: 12%;
+    animation: floatOrb4 22s ease-in-out infinite alternate;
+  }
+
+  /* Keyframe Animations for Smooth Floating */
+  @keyframes floatOrb1 {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(120px, 90px) scale(1.15); }
+    100% { transform: translate(-60px, 140px) scale(0.92); }
+  }
+
+  @keyframes floatOrb2 {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(-140px, 110px) scale(1.18); }
+    100% { transform: translate(-80px, -70px) scale(0.9); }
+  }
+
+  @keyframes floatOrb3 {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(90px, -100px) scale(1.14); }
+    100% { transform: translate(-100px, -50px) scale(1.05); }
+  }
+
+  @keyframes floatOrb4 {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(-110px, -80px) scale(1.2); }
+    100% { transform: translate(90px, 70px) scale(0.9); }
+  }
+
+  /* Floating Cyber Data Particles */
+  .cyber-particle {
+    position: absolute;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 0 8px currentColor;
+    opacity: 0;
+    animation: floatParticle 14s infinite ease-in-out;
+  }
+
+  .p-1 { width: 3px; height: 3px; left: 12%; bottom: -20px; color: var(--brand-1); animation-delay: 0s; animation-duration: 15s; }
+  .p-2 { width: 4px; height: 4px; left: 28%; bottom: -20px; color: var(--brand-2); animation-delay: 3s; animation-duration: 18s; }
+  .p-3 { width: 3px; height: 3px; left: 48%; bottom: -20px; color: var(--safe); animation-delay: 6s; animation-duration: 14s; }
+  .p-4 { width: 4px; height: 4px; left: 68%; bottom: -20px; color: var(--danger); animation-delay: 2s; animation-duration: 20s; }
+  .p-5 { width: 3px; height: 3px; left: 84%; bottom: -20px; color: var(--accent); animation-delay: 7s; animation-duration: 16s; }
+  .p-6 { width: 4px; height: 4px; left: 94%; bottom: -20px; color: #38bdf8; animation-delay: 4s; animation-duration: 19s; }
+  .p-7 { width: 3px; height: 3px; left: 38%; bottom: -20px; color: var(--safe); animation-delay: 9s; animation-duration: 17s; }
+  .p-8 { width: 4px; height: 4px; left: 58%; bottom: -20px; color: var(--brand-2); animation-delay: 11s; animation-duration: 21s; }
+
+  @keyframes floatParticle {
+    0% { transform: translateY(0) translateX(0) scale(0.5); opacity: 0; }
+    15% { opacity: 0.8; }
+    85% { opacity: 0.8; }
+    100% { transform: translateY(-105vh) translateX(50px) scale(1.2); opacity: 0; }
+  }
+
+  /* Scanline sweep effect */
+  .cyber-scanline {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 0%, rgba(99, 102, 241, 0.035) 50%, transparent 100%);
+    background-size: 100% 200%;
+    animation: scanSweep 12s linear infinite;
+  }
+
+  @keyframes scanSweep {
+    0% { background-position: 0% 0%; }
+    100% { background-position: 0% 200%; }
+  }
+
+  /* ── REAL-WORLD IMPACT SECTION ── */
+  .impact-section {
+    background: linear-gradient(145deg, var(--panel), var(--bg));
+    border: 2px solid var(--border);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+    position: relative; overflow: hidden;
+    padding: 30px 24px; border-radius: 14px; margin-top: 30px; margin-bottom: 24px;
+    scroll-margin-top: 80px;
+  }
+  .impact-section::before {
+    content:''; position:absolute; top:0; left:0; width:100%; height:4px;
+    background: linear-gradient(90deg, var(--danger), var(--accent), var(--danger));
+  }
+  .impact-card {
+    background: var(--panel); border: 1px solid var(--border); border-left: 4px solid var(--danger);
+    border-radius: 10px; padding: 18px 20px; margin-bottom: 16px; transition: all 0.3s;
+  }
+  .impact-card:last-child{margin-bottom:0;}
+  .impact-card:hover{ transform: translateX(4px); box-shadow: 0 8px 20px rgba(255,107,91,0.08); border-color: rgba(255,255,255,0.1);}
+  .impact-card h3{ margin:0 0 10px; font-size:15px; color:var(--danger); font-family:var(--mono); display:flex; align-items:center; gap:10px; text-transform:uppercase; letter-spacing:0.5px;}
+  .impact-card p{margin:0; font-size:14px; color:var(--text); text-align:justify; line-height:1.7;}
+  .impact-card p+p{margin-top:10px;}
+
+  /* Deep Dive Link Design (Matches CSRF.html & SQLI.html) */
+  .csp-deep-dive { margin-top: 14px; text-align: left; }
+  .csp-deep-dive a {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--btn-bg, rgba(62, 207, 142, 0.18));
+    color: var(--btn-text, #3ecf8e);
+    border: 1px solid var(--btn-border, rgba(62, 207, 142, 0.45));
+    padding: 6px 14px; border-radius: 20px; font-family: var(--mono); font-weight: 700;
+    font-size: 12px; text-decoration: none; letter-spacing: 0.3px;
+    box-shadow: 0 0 6px var(--btn-glow, rgba(62, 207, 142, 0.2));
+    transition: background-color 0.2s, transform 0.2s, box-shadow 0.2s;
+  }
+  .csp-deep-dive a:hover {
+    background: var(--btn-bg-hover, rgba(62, 207, 142, 0.35));
+    transform: translateY(-1px);
+    box-shadow: 0 0 10px var(--btn-glow-hover, rgba(62, 207, 142, 0.4));
+  }
+  :root[data-theme="light"] .csp-deep-dive a {
+    background: #059669;
+    color: #ffffff;
+    border-color: #047857;
+    box-shadow: 0 0 6px rgba(5, 150, 105, 0.25);
+  }
+  :root[data-theme="light"] .csp-deep-dive a:hover {
+    background: #047857;
+    box-shadow: 0 0 10px rgba(5, 150, 105, 0.4);
+  }
+
+  /* ── SUB-NAV BUTTONS (ALIGNED TO CONTENT WIDTH & ROUNDED CORNERS) ── */
+  .sub-nav-wrapper {
+    position: relative; background: transparent; border-bottom: none;
+    padding: 16px 0 0; box-shadow: none; max-width: 840px; margin: 0 auto;
+  }
+  .sub-nav-bar {
+    max-width: 100%; padding: 0 20px; margin: 0 auto; display: flex; align-items: center;
+    justify-content: space-between; gap: 10px; overflow-x: auto;
+    scrollbar-width: none; -ms-overflow-style: none;
+  }
+  .sub-nav-bar::-webkit-scrollbar { display: none; }
+  .sub-nav-btn {
+    flex: 1 1 0; max-width: 155px; display: inline-flex; align-items: center; justify-content: center;
+    gap: 7px; background: var(--panel); backdrop-filter: blur(16px);
+    border: 1px solid var(--border); color: var(--text-muted); padding: 8px 12px;
+    border-radius: 24px; text-decoration: none; font-family: var(--mono);
+    font-size: 12px; font-weight: 600; white-space: nowrap; transition: all 0.25s ease;
+  }
+  .sub-nav-btn:hover {
+    color: var(--text); border-color: var(--accent); background: var(--panel-2);
+    transform: translateY(-2px); box-shadow: 0 4px 12px rgba(255, 200, 87, 0.15);
+  }
+  .sub-nav-btn.active {
+    border-color: var(--safe);
+    background: var(--safe-bg);
+    color: var(--safe);
+    font-weight: 700;
+    box-shadow: 0 0 12px var(--safe-bg);
+  }
+  .sub-nav-btn.home-nav-btn { border-color: rgba(77, 158, 255, 0.4); color: var(--blue); }
+  .sub-nav-btn.home-nav-btn:hover { border-color: var(--blue); background: var(--blue-bg); color: #fff; }
+  :root[data-theme="light"] .sub-nav-btn {
+    background: rgba(255, 255, 255, 0.9);
+  }
+  @media (max-width: 768px) {
+    .sub-nav-wrapper { padding: 10px 0 0; }
+    .sub-nav-bar { justify-content: flex-start; gap: 8px; padding: 0 16px; }
+    .sub-nav-btn { flex: 0 0 auto; max-width: none; padding: 6px 14px; font-size: 12px; border-radius: 20px; }
+  }
+
+  /* ── BOTTOM NAVIGATION ROW (PREV & NEXT ONLY) ── */
+  .bottom-nav-row {
+    margin-top: 45px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+  }
+  .nav-arrow-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 18px;
+    border-radius: 20px;
+    text-decoration: none;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.25s ease;
+    box-shadow: var(--shadow-sm);
+    white-space: nowrap;
+  }
+  .nav-arrow-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-bg);
+    transform: translateY(-2px);
+  }
+  @media (max-width: 768px) {
+    .bottom-nav-row {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+    }
+    .bottom-nav-row .nav-arrow-btn {
+      justify-content: center;
+      width: 100%;
+      text-align: center;
+      white-space: normal;
+    }
+  }
+
+</style>
+</head>
+<body data-lang="hi">
+
+<!-- ================= DYNAMIC CYBER BACKGROUND ================= -->
+<div class="cyber-bg" aria-hidden="true">
+  <div class="cyber-orb orb-1"></div>
+  <div class="cyber-orb orb-2"></div>
+  <div class="cyber-orb orb-3"></div>
+  <div class="cyber-orb orb-4"></div>
+  <div class="cyber-grid"></div>
+  <div class="cyber-scanline"></div>
+  <div class="cyber-particle p-1"></div>
+  <div class="cyber-particle p-2"></div>
+  <div class="cyber-particle p-3"></div>
+  <div class="cyber-particle p-4"></div>
+  <div class="cyber-particle p-5"></div>
+  <div class="cyber-particle p-6"></div>
+  <div class="cyber-particle p-7"></div>
+  <div class="cyber-particle p-8"></div>
+</div>
+
+<div class="topbar">
+  <a href="../index.html" class="brand" style="text-decoration:none; color:inherit;" title="Return to Main Hub">
+    <span class="brand-icon">🛡️</span>
+    <span class="brand-text"><code>IDOR:</code> <span class="lang-hi">Insecure Direct Object Reference</span><span class="lang-en">Insecure Direct Object Reference</span></span>
+  </a>
+  <div class="controls-wrapper">
+    <div class="lang-switch-wrapper">
+      <span id="lbl-hi" class="lang-active">Hindi</span>
+      <label class="switch">
+        <input type="checkbox" id="langToggle" onchange="toggleLanguage()">
+        <span class="slider"></span>
+      </label>
+      <span id="lbl-en" class="lang-inactive">English</span>
+    </div>
+    <button class="theme-toggle" id="themeBtn" onclick="toggleTheme()">☀️ Light Mode</button>
+  </div>
+</div>
+
+<!-- ================= HORIZONTAL SUB-NAV BAR ================= -->
+<div class="sub-nav-wrapper">
+  <nav class="sub-nav-bar" aria-label="Section Navigation">
+    <a class="sub-nav-btn home-nav-btn" href="../index.html" title="Main Home Page">
+      <span class="sub-nav-icon">🏠</span>
+      <span class="lang-hi">Home</span><span class="lang-en">Home</span>
+    </a>
+    <a class="sub-nav-btn" href="#simulator">
+      <span class="sub-nav-icon">⚡</span>
+      <span class="lang-hi">Simulator</span><span class="lang-en">Simulator</span>
+    </a>
+    <a class="sub-nav-btn" href="#impact">
+      <span class="sub-nav-icon">💥</span>
+      <span class="lang-hi">Attack Vectors</span><span class="lang-en">Attack Vectors</span>
+    </a>
+    <a class="sub-nav-btn" href="#qa">
+      <span class="sub-nav-icon">🤔</span>
+      <span class="lang-hi">Questions</span><span class="lang-en">Questions</span>
+    </a>
+    <a class="sub-nav-btn" href="#tester-checklist">
+      <span class="sub-nav-icon">📝</span>
+      <span class="lang-hi">Checklist</span><span class="lang-en">Checklist</span>
+    </a>
+  </nav>
+</div>
+
+<main>
+
+  <section class="hero" id="hero">
+    <p class="eyebrow"><span class="lang-hi">Web App Security — Technical Walkthrough</span><span class="lang-en">Web App Security — Technical Walkthrough</span></p>
+    <h1 class="title">
+        <span class="lang-hi">IDOR: Ek Problem, Aur Use Fix Karne Ke Technical Solutions</span>
+        <span class="lang-en">IDOR: One Problem, And Technical Solutions To Fix It</span>
+    </h1>
+
+    <div class="terminal" style="background:var(--panel); border:1px solid var(--border); box-shadow:0 10px 30px rgba(0,0,0,0.1); border-radius:12px; margin-bottom:24px;">
+      <div class="terminal-bar" style="background:var(--panel-2); padding:12px 16px; border-bottom:1px solid var(--border);">
+        <span class="terminal-dot" style="background:#FF5F56;"></span>
+        <span class="terminal-dot" style="background:#FFBD2E;"></span>
+        <span class="terminal-dot" style="background:#27C93F;"></span>
+        <span class="terminal-label">access_control.check</span>
+      </div>
+      <div class="terminal-body" style="padding:24px; font-family:var(--mono); font-size:14px; color:var(--text); line-height:1.6;">
+        <span class="prompt" style="color:var(--safe);">&gt;</span> <span id="typewriter"></span><span class="cursor" style="background:var(--accent);"></span>
+      </div>
+    </div>
+
+    <div class="intro-block">
+      <p>
+        <span class="lang-hi"><strong>IDOR (Insecure Direct Object Reference)</strong> ek access-control vulnerability hai jisme application kisi object (jaise invoice, order, file) ko uske DIRECT reference (jaise database ID) se access karti hai, bina ye verify kiye ki currently logged-in user us SPECIFIC object ko access karne ke liye AUTHORIZED hai ya nahi.</span>
+        <span class="lang-en"><strong>IDOR (Insecure Direct Object Reference)</strong> is an access-control vulnerability where an application accesses an object (like an invoice, order, file) via its DIRECT reference (like a database ID), without verifying if the currently logged-in user is AUTHORIZED to access that SPECIFIC object.</span>
+      </p>
+      <p>
+        <span class="lang-hi">Ye note is problem ko technically explain karta hai — pehle exact mechanism dekhenge, fir har defense attempt ko dekhenge, aur har attempt mein specifically kya gap reh gaya jiski wajah se agla solution zaroori hua.</span>
+        <span class="lang-en">This note explains the problem technically — first we'll look at the exact mechanism, then examine each defense attempt, and identify the specific gap left in each attempt that necessitated the next solution.</span>
+      </p>
+      <p class="roadmap">
+        <span class="lang-hi">Problem → Solution 1 → Gap → Solution 2 → Gap → Final Solution → Defense-in-Depth</span>
+        <span class="lang-en">Problem → Solution 1 → Gap → Solution 2 → Gap → Final Solution → Defense-in-Depth</span>
+      </p>
+    </div>
+
+    <a class="hero-cta" href="#simulator">⚡ <span class="lang-hi">Har misconfiguration ko simulator mein khud test karo ↓</span><span class="lang-en">Test every misconfiguration yourself in the simulator ↓</span></a>
+  </section>
+
+  <!-- ================= REAL-WORLD IMPACT ================= -->
+  <section class="impact-section" id="impact">
+    <div class="sec-head" style="margin-top:0;">
+      <p class="sec-eyebrow"><span class="lang-hi">Isse kya farak padta hai?</span><span class="lang-en">Why does this actually matter?</span></p>
+      <h2>💥 <span class="lang-hi">Real-World Impact — Agar Ye Vulnerability Live Website Mein Ho To Kya Ho Sakta Hai</span><span class="lang-en">Real-World Impact — What Can Happen If A Live Website Has This Bug</span></h2>
+      <p>
+        <span class="lang-hi">Technical code mein jaane se pehle ye samajhna zaroori hai: agar live website par IDOR vulnerability ho, toh ek attacker asal mein kya nuksan kar sakta hai? Neeche 4 sabse aam aur dangerous real-world scenarios diye gaye hain:</span>
+        <span class="lang-en">Before diving into code levels, it's essential to understand: if a live website has an IDOR vulnerability, what damage can an attacker actually cause? Below are 4 of the most common and dangerous real-world scenarios:</span>
+      </p>
+    </div>
+
+    <div class="impact-card">
+      <h3>🕵️ <span class="lang-hi">1. Private Profile & PII Data Leak (Doosron Ka Personal Data Dekhna)</span><span class="lang-en">1. Private Profile & PII Data Leak (Mass Data Exposure)</span></h3>
+      <p>
+        <span class="lang-hi">Maan lo aap ek healthcare ya delivery app par apna profile dekh rahe ho: <code>https://example.com/api/user/1050</code>. Agar aap URL mein <code>1050</code> ko badal kar <code>1051</code> ya <code>1052</code> kar do, aur server check na kare ki ye data aapka hai ya nahi — toh doosre logon ke Aadhar card, private home addresses, phone numbers aur medical prescriptions seedhe aapki screen par khul jayenge. Attacker ek automated script chala kar poori company ke lakhon users ka database kuch hi minute mein download kar leta hai.</span>
+        <span class="lang-en">Suppose you view your profile on a healthcare or delivery app: <code>https://example.com/api/user/1050</code>. If you simply change <code>1050</code> to <code>1051</code> or <code>1052</code> in the URL, and the server fails to verify ownership — other people's national IDs, private home addresses, phone numbers, and sensitive health records display directly on screen. Attackers run a quick automated script to scrape the entire platform's user database in minutes.</span>
+      </p>
+      <div class="csp-deep-dive">
+        <a href="../labs/idor_data_leak.html" target="_blank">
+          <span class="lang-hi">Click here to see the simulation of this attack 💻</span>
+          <span class="lang-en">Click here to see the simulation of this attack 💻</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="impact-card">
+      <h3>🔑 <span class="lang-hi">2. Instant Account Takeover (Doosre Ka Account Hack Karna)</span><span class="lang-en">2. Instant Account Takeover (Modifying Profiles & Passwords)</span></h3>
+      <p>
+        <span class="lang-hi">IDOR sirf data dekhne (Read) tak seemit nahi hai, ye data badalne (Write/Update) par bhi hota hai. Jab aap apna email ya password update karte ho (<code>POST /api/user/update</code>), agar request body mein <code>{"user_id": 402}</code> ja raha ho, toh attacker wahan victim ka user ID daal kar apna email bind kar deta hai. Server bina verification ke victim ke account ka email badal deta hai, aur attacker "Forgot Password" se poore account ka permanent control le leta hai.</span>
+        <span class="lang-en">IDOR is not limited to viewing data; it equally affects data modification (Write/Update). When updating your email or password (<code>POST /api/user/update</code>), if the request body sends <code>{"user_id": 402}</code>, an attacker can replace that ID with a victim's user ID and set their own email. The server updates the victim's account without verification, letting the attacker reset the password and seize total control of the account.</span>
+      </p>
+      <div class="csp-deep-dive">
+        <a href="../labs/idor_account_takeover.html" target="_blank">
+          <span class="lang-hi">Click here to see the simulation of this attack 💻</span>
+          <span class="lang-en">Click here to see the simulation of this attack 💻</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="impact-card">
+      <h3>💳 <span class="lang-hi">3. Financial Fraud & Billing Secrets (Orders Aur Invoices Mein Chhedchhad)</span><span class="lang-en">3. Financial Fraud & Order Tampering (Exposing Bills & Receipts)</span></h3>
+      <p>
+        <span class="lang-hi">E-commerce ya banking portals par jab aap koi invoice download karte ho: <code>/download-receipt?invoice_id=9810</code>. IDOR hone par attacker <code>invoice_id</code> badal kar competitor companies ke confidential sales records, tax invoices, purchased items aur payment transactions dekh sakta hai. Kai baar order status update API (<code>PUT /order/9810</code> status: "paid") ko manipulate karke unpaid orders ko paid ya doosre ke parcel ka delivery address apne ghar redirect karwa liya jaata hai.</span>
+        <span class="lang-en">On e-commerce or fintech portals, downloading an invoice often uses URLs like <code>/download-receipt?invoice_id=9810</code>. With IDOR present, an attacker iterates through invoice IDs to uncover competitors' secret sales figures, tax invoices, purchased products, and card transaction summaries. Even worse, tampering with order endpoints can allow attackers to flip unpaid carts to "Paid" or redirect another customer's shipping address to their own doorstep.</span>
+      </p>
+    </div>
+
+    <div class="impact-card">
+      <h3>🗑️ <span class="lang-hi">4. Unauthorized Deletion & Data Sabotage (Doosron Ka Data Delete Karna)</span><span class="lang-en">4. Unauthorized Deletion & Data Sabotage (Permanent Record Loss)</span></h3>
+      <p>
+        <span class="lang-hi">Agar kisi platform par file, post ya document delete karne ka option ho: <code>DELETE /api/documents/840</code>. Agar backend par ye verify nahi kiya gaya ki document request karne wale user ka hi hai, toh koi bhi malicious user loop chala kar poore system ke documents, cloud files, project tasks ya customer tickets ko permanently uda sakta hai. Isse company ko bhari operational loss aur irreversible data loss ka samna karna padta hai.</span>
+        <span class="lang-en">Many web applications support deleting photos, project tickets, or documents: <code>DELETE /api/documents/840</code>. If the backend forgets to verify whether the requesting user actually owns that item, any malicious user can cycle through document IDs with a simple loop and permanently delete thousands of users' critical cloud files and backups, causing devastating data loss and operational downtime.</span>
+      </p>
+    </div>
+  </section>
+
+  <section class="levels">
+
+    <!-- LEVEL 0 -->
+    <div class="level-card" id="level-0" data-level="0">
+      <button class="level-header">
+        <span class="level-badge">0</span>
+        <span class="level-titles">
+          <h2>
+            <span class="lang-hi">Problem — Authentication Hai, Authorization Nahi</span>
+            <span class="lang-en">Problem — Authentication Exists, Authorization Doesn't</span>
+          </h2>
+          <p>
+            <span class="lang-hi">Root cause, aur ek critical distinction</span>
+            <span class="lang-en">The root cause, and a critical distinction</span>
+          </p>
+        </span>
+        <span class="level-tag problem"><span class="lang-hi">PROBLEM</span><span class="lang-en">PROBLEM</span></span>
+        <span class="chevron">▾</span>
+      </button>
+      <div class="level-body">
+        <div class="level-inner">
+          <h4>
+            <span class="lang-hi">DIRECT OBJECT REFERENCE KYA HAI</span>
+            <span class="lang-en">WHAT IS DIRECT OBJECT REFERENCE</span>
+          </h4>
+          <p>
+            <span class="lang-hi">Applications aksar kisi specific resource (jaise ek invoice, order, ya file) ko refer karne ke liye ek DIRECT identifier use karti hain — jaise database ka primary key ya ek sequential number:</span>
+            <span class="lang-en">Applications often use a DIRECT identifier to refer to a specific resource (like an invoice, order, or file) — such as a database primary key or a sequential number:</span>
+          </p>
+          <pre><code>GET /api/invoices/1005</code></pre>
+          <p>
+            <span class="lang-hi">Yahan <code>1005</code> seedha database record ka ID hai — ise <strong>Direct Object Reference</strong> kehte hain, kyunki URL mein hi asli internal identifier expose ho raha hai.</span>
+            <span class="lang-en">Here <code>1005</code> is the direct database record ID — this is called a <strong>Direct Object Reference</strong>, because the actual internal identifier is exposed right in the URL.</span>
+          </p>
+
+          <h4>
+            <span class="lang-hi">AUTHENTICATION VS AUTHORIZATION — CRITICAL FARK</span>
+            <span class="lang-en">AUTHENTICATION VS AUTHORIZATION — CRITICAL DIFFERENCE</span>
+          </h4>
+          <p>
+            <span class="lang-hi">Do concepts jo yahan alag samajhne zaroori hain:</span>
+            <span class="lang-en">Two concepts that are important to understand separately here:</span>
+          </p>
+          <ul>
+            <li><span class="lang-hi"><strong>Authentication</strong> = "tum kaun ho" verify karna — login karna, valid session hona</span><span class="lang-en"><strong>Authentication</strong> = verifying "who you are" — logging in, having a valid session</span></li>
+            <li><span class="lang-hi"><strong>Authorization</strong> = "tumhe YE SPECIFIC cheez karne ya dekhne ki permission hai ya nahi" verify karna</span><span class="lang-en"><strong>Authorization</strong> = verifying "whether you have permission to do or see THIS SPECIFIC thing"</span></li>
+          </ul>
+          <p>
+            <span class="lang-hi">IDOR ka core issue: application AUTHENTICATION toh sahi se check kar rahi hai (user genuinely logged in hai, valid session hai) — lekin AUTHORIZATION check missing hai (ye verify nahi ho raha ki wo SPECIFIC invoice/order/file usi user ka hai ya nahi).</span>
+            <span class="lang-en">The core issue of IDOR: the application checks AUTHENTICATION correctly (the user is genuinely logged in, has a valid session) — but the AUTHORIZATION check is missing (it is not verified if that SPECIFIC invoice/order/file belongs to that user).</span>
+          </p>
+
+          <div class="callout">
+            <span class="cal-label">
+                <span class="lang-hi">⚠️ PROBLEM</span>
+                <span class="lang-en">⚠️ PROBLEM</span>
+            </span>
+            <p>
+                <span class="lang-hi">User A apne invoice 1005 ko dekhne ke liye login karta hai — legitimate request. Lekin agar wo URL mein ID badal kar 1006 kar de, aur server sirf itna kare:</span>
+                <span class="lang-en">User A logs in to see their invoice 1005 — a legitimate request. But if they change the ID in the URL to 1006, and the server only does this:</span>
+            </p>
+            <pre><code>SELECT * FROM invoices WHERE id = 1006</code></pre>
+            <p>
+                <span class="lang-hi">(bina <code>AND user_id = current_user.id</code> check ke) — toh User A ko User B ka invoice dikh jaayega, sirf URL mein ek number badalne se. User A fully authenticated hai, lekin is invoice ke liye authorized NAHI hai — phir bhi access mil gaya.</span>
+                <span class="lang-en">(without an <code>AND user_id = current_user.id</code> check) — then User A will see User B's invoice, just by changing one number in the URL. User A is fully authenticated, but NOT authorized for this invoice — yet they got access.</span>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEVEL 1 -->
+    <div class="level-card" id="level-1" data-level="1">
+      <button class="level-header">
+        <span class="level-badge">1</span>
+        <span class="level-titles">
+          <h2>
+            <span class="lang-hi">Solution 1 — Read Endpoints Par Ownership Check</span>
+            <span class="lang-en">Solution 1 — Ownership Check on Read Endpoints</span>
+          </h2>
+          <p>
+            <span class="lang-hi">Kaam karta hai, lekin sirf GET requests ke liye</span>
+            <span class="lang-en">It works, but only for GET requests</span>
+          </p>
+        </span>
+        <span class="level-tag problem"><span class="lang-hi">PROBLEM</span><span class="lang-en">PROBLEM</span></span>
+        <span class="chevron">▾</span>
+      </button>
+      <div class="level-body">
+        <div class="level-inner">
+          <h4>
+            <span class="lang-hi">OWNERSHIP CHECK</span>
+            <span class="lang-en">OWNERSHIP CHECK</span>
+          </h4>
+          <p>
+            <span class="lang-hi">Pehla, seedha fix: query mein ownership condition add karo:</span>
+            <span class="lang-en">The first, straightforward fix: add an ownership condition to the query:</span>
+          </p>
+          <pre><code>SELECT * FROM invoices WHERE id = 1006 AND user_id = current_user.id</code></pre>
+          <p>
+            <span class="lang-hi">Ab agar invoice 1006 User A ka nahi hai, query koi row return nahi karegi — access denied. Developer ye fix apne main "view invoice" (GET) endpoint par add karta hai, aur wo kaam kar jaata hai.</span>
+            <span class="lang-en">Now if invoice 1006 does not belong to User A, the query will return no rows — access denied. The developer adds this fix to their main "view invoice" (GET) endpoint, and it works.</span>
+          </p>
+
+          <div class="callout">
+            <span class="cal-label">
+                <span class="lang-hi">⚠️ GAP — SIRF READ ENDPOINTS COVER HUE</span>
+                <span class="lang-en">⚠️ GAP — ONLY READ ENDPOINTS COVERED</span>
+            </span>
+            <p>
+                <span class="lang-hi">Application mein invoice ke liye sirf VIEW hi nahi, EDIT aur DELETE endpoints bhi hote hain — kai baar alag time par, ya kisi doosre developer ne banaye hote hain:</span>
+                <span class="lang-en">In an application, there are not just VIEW endpoints for an invoice, but EDIT and DELETE endpoints too — often created at different times, or by different developers:</span>
+            </p>
+            <pre><code>DELETE /api/invoices/1006
+PUT /api/invoices/1006</code></pre>
+            <p>
+                <span class="lang-hi">Ye endpoints agar alag se likhe gaye hain aur unmein wahi ownership check dobara add karna developer BHOOL jaaye, attacker GET request mein toh block ho jaayega, lekin DELETE/PUT request se User B ka invoice modify ya delete kar sakta hai.</span>
+                <span class="lang-en">If these endpoints were written separately and the developer FORGETS to add that same ownership check again, the attacker will be blocked on the GET request, but can modify or delete User B's invoice via a DELETE/PUT request.</span>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEVEL 2 -->
+    <div class="level-card" id="level-2" data-level="2">
+      <button class="level-header">
+        <span class="level-badge">2</span>
+        <span class="level-titles">
+          <h2>
+            <span class="lang-hi">Solution 2 — Har CRUD Operation Par Check</span>
+            <span class="lang-en">Solution 2 — Checks on Every CRUD Operation</span>
+          </h2>
+          <p>
+            <span class="lang-hi">Kaam karta hai direct objects ke liye, nested ke liye nahi</span>
+            <span class="lang-en">Works for direct objects, not for nested ones</span>
+          </p>
+        </span>
+        <span class="level-tag problem"><span class="lang-hi">PROBLEM</span><span class="lang-en">PROBLEM</span></span>
+        <span class="chevron">▾</span>
+      </button>
+      <div class="level-body">
+        <div class="level-inner">
+          <h4>
+            <span class="lang-hi">SABHI ENDPOINTS PAR CONSISTENT CHECK</span>
+            <span class="lang-en">CONSISTENT CHECKS ACROSS ALL ENDPOINTS</span>
+          </h4>
+          <p>
+            <span class="lang-hi">Doosra fix: GET, PUT, PATCH, DELETE — har endpoint mein manually wahi ownership check add karo. Ab direct object references (invoice, order, profile) har operation ke liye protected hain.</span>
+            <span class="lang-en">The second fix: GET, PUT, PATCH, DELETE — manually add that same ownership check in every endpoint. Now direct object references (invoice, order, profile) are protected for every operation.</span>
+          </p>
+
+          <div class="callout">
+            <span class="cal-label">
+                <span class="lang-hi">⚠️ GAP — NESTED/RELATED OBJECTS ABHI BHI EXPOSED</span>
+                <span class="lang-en">⚠️ GAP — NESTED/RELATED OBJECTS STILL EXPOSED</span>
+            </span>
+            <p>
+                <span class="lang-hi">Real applications mein objects aksar EK DOOSRE se linked hote hain. Jaise ek order ke andar multiple items:</span>
+                <span class="lang-en">In real applications, objects are often linked TO EACH OTHER. Like multiple items inside an order:</span>
+            </p>
+            <pre><code>GET /api/orders/777/items/42</code></pre>
+            <p>
+                <span class="lang-hi">Developer check karta hai ki order <code>777</code> current user ka hai — sahi. Lekin agar item <code>42</code> ASAL mein order <code>777</code> ka nahi, balki KISI AUR user ke order ka hai, aur code sirf ye verify kar raha hai "order 777 user ka hai" bina ye check kiye "item 42 SPECIFICALLY order 777 ka hai" — attacker apna hi order ID use karke, item ID badal kar, kisi aur ka item data access kar sakta hai.</span>
+                <span class="lang-en">The developer checks that order <code>777</code> belongs to the current user — correct. But if item <code>42</code> ACTUALLY belongs to ANOTHER user's order, and the code only verifies "order 777 belongs to the user" without checking "item 42 SPECIFICALLY belongs to order 777" — the attacker can use their own order ID, change the item ID, and access someone else's item data.</span>
+            </p>
+          </div>
+
+          <p>
+            <span class="lang-hi">Ye gap isliye hoti hai kyunki ownership check "top-level" object tak simit reh jaata hai, aur RELATIONSHIP CHAIN (item → order → user) poori tarah verify nahi hoti.</span>
+            <span class="lang-en">This gap occurs because the ownership check is limited to the "top-level" object, and the RELATIONSHIP CHAIN (item → order → user) is not fully verified.</span>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEVEL 3 -->
+    <div class="level-card" id="level-3" data-level="3">
+      <button class="level-header">
+        <span class="level-badge">3</span>
+        <span class="level-titles">
+          <h2>
+            <span class="lang-hi">Final Solution — Centralized, Policy-Based Authorization</span>
+            <span class="lang-en">Final Solution — Centralized, Policy-Based Authorization</span>
+          </h2>
+          <p>
+            <span class="lang-hi">Har endpoint, har relationship, systematically enforce</span>
+            <span class="lang-en">Systematically enforce every endpoint, every relationship</span>
+          </p>
+        </span>
+        <span class="level-tag solved"><span class="lang-hi">SOLVED</span><span class="lang-en">SOLVED</span></span>
+        <span class="chevron">▾</span>
+      </button>
+      <div class="level-body">
+        <div class="level-inner">
+          <h4>
+            <span class="lang-hi">KYUN CENTRALIZED APPROACH ZAROORI HAI</span>
+            <span class="lang-en">WHY A CENTRALIZED APPROACH IS NECESSARY</span>
+          </h4>
+          <p>
+            <span class="lang-hi">Level 1 aur 2 dono ki asli common problem: ownership check ek MANUAL, PER-ENDPOINT step tha — developer ko HAR baar YAAD rakhna padta tha ise add karna. Insaan galtiyan karte hain, especially jaise application badi hoti jaati hai.</span>
+            <span class="lang-en">The real common problem of both Level 1 and 2: the ownership check was a MANUAL, PER-ENDPOINT step — the developer had to REMEMBER to add it EVERY time. Humans make mistakes, especially as the application grows larger.</span>
+          </p>
+          <p>
+            <span class="lang-hi">Asli fix: authorization ko application ke EK CENTRAL LAYER mein move karo (jaise middleware, ek decorator/annotation, ya framework-level guard), jo:</span>
+            <span class="lang-en">The real fix: move authorization to ONE CENTRAL LAYER of the application (like middleware, a decorator/annotation, or a framework-level guard), which:</span>
+          </p>
+          <ul>
+            <li><span class="lang-hi">HAR request ke liye AUTOMATICALLY chalta hai — developer ko har naye endpoint mein manually likhne ki zaroorat nahi (opt-OUT model, opt-IN nahi)</span><span class="lang-en">Runs AUTOMATICALLY for EVERY request — developers don't need to manually write it in every new endpoint (an opt-OUT model, not opt-IN)</span></li>
+            <li><span class="lang-hi">Object ke POORE relationship chain ko verify karta hai — jaise "item belongs to order AND order belongs to user", ek hi jagah declare kiya hua rule</span><span class="lang-en">Verifies the ENTIRE relationship chain of the object — like "item belongs to order AND order belongs to user", defined as a rule in one place</span></li>
+          </ul>
+          <pre><code>// Conceptual example — ek policy jo automatically enforce hoti hai
+@requiresOwnership(chain: ['item.order.user'])
+function getOrderItem(orderId, itemId) { ... }</code></pre>
+
+          <div class="callout fixnote">
+            <span class="cal-label">
+                <span class="lang-hi">✅ KYUN YE DONO GAPS FIX KARTA HAI</span>
+                <span class="lang-en">✅ WHY THIS FIXES BOTH GAPS</span>
+            </span>
+            <p>
+                <span class="lang-hi">Centralized enforcement ki wajah se koi endpoint "accidentally" unprotected nahi reh sakta (Level 1 ka gap fix). Aur relationship chain explicitly declare hone ki wajah se, nested objects bhi automatically verify hote hain (Level 2 ka gap fix) — bina har jagah manually code likhe.</span>
+                <span class="lang-en">Because of centralized enforcement, no endpoint can be left "accidentally" unprotected (fixes Level 1 gap). And because the relationship chain is explicitly declared, nested objects are automatically verified too (fixes Level 2 gap) — without having to manually write code everywhere.</span>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEVEL 4 -->
+    <div class="level-card" id="level-4" data-level="4">
+      <button class="level-header">
+        <span class="level-badge">4</span>
+        <span class="level-titles">
+          <h2>
+            <span class="lang-hi">Defense-in-Depth — Unguessable References</span>
+            <span class="lang-en">Defense-in-Depth — Unguessable References</span>
+          </h2>
+          <p>
+            <span class="lang-hi">UUID vs sequential ID</span>
+            <span class="lang-en">UUID vs sequential ID</span>
+          </p>
+        </span>
+        <span class="level-tag solved"><span class="lang-hi">EXTRA LAYER</span><span class="lang-en">EXTRA LAYER</span></span>
+        <span class="chevron">▾</span>
+      </button>
+      <div class="level-body">
+        <div class="level-inner">
+          <h4>
+            <span class="lang-hi">SEQUENTIAL VS RANDOM IDs</span>
+            <span class="lang-en">SEQUENTIAL VS RANDOM IDs</span>
+          </h4>
+          <p>
+            <span class="lang-hi">Ek additional, complementary practice: object IDs ko sequential integers (<code>1</code>, <code>2</code>, <code>3</code>...) ki jagah random, non-guessable UUIDs (<code>f47ac10b-58cc-4372-a567-0e02b2c3d479</code>) rakho.</span>
+            <span class="lang-en">An additional, complementary practice: instead of sequential integers (<code>1</code>, <code>2</code>, <code>3</code>...) for object IDs, use random, non-guessable UUIDs (<code>f47ac10b-58cc-4372-a567-0e02b2c3d479</code>).</span>
+          </p>
+          <p>
+            <span class="lang-hi">Isse agar authorization check kahin miss bhi ho jaaye, attacker asaani se ID GUESS ya ENUMERATE (0 se 10000 tak loop karke) nahi kar sakta — usse har target ID kisi aur tareeke se pata karni padegi.</span>
+            <span class="lang-en">With this, even if the authorization check is missed somewhere, the attacker cannot easily GUESS or ENUMERATE IDs (by looping from 0 to 10000) — they would have to find each target ID through some other means.</span>
+          </p>
+
+          <div class="callout">
+            <span class="cal-label">
+                <span class="lang-hi">⚠️ YE PRIMARY DEFENSE NAHI HAI</span>
+                <span class="lang-en">⚠️ THIS IS NOT A PRIMARY DEFENSE</span>
+            </span>
+            <p>
+                <span class="lang-hi">Ye <strong>security through obscurity</strong> hai — ID guess karna MUSHKIL banata hai, IMPOSSIBLE nahi. Agar UUID kahin leak ho jaaye (logs, browser history, referrer header, ek shared link), aur authorization check missing ho, attack phir bhi possible hai. UUID kabhi Level 3 ke centralized authorization check ka REPLACEMENT nahi hai — sirf ek additional layer hai.</span>
+                <span class="lang-en">This is <strong>security through obscurity</strong> — it makes guessing IDs DIFFICULT, not IMPOSSIBLE. If a UUID leaks somewhere (logs, browser history, referrer header, a shared link), and the authorization check is missing, the attack is still possible. UUIDs are never a REPLACEMENT for Level 3's centralized authorization check — just an additional layer.</span>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEVEL 5 -->
+    <div class="level-card" id="level-5" data-level="5">
+      <button class="level-header">
+        <span class="level-badge">5</span>
+        <span class="level-titles">
+          <h2>
+            <span class="lang-hi">Special Case — Broken Function-Level Authorization</span>
+            <span class="lang-en">Special Case — Broken Function-Level Authorization</span>
+          </h2>
+          <p>
+            <span class="lang-hi">Jab problem OBJECT ki nahi, poori FUNCTION ki hai</span>
+            <span class="lang-en">When the problem is not with the OBJECT, but the entire FUNCTION</span>
+          </p>
+        </span>
+        <span class="level-tag concept"><span class="lang-hi">SPECIAL CASE</span><span class="lang-en">SPECIAL CASE</span></span>
+        <span class="chevron">▾</span>
+      </button>
+      <div class="level-body">
+        <div class="level-inner">
+          <p>
+            <span class="lang-hi">Ab tak humne dekha ki ek SPECIFIC object ke liye ownership missing hone se kya hota hai. Ek related lekin DISTINCT issue: jab poora ENDPOINT/FUNCTION hi kisi role ke liye reserved hona chahiye, lekin server us role ko check hi nahi karta:</span>
+            <span class="lang-en">So far we have seen what happens when ownership is missing for a SPECIFIC object. A related but DISTINCT issue: when an entire ENDPOINT/FUNCTION should be reserved for a specific role, but the server doesn't check that role:</span>
+          </p>
+          <pre><code>GET /api/admin/all-users</code></pre>
+          <p>
+            <span class="lang-hi">Agar ye endpoint sirf "user authenticated hai kya" check karta hai, "user ka role ADMIN hai kya" nahi — toh koi bhi normal, logged-in user, agar use ye URL kisi tarah pata chal jaaye (JS files, API documentation, predictable naming), seedha admin-level data access kar sakta hai.</span>
+            <span class="lang-en">If this endpoint only checks "is the user authenticated", but not "is the user's role ADMIN" — then any normal, logged-in user, if they somehow discover this URL (from JS files, API documentation, predictable naming), can directly access admin-level data.</span>
+          </p>
+
+          <div class="callout">
+            <span class="cal-label">
+                <span class="lang-hi">⚠️ IDOR SE FARK</span>
+                <span class="lang-en">⚠️ DIFFERENCE FROM IDOR</span>
+            </span>
+            <p>
+                <span class="lang-hi">Classic IDOR mein sawaal hai "kya ye SPECIFIC object tumhara hai?" — <strong>Broken Function-Level Authorization</strong> mein sawaal hai "kya tumhara ROLE hi is poori FUNCTIONALITY ko access karne ke LAYAK hai?" Dono hi missing-authorization ki wajah se hote hain, lekin fix thoda alag hai — role-based check (RBAC) chahiye, sirf ownership check nahi.</span>
+                <span class="lang-en">In Classic IDOR, the question is "does this SPECIFIC object belong to you?" — in <strong>Broken Function-Level Authorization</strong>, the question is "does your ROLE qualify you to access this entire FUNCTIONALITY?" Both happen due to missing authorization, but the fix is slightly different — you need a role-based check (RBAC), not just an ownership check.</span>
+            </p>
+          </div>
+
+          <p>
+            <span class="lang-hi">Common real-world pattern: UI mein admin button HIDE kar diya jaata hai normal users se, lekin server-side URL/endpoint khud kabhi role verify nahi karta — "security through UI hiding" ek security control nahi hai, kyunki attacker direct API call kar sakta hai.</span>
+            <span class="lang-en">Common real-world pattern: the admin button is HIDDEN in the UI from normal users, but the server-side URL/endpoint itself never verifies the role — "security through UI hiding" is not a security control, because an attacker can make a direct API call.</span>
+          </p>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ── VULNERABLE VS SECURE CODE IMPLEMENTATIONS ── -->
+  <section class="sec-head" id="code-fixes">
+    <div class="sec-eyebrow"><span class="lang-hi">Code Level Fixes</span><span class="lang-en">Code Level Fixes</span></div>
+    <h2><span class="lang-hi">Code Level Fixes: Vulnerable vs. Secure Code Implementations</span><span class="lang-en">Code Level Fixes: Vulnerable vs. Secure Code Implementations</span></h2>
+    <p style="max-width: 100%; text-align: justify;">
+      <span class="lang-hi">IDOR vulnerabilities ko theek karne ke liye client-side obfuscation ya IDs chupana kaafi nahi hai. Backend mein strict object-level authorization aur tenancy-scoped database queries implement karna zaroori hai. Niche Node.js (Express) aur Python (Flask) ke real-world vulnerable code aur unke production-ready secure fixes diye gaye hain:</span>
+      <span class="lang-en">Fixing IDOR vulnerabilities requires robust server-side object-level authorization and tenancy-scoped queries rather than client-side obfuscation or hidden IDs. Here are production-grade vulnerable vs. secure implementations across popular backend stacks:</span>
+    </p>
+  </section>
+
+  <!-- NODE.JS CODE FIX DROPDOWN -->
+  <div class="level-card open" style="margin-bottom: 16px;">
+    <button class="level-header" type="button">
+      <span class="level-badge" style="background:rgba(104, 160, 99, 0.15); color:#68a063; border-color:#68a063;">JS</span>
+      <span class="level-titles">
+        <h2>
+          <span class="lang-hi">1. Node.js / Express (Sequelize ORM &amp; Ownership Validation)</span>
+          <span class="lang-en">1. Node.js / Express (Sequelize ORM &amp; Ownership Validation)</span>
+        </h2>
+        <p>
+          <span class="lang-hi">Multi-tenant scoped queries aur context-aware policy checks</span>
+          <span class="lang-en">Multi-tenant scoped queries and context-aware policy checks</span>
+        </p>
+      </span>
+      <span class="level-tag solved"><span class="lang-hi">SECURE PATTERN</span><span class="lang-en">SECURE PATTERN</span></span>
+      <span class="chevron">▾</span>
+    </button>
+    <div class="level-body">
+      <div class="level-inner">
+        <pre><code>// ❌ INSECURE: Direct database lookup using client-supplied route parameter
+// Attacker replaces :id with any victim's ID to view/download confidential files
+app.get('/api/documents/:id', authenticateUser, async (req, res) =&gt; {
+    const docId = req.params.id; // User-controlled ID directly from URL path
+
+    // VULNERABILITY: Query searches strictly by docId, ignoring who made the request!
+    // Any authenticated user can read any other user's sensitive tax documents or salary slips.
+    const document = await db.Document.findByPk(docId);
+    
+    if (!document) {
+        return res.status(404).json({ error: 'Document not found' });
+    }
+
+    res.json(document);
+});
+
+// ❌ INSECURE: Blind state modification / deletion via predictable ID
+app.delete('/api/invoices/:id', authenticateUser, async (req, res) =&gt; {
+    // Missing ownership check before executing dangerous DELETE query
+    await db.Invoice.destroy({ where: { id: req.params.id } });
+    res.json({ success: true, message: 'Invoice deleted' });
+});
+
+// ✅ SECURE: Multi-Tenant Scoped Query &amp; Contextual Policy Check
+app.get('/api/documents/:id', authenticateUser, async (req, res) =&gt; {
+    const docId = req.params.id;
+    const currentUserId = req.user.id; // Extracted safely from verified JWT / server session
+
+    // FIX 1: Enforce tenancy at database query layer (user can ONLY fetch their own documents)
+    const document = await db.Document.findOne({
+        where: {
+            id: docId,
+            userId: currentUserId // Query is strictly scoped to the authenticated user
+        }
+    });
+
+    if (!document) {
+        // Return 404 instead of 403 to prevent resource enumeration / ID brute-forcing
+        return res.status(404).json({ error: 'Document not found' });
+    }
+
+    // FIX 2: Explicit role-based check for enterprise multi-user / auditor overrides
+    if (document.isRestricted &amp;&amp; req.user.role !== 'COMPLIANCE_OFFICER') {
+        return res.status(403).json({ error: 'Forbidden: Insufficient classification clearance' });
+    }
+
+    res.json(document);
+});</code></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- PYTHON FLASK CODE FIX DROPDOWN -->
+  <div class="level-card open" style="margin-bottom: 24px;">
+    <button class="level-header" type="button">
+      <span class="level-badge" style="background:rgba(53, 114, 165, 0.15); color:#3572A5; border-color:#3572A5;">PY</span>
+      <span class="level-titles">
+        <h2>
+          <span class="lang-hi">2. Python / Flask (SQLAlchemy ORM &amp; Tenant Scoping)</span>
+          <span class="lang-en">2. Python / Flask (SQLAlchemy ORM &amp; Tenant Scoping)</span>
+        </h2>
+        <p>
+          <span class="lang-hi">Tenant-scoped ORM queries, indirect mapping, aur UUIDs</span>
+          <span class="lang-en">Tenant-scoped ORM queries, indirect mapping, and UUIDs</span>
+        </p>
+      </span>
+      <span class="level-tag solved"><span class="lang-hi">SECURE PATTERN</span><span class="lang-en">SECURE PATTERN</span></span>
+      <span class="chevron">▾</span>
+    </button>
+    <div class="level-body">
+      <div class="level-inner">
+        <pre><code># ❌ INSECURE: Direct primary key lookup without tenant constraint
+@app.route('/api/invoices/&lt;int:invoice_id&gt;', methods=['GET'])
+@login_required
+def get_invoice(invoice_id):
+    # VULNERABILITY: Fetches record purely based on invoice_id parameter
+    # An attacker changes URL from /api/invoices/1001 to /api/invoices/1002
+    invoice = Invoice.query.get(invoice_id)
+    if not invoice:
+        abort(404, description="Invoice not found")
+        
+    return jsonify(invoice.to_dict())
+
+# ❌ INSECURE: Direct object update via POST/PUT without ownership assertion
+@app.route('/api/profile/update/&lt;int:user_id&gt;', methods=['POST'])
+@login_required
+def update_profile(user_id):
+    # Attacker passes victim's user_id in URL to overwrite their email / password
+    user = User.query.get_or_404(user_id)
+    user.email = request.json.get('email', user.email)
+    db.session.commit()
+    return jsonify({"status": "updated"})
+
+# ✅ SECURE: Strict Tenant-Scoped ORM Queries &amp; Indirect Reference Mapping
+@app.route('/api/invoices/&lt;int:invoice_id&gt;', methods=['GET'])
+@login_required
+def get_invoice_secure(invoice_id):
+    # FIX 1: Filter simultaneously by resource primary key AND authenticated user's ID
+    invoice = Invoice.query.filter_by(
+        id=invoice_id,
+        tenant_id=current_user.tenant_id, # Scoped strictly to user's authorized company/tenant
+        user_id=current_user.id           # Scoped to authenticated user
+    ).first()
+
+    if not invoice:
+        # Returning 404 reveals zero metadata to potential attackers
+        abort(404, description="Invoice not found")
+
+    return jsonify(invoice.to_dict())
+
+# ✅ SECURE: Using non-sequential UUIDs (GUIDs) and fine-grained authorization helper
+@app.route('/api/reports/&lt;uuid:report_uuid&gt;', methods=['GET'])
+@login_required
+def get_report_secure(report_uuid):
+    report = Report.query.filter_by(uuid=str(report_uuid)).first_or_404()
+    
+    # FIX 2: Explicit policy verification function before returning payload
+    if not can_user_access_report(user=current_user, report=report):
+        abort(403, description="Access Denied: You do not own this report")
+        
+    return jsonify(report.to_dict())</code></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- SIMULATOR -->
+  <section class="simulator-section" id="simulator">
+    <div class="sim-header-bar">
+      <div class="sim-title"><span>[🔴]</span> VAPT_PROXY_INTERCEPTOR</div>
+      
+      <div class="sim-controls">
+        <div class="sim-control-group">
+          <label><span class="lang-hi">Attack Scenario</span><span class="lang-en">Attack Scenario</span></label>
+          <div class="sim-btn-group" id="opt-scenario">
+            <button class="sim-btn active" data-val="read">Read (GET)</button>
+            <button class="sim-btn" data-val="write">Write (DELETE)</button>
+            <button class="sim-btn" data-val="nested">Nested Object</button>
+          </div>
+        </div>
+
+        <div class="sim-control-group" style="margin-top: 10px;">
+          <label><span class="lang-hi">Defense Level</span><span class="lang-en">Defense Level</span></label>
+          <div class="sim-btn-group" id="opt-defense">
+            <button class="sim-btn active" data-val="0">0: No Defense</button>
+            <button class="sim-btn" data-val="1">1: Read-Only Check</button>
+            <button class="sim-btn" data-val="2">2: All-CRUD Check</button>
+            <button class="sim-btn" data-val="3">3: Centralized Policy</button>
+          </div>
+        </div>
+        
+        <button class="btn-execute" id="btn-execute" style="margin-top: 15px;">Launch_Attack</button>
+      </div>
+    </div>
+
+    <div class="workspace">
+      <!-- Panel 1: Client DOM -->
+      <div class="sim-panel" id="panel-browser">
+        <div class="sim-panel-header">💻 Client_Browser</div>
+        <div class="sim-panel-body" id="log-browser"></div>
+      </div>
+
+      <!-- Panel 2: HTTP Proxy -->
+      <div class="sim-panel" id="panel-network">
+        <div class="sim-panel-header">🕸️ Interceptor (The Wire)</div>
+        <div class="sim-panel-body" id="log-network"></div>
+      </div>
+
+      <!-- Panel 3: Server Steps -->
+      <div class="sim-panel" id="panel-server">
+        <div class="sim-panel-header">⚙️ Backend_API Logic</div>
+        <div class="sim-panel-body" id="log-server"></div>
+      </div>
+    </div>
+
+    <!-- DYNAMIC EXPLANATION BOX -->
+    <div id="sim-verdict-box" class="sim-verdict-box">
+      <div id="sim-verdict-title" class="sim-verdict-title"></div>
+      <div id="sim-verdict-text" class="sim-verdict-text"></div>
+    </div>
+  </section>
+
+  <!-- ================= GLOSSARY (ZAROORI TERMS) ================= -->
+  <section class="checklist" id="glossary" style="margin-top:20px;">
+    <div class="checklist-head"><h2>📖 <span class="lang-hi">Zaroori Terms (Glossary)</span><span class="lang-en">Important Terms (Glossary)</span></h2></div>
+    
+    <div class="gap-box">
+      <h3><span class="lang-hi">1. IDOR (Insecure Direct Object Reference)</span><span class="lang-en">1. IDOR (Insecure Direct Object Reference)</span></h3>
+      <p>
+        <span class="lang-hi">Ek vulnerability jahan application user-supplied input (jaise ID, filename, ya key) ka use karke seedha kisi internal object/resource ko access kar leta hai, bina ye verify kiye ki current logged-in user ka us specific resource par access hai ya nahi. Isse attacker sirf URL ya request mein ID badal kar kisi doosre user ka data dekh, badal, ya delete kar sakta hai.</span>
+        <span class="lang-en">A vulnerability where an application uses user-supplied input (like an ID, filename, or key) to directly access an internal object/resource, without verifying if the currently logged-in user has access to that specific resource. This allows an attacker to view, modify, or delete another user's data simply by changing the ID in the URL or request.</span>
+      </p>
+    </div>
+
+    <div class="gap-box">
+      <h3><span class="lang-hi">2. Direct Object Reference</span><span class="lang-en">2. Direct Object Reference</span></h3>
+      <p>
+        <span class="lang-hi">Woh ID, key, ya filename jo directly kisi internal resource ko point karta hai — jaise <code>user_id=104</code>, <code>invoice.pdf?file=inv_2201</code>, ya <code>order_id=8842</code>. Iska hona koi problem nahi hai; problem tab banti hai jab iske saath authorization check missing ho.</span>
+        <span class="lang-en">The ID, key, or filename that directly points to an internal resource — such as <code>user_id=104</code>, <code>invoice.pdf?file=inv_2201</code>, or <code>order_id=8842</code>. Its presence is not a problem; the problem arises when the authorization check is missing along with it.</span>
+      </p>
+    </div>
+
+    <div class="gap-box">
+      <h3><span class="lang-hi">3. Broken Access Control</span><span class="lang-en">3. Broken Access Control</span></h3>
+      <p>
+        <span class="lang-hi">Ek broad security category jiske andar IDOR ek specific type hai. Ismein role bypass, privilege escalation, forced browsing, aur IDOR — sab shamil hain. Simple shabdon mein: application ye theek se enforce nahi kar pa raha ki "kaun kya access kar sakta hai".</span>
+        <span class="lang-en">A broad security category under which IDOR is a specific type. It includes role bypass, privilege escalation, forced browsing, and IDOR. In simple terms: the application is failing to properly enforce "who can access what".</span>
+      </p>
+    </div>
+
+    <div class="gap-box">
+      <h3><span class="lang-hi">4. Authentication vs Authorization</span><span class="lang-en">4. Authentication vs Authorization</span></h3>
+      <p>
+        <span class="lang-hi">Do alag concepts jo aksar confuse ho jaate hain. Authentication check karta hai "tum kaun ho" (login verify karna). Authorization check karta hai "tum is specific cheez ko access kar sakte ho ya nahi". IDOR tab hota hai jab Authentication toh present hai, lekin Authorization missing hai.</span>
+        <span class="lang-en">Two different concepts that are often confused. Authentication checks "who you are" (verifying login). Authorization checks "whether you can access this specific thing or not". IDOR occurs when Authentication is present, but Authorization is missing.</span>
+      </p>
+    </div>
+
+    <div class="gap-box">
+      <h3><span class="lang-hi">5. BOLA (Broken Object Level Authorization)</span><span class="lang-en">5. BOLA (Broken Object Level Authorization)</span></h3>
+      <p>
+        <span class="lang-hi">IDOR ka hi ek naam jo specifically APIs ke context mein use hota hai (OWASP API Security Top 10 mein #1 risk). Concept same hai — API endpoint object ID accept karta hai lekin ye verify nahi karta ki requesting user ka us object par legitimate access hai ya nahi.</span>
+        <span class="lang-en">Another name for IDOR, used specifically in the context of APIs (#1 risk in OWASP API Security Top 10). The concept is the same — the API endpoint accepts an object ID but does not verify whether the requesting user has legitimate access to that object.</span>
+      </p>
+    </div>
+
+    <div class="gap-box">
+      <h3><span class="lang-hi">6. Horizontal Privilege Escalation</span><span class="lang-en">6. Horizontal Privilege Escalation</span></h3>
+      <p>
+        <span class="lang-hi">Jab ek user, same permission-level ke doosre user ka data access kar leta hai — jaise ek normal customer, doosre normal customer ka order dekh leta hai. Zyadatar IDOR cases isi category mein aate hain.</span>
+        <span class="lang-en">When a user accesses the data of another user with the same permission level — like a normal customer viewing another normal customer's order. Most IDOR cases fall into this category.</span>
+      </p>
+    </div>
+
+    <div class="gap-box">
+      <h3><span class="lang-hi">7. Vertical Privilege Escalation</span><span class="lang-en">7. Vertical Privilege Escalation</span></h3>
+      <p>
+        <span class="lang-hi">Jab ek user, apne se upar ke permission-level wale data/functions access kar leta hai — jaise ek normal user, admin-only endpoint ya admin ka data access kar leta hai. IDOR kabhi-kabhi is level tak bhi pahunch sakta hai agar admin resources bhi predictable IDs use kar rahe hon.</span>
+        <span class="lang-en">When a user accesses data/functions of a higher permission level — like a normal user accessing an admin-only endpoint or admin data. IDOR can sometimes reach this level if admin resources are also using predictable IDs.</span>
+      </p>
+    </div>
+
+    <div class="gap-box" style="margin-bottom:0;">
+      <h3><span class="lang-hi">8. Object-Level Authorization Check</span><span class="lang-en">8. Object-Level Authorization Check</span></h3>
+      <p>
+        <span class="lang-hi">Wo server-side logic jo har request par ye verify karta hai: "current logged-in user, is specific object (jiska ID request mein aaya hai) ka valid owner/authorized accessor hai ya nahi" — jaise <code>if (resource.owner_id !== session.user_id) return 403;</code>. Yehi wo missing check hai jo IDOR ka asli root-cause hota hai.</span>
+        <span class="lang-en">The server-side logic that verifies on every request: "is the currently logged-in user a valid owner/authorized accessor of this specific object (whose ID came in the request)" — like <code>if (resource.owner_id !== session.user_id) return 403;</code>. This is the missing check that is the true root-cause of IDOR.</span>
+      </p>
+    </div>
+
+  </section>
+
+  <!-- ================= CONFUSING Q&A ================= -->
+  <section class="checklist" id="qa" style="margin-top:20px;">
+    <div class="checklist-head"><h2>🤔 <span class="lang-hi">Confusing Questions</span><span class="lang-en">Confusing Questions</span></h2></div>
+
+    <div class="qa-list">
+      
+      <!-- Q1 -->
+      <div class="qa-item">
+        <button class="qa-q"><span class="qa-mark">Q1</span><span><span class="lang-hi">Agar URL mein ID ko sequential numbers (1, 2, 3) se hata kar UUID (jaise a3f9-...) kar diya jaaye, kya IDOR fix ho jaata hai?</span><span class="lang-en">If sequential numbers (1, 2, 3) are replaced with UUIDs in the URL, does it fix IDOR?</span></span><span class="qa-chevron">▾</span></button>
+        <div class="qa-a"><div class="qa-a-inner">
+          <span class="lang-hi">Nahi. UUID sirf ID ko guess karna mushkil banata hai, authorization check add nahi karta. Agar attacker ko kisi tarah ek bhi valid UUID mil jaaye (leaked link, referrer header, ya kisi aur user ka shared URL), toh wo bhi utni hi aasani se access kar lega — kyunki backend abhi bhi ye check nahi kar raha ki "ye resource is logged-in user ka hai ya nahi".</span>
+          <span class="lang-en">No. A UUID only makes the ID hard to guess; it does not add an authorization check. If an attacker discovers even one valid UUID (via a leaked link, referrer header, or shared URL), they can access it just as easily — because the backend still fails to verify whether the resource belongs to the logged-in user.</span>
+        </div></div>
+      </div>
+
+      <!-- Q2 -->
+      <div class="qa-item">
+        <button class="qa-q"><span class="qa-mark">Q2</span><span><span class="lang-hi">Agar frontend UI mein "Edit" button sirf owner ko dikhta hai, kya ye kaafi protection hai?</span><span class="lang-en">If the "Edit" button in the frontend UI is only visible to the owner, is that sufficient protection?</span></span><span class="qa-chevron">▾</span></button>
+        <div class="qa-a"><div class="qa-a-inner">
+          <span class="lang-hi">Bilkul nahi. Frontend hiding sirf UX decision hai, security control nahi. Attacker Developer Tools ya Postman se seedha API endpoint ko directly call kar sakta hai (jaise PUT /api/orders/4521), bina us button ko touch kiye. Authorization check hamesha SERVER-SIDE honi chahiye, frontend par nahi.</span>
+          <span class="lang-en">Not at all. Hiding elements in the frontend is a UX decision, not a security control. An attacker can call the API endpoint directly using Developer Tools or Postman (e.g., PUT /api/orders/4521) without ever interacting with that button. Authorization checks must always be performed SERVER-SIDE.</span>
+        </div></div>
+      </div>
+
+      <!-- Q3 -->
+      <div class="qa-item">
+        <button class="qa-q"><span class="qa-mark">Q3</span><span><span class="lang-hi">Agar authentication lagi hai (login required), kya IDOR possible hi nahi hai?</span><span class="lang-en">If authentication is enforced (login required), is IDOR impossible?</span></span><span class="qa-chevron">▾</span></button>
+        <div class="qa-a"><div class="qa-a-inner">
+          <span class="lang-hi">Ye sabse common confusion hai. Authentication sirf ye check karta hai "tum kaun ho", authorization check karta hai "tum is specific resource ko access kar sakte ho ya nahi". IDOR tab hota hai jab authentication toh hai, lekin authorization missing hai — matlab logged-in koi bhi user, kisi bhi doosre user ke resource ka ID daal kar access le leta hai.</span>
+          <span class="lang-en">This is the most common misconception. Authentication only verifies "who you are", whereas authorization verifies "whether you are allowed to access this specific resource". IDOR occurs precisely when authentication is present but authorization is missing — allowing any logged-in user to access another user's resources by swapping IDs.</span>
+        </div></div>
+      </div>
+
+      <!-- Q4 -->
+      <div class="qa-item">
+        <button class="qa-q"><span class="qa-mark">Q4</span><span><span class="lang-hi">IDOR sirf GET requests (data padhne) tak limited hota hai kya?</span><span class="lang-en">Is IDOR limited only to GET requests (reading data)?</span></span><span class="qa-chevron">▾</span></button>
+        <div class="qa-a"><div class="qa-a-inner">
+          <span class="lang-hi">Nahi. IDOR kisi bhi HTTP method par ho sakta hai — GET (data leak: kisi aur ka invoice dekhna), PUT/PATCH (data modify: kisi aur ka address change karna), ya DELETE (kisi aur ka account/post delete karna). Write/Delete wale IDOR aksar zyada dangerous hote hain kyunki wo permanent damage karte hain.</span>
+          <span class="lang-en">No. IDOR can occur on any HTTP method — GET (data disclosure: viewing someone else's invoice), PUT/PATCH (data modification: changing someone else's address), or DELETE (deleting another user's post/account). Write/Delete IDORs are often more dangerous because they cause permanent damage.</span>
+        </div></div>
+      </div>
+
+      <!-- Q5 -->
+      <div class="qa-item">
+        <button class="qa-q"><span class="qa-mark">Q5</span><span><span class="lang-hi">Agar API response mein sirf "Access Denied" ya generic error aata hai (data nahi dikhta), kya IDOR nahi hai?</span><span class="lang-en">If an API response only returns "Access Denied" or a generic error, does that mean there is no IDOR?</span></span><span class="qa-chevron">▾</span></button>
+        <div class="qa-a"><div class="qa-a-inner">
+          <span class="lang-hi">Depends. Agar error message ya response TIME alag hota hai valid ID vs invalid ID ke liye ("Resource not found" vs "Access denied"), toh ye ek subtle IDOR hai jise IDOR via Information Disclosure kehte hain — attacker sirf response ke farak se pata laga sakta hai ki kaunsi IDs exist karti hain, bina actual data dekhe bhi.</span>
+          <span class="lang-en">It depends. If the error message or response TIME differs between valid and invalid IDs ("Resource not found" vs "Access denied"), this is a subtle variant called IDOR via Information Disclosure — allowing an attacker to enumerate which IDs exist even without viewing the payload.</span>
+        </div></div>
+      </div>
+
+      <!-- Q6 -->
+      <div class="qa-item">
+        <button class="qa-q"><span class="qa-mark">Q6</span><span><span class="lang-hi">Rate limiting laga dena kya IDOR ka fix hai?</span><span class="lang-en">Is adding rate limiting a fix for IDOR?</span></span><span class="qa-chevron">▾</span></button>
+        <div class="qa-a"><div class="qa-a-inner">
+          <span class="lang-hi">Nahi, rate limiting sirf automation/mass-scraping ko slow karta hai — attacker ko ek-ek ID manually try karne se rokta hai, lekin agar attacker ko ek specific target ID pata hai (jaise apne colleague ka user ID), rate limit uska access nahi rokta. Rate limiting ek supporting control hai, root-cause fix (authorization check) nahi.</span>
+          <span class="lang-en">No, rate limiting only slows down automated mass-scraping — it deters brute-forcing ranges of IDs, but if an attacker targets a specific known ID (like a colleague's user ID), rate limiting won't stop them. It is a secondary control, not a root-cause fix.</span>
+        </div></div>
+      </div>
+
+      <!-- Q7 -->
+      <div class="qa-item">
+        <button class="qa-q"><span class="qa-mark">Q7</span><span><span class="lang-hi">IDOR aur Broken Access Control mein kya farak hai — dono same hain kya?</span><span class="lang-en">What is the difference between IDOR and Broken Access Control — are they the same?</span></span><span class="qa-chevron">▾</span></button>
+        <div class="qa-a"><div class="qa-a-inner">
+          <span class="lang-hi">IDOR, Broken Access Control ki hi ek specific type/subset hai. Broken Access Control ek broad category hai (role bypass, privilege escalation, forced browsing, etc.), jabki IDOR specifically tab hota hai jab koi direct reference (ID, filename, key) expose ho aur uspar authorization check missing ho. Har IDOR broken access control hai, lekin har broken access control IDOR nahi hai.</span>
+          <span class="lang-en">IDOR is a specific subset of Broken Access Control. Broken Access Control is a broader umbrella (including role bypass, privilege escalation, forced browsing), whereas IDOR specifically refers to exposing a direct object reference (ID, filename, key) without object-level authorization checks. Every IDOR is broken access control, but not all broken access control is IDOR.</span>
+        </div></div>
+      </div>
+
+      <!-- Q8 -->
+      <div class="qa-item">
+        <button class="qa-q"><span class="qa-mark">Q8</span><span><span class="lang-hi">Agar IDs client-side par encrypt/encode (base64 ya hash) karke bhej rahe hain, kya wo safe ho gaya?</span><span class="lang-en">If IDs are encoded/hashed (Base64, MD5) on the client-side, does that make them safe?</span></span><span class="qa-chevron">▾</span></button>
+        <div class="qa-a"><div class="qa-a-inner">
+          <span class="lang-hi">Nahi — ye phir wahi UUID wali galti hai, bas ek layer aur. Base64 toh reversible hi hai (ek click mein decode ho jaata hai), aur hashing bhi agar predictable input (jaise sequential ID) par lagi hai toh brute-force se match ho sakti hai. Encoding/hashing sirf obscurity deta hai, authorization check ka substitute kabhi nahi ban sakta — asli fix hamesha server-side ye verify karna hai ki current logged-in user ka us specific resource par access hai ya nahi.</span>
+          <span class="lang-en">No — this is the same mistake as relying on UUIDs, just with an extra step. Base64 is trivially reversible, and hashes of predictable inputs (like sequential IDs) can be easily cracked or brute-forced. Obscurity never replaces authorization — the true fix is always verifying server-side ownership.</span>
+        </div></div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- TESTER CHECKLIST -->
+  <section class="checklist" id="tester-checklist" style="margin-top:20px;">
+    <div class="checklist-head"><h2>🔍 <span class="lang-hi">Web Security Tester Checklist</span><span class="lang-en">Web Security Tester Checklist</span></h2></div>
+    <p class="checklist-intro">
+        <span class="lang-hi">Ab tak humne dekha IDOR kaam kaise karta hai aur ise fix kaise kiya jaata hai. Ek web security tester (VAPT) ke roop mein, kisi bhi real application mein IDOR dhundhne ke liye ye systematic approach follow ki jaati hai:</span>
+        <span class="lang-en">So far we have seen how IDOR works and how it is fixed. As a web security tester (VAPT), to find IDOR in any real application, this systematic approach is followed:</span>
+    </p>
+
+    <div class="audit-card">
+      <h3><span class="lang-hi">1. Object References Identify Karo</span><span class="lang-en">1. Identify Object References</span></h3>
+      <div class="check-list-ul">
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">Har endpoint list karo jahan request mein kisi specific object ka reference hai — URL path params, query params, form fields, hidden fields, ya headers.</span>
+            <span class="lang-en">List every endpoint where the request contains a reference to a specific object — URL path params, query params, form fields, hidden fields, or headers.</span>
+          </div>
+        </label>
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">ID pattern note karo — sequential integer (enumerate karna aasan), UUID (guess karna mushkil, lekin phir bhi test-worthy), ya kuch aur.</span>
+            <span class="lang-en">Note the ID pattern — sequential integer (easy to enumerate), UUID (hard to guess, but still test-worthy), or something else.</span>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div class="audit-card">
+      <h3><span class="lang-hi">2. Ownership Map Karo</span><span class="lang-en">2. Map Ownership</span></h3>
+      <div class="check-list-ul">
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">Har object type ke liye samjho — kaun access karne ke LAYAK hai? Sirf owner? Ek team? Kisi specific role wale users?</span>
+            <span class="lang-en">Understand for each object type — who is QUALIFIED to access it? Only the owner? A team? Users with a specific role?</span>
+          </div>
+        </label>
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">Do test accounts banao (User A aur User B) taaki cross-user access test kar sako.</span>
+            <span class="lang-en">Create two test accounts (User A and User B) so you can test cross-user access.</span>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div class="audit-card">
+      <h3><span class="lang-hi">3. Horizontal Privilege Testing</span><span class="lang-en">3. Horizontal Privilege Testing</span></h3>
+      <div class="check-list-ul">
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">User A ke apne objects ke IDs note karo.</span>
+            <span class="lang-en">Note the IDs of User A's own objects.</span>
+          </div>
+        </label>
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">User B se (ya request directly modify karke) User A ke object IDs access karne ki koshish karo — HAR CRUD operation ke liye (GET, PUT, PATCH, DELETE), sirf read nahi.</span>
+            <span class="lang-en">Try to access User A's object IDs from User B (or by directly modifying the request) — for EVERY CRUD operation (GET, PUT, PATCH, DELETE), not just read.</span>
+          </div>
+        </label>
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">Nested/related resources bhi repeat karo — outer ID apna rakh kar, inner ID badal kar dekho (ya vice versa) — relationship check broken hai kya?</span>
+            <span class="lang-en">Repeat for nested/related resources too — try keeping your own outer ID and changing the inner ID (or vice versa) — is the relationship check broken?</span>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div class="audit-card">
+      <h3><span class="lang-hi">4. Vertical Privilege Testing (Function-Level)</span><span class="lang-en">4. Vertical Privilege Testing (Function-Level)</span></h3>
+      <div class="check-list-ul">
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">Low-privilege user ke roop mein, admin/elevated endpoints ko directly access karne ki koshish karo (JS files, API docs, ya predictable naming se discover kar sakte ho).</span>
+            <span class="lang-en">As a low-privilege user, try to directly access admin/elevated endpoints (you can discover them via JS files, API docs, or predictable naming).</span>
+          </div>
+        </label>
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">Check karo role/permission SERVER-SIDE verify ho raha hai, sirf UI mein hidden nahi hai.</span>
+            <span class="lang-en">Check if the role/permission is verified SERVER-SIDE, not just hidden in the UI.</span>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div class="audit-card">
+      <h3><span class="lang-hi">5. ID Pattern Analysis</span><span class="lang-en">5. ID Pattern Analysis</span></h3>
+      <div class="check-list-ul">
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">Agar IDs sequential hain, poore range ko enumerate karna kitna aasan hoga check karo.</span>
+            <span class="lang-en">If IDs are sequential, check how easy it would be to enumerate the entire range.</span>
+          </div>
+        </label>
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">UUID ho tab bhi, ye confirm karo ki server-side authorization check GENUINELY exist karta hai — obscure ID authorization ka substitute nahi hai.</span>
+            <span class="lang-en">Even if it's a UUID, confirm that a server-side authorization check GENUINELY exists — an obscure ID is not a substitute for authorization.</span>
+          </div>
+        </label>
+      </div>
+      <div class="callout" style="margin-top: 15px; border-radius: 8px;">
+        <span class="cal-label"><span class="lang-hi">⚠️ KAMI DHUNDO</span><span class="lang-en">⚠️ FIND THE FLAW</span></span>
+        <p>
+          <span class="lang-hi">Bulk/batch endpoints (jaise "export my invoices" jo ek array of IDs accept karta hai) aksar single-object endpoints jitni scrutiny nahi paate.</span>
+          <span class="lang-en">Bulk/batch endpoints (like "export my invoices" which accepts an array of IDs) often do not receive the same scrutiny as single-object endpoints.</span>
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── BOTTOM NAVIGATION ROW ── -->
+  <div class="bottom-nav-row">
+    <a href="XSS.html" class="nav-arrow-btn nav-prev">← 2. XSS</a>
+    <a href="SQLI.html" class="nav-arrow-btn nav-next">4. SQLi →</a>
+  </div>
+
+</main>
+
+<footer class="modern-footer">
+  <div class="footer-badge">
+    <span class="footer-text">Designed and developed by <strong class="dev-name">Irshad Akaram</strong></span>
+  </div>
+</footer>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  window.toggleTheme = function() {
+    var html = document.documentElement;
+    var themeBtn = document.getElementById('themeBtn');
+    if (html.getAttribute('data-theme') === 'dark') {
+      html.setAttribute('data-theme', 'light');
+      if (themeBtn) themeBtn.textContent = '🌙 Dark Mode';
+    } else {
+      html.setAttribute('data-theme', 'dark');
+      if (themeBtn) themeBtn.textContent = '☀️ Light Mode';
+    }
+  };
+
+  window.toggleLanguage = function() {
+    var html = document.documentElement;
+    var toggle = document.getElementById('langToggle');
+    var lblHi = document.getElementById('lbl-hi');
+    var lblEn = document.getElementById('lbl-en');
+    
+    if (toggle && toggle.checked) {
+      html.setAttribute('data-lang', 'en');
+      html.setAttribute('lang', 'en');
+      if(lblEn) { lblEn.classList.add('lang-active'); lblEn.classList.remove('lang-inactive'); }
+      if(lblHi) { lblHi.classList.add('lang-inactive'); lblHi.classList.remove('lang-active'); }
+    } else {
+      html.setAttribute('data-lang', 'hi');
+      html.setAttribute('lang', 'hi');
+      if(lblHi) { lblHi.classList.add('lang-active'); lblHi.classList.remove('lang-inactive'); }
+      if(lblEn) { lblEn.classList.add('lang-inactive'); lblEn.classList.remove('lang-active'); }
+    }
+  };
+
+  /* ---------- Typewriter hero ---------- */
+  var fullTextHi = "Server jab kisi request mein object ID dekhta hai, agar wo sirf ye check kare ki OBJECT EXIST karta hai — aur ye na check kare ki wo object CURRENT USER ka hai — toh authentication hone ke bawajood, koi bhi ID badal kar kisi aur ka data access kar sakta hai.";
+  var fullTextEn = "When the server sees an object ID in a request, if it only checks that the OBJECT EXISTS — and doesn't check if that object belongs to the CURRENT USER — then despite authentication, anyone can change the ID and access someone else's data.";
+  
+  var twEl = document.getElementById('typewriter');
+  function updateTypewriter() {
+      var isEn = document.documentElement.getAttribute('data-lang') === 'en';
+      twEl.textContent = isEn ? fullTextEn : fullTextHi;
+  }
+  
+  if(reduceMotion){
+    updateTypewriter();
+  } else {
+    var i = 0;
+    var currentText = document.documentElement.getAttribute('data-lang') === 'en' ? fullTextEn : fullTextHi;
+    function typeStep(){
+      if(i <= currentText.length){
+        twEl.textContent = currentText.slice(0, i);
+        i += 2;
+        setTimeout(typeStep, 12);
+      }
+    }
+    typeStep();
+  }
+
+  var langToggle = document.getElementById('langToggle');
+  if(langToggle) langToggle.addEventListener('change', updateTypewriter);
+
+  /* ---------- Accordion ---------- */
+  document.querySelectorAll('.level-header').forEach(function(header){
+    header.addEventListener('click', function(){
+      var card = header.closest('.level-card');
+      if(card) {
+        card.classList.toggle('open');
+      }
+    });
+  });
+  var lvl0 = document.getElementById('level-0');
+  if(lvl0) lvl0.classList.add('open');
+
+  /* ---------- Accordion: Q&A ---------- */
+  document.querySelectorAll('.qa-q').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var item = btn.closest('.qa-item');
+      if(item) {
+        item.classList.toggle('open');
+      }
+    });
+  });
+
+  /* ---------- Sub-Nav Smooth Scroll & Active Highlight (Pixel-Perfect Offset) ---------- */
+  var subNavBtns = document.querySelectorAll('.sub-nav-btn');
+  
+  subNavBtns.forEach(function(link){
+    link.addEventListener('click', function(e){
+      var href = link.getAttribute('href');
+      if(href && href.startsWith('#')){
+        e.preventDefault();
+        var targetEl = document.querySelector(href);
+        if(targetEl){
+          var topbar = document.querySelector('.topbar');
+          var totalStickyOffset = (topbar ? topbar.offsetHeight : 60) + 16;
+          var elementPosition = targetEl.getBoundingClientRect().top;
+          var offsetPosition = elementPosition + window.pageYOffset - totalStickyOffset;
+
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: reduceMotion ? 'auto' : 'smooth'
+          });
+        }
+      }
+    });
+  });
+
+  /* ---------- Hero CTA Scroll to VAPT_PROXY_INTERCEPTOR Fix ---------- */
+  var heroCta = document.querySelector('.hero-cta');
+  if (heroCta) {
+    heroCta.addEventListener('click', function(e) {
+      e.preventDefault();
+      var sim = document.getElementById('simulator');
+      if (sim) {
+        var topbar = document.querySelector('.topbar');
+        var offset = (topbar ? topbar.offsetHeight : 60) + 16;
+        var elementPosition = sim.getBoundingClientRect().top;
+        var offsetPosition = elementPosition + window.pageYOffset - offset;
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: reduceMotion ? 'auto' : 'smooth'
+        });
+      }
+    });
+  }
+
+  /* ---------- Sub-Nav ScrollSpy ---------- */
+  function updateSubNavScrollSpy() {
+    var topbar = document.querySelector('.topbar');
+    var totalStickyOffset = (topbar ? topbar.offsetHeight : 60) + 24;
+    var scrollPos = window.scrollY + totalStickyOffset;
+    
+    var navLinks = [
+      { id: 'impact', el: document.querySelector('.sub-nav-btn[href="#impact"]') },
+      { id: 'simulator', el: document.querySelector('.sub-nav-btn[href="#simulator"]') },
+      { id: 'qa', el: document.querySelector('.sub-nav-btn[href="#qa"]') },
+      { id: 'tester-checklist', el: document.querySelector('.sub-nav-btn[href="#tester-checklist"]') }
+    ];
+    
+    var currentActive = null;
+    navLinks.forEach(function(item) {
+      if (!item.el) return;
+      var sec = document.getElementById(item.id);
+      if (sec) {
+        var top = sec.offsetTop;
+        var height = sec.offsetHeight;
+        if (scrollPos >= top && scrollPos < top + height) {
+          currentActive = item.el;
+        }
+      }
+    });
+    
+    navLinks.forEach(function(item) {
+      if (item.el) item.el.classList.remove('active');
+    });
+    if (currentActive) {
+      currentActive.classList.add('active');
+    }
+  }
+
+  window.addEventListener('scroll', updateSubNavScrollSpy, { passive: true });
+  updateSubNavScrollSpy();
+
+  /* ---------- Checklist Check/Uncheck logic ---------- */
+  document.querySelectorAll('.check-input').forEach(input => {
+    input.addEventListener('change', function() {
+      if(this.checked) {
+        this.closest('.check-label').classList.add('checked');
+      } else {
+        this.closest('.check-label').classList.remove('checked');
+      }
+    });
+  });
+
+  /* ---------- VAPT-SIM-PRO Simulator Logic ---------- */
+  var simState = { scenario: 'read', level: '0' };
+
+  var reqPaths = {
+    read:   'GET /api/invoices/1006',
+    write:  'DELETE /api/invoices/1006',
+    nested: 'GET /api/orders/777/items/42'
+  };
+
+  document.querySelectorAll('#opt-scenario .sim-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#opt-scenario .sim-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      simState.scenario = btn.getAttribute('data-val');
+    });
+  });
+
+  document.querySelectorAll('#opt-defense .sim-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#opt-defense .sim-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      simState.level = btn.getAttribute('data-val');
+    });
+  });
+
+  document.querySelectorAll('.sim-jump').forEach(function(link){
+    link.addEventListener('click', function(){
+      var jump = link.getAttribute('data-jump');
+      var map = {
+        'direct-read-l0': {scenario:'read', level:'0'},
+        'direct-write-l1': {scenario:'write', level:'1'},
+        'nested-l2': {scenario:'nested', level:'2'},
+        'nested-l3': {scenario:'nested', level:'3'}
+      };
+      var cfg = map[jump];
+      if(cfg){ 
+          simState.scenario = cfg.scenario; 
+          simState.level = cfg.level; 
+          
+          document.querySelectorAll('#opt-scenario .sim-btn').forEach(b => b.classList.remove('active'));
+          document.querySelector(`#opt-scenario .sim-btn[data-val="${cfg.scenario}"]`).classList.add('active');
+          
+          document.querySelectorAll('#opt-defense .sim-btn').forEach(b => b.classList.remove('active'));
+          document.querySelector(`#opt-defense .sim-btn[data-val="${cfg.level}"]`).classList.add('active');
+      }
+      var simSec = document.getElementById('simulator');
+      if(simSec) simSec.scrollIntoView({behavior: reduceMotion ? 'auto' : 'smooth', block: 'start'});
+    });
+  });
+
+  const btnExecute = document.getElementById('btn-execute');
+  const logBrowser = document.getElementById('log-browser');
+  const logNetwork = document.getElementById('log-network');
+  const logServer = document.getElementById('log-server');
+  const verdictBox = document.getElementById('sim-verdict-box');
+  const verdictTitle = document.getElementById('sim-verdict-title');
+  const verdictText = document.getElementById('sim-verdict-text');
+  const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+  function appendLog(panel, htmlStrHi, htmlStrEn) {
+    const isEn = document.documentElement.getAttribute('data-lang') === 'en';
+    const div = document.createElement('div');
+    div.className = 'log-line';
+    div.innerHTML = `<span class="timestamp">${new Date().toISOString().split('T')[1].slice(0,-1)}</span> <span>${isEn ? htmlStrEn : htmlStrHi}</span>`;
+    panel.appendChild(div);
+    panel.scrollTop = panel.scrollHeight;
+  }
+
+  function appendNetworkLog(panel, htmlStr) {
+    const div = document.createElement('div');
+    div.className = 'log-line';
+    div.innerHTML = `<span class="timestamp">${new Date().toISOString().split('T')[1].slice(0,-1)}</span> ${htmlStr}`;
+    panel.appendChild(div);
+    panel.scrollTop = panel.scrollHeight;
+  }
+
+  function appendStage(panel, strHi, strEn) {
+    const isEn = document.documentElement.getAttribute('data-lang') === 'en';
+    const div = document.createElement('div');
+    div.className = 'log-line log-stage';
+    div.innerHTML = `<span>${isEn ? strEn : strHi}</span>`;
+    panel.appendChild(div);
+    panel.scrollTop = panel.scrollHeight;
+  }
+
+  function clearLogs() {
+    logBrowser.innerHTML = '';
+    logNetwork.innerHTML = '';
+    logServer.innerHTML = '';
+    verdictBox.className = 'sim-verdict-box';
+    verdictTitle.innerHTML = '';
+    verdictText.innerHTML = '';
+  }
+
+  if(btnExecute) {
+      btnExecute.addEventListener('click', async function(){
+        btnExecute.disabled = true;
+        clearLogs();
+        
+        let reqPath = reqPaths[simState.scenario];
+        let method = reqPath.split(' ')[0];
+        let url = reqPath.split(' ')[1];
+        
+        // STAGE 1: CLIENT SIDE
+        appendStage(logBrowser, "▶ STEP 1: CLIENT REQUEST", "▶ STEP 1: CLIENT REQUEST");
+        await sleep(300);
+        appendLog(logBrowser, 
+          `<span class="c-info">Action: Attacker targeting another user's object...</span>`, 
+          `<span class="c-info">Action: Attacker targeting another user's object...</span>`);
+        await sleep(400);
+
+        // STAGE 2: THE WIRE
+        appendStage(logNetwork, "▶ STEP 2: OUTGOING TRAFFIC", "▶ STEP 2: OUTGOING TRAFFIC");
+        await sleep(300);
+        appendNetworkLog(logNetwork, `<span class="c-blue">>>> OUTGOING HTTP REQUEST</span>`);
+        const rawReqBlock = document.createElement('div');
+        rawReqBlock.className = 'http-block';
+        logNetwork.appendChild(rawReqBlock);
+        const writeNetwork = async (text) => {
+          const el = document.createElement('div'); el.className = 'log-line'; el.style.opacity = '1'; el.innerHTML = text;
+          rawReqBlock.appendChild(el); logNetwork.scrollTop = logNetwork.scrollHeight; await sleep(150);
+        };
+        await writeNetwork(`<span class="http-method">${method}</span> <span class="http-path">${url}</span> <span class="http-proto">HTTP/1.1</span>`);
+        await writeNetwork(`<span class="http-header-key">Cookie:</span> <span class="http-header-val">session=attacker_valid_token</span>`);
+
+        // STAGE 3: BACKEND ENGINE
+        await sleep(500);
+        appendStage(logServer, "▶ STEP 3: BACKEND API LOGIC", "▶ STEP 3: BACKEND API LOGIC");
+        await sleep(300);
+        appendLog(logServer, 
+          `<span class="c-info">Extracting ID from request...</span>`,
+          `<span class="c-info">Extracting ID from request...</span>`);
+        await sleep(400);
+
+        let blocked = false;
+        let blockReasonHi = "";
+        let blockReasonEn = "";
+
+        if (simState.level === '0') {
+            appendLog(logServer, `<span class="c-warn">Fetching object directly from database...</span>`, `<span class="c-warn">Fetching object directly from database...</span>`);
+            await sleep(400);
+            appendLog(logServer, `<span class="c-err">No ownership check found. Proceeding.</span>`, `<span class="c-err">No ownership check found. Proceeding.</span>`);
+        } else if (simState.level === '1') {
+            if (simState.scenario === 'read') {
+                appendLog(logServer, `<span class="c-warn">Read endpoint check triggered: Verifying owner_id == current_user.id</span>`, `<span class="c-warn">Read endpoint check triggered: Verifying owner_id == current_user.id</span>`);
+                await sleep(500);
+                appendLog(logServer, `<span class="c-ok">Verification FAILED. Object belongs to another user. Access Denied.</span>`, `<span class="c-ok">Verification FAILED. Object belongs to another user. Access Denied.</span>`);
+                blocked = true;
+                blockReasonHi = "Read-Only ownership check failed. Access denied.";
+                blockReasonEn = "Read-Only ownership check failed. Access denied.";
+            } else {
+                appendLog(logServer, `<span class="c-warn">Checking endpoint... No specific check implemented for this route.</span>`, `<span class="c-warn">Checking endpoint... No specific check implemented for this route.</span>`);
+                await sleep(500);
+                appendLog(logServer, `<span class="c-err">Proceeding with operation.</span>`, `<span class="c-err">Proceeding with operation.</span>`);
+            }
+        } else if (simState.level === '2') {
+            if (simState.scenario === 'read' || simState.scenario === 'write') {
+                appendLog(logServer, `<span class="c-warn">CRUD endpoint check triggered: Verifying owner_id == current_user.id</span>`, `<span class="c-warn">CRUD endpoint check triggered: Verifying owner_id == current_user.id</span>`);
+                await sleep(500);
+                appendLog(logServer, `<span class="c-ok">Verification FAILED. Object belongs to another user. Access Denied.</span>`, `<span class="c-ok">Verification FAILED. Object belongs to another user. Access Denied.</span>`);
+                blocked = true;
+                blockReasonHi = "CRUD ownership check failed. Access denied.";
+                blockReasonEn = "CRUD ownership check failed. Access denied.";
+            } else {
+                appendLog(logServer, `<span class="c-info">Checking top-level order 777...</span>`, `<span class="c-info">Checking top-level order 777...</span>`);
+                await sleep(400);
+                appendLog(logServer, `<span class="c-warn">Order 777 belongs to current_user. Check PASSED.</span>`, `<span class="c-warn">Order 777 belongs to current_user. Check PASSED.</span>`);
+                await sleep(400);
+                appendLog(logServer, `<span class="c-err">Fetching item 42... No explicit check that item 42 belongs to order 777. Proceeding.</span>`, `<span class="c-err">Fetching item 42... No explicit check that item 42 belongs to order 777. Proceeding.</span>`);
+            }
+        } else if (simState.level === '3') {
+            appendLog(logServer, `<span class="c-info">Request intercepted by Centralized Policy Enforcement.</span>`, `<span class="c-info">Request intercepted by Centralized Policy Enforcement.</span>`);
+            await sleep(500);
+            appendLog(logServer, `<span class="c-warn">Validating full relationship chain...</span>`, `<span class="c-warn">Validating full relationship chain...</span>`);
+            await sleep(500);
+            if(simState.scenario === 'nested') {
+                appendLog(logServer, `<span class="c-ok">Item 42 does NOT belong to Order 777. Chain broken. Access Denied.</span>`, `<span class="c-ok">Item 42 does NOT belong to Order 777. Chain broken. Access Denied.</span>`);
+            } else {
+                appendLog(logServer, `<span class="c-ok">Object owner != current_user. Access Denied.</span>`, `<span class="c-ok">Object owner != current_user. Access Denied.</span>`);
+            }
+            blocked = true;
+            blockReasonHi = "Centralized policy check failed. Chain verified. Access denied.";
+            blockReasonEn = "Centralized policy check failed. Chain verified. Access denied.";
+        }
+
+        // STAGE 4: THE WIRE (INCOMING)
+        await sleep(400);
+        appendStage(logNetwork, "▶ STEP 4: INCOMING RESPONSE", "▶ STEP 4: INCOMING RESPONSE");
+        await sleep(300);
+        appendNetworkLog(logNetwork, `<span class="c-blue"><<< INCOMING HTTP RESPONSE</span>`);
+        const rawRespBlock = document.createElement('div');
+        rawRespBlock.className = 'http-block';
+        logNetwork.appendChild(rawRespBlock);
+        const writeResp = async (text) => {
+          const el = document.createElement('div'); el.className = 'log-line'; el.style.opacity = '1'; el.innerHTML = text;
+          rawRespBlock.appendChild(el); logNetwork.scrollTop = logNetwork.scrollHeight; await sleep(150);
+        };
+
+        if(blocked) {
+            await writeResp(`<span class="http-proto">HTTP/1.1</span> <span class="http-resp-code c-err">403 Forbidden</span>`);
+            await writeResp(`<span class="http-body">{"error": "Unauthorized Access"}</span>`);
+        } else {
+            await writeResp(`<span class="http-proto">HTTP/1.1</span> <span class="http-resp-code resp-200">200 OK</span>`);
+            await writeResp(`<span class="http-body">{"success": true, "data": {...}}</span>`);
+        }
+
+        // STAGE 5: CLIENT
+        await sleep(600);
+        appendStage(logBrowser, "▶ STEP 5: CLIENT DOM EVENTS", "▶ STEP 5: CLIENT DOM EVENTS");
+        await sleep(300);
+
+        if(blocked) {
+            appendLog(logBrowser, `<span class="c-ok">Action blocked safely by server. Error handled.</span>`, `<span class="c-ok">Action blocked safely by server. Error handled.</span>`);
+        } else {
+            appendLog(logBrowser, `<span class="c-err">Data parsed successfully! Action completed on someone else's object.</span>`, `<span class="c-err">Data parsed successfully! Action completed on someone else's object.</span>`);
+        }
+
+        await sleep(600);
+        const isEn = document.documentElement.getAttribute('data-lang') === 'en';
+        
+        if (blocked) {
+          verdictBox.classList.remove('v-hacked');
+          verdictBox.classList.add('v-blocked', 'show');
+          verdictTitle.innerHTML = isEn ? `🛡️ ACCESS DENIED` : `🛡️ ACCESS DENIED`;
+          verdictText.innerHTML = isEn 
+              ? `Blocked by <strong>${blockReasonEn}</strong>. Data remains safe.` 
+              : `<strong>${blockReasonHi}</strong> ne rok diya. Data safe raha.`;
+        } else {
+          verdictBox.classList.remove('v-blocked');
+          verdictBox.classList.add('v-hacked', 'show');
+          verdictTitle.innerHTML = isEn ? `💥 UNAUTHORIZED ACCESS` : `💥 UNAUTHORIZED ACCESS`;
+          verdictText.innerHTML = isEn 
+              ? "The attacker successfully accessed/modified another user's data due to a missing or partial authorization check." 
+              : "Attacker ne kisi aur user ka data successfully access/modify kar liya kyunki authorization check missing ya incomplete tha.";
+        }
+
+        btnExecute.disabled = false;
+      });
+  }
+
+});
+</script>
+
+</body>
+</html>

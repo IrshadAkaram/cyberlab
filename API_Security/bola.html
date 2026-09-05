@@ -1,0 +1,2154 @@
+<!DOCTYPE html>
+<html lang="hi" data-theme="dark" data-lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>01 Broken Object Level Authorization (BOLA) | API Security Notes</title>
+  
+  <!-- Premium Typography: Sora (Headings) + IBM Plex Sans (Body/Paragraphs) + Fira Code (Monospace) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Sora:wght@400;500;600;700;800&family=Fira+Code:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="assets/css/style.css">
+  <style>
+    /* ==========================================================================
+       Design 4 Custom CSS - Enhanced Sidebar Dashboard
+       ========================================================================== */
+    body {
+      background: #040814;
+      color: #e2e8f0;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      font-family: var(--font-sans);
+    }
+
+    /* Master Layout: Sidebar + Main Area */
+    .app-dashboard-layout {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* Left Sidebar */
+    .dashboard-sidebar {
+      width: 280px;
+      background: #070d1c;
+      border-right: 1px solid rgba(255, 255, 255, 0.07);
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      position: sticky;
+      top: 0;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #1e293b transparent;
+    }
+
+    .sidebar-header {
+      padding: 1.5rem 1.4rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .sidebar-brand-title {
+      font-family: var(--font-heading);
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.02em;
+    }
+    .sidebar-brand-title span {
+      color: #38bdf8;
+    }
+
+    .sidebar-section-heading {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #64748b;
+      padding: 0.8rem 1.4rem 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .vuln-nav-list {
+      list-style: none;
+      padding: 0 0.8rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin: 0;
+    }
+
+    .vuln-nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      border-radius: var(--radius-pill);
+      color: #cbd5e1;
+      text-decoration: none;
+      font-size: 0.86rem;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .vuln-nav-item:hover {
+      background: rgba(255, 255, 255, 0.04);
+      color: #f1f5f9;
+    }
+
+    .vuln-nav-item.active {
+      background: #1d4ed8;
+      color: #ffffff;
+      font-weight: 700;
+      box-shadow: 0 4px 14px rgba(29, 78, 216, 0.4);
+    }
+
+    .nav-num-badge {
+      font-size: 0.72rem;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 2px 7px;
+      border-radius: var(--radius-pill);
+      color: inherit;
+    }
+
+    .vuln-nav-item.active .nav-num-badge {
+      background: rgba(0, 0, 0, 0.25);
+      color: #fff;
+    }
+
+    /* Main Content Body */
+    .dashboard-main {
+      flex: 1;
+      padding: 2rem 2.8rem 0;
+      max-width: 1480px;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* Top Action Bar */
+    .main-top-actionbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      padding-bottom: 12px;
+    }
+
+    /* Header Hero Grid */
+    .hero-top-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 1fr;
+      gap: 2rem;
+      align-items: center;
+      margin-bottom: 2.2rem;
+    }
+
+    @media (max-width: 1100px) {
+      .hero-top-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .category-tag-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 0.8rem;
+    }
+
+    .pill-index-tag {
+      background: #1e3a8a;
+      color: #60a5fa;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      padding: 2px 8px;
+      border-radius: var(--radius-pill);
+    }
+
+    .pill-category-name {
+      color: #cbd5e1;
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+
+    .main-vuln-h1 {
+      font-family: var(--font-heading);
+      font-size: 2.35rem;
+      font-weight: 800;
+      line-height: 1.2;
+      color: #ffffff;
+      margin-bottom: 0.6rem;
+      letter-spacing: -0.02em;
+    }
+
+    .main-vuln-h1 span.title-blue {
+      color: #38bdf8;
+    }
+
+    .main-vuln-desc {
+      font-size: 1.05rem;
+      color: #f1f5f9;
+      margin-bottom: 1.2rem;
+      line-height: 1.6;
+    }
+
+    /* Meta Badges */
+    .meta-tags-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 1.2rem;
+    }
+
+    .meta-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: var(--radius-pill);
+      font-size: 0.76rem;
+      font-weight: 600;
+    }
+
+    .meta-chip.danger {
+      background: rgba(239, 68, 68, 0.12);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.35);
+    }
+
+    .meta-chip.info {
+      background: rgba(56, 189, 248, 0.12);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.35);
+    }
+
+    .meta-chip.purple {
+      background: rgba(168, 85, 247, 0.14);
+      color: #c084fc;
+      border: 1px solid rgba(168, 85, 247, 0.35);
+    }
+
+    /* Quote Bubble */
+    .quote-bubble {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      border-radius: var(--radius-md);
+      padding: 0.75rem 1.2rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #bae6fd;
+      font-size: 0.88rem;
+    }
+
+    .quote-icon-box {
+      width: 26px;
+      height: 26px;
+      background: #0284c7;
+      color: #fff;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      font-weight: bold;
+      flex-shrink: 0;
+    }
+
+    /* Hero Glass Graphic */
+    .hero-glass-graphic {
+      background: rgba(7, 14, 30, 0.90);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(56, 189, 248, 0.28);
+      border-radius: var(--radius-lg);
+      padding: 1.15rem 1.3rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 30px rgba(56, 189, 248, 0.1);
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      max-width: 530px;
+      margin-left: auto;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .attacker-graphic-node {
+      text-align: center;
+    }
+
+    .attacker-avatar-circle {
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      background: rgba(239, 68, 68, 0.12);
+      border: 1.5px solid #ef4444;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      margin: 0 auto 6px;
+      box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
+    }
+
+    .attacker-label {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #f87171;
+    }
+    .attacker-sub {
+      font-size: 0.72rem;
+      color: #cbd5e1;
+    }
+
+    .graphic-center-flow {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .graphic-url-pill {
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      padding: 5px 12px;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+    }
+    .graphic-url-pill .m-verb { color: #34d399; font-weight: 700; }
+    .graphic-url-pill .m-path { color: #f1f5f9; }
+
+    .graphic-swap-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .swap-id-badge {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: var(--radius-sm);
+    }
+    .swap-id-badge.from { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .swap-id-badge.to { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+
+    .target-profile-card {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: var(--radius-md);
+      padding: 0.85rem 1rem;
+      text-align: left;
+      min-width: 170px;
+      max-width: 175px;
+      box-sizing: border-box;
+      flex-shrink: 0;
+    }
+
+    .target-profile-card h4 {
+      font-size: 0.92rem;
+      color: #fff;
+      margin-bottom: 2px;
+      font-weight: 700;
+    }
+    .target-profile-card p {
+      font-size: 0.74rem;
+      color: #e2e8f0;
+      font-family: var(--font-mono);
+      margin: 1px 0;
+      white-space: nowrap;
+    }
+    .unauth-note {
+      font-size: 0.68rem;
+      color: #f87171;
+      margin-top: 5px;
+      display: block;
+      font-weight: 600;
+      line-height: 1.25;
+    }
+
+    /* Navigation Tabs */
+    .tabs-underline-nav {
+      display: flex;
+      gap: 1.8rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      margin-bottom: 1.8rem;
+      overflow-x: scroll !important;
+      scrollbar-gutter: stable;
+      scrollbar-width: thin;
+      scrollbar-color: #38bdf8 rgba(255, 255, 255, 0.1);
+      padding-bottom: 8px;
+      -webkit-overflow-scrolling: touch;
+      scroll-behavior: smooth;
+      position: relative;
+    }
+
+    .tabs-underline-nav::-webkit-scrollbar {
+      height: 8px !important;
+      display: block !important;
+      -webkit-appearance: none !important;
+    }
+
+    .tabs-underline-nav::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.08) !important;
+      border-radius: 4px;
+    }
+
+    .tabs-underline-nav::-webkit-scrollbar-thumb {
+      background: #0284c7 !important;
+      border-radius: 4px;
+    }
+
+    .tabs-underline-nav::-webkit-scrollbar-thumb:hover {
+      background: #38bdf8 !important;
+    }
+
+    html[data-theme="light"] .tabs-underline-nav {
+      scrollbar-color: #0284c7 #e2e8f0;
+      border-bottom-color: rgba(0, 0, 0, 0.08);
+    }
+
+    html[data-theme="light"] .tabs-underline-nav::-webkit-scrollbar {
+      height: 8px !important;
+      display: block !important;
+      -webkit-appearance: none !important;
+    }
+
+    html[data-theme="light"] .tabs-underline-nav::-webkit-scrollbar-track {
+      background: #e2e8f0 !important;
+      border-radius: 4px;
+      border: 1px solid #cbd5e1 !important;
+    }
+
+    html[data-theme="light"] .tabs-underline-nav::-webkit-scrollbar-thumb {
+      background: #0284c7 !important;
+      border-radius: 4px;
+    }
+
+    html[data-theme="light"] .tabs-underline-nav::-webkit-scrollbar-thumb:hover {
+      background: #0369a1 !important;
+    }
+
+    .tab-underline-btn {
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      color: #cbd5e1 !important;
+      padding: 10px 4px 12px;
+      font-size: 0.95rem;
+      font-family: var(--font-heading);
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      position: relative;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+
+    .tab-underline-btn:hover {
+      color: #f1f5f9 !important;
+      background: transparent !important;
+    }
+
+    .tab-underline-btn.active {
+      color: #38bdf8 !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      font-weight: 700;
+    }
+
+    .tab-underline-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      width: 100%;
+      height: 2.5px;
+      background: #38bdf8;
+      box-shadow: 0 0 10px #38bdf8;
+      border-radius: 2px;
+    }
+
+    html[data-theme="light"] .tab-underline-btn {
+      color: #64748b !important;
+    }
+
+    html[data-theme="light"] .tab-underline-btn:hover {
+      color: #0f172a !important;
+    }
+
+    html[data-theme="light"] .tab-underline-btn.active {
+      color: #0284c7 !important;
+      background: transparent !important;
+    }
+
+    html[data-theme="light"] .tab-underline-btn.active::after {
+      background: #0284c7;
+      box-shadow: 0 0 8px rgba(2, 132, 199, 0.4);
+    }
+
+    /* Cards Panels */
+    .card-panel {
+      background: rgba(7, 14, 28, 0.90);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(56, 189, 248, 0.18);
+      border-radius: var(--radius-lg);
+      padding: 1.8rem;
+      margin-bottom: 0.5rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .card-title-badge-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 1.4rem;
+    }
+
+    .card-title-badge-row .panel-header-title {
+      margin: 0;
+    }
+
+    .blue-circle-num {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #1d4ed8, #0284c7);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 0.95rem;
+      flex-shrink: 0;
+      box-shadow: 0 0 12px rgba(2, 132, 199, 0.4);
+    }
+
+    .panel-header-title {
+      font-family: var(--font-heading);
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.01em;
+    }
+
+    .panel-body-text {
+      font-size: 0.96rem;
+      color: #f1f5f9;
+      line-height: 1.75;
+      margin-bottom: 1.2rem;
+    }
+
+    /* Execution Pipeline Steps (How It Works) */
+    .hw-step-box {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-md);
+      padding: 1.25rem 1.4rem;
+      transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+      position: relative;
+      border-left: 4px solid #38bdf8;
+    }
+
+    .hw-step-box:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    }
+
+    .hw-step-box h4 {
+      font-family: var(--font-heading);
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin: 0 0 0.5rem 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .hw-step-box p {
+      color: #f1f5f9;
+      font-size: 0.94rem;
+      line-height: 1.7;
+      margin: 0;
+    }
+
+    .hw-step-box code {
+      background: rgba(15, 23, 42, 0.9);
+      color: #38bdf8;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 0.86em;
+      border: 1px solid rgba(56, 189, 248, 0.25);
+    }
+
+    .hw-step-box.step-1 {
+      border-left-color: #10b981;
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(15, 23, 42, 0.6));
+    }
+    .hw-step-box.step-1 h4 { color: #34d399; }
+
+    .hw-step-box.step-2 {
+      border-left-color: #f59e0b;
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(15, 23, 42, 0.6));
+    }
+    .hw-step-box.step-2 h4 { color: #fbbf24; }
+
+    .hw-step-box.step-3 {
+      border-left-color: #0ea5e9;
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.08), rgba(15, 23, 42, 0.6));
+    }
+    .hw-step-box.step-3 h4 { color: #38bdf8; }
+
+    .hw-step-box.step-4 {
+      border-left-color: #ef4444;
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(15, 23, 42, 0.6));
+    }
+    .hw-step-box.step-4 h4 { color: #f87171; }
+
+    .hw-step-box.step-5 {
+      border-left-color: #a855f7;
+      background: linear-gradient(135deg, rgba(168, 85, 247, 0.08), rgba(15, 23, 42, 0.6));
+    }
+    .hw-step-box.step-5 h4 { color: #c084fc; }
+
+    .checklist-guide-msg {
+      font-size: 0.82rem;
+      color: #94a3b8;
+      margin-bottom: 1rem;
+      font-family: var(--font-mono);
+    }
+
+    /* Interactive Preset Pill Buttons in Lab */
+    .sim-preset-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #cbd5e1;
+      padding: 4px 12px;
+      border-radius: var(--radius-pill);
+      font-size: 0.78rem;
+      font-family: var(--font-mono);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .sim-preset-btn:hover {
+      background: rgba(56, 189, 248, 0.15);
+      border-color: var(--cyan);
+      color: #fff;
+    }
+
+    .sim-preset-btn.target-btn {
+      border-color: rgba(239, 68, 68, 0.4);
+      background: rgba(239, 68, 68, 0.08);
+      color: #f87171;
+    }
+
+    .sim-preset-btn.target-btn:hover {
+      background: #ef4444;
+      color: #fff;
+    }
+
+    /* Checklist Progress Header */
+    .checklist-meta-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.2rem;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    }
+
+    .checklist-counter-badge {
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--cyan);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      padding: 4px 14px;
+      border-radius: var(--radius-pill);
+      font-size: 0.8rem;
+      font-weight: 700;
+      font-family: var(--font-mono);
+    }
+
+    /* ==========================================================================
+       Complete Light Theme Palette & Typography Overrides
+       ========================================================================== */
+    html[data-theme="light"] body {
+      background: #f8fafc !important;
+      color: #0f172a !important;
+    }
+
+    html[data-theme="light"] .dashboard-sidebar {
+      background: #ffffff !important;
+      border-right-color: rgba(0, 0, 0, 0.09) !important;
+    }
+
+    html[data-theme="light"] .sidebar-brand-title {
+      color: #0f172a !important;
+    }
+
+    html[data-theme="light"] .sidebar-section-heading {
+      color: #64748b !important;
+    }
+
+    html[data-theme="light"] .vuln-nav-item {
+      color: #475569 !important;
+    }
+
+    html[data-theme="light"] .vuln-nav-item:hover {
+      background: #f1f5f9 !important;
+      color: #0f172a !important;
+    }
+
+    html[data-theme="light"] .vuln-nav-item.active {
+      background: #0284c7 !important;
+      color: #ffffff !important;
+    }
+
+    html[data-theme="light"] .main-top-actionbar {
+      border-bottom-color: rgba(0, 0, 0, 0.08) !important;
+    }
+
+    html[data-theme="light"] .main-vuln-h1 {
+      color: #0f172a !important;
+    }
+
+    html[data-theme="light"] .main-vuln-desc {
+      color: #334155 !important;
+    }
+
+    html[data-theme="light"] .card-panel {
+      background: #ffffff !important;
+      border-color: rgba(0, 0, 0, 0.08) !important;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05) !important;
+    }
+
+    html[data-theme="light"] .panel-header-title {
+      color: #0f172a !important;
+    }
+
+    html[data-theme="light"] .panel-body-text {
+      color: #334155 !important;
+    }
+
+    html[data-theme="light"] .def-lead-card {
+      background: #f0f9ff !important;
+      border-color: #bae6fd !important;
+      border-left-color: #0284c7 !important;
+    }
+
+    html[data-theme="light"] .def-lead-text,
+    html[data-theme="light"] .def-lead-card p {
+      color: #0f172a !important;
+    }
+
+    html[data-theme="light"] .def-chip {
+      background: #e2e8f0 !important;
+      border-color: #cbd5e1 !important;
+      color: #334155 !important;
+    }
+
+    html[data-theme="light"] .def-chip.accent {
+      background: rgba(2, 132, 199, 0.12) !important;
+      color: #0284c7 !important;
+      border-color: rgba(2, 132, 199, 0.3) !important;
+    }
+
+    html[data-theme="light"] .technical-stepper-box {
+      background: #ffffff !important;
+      border-color: rgba(2, 132, 199, 0.22) !important;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04) !important;
+    }
+
+    html[data-theme="light"] .stepper-title-wrap h4,
+    html[data-theme="light"] .technical-stepper-box h4 {
+      color: #0f172a !important;
+    }
+
+    html[data-theme="light"] .step-block {
+      background: #f8fafc !important;
+      border-color: rgba(0, 0, 0, 0.08) !important;
+    }
+
+    html[data-theme="light"] .step-body-content h5 {
+      color: #0f172a !important;
+    }
+
+    html[data-theme="light"] .step-body-content p {
+      color: #334155 !important;
+    }
+
+    html[data-theme="light"] .step-code-inline {
+      background: #e2e8f0 !important;
+      border-color: #cbd5e1 !important;
+      color: #0369a1 !important;
+    }
+
+    html[data-theme="light"] .stepper-takeaway-footer {
+      background: #f0f9ff !important;
+      border-color: #bae6fd !important;
+      color: #0369a1 !important;
+    }
+
+    html[data-theme="light"] .horizontal-pillar-card {
+      background: #ffffff !important;
+      border-color: rgba(0, 0, 0, 0.08) !important;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04) !important;
+    }
+
+    html[data-theme="light"] .horizontal-pillar-card:hover {
+      background: #f8fafc !important;
+    }
+
+    html[data-theme="light"] .pillar-heading-title {
+      color: #0f172a !important;
+    }
+
+    html[data-theme="light"] .pillar-right-content {
+      color: #334155 !important;
+    }
+
+    html[data-theme="light"] .quote-bubble {
+      background: #f0fdf4 !important;
+      border-color: #bbf7d0 !important;
+      color: #166534 !important;
+    }
+
+    html[data-theme="light"] .hero-glass-graphic {
+      background: #ffffff !important;
+      border-color: rgba(0, 0, 0, 0.08) !important;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05) !important;
+    }
+
+    html[data-theme="light"] .target-profile-card {
+      background: #f8fafc !important;
+      border-color: rgba(0, 0, 0, 0.08) !important;
+    }
+
+    html[data-theme="light"] .target-profile-card h4 {
+      color: #0f172a !important;
+    }
+
+    html[data-theme="light"] .target-profile-card p {
+      color: #475569 !important;
+    }
+
+    html[data-theme="light"] .graphic-url-pill {
+      background: #f1f5f9 !important;
+      border-color: #cbd5e1 !important;
+    }
+
+    html[data-theme="light"] .graphic-url-pill .m-path {
+      color: #0f172a !important;
+    }
+
+    html[data-theme="light"] .graphic-swap-box {
+      background: #f1f5f9 !important;
+      border-color: #cbd5e1 !important;
+    }
+
+    html[data-theme="light"] .card-title-badge-row .panel-header-title {
+      color: #0f172a !important;
+    }
+
+    html[data-theme="light"] .hw-step-box {
+      background: #ffffff !important;
+      border: 1px solid #e2e8f0 !important;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+    }
+
+    html[data-theme="light"] .hw-step-box:hover {
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08) !important;
+    }
+
+    html[data-theme="light"] .hw-step-box.step-1 { border-left: 4px solid #10b981 !important; }
+    html[data-theme="light"] .hw-step-box.step-1 h4 { color: #047857 !important; }
+
+    html[data-theme="light"] .hw-step-box.step-2 { border-left: 4px solid #f59e0b !important; }
+    html[data-theme="light"] .hw-step-box.step-2 h4 { color: #b45309 !important; }
+
+    html[data-theme="light"] .hw-step-box.step-3 { border-left: 4px solid #0284c7 !important; }
+    html[data-theme="light"] .hw-step-box.step-3 h4 { color: #0369a1 !important; }
+
+    html[data-theme="light"] .hw-step-box.step-4 { border-left: 4px solid #ef4444 !important; }
+    html[data-theme="light"] .hw-step-box.step-4 h4 { color: #b91c1c !important; }
+
+    html[data-theme="light"] .hw-step-box.step-5 { border-left: 4px solid #9333ea !important; }
+    html[data-theme="light"] .hw-step-box.step-5 h4 { color: #7e22ce !important; }
+
+    html[data-theme="light"] .hw-step-box p {
+      color: #334155 !important;
+    }
+
+    html[data-theme="light"] .hw-step-box code {
+      background: #f1f5f9 !important;
+      color: #0284c7 !important;
+      border-color: #cbd5e1 !important;
+    }
+
+    html[data-theme="light"] .checklist-guide-msg {
+      color: #64748b !important;
+    }
+
+    html[data-theme="light"] .scenario-card {
+      background: #ffffff !important;
+      border-color: rgba(0, 0, 0, 0.08) !important;
+    }
+
+    html[data-theme="light"] .scenario-header {
+      background: #f8fafc !important;
+      border-bottom-color: rgba(0, 0, 0, 0.06) !important;
+    }
+
+    html[data-theme="light"] .scenario-title {
+      color: #0f172a !important;
+    }
+
+    html[data-theme="light"] .scenario-body,
+    html[data-theme="light"] .text-para {
+      color: #334155 !important;
+    }
+
+    html[data-theme="light"] .checklist-item {
+      background: #ffffff !important;
+      border-color: rgba(0, 0, 0, 0.08) !important;
+    }
+
+    html[data-theme="light"] .checklist-item .check-content h5 {
+      color: #0f172a !important;
+    }
+
+    html[data-theme="light"] .checklist-item .check-content p {
+      color: #475569 !important;
+    }
+
+    html[data-theme="light"] .checklist-meta-header {
+      border-bottom-color: rgba(0, 0, 0, 0.08) !important;
+    }
+
+    html[data-theme="light"] .checklist-meta-header div {
+      color: #334155 !important;
+    }
+
+    html[data-theme="light"] .faq-card {
+      background: #ffffff !important;
+      border-color: rgba(0, 0, 0, 0.08) !important;
+    }
+
+    html[data-theme="light"] .faq-question {
+      color: #0f172a !important;
+    }
+
+    html[data-theme="light"] .faq-answer {
+      color: #334155 !important;
+    }
+
+    html[data-theme="light"] .golden-rules-list {
+      color: #334155 !important;
+    }
+
+    html[data-theme="light"] .auth-token-box {
+      background: #f1f5f9 !important;
+      border-color: #cbd5e1 !important;
+      color: #0f172a !important;
+    }
+
+    html[data-theme="light"] .sim-preset-btn {
+      background: #f1f5f9 !important;
+      border-color: #cbd5e1 !important;
+      color: #334155 !important;
+    }
+
+    html[data-theme="light"] .sim-preset-btn:hover {
+      background: #0284c7 !important;
+      color: #ffffff !important;
+    }
+
+    html[data-theme="light"] .interactive-control-bar {
+      background: #f8fafc !important;
+      border-color: #cbd5e1 !important;
+    }
+
+    html[data-theme="light"] .url-input-field {
+      background: #ffffff !important;
+      border-color: #cbd5e1 !important;
+      color: #0f172a !important;
+    }
+
+    html[data-theme="light"] .http-method-select {
+      background: #ffffff !important;
+      border-color: #cbd5e1 !important;
+      color: #0f172a !important;
+    }
+
+    html[data-theme="light"] #sim-explanation-box {
+      background: #f0f9ff !important;
+      border-color: #bae6fd !important;
+    }
+
+    html[data-theme="light"] #sim-explanation-text {
+      color: #1e293b !important;
+    }
+
+    html[data-theme="light"] #sim-explanation-text strong {
+      color: #0369a1 !important;
+    }
+
+    /* Code Editors & Terminals always retain dark cyber background, so code text must always be light */
+    .code-container,
+    .code-text,
+    .compare-box .code-text,
+    .terminal-pane .code-text,
+    pre#sim-response-body {
+      color: #e2e8f0 !important;
+    }
+
+    html[data-theme="light"] .code-container,
+    html[data-theme="light"] .code-text,
+    html[data-theme="light"] .compare-box .code-text,
+    html[data-theme="light"] .terminal-pane .code-text,
+    html[data-theme="light"] pre#sim-response-body {
+      color: #e2e8f0 !important;
+    }
+
+    /* 3 Golden Rules High-Contrast Styling */
+    .golden-rules-list {
+      padding-left: 1.5rem;
+      color: #cbd5e1;
+      line-height: 1.85;
+      font-size: 0.95rem;
+      margin: 0;
+    }
+
+    .golden-rules-list li {
+      margin-bottom: 0.75rem;
+      color: inherit;
+    }
+
+    .golden-rules-list strong {
+      color: #38bdf8;
+      font-weight: 700;
+    }
+
+    .golden-rules-list code {
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+    }
+
+    html[data-theme="light"] .golden-rules-list {
+      color: #1e293b !important;
+    }
+
+    html[data-theme="light"] .golden-rules-list li {
+      color: #1e293b !important;
+    }
+
+    html[data-theme="light"] .golden-rules-list strong {
+      color: #0369a1 !important;
+    }
+
+    html[data-theme="light"] .golden-rules-list code {
+      color: #0369a1 !important;
+      background: #e0f2fe !important;
+      border-color: #bae6fd !important;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-dashboard-layout">
+    
+    <!-- ========================================================================
+         LEFT SIDEBAR: 20 Common Vulnerabilities
+         ======================================================================== -->
+    <aside class="dashboard-sidebar">
+      <div class="sidebar-header">
+        <div class="brand-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+        <a href=\"index.html\" class=\"sidebar-brand-title\" style=\"text-decoration:none; display:block;\">API <span>Security</span></a>
+      </div>
+
+      <div class="sidebar-section-heading">Foundations</div>
+      <ul class="vuln-nav-list" style="margin-bottom: 0.5rem;">
+        <li><a href="api-intro.html" class="vuln-nav-item"><span class="nav-num-badge">00</span> API Fundamentals</a></li>
+      </ul>
+
+      <div class="sidebar-section-heading">Common Vulnerabilities</div>
+
+      <ul class="vuln-nav-list">
+        <li><a href="bola.html" class="vuln-nav-item active"><span class="nav-num-badge">01</span> BOLA</a></li>
+        <li><a href="bfla.html" class="vuln-nav-item"><span class="nav-num-badge">02</span> BFLA</a></li>
+        <li><a href="idor.html" class="vuln-nav-item"><span class="nav-num-badge">03</span> IDOR</a></li>
+        <li><a href="jwt.html" class="vuln-nav-item"><span class="nav-num-badge">04</span> JWT Vulnerabilities</a></li>
+        <li><a href="mass-assignment.html" class="vuln-nav-item"><span class="nav-num-badge">05</span> Mass Assignment</a></li>
+        <li><a href="excessive-data-exposure.html" class="vuln-nav-item"><span class="nav-num-badge">06</span> Excessive Data Exposure</a></li>
+        <li><a href="rate-limiting.html" class="vuln-nav-item"><span class="nav-num-badge">07</span> Rate Limiting</a></li>
+        <li><a href="ssrf.html" class="vuln-nav-item"><span class="nav-num-badge">08</span> SSRF</a></li>
+        <li><a href="nosql-injection.html" class="vuln-nav-item"><span class="nav-num-badge">09</span> NoSQL Injection</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">10</span> Command Injection</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">11</span> XXE</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">12</span> GraphQL Security</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">13</span> Business Logic Issues</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">14</span> CORS Misconfiguration</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">15</span> API Key Security</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">16</span> OAuth & OpenID Security</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">17</span> Webhooks Security</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">18</span> Race Conditions</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">19</span> File Upload Vulnerabilities</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">20</span> Deserialization Issues</a></li>
+      </ul>
+    </aside>
+
+    <!-- ========================================================================
+         MAIN DASHBOARD BODY
+         ======================================================================== -->
+    <main class="dashboard-main">
+      
+      <!-- Top Action Bar -->
+      <div class="main-top-actionbar">
+        <div style="font-size:0.86rem; color:var(--text-dim); display:flex; align-items:center; gap:6px;">
+          <span>Modules</span> <span>›</span> <span style="color:var(--cyan); font-weight:600;">01 / 20 Broken Object Level Authorization</span>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:12px;">
+          <!-- Dark / Light Mode Toggle Button -->
+          <button class="theme-toggle-btn" id="themeToggleBtn" title="Switch Theme">
+            <span>☀️</span> <span class="theme-label">Light Mode</span>
+          </button>
+
+          <!-- Dual Language Switcher -->
+          <div class="lang-switch-wrapper">
+            <span id="lbl-hi" class="lang-label active">Hindi</span>
+            <label class="switch">
+              <input type="checkbox" id="langToggle">
+              <span class="slider"></span>
+            </label>
+            <span id="lbl-en" class="lang-label">English</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hero Header -->
+      <section class="hero-top-grid">
+        <div>
+          <div class="category-tag-row">
+            <span class="pill-index-tag">01</span>
+            <span class="pill-category-name">Common Vulnerability</span>
+          </div>
+
+          <h1 class="main-vuln-h1">
+            Broken Object Level<br>
+            Authorization <span class="title-blue">(BOLA)</span>
+          </h1>
+
+          <p class="main-vuln-desc">
+            <span class="lang-hi">API endpoints me object identifiers (User IDs, Account IDs) badal kar kisi doosre user ka sensitive data access ya modify karna.</span>
+            <span class="lang-en">Access or modify other users' data by manipulating object identifiers in API endpoints.</span>
+          </p>
+
+          <div class="meta-tags-row">
+            <span class="meta-chip danger">
+              <span class="badge-dot"></span> High Severity
+            </span>
+            <span class="meta-chip info">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+              OWASP API Top 10 (2023) — API1
+            </span>
+            <span class="meta-chip purple">
+              ★ Authorization
+            </span>
+          </div>
+
+          <div class="quote-bubble">
+            <div class="quote-icon-box">“</div>
+            <div>
+              <span class="lang-hi">"API ko hamesha verify karna chahiye ki authenticated user ko maange gaye object ko access karne ka haq hai ya nahi."</span>
+              <span class="lang-en">"An API should verify if the authenticated user is allowed to access the requested object."</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Visual Graphic Box (Interactive Simulator Widget) -->
+        <div class="hero-glass-graphic" id="bolaHeroWidget">
+          <div class="hero-widget-header">
+            <div class="hero-widget-badge">
+              <span class="pulse-live-dot"></span>
+              <span class="hero-badge-title">Interactive Attack Flow</span>
+            </div>
+            <div class="hero-sim-pills">
+              <button type="button" class="hero-sim-btn" id="btnHeroNormal" title="Show Normal Authorized Access">
+                <span>👤</span> <span>Normal (1001)</span>
+              </button>
+              <button type="button" class="hero-sim-btn active exploit" id="btnHeroExploit" title="Show BOLA Exploit">
+                <span>⚡</span> <span>BOLA Exploit (1002)</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="hero-widget-body">
+            <div class="attacker-graphic-node" id="heroAttackerNode">
+              <div class="attacker-avatar-circle" id="heroAttackerAvatar">🥷</div>
+              <div class="attacker-label" id="heroAttackerLabel">Kaif (Attacker)</div>
+              <div class="attacker-sub" id="heroAttackerSub">Role: user (ID: 1001)</div>
+            </div>
+
+            <div class="graphic-center-flow">
+              <div class="graphic-url-pill" id="heroUrlPill">
+                <span class="m-verb" id="heroVerb">GET</span> <span class="m-path" id="heroPath">/api/users/1002</span>
+              </div>
+              <div class="graphic-swap-box" id="heroSwapBox">
+                <span class="swap-id-badge from" id="heroBadgeFrom">1001</span>
+                <span class="swap-arrow-icon" id="heroSwapArrow" style="color:var(--text-dim); font-size:0.8rem;">➔</span>
+                <span class="swap-id-badge to" id="heroBadgeTo">1002</span>
+              </div>
+              <div class="flow-beam-track" id="heroBeamTrack">
+                <div class="flow-beam-particle exploit" id="heroBeamParticle"></div>
+              </div>
+              <span class="flow-state-label" id="heroFlowStateText">Tampered Object ID</span>
+            </div>
+
+            <div class="target-profile-card exploit" id="heroTargetCard">
+              <div class="target-card-top">
+                <h4 id="heroTargetName">Om</h4>
+                <span class="target-pill-status breach" id="heroTargetStatus">HTTP 200</span>
+              </div>
+              <p id="heroTargetId">ID: <code>1002</code></p>
+              <p id="heroTargetEmail">Email: <code>om@example.com</code></p>
+              <p id="heroTargetRole">Role: <code>user</code></p>
+              <span class="unauth-note" id="heroTargetNote">🚨 Accesses another user's data (unauthorized)</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Navigation Tabs -->
+      <nav class="tabs-underline-nav">
+        <button class="tab-underline-btn active" data-tab="tab-overview">
+          <span>📖</span> <span>Overview</span>
+        </button>
+        <button class="tab-underline-btn" data-tab="tab-how-it-works">
+          <span>⚙️</span> <span>How It Works</span>
+        </button>
+        <button class="tab-underline-btn" data-tab="tab-example">
+          <span>&lt;/&gt;</span> <span>Real-World Example</span>
+        </button>
+        <button class="tab-underline-btn" data-tab="tab-prevention">
+          <span>🛡️</span> <span>Prevention</span>
+        </button>
+        <button class="tab-underline-btn" data-tab="tab-testing">
+          <span>🧪</span> <span>Testing Checklist</span>
+        </button>
+        <button class="tab-underline-btn" data-tab="tab-lab">
+          <span>⚡</span> <span class="lang-hi">6. Live Lab</span><span class="lang-en">6. Live Lab</span>
+        </button>
+        <button class="tab-underline-btn" data-tab="tab-questions">
+          <span>🤔</span> <span>Questions</span>
+        </button>
+      </nav>
+
+      <!-- ====================================================================
+           TAB 1: Overview (Deep Definition & Concepts)
+           ==================================================================== -->
+      <div id="tab-overview" class="tab-content active">
+        <div class="card-panel">
+          <div class="card-title-badge-row">
+            <div class="blue-circle-num">1</div>
+            <h2 class="panel-header-title">
+              <span class="lang-hi">What is BOLA? (BOLA Ki Deep Definition)</span>
+              <span class="lang-en">What is Broken Object Level Authorization (BOLA)?</span>
+            </h2>
+          </div>
+
+          <!-- Structured Lead Definition Box -->
+          <div class="def-lead-card">
+            <div class="def-meta-chips">
+              <span class="def-chip accent">OWASP API1:2023</span>
+              <span class="def-chip">Web Sec Equivalent: IDOR</span>
+              <span class="def-chip">CWE-284 / CWE-639</span>
+              <span class="def-chip" style="color:#f87171; border-color:rgba(239,68,68,0.3);">Severity: High / Critical</span>
+            </div>
+
+            <p class="def-lead-text">
+              <span class="lang-hi"><strong>Broken Object Level Authorization (BOLA)</strong>, jise Web Application pentesting me <em>Insecure Direct Object Reference (IDOR)</em> ke roop me jana jaata tha, modern APIs ka <strong>#1 sabse catastrophic vulnerability</strong> hai. Ye tab paida hota hai jab API endpoints kisi database record ya resource (jaise user profile, invoice, document, medical record) ko uski direct ID (jaise <code>1002</code> ya UUID) ke jariye expose karte hain, aur server ye check karna bhool jata hai ki request bhejne wale user ko us specific object ka maalik (owner) hone ka haq hai ya nahi.</span>
+              <span class="lang-en"><strong>Broken Object Level Authorization (BOLA)</strong>, formerly known as <em>Insecure Direct Object References (IDOR)</em> in web application pentesting, is the <strong>#1 most catastrophic vulnerability</strong> in modern APIs. It occurs when API endpoints expose database records or resources (such as user profiles, invoices, documents, or medical records) directly via their identifier (like <code>1002</code> or a UUID), and the server fails to verify whether the requesting user is the rightful owner or has legitimate permission to access that specific object.</span>
+            </p>
+          </div>
+
+          <!-- Technical Step-by-Step Walkthrough (In Simple Terms) -->
+          <div class="technical-stepper-box">
+            <div class="stepper-header">
+              <div class="stepper-title-wrap">
+                <span style="font-size:1.2rem;">💡</span>
+                <h4 class="stepper-box-heading">
+                  <span class="lang-hi">In Simple Terms: Real-World Technical API Walkthrough</span>
+                  <span class="lang-en">In Simple Terms: Real-World Technical API Walkthrough</span>
+                </h4>
+              </div>
+              <span class="stepper-context-badge">🛒 Target: E-Commerce / Food Delivery API (e.g. Swiggy / Amazon)</span>
+            </div>
+
+            <div class="steps-pipeline-vertical">
+              <!-- Step 1 -->
+              <div class="step-block">
+                <span class="step-indicator-pill step-1">🟢 Step 1: Normal Request</span>
+                <div class="step-body-content">
+                  <h5>
+                    <span class="lang-hi">User Login Karta Hai Aur Valid Token Milta Hai</span>
+                    <span class="lang-en">User Logs In & Receives Cryptographic Token</span>
+                  </h5>
+                  <p>
+                    <span class="lang-hi">Kaif login karta hai. Server use valid signed JWT token deta hai. Kaif apna legitimate order check karta hai: mobile app request bhejta hai <span class="step-code-inline">GET /api/v1/orders/5001</span> (jahan <code>5001</code> Kaif ka apna order number hai).</span>
+                    <span class="lang-en">Kaif logs in. The API issues a cryptographically signed JWT token. Kaif requests his own receipt: client dispatches <span class="step-code-inline">GET /api/v1/orders/5001</span> (where <code>5001</code> belongs to Kaif).</span>
+                  </p>
+                </div>
+              </div>
+
+              <!-- Step 2 -->
+              <div class="step-block">
+                <span class="step-indicator-pill step-2">🟡 Step 2: Tampering</span>
+                <div class="step-body-content">
+                  <h5>
+                    <span class="lang-hi">DevTools / Burp Suite Me Object ID Badal Diya</span>
+                    <span class="lang-en">Intercept & Modify Object Identifier</span>
+                  </h5>
+                  <p>
+                    <span class="lang-hi">Kaif request ko intercept karta hai aur URL parameter ko <span class="step-code-inline">5001</span> se badal kar <span class="step-code-inline">5002</span> (kisi unknown victim ka order) kar ke bhejta hai.</span>
+                    <span class="lang-en">Kaif intercepts the outgoing HTTP call and swaps the order identifier from <span class="step-code-inline">5001</span> to <span class="step-code-inline">5002</span> (belonging to Om).</span>
+                  </p>
+                </div>
+              </div>
+
+              <!-- Step 3 -->
+              <div class="step-block">
+                <span class="step-indicator-pill step-3">🔴 Step 3: Fatal Gap</span>
+                <div class="step-body-content">
+                  <h5>
+                    <span class="lang-hi">Authentication Pass Hua, Lekin Authorization Gayab!</span>
+                    <span class="lang-en">Authentication Succeeds, but Authorization is Missing!</span>
+                  </h5>
+                  <p>
+                    <span class="lang-hi">API Server check karta hai: <em>"Kya Kaif ka JWT Token valid hai? Haan (AuthN Pass)."</em> Lekin server ye check karna bhool gaya: <em>"Kya Order 5002 Kaif ka hai?"</em> <strong>(AuthZ Fail!)</strong></span>
+                    <span class="lang-en">The API Gateway confirms Kaif's JWT signature is genuine (Authentication passes). However, the backend never checks: <em>"Does order 5002 belong to Kaif?"</em> <strong>(Authorization fails!)</strong></span>
+                  </p>
+                </div>
+              </div>
+
+              <!-- Step 4 -->
+              <div class="step-block">
+                <span class="step-indicator-pill step-4">🟣 Step 4: Data Leak</span>
+                <div class="step-body-content">
+                  <h5>
+                    <span class="lang-hi">Database Ne Doosre Customer Ka Confidential Data Return Kar Diya</span>
+                    <span class="lang-en">Database Queries & Exfiltrates Victim's Private Record</span>
+                  </h5>
+                  <p>
+                    <span class="lang-hi">Database <span class="step-code-inline">SELECT * WHERE id = 5002</span> execute karta hai aur Om ka pura naam, delivery address, phone number aur sensitive Personally Identifiable Information (PII) Kaif ko <span class="step-code-inline" style="color:#34d399;">HTTP 200 OK</span> me de deta hai! Isi ko <strong>BOLA</strong> kehte hain.</span>
+                    <span class="lang-en">The database executes <span class="step-code-inline">SELECT * WHERE id = 5002</span>, returning Om's private shipping address, mobile phone, and sensitive Personally Identifiable Information (PII) back to Kaif in <span class="step-code-inline" style="color:#34d399;">HTTP 200 OK</span>! This is <strong>BOLA</strong>.</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Takeaway Banner -->
+            <div class="stepper-takeaway-footer">
+              <span style="font-size:1.2rem;">💡</span>
+              <div>
+                <strong>Golden Principle:</strong> Valid Login (AuthN) proves who you are — it does <u>NOT</u> give you permission to access all data records (AuthZ)!
+              </div>
+            </div>
+          </div>
+
+          <!-- Deep Concepts - Horizontal Full-Width Cards (One by One) -->
+          <div style="margin-top:2.5rem;">
+            <h3 style="font-size:1.25rem; color:#38bdf8; margin-bottom:1.2rem; font-family:var(--font-heading);">
+              <span class="lang-hi">BOLA Ke 4 Fundamental Pillars (Core Concepts)</span>
+              <span class="lang-en">The 4 Fundamental Pillars of BOLA</span>
+            </h3>
+
+            <div class="horizontal-pillars-list">
+              <!-- Pillar 1 -->
+              <div class="horizontal-pillar-card pillar-1">
+                <div class="pillar-left-meta">
+                  <span class="pillar-num-tag">Pillar 01 • Parameter Level</span>
+                  <div class="pillar-heading-title">Object & Object Identifier</div>
+                </div>
+                <div class="pillar-right-content">
+                  <span class="lang-hi"><strong>Object:</strong> Database me store hone wala koi bhi business resource (jaise User Profile, Bank Account, Medical Record, Invoice).<br>
+                  <strong>Identifier:</strong> Usko locate karne wali primary key jo API request me expose hoti hai (jaise path parameter <code>/api/users/1002</code>, query parameter <code>?doc_id=552</code>, ya JSON body <code>{"account_id": 991}</code>). BOLA tab banta hai jab backend client-supplied ID ko blindly database query me inject kar deta hai.</span>
+                  <span class="lang-en"><strong>Object:</strong> Any persistent domain entity (User Account, Invoice, Health Record, Document).<br>
+                  <strong>Identifier:</strong> The direct primary key exposed in client requests (path variable <code>/api/users/1002</code>, query string <code>?doc_id=552</code>, or JSON body <code>{"account_id": 991}</code>). BOLA occurs when the server blindly trusts this client-supplied identifier.</span>
+                </div>
+              </div>
+
+              <!-- Pillar 2 -->
+              <div class="horizontal-pillar-card pillar-2">
+                <div class="pillar-left-meta">
+                  <span class="pillar-num-tag">Pillar 02 • Core Distinction</span>
+                  <div class="pillar-heading-title">AuthN vs AuthZ (The Fatal Root Cause)</div>
+                </div>
+                <div class="pillar-right-content">
+                  <span class="lang-hi"><strong>Authentication (AuthN):</strong> "Tum kaun ho?" — Password ya JWT token se user ki identity confirm karna.<br>
+                  <strong>Authorization (AuthZ):</strong> "Tumhe is specific record ko access karne ka haq hai ya nahi?" — Data ownership verify karna.<br>
+                  <strong>Root Cause:</strong> Developers JWT signature verify karke maan lete hain ki user authorized hai, par ye bhool jaate hain ki valid identity hona kisi bhi record ko dekhne ka lisence nahi deta!</span>
+                  <span class="lang-en"><strong>Authentication (AuthN):</strong> "Who are you?" — Verifying user identity via cryptographic JWT tokens.<br>
+                  <strong>Authorization (AuthZ):</strong> "Are you allowed to touch this specific record?" — Verifying object ownership.<br>
+                  <strong>The Root Cause:</strong> Developers assume a valid JWT implies full authorization. However, proving identity does not grant a license to access other users' data rows!</span>
+                </div>
+              </div>
+
+              <!-- Pillar 3 -->
+              <div class="horizontal-pillar-card pillar-3">
+                <div class="pillar-left-meta">
+                  <span class="pillar-num-tag">Pillar 03 • Attack Pattern</span>
+                  <div class="pillar-heading-title">Horizontal Privilege Escalation</div>
+                </div>
+                <div class="pillar-right-content">
+                  <span class="lang-hi">BOLA me attacker ko Admin banne ki zaroorat nahi hoti (wo Vertical escalation hota). Yahan User A aur User B dono same permission tier ke normal users hote hain. Attacker sideways (horizontally) doosre peer user ka sensitive Personally Identifiable Information (PII) chura leta hai ya uska record modify kar deta hai. Modern APIs me 80% data breaches horizontal BOLA ki wajah se hote hain.</span>
+                  <span class="lang-en">In BOLA, an attacker does not need to escalate into an administrator role (which is Vertical escalation). Instead, standard User A and standard User B share identical privilege tiers. The attacker moves sideways (horizontally) across database rows to steal peer Personally Identifiable Information (PII) or manipulate records. Over 80% of modern API data breaches result from horizontal BOLA.</span>
+                </div>
+              </div>
+
+              <!-- Pillar 4 -->
+              <div class="horizontal-pillar-card pillar-4">
+                <div class="pillar-left-meta">
+                  <span class="pillar-num-tag">Pillar 04 • Enterprise Architecture</span>
+                  <div class="pillar-heading-title">Multi-Tenant Data Isolation Breach</div>
+                </div>
+                <div class="pillar-right-content">
+                  <span class="lang-hi">SaaS platforms me hajaron companies ek hi shared database use karti hain (Multi-Tenancy). Agar backend query me <code>tenant_id</code> ya <code>organization_id</code> ka strict scoping filter miss ho gaya, toh Company X ka employee query parameter badal kar Company Y (apne competitor) ke saare confidential documents, source code aur API keys leak kar sakta hai.</span>
+                  <span class="lang-en">In multi-tenant SaaS architectures, hundreds of enterprise clients share the same database cluster. If the backend fails to strictly enforce tenant isolation (e.g. <code>WHERE tenant_id = :current_tenant</code>), an employee at Company X can manipulate tenant identifiers to download rival Company Y's source code, customer records, and internal API keys.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           TAB 2: How It Works (Step-by-Step Under The Hood)
+           ==================================================================== -->
+      <div id="tab-how-it-works" class="tab-content">
+        <div class="card-panel">
+          <div class="card-title-badge-row">
+            <div class="blue-circle-num">2</div>
+            <h2 class="panel-header-title">
+              <span class="lang-hi">How It Works? (Under the Hood Execution Pipeline)</span>
+              <span class="lang-en">How It Works? (Under the Hood Execution Pipeline)</span>
+            </h2>
+          </div>
+
+          <p class="panel-body-text">
+            <span class="lang-hi">BOLA ka vulnerability flow 5 specific steps me execute hota hai. Samjho ki backend pipeline me kahan security check miss ho jata hai:</span>
+            <span class="lang-en">BOLA manifests through a 5-step breakdown in the backend execution pipeline. Here is where the architecture fails:</span>
+          </p>
+
+          <div style="display:flex; flex-direction:column; gap:1.2rem; margin:1.5rem 0;">
+            <!-- Step 1 -->
+            <div class="hw-step-box step-1">
+              <h4>Step 1: Attacker Logs In & Receives Valid Token (AuthN Success)</h4>
+              <p>
+                <span class="lang-hi">Attacker apne genuine credentials se login karta hai. API use ek valid JWT token return karti hai jisme <code>sub: 1001</code> (Kaif) stored hai. Ab attacker ke paas valid identity hai.</span>
+                <span class="lang-en">The attacker logs in with legitimate credentials. The API signs a valid JWT token containing <code>sub: 1001</code> (Kaif). The attacker is now authenticated.</span>
+              </p>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="hw-step-box step-2">
+              <h4>Step 2: ID Parameter Tampering in HTTP Request</h4>
+              <p>
+                <span class="lang-hi">Attacker browser ke DevTools ya Burp Suite me dekhta hai ki profile fetch karne ke liye URL <code>/api/users/1001</code> call ho raha hai. Attacker simply ID ko <code>1001</code> se badal kar victim ki ID <code>1002</code> kar deta hai.</span>
+                <span class="lang-en">The attacker inspects network traffic, notes <code>/api/users/1001</code>, and modifies the URL path parameter to <code>1002</code> (the victim's ID).</span>
+              </p>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="hw-step-box step-3">
+              <h4>Step 3: API Gateway Signature Verification (False Sense of Security)</h4>
+              <p>
+                <span class="lang-hi">API Gateway check karta hai: <em>"Kya JWT signature valid hai? Haan. Kya token expire hua? Nahi."</em> Gateway request ko aage microservice ya controller ko pass kar deta hai, ye soche bina ki request kis ID ke liye hai!</span>
+                <span class="lang-en">The API Gateway validates the JWT cryptographic signature and expiration. Finding it valid, it passes the request downstream without performing fine-grained data-level checks.</span>
+              </p>
+            </div>
+
+            <!-- Step 4 -->
+            <div class="hw-step-box step-4">
+              <h4>Step 4: Unscoped Database Query Execution (THE FATAL GAP)</h4>
+              <p>
+                <span class="lang-hi">Controller function URL se <code>user_id = 1002</code> uthata hai aur seedha database query run karta hai: <code>SELECT * FROM users WHERE id = 1002;</code>. Yahan <strong>kisi ne ye check nahi kiya ki token ka user ID 1001 hai aur requested ID 1002 hai!</strong></span>
+                <span class="lang-en">The controller extracts <code>user_id = 1002</code> and executes <code>SELECT * FROM users WHERE id = 1002;</code>. It completely fails to assert that <code>token.user_id == requested_id</code>!</span>
+              </p>
+            </div>
+
+            <!-- Step 5 -->
+            <div class="hw-step-box step-5">
+              <h4>Step 5: Unauthorized Data Exfiltration via HTTP 200 OK</h4>
+              <p>
+                <span class="lang-hi">Database victim Om ka private record return karta hai. API server use JSON me serialize karke HTTP 200 OK ke saath attacker ko de deta hai. Mission accomplished for attacker!</span>
+                <span class="lang-en">The database returns Om's record. The API serializes it to JSON and dispatches it in an HTTP 200 OK response to the attacker. Critical data leak achieved.</span>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           TAB 3: Real-World Example (4 Detailed Scenarios + Live Terminal)
+           ==================================================================== -->
+      <div id="tab-example" class="tab-content">
+        <div class="card-panel">
+          <div class="card-title-badge-row">
+            <div class="blue-circle-num">3</div>
+            <h2 class="panel-header-title">
+              <span class="lang-hi">Real-World Examples: Kya, Kaise Aur Kyun?</span>
+              <span class="lang-en">Real-World Examples: What, How & Why?</span>
+            </h2>
+          </div>
+
+          <p class="panel-body-text">
+            <span class="lang-hi">Industry me BOLA sirf simple profile tak seemit nahi hai. Neeche 4 sabse bade real-world attack vectors diye gaye hain:</span>
+            <span class="lang-en">In real enterprise pentesting, BOLA manifests across 4 high-impact exploitation vectors:</span>
+          </p>
+
+          <div class="scenarios-container">
+            <!-- Scenario 1 -->
+            <div class="scenario-card">
+              <div class="scenario-header">
+                <div class="scenario-title">🚗 1. Ride-Sharing / Cab Tracking BOLA (e.g. Uber Flaw)</div>
+                <span class="scenario-impact crit">Live Tracking</span>
+              </div>
+              <div class="scenario-body">
+                <p class="text-para">
+                  <span class="lang-hi"><strong>Kya Hota Hai:</strong> Cab booking app me user apna trip track karta hai via <code>GET /api/v1/trips/841029/status</code>.<br>
+                  <strong>Kaise Exploit Hua:</strong> Attacker ID badal kar <code>841030</code> kar deta hai. Server check nahi karta ki trip kiski hai aur doosre passenger ki live GPS location, driver name, aur drop address leak kar deta hai.</span>
+                  <span class="lang-en"><strong>What Happens:</strong> A passenger tracks their ride via <code>GET /api/v1/trips/841029/status</code>.<br>
+                  <strong>How Exploited:</strong> Tampering the trip ID exposes other passengers' real-time GPS locations, home addresses, and phone numbers.</span>
+                </p>
+              </div>
+            </div>
+
+            <!-- Scenario 2 -->
+            <div class="scenario-card">
+              <div class="scenario-header">
+                <div class="scenario-title">🏥 2. Healthcare & Medical Records BOLA</div>
+                <span class="scenario-impact crit">HIPAA Violation</span>
+              </div>
+              <div class="scenario-body">
+                <p class="text-para">
+                  <span class="lang-hi"><strong>Kya Hota Hai:</strong> Diagnostic lab portal par blood test report download hoti hai: <code>GET /api/lab-reports?patient_id=4491</code>.<br>
+                  <strong>Kaise Exploit Hua:</strong> <code>patient_id=4492</code> dalne par kisi doosre patient ki confidential diagnostic reports aur doctor's notes bina authorization ke download ho jaate hain.</span>
+                  <span class="lang-en"><strong>What Happens:</strong> A healthcare portal serves lab results via <code>GET /api/lab-reports?patient_id=4491</code>.<br>
+                  <strong>How Exploited:</strong> Incrementing the parameter exfiltrates other patients' confidential diagnoses and prescription history.</span>
+                </p>
+              </div>
+            </div>
+
+            <!-- Scenario 3 -->
+            <div class="scenario-card">
+              <div class="scenario-header">
+                <div class="scenario-title">💳 3. SaaS Multi-Tenant Financial Invoice Scraping</div>
+                <span class="scenario-impact crit">Mass Data Scraping</span>
+              </div>
+              <div class="scenario-body">
+                <p class="text-para">
+                  <span class="lang-hi"><strong>Kya Hota Hai:</strong> Billing API endpoint: <code>GET /api/v2/invoices/9410</code>.<br>
+                  <strong>Kaise Exploit Hua:</strong> Attacker Burp Suite Intruder me loop chala kar 1 se 10,000 tak sabhi invoices download kar leta hai jisme customer addresses, Personally Identifiable Information (PII), aur masked card tokens hote hain.</span>
+                  <span class="lang-en"><strong>What Happens:</strong> Billing endpoints expose invoices via <code>GET /api/v2/invoices/9410</code>.<br>
+                  <strong>How Exploited:</strong> Automated fuzzing across sequential IDs downloads thousands of competitor purchase orders and tax invoices, leaking confidential customer Personally Identifiable Information (PII).</span>
+                </p>
+              </div>
+            </div>
+
+            <!-- Scenario 4 -->
+            <div class="scenario-card">
+              <div class="scenario-header">
+                <div class="scenario-title">🔥 4. State-Changing BOLA: Full Account Takeover</div>
+                <span class="scenario-impact crit">Account Takeover</span>
+              </div>
+              <div class="scenario-body">
+                <p class="text-para">
+                  <span class="lang-hi"><strong>Kya Hota Hai:</strong> Profile update endpoint: <code>PUT /api/v1/users/1002</code> with body <code>{"email": "hacker@evil.com"}</code>.<br>
+                  <strong>Kaise Exploit Hua:</strong> Backend bina check kiye victim ID 1002 ka email update kar deta hai. Ab attacker "Forgot Password" par click karke victim ka account poori tarah hijack kar leta hai!</span>
+                  <span class="lang-en"><strong>What Happens:</strong> Profile modification via <code>PUT /api/v1/users/1002</code>.<br>
+                  <strong>How Exploited:</strong> The backend mutates the victim's email to the attacker's email, enabling instant password resets and complete account takeover.</span>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Split Terminal Grid -->
+          <div class="split-terminal-grid" style="margin-top:2rem;">
+            <div class="terminal-pane">
+              <div class="terminal-header">
+                <span class="terminal-label">HTTP Request (Attacker Kaif modifies ID to 1002)</span>
+                <button class="btn-copy" data-target="#req-term-4">Copy</button>
+              </div>
+              <div class="code-container" id="req-term-4">
+                <div class="code-line"><span class="line-num">1</span><span class="code-text"><span class="http-verb">GET</span> <span class="http-path">/api/users/1002</span> <span class="http-ver">HTTP/1.1</span></span></div>
+                <div class="code-line"><span class="line-num">2</span><span class="code-text"><span class="http-header-key">Host:</span> <span class="http-header-val">api.example.com</span></span></div>
+                <div class="code-line"><span class="line-num">3</span><span class="code-text"><span class="http-header-key">Authorization:</span> <span class="http-header-val">Bearer eyJhbGciOiJIUzI1NiIsInR5cCI...KaifToken</span></span></div>
+                <div class="code-line"><span class="line-num">4</span><span class="code-text"><span class="http-header-key">Accept:</span> <span class="http-header-val">application/json</span></span></div>
+              </div>
+            </div>
+
+            <div class="terminal-pane">
+              <div class="terminal-header">
+                <span class="terminal-label">HTTP Response (Victim Om Data Leaked)</span>
+                <button class="btn-copy" data-target="#res-term-4">Copy</button>
+              </div>
+              <div class="code-container" id="res-term-4">
+                <div class="code-line"><span class="line-num">1</span><span class="code-text"><span class="http-ver">HTTP/1.1</span> <span class="http-status-200">200 OK</span></span></div>
+                <div class="code-line"><span class="line-num">2</span><span class="code-text"><span class="http-header-key">Content-Type:</span> <span class="http-header-val">application/json</span></span></div>
+                <div class="code-line"><span class="line-num">3</span><span class="code-text"><span class="json-bracket">{</span></span></div>
+                <div class="code-line"><span class="line-num">4</span><span class="code-text">&nbsp;&nbsp;<span class="json-key">"id"</span>: <span class="json-num">1002</span>,</span></div>
+                <div class="code-line"><span class="line-num">5</span><span class="code-text">&nbsp;&nbsp;<span class="json-key">"name"</span>: <span class="json-str">"Om"</span>,</span></div>
+                <div class="code-line"><span class="line-num">6</span><span class="code-text">&nbsp;&nbsp;<span class="json-key">"email"</span>: <span class="json-str">"om@example.com"</span>,</span></div>
+                <div class="code-line"><span class="line-num">7</span><span class="code-text">&nbsp;&nbsp;<span class="json-key">"role"</span>: <span class="json-str">"user"</span>,</span></div>
+                <div class="code-line"><span class="line-num">8</span><span class="code-text">&nbsp;&nbsp;<span class="json-key">"credit_balance"</span>: <span class="json-num">12850.50</span></span></div>
+                <div class="code-line"><span class="line-num">9</span><span class="code-text"><span class="json-bracket">}</span></span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           TAB 4: Prevention (Well-Commented Code & Clear Rules)
+           ==================================================================== -->
+      <div id="tab-prevention" class="tab-content">
+        <div class="card-panel">
+          <div class="card-title-badge-row">
+            <div class="blue-circle-num">4</div>
+            <h2 class="panel-header-title">
+              <span class="lang-hi">Code Prevention: BOLA Ko Sahi Se Kaise Fix Karein?</span>
+              <span class="lang-en">Code Prevention: How to Properly Fix BOLA</span>
+            </h2>
+          </div>
+
+          <p class="panel-body-text">
+            <span class="lang-hi">Neeche Python (FastAPI + SQLAlchemy) ka vulnerable aur remediated code dekhein, jisme ek-ek line par comments karke samjhaya gaya hai:</span>
+            <span class="lang-en">Below is the vulnerable vs. remediated code in Python (FastAPI + SQLAlchemy) with comprehensive line-by-line comments:</span>
+          </p>
+
+          <div class="code-compare-grid">
+            <!-- Vulnerable Box -->
+            <div class="compare-box vulnerable">
+              <div class="compare-box-header">
+                <span class="compare-tag vuln">❌ Vulnerable Implementation (FastAPI)</span>
+                <button class="btn-copy" data-target="#code-vuln-clean">Copy</button>
+              </div>
+              <div class="code-container" id="code-vuln-clean">
+                <div class="code-line"><span class="line-num">1</span><span class="code-text"><span style="color:#f43f5e;">@app.get</span>(<span style="color:#fbbf24;">"/api/invoices/{invoice_id}"</span>)</span></div>
+                <div class="code-line"><span class="line-num">2</span><span class="code-text"><span style="color:#38bdf8;">async def</span> get_invoice(invoice_id: int, current_user = Depends(get_current_user), db = Depends(get_db)):</span></div>
+                <div class="code-line"><span class="line-num">3</span><span class="code-text">&nbsp;&nbsp;<span style="color:#64748b;"># 1. User login verify ho gaya (current_user token se mil gaya)</span></span></div>
+                <div class="code-line"><span class="line-num">4</span><span class="code-text">&nbsp;&nbsp;</span></div>
+                <div class="code-line"><span class="line-num">5</span><span class="code-text">&nbsp;&nbsp;<span style="color:#ef4444;"># ⚠️ FATAL FLAW: Sirf URL ki invoice_id par query chala di:</span></span></div>
+                <div class="code-line"><span class="line-num">6</span><span class="code-text">&nbsp;&nbsp;<span style="color:#ef4444;"># Backend ne ye check nahi kiya ki kya ye invoice current_user ka hai!</span></span></div>
+                <div class="code-line"><span class="line-num">7</span><span class="code-text">&nbsp;&nbsp;<span style="color:#e2e8f0;">invoice = db.query(Invoice).filter(Invoice.id == invoice_id).first()</span></span></div>
+                <div class="code-line"><span class="line-num">8</span><span class="code-text">&nbsp;&nbsp;</span></div>
+                <div class="code-line"><span class="line-num">9</span><span class="code-text">&nbsp;&nbsp;<span style="color:#38bdf8;">if not</span> invoice:</span></div>
+                <div class="code-line"><span class="line-num">10</span><span class="code-text">&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#38bdf8;">raise</span> HTTPException(status_code=404, detail=<span style="color:#fbbf24;">"Invoice not found"</span>)</span></div>
+                <div class="code-line"><span class="line-num">11</span><span class="code-text">&nbsp;&nbsp;</span></div>
+                <div class="code-line"><span class="line-num">12</span><span class="code-text">&nbsp;&nbsp;<span style="color:#64748b;"># ⚠️ KISI KA BHI INVOICE RETURN HO JAYEGA (BOLA!):</span></span></div>
+                <div class="code-line"><span class="line-num">13</span><span class="code-text">&nbsp;&nbsp;<span style="color:#38bdf8;">return</span> invoice</span></div>
+              </div>
+            </div>
+
+            <!-- Secure Box -->
+            <div class="compare-box secure">
+              <div class="compare-box-header">
+                <span class="compare-tag safe">✅ Remediated Implementation (Scoped Query)</span>
+                <button class="btn-copy" data-target="#code-safe-clean">Copy</button>
+              </div>
+              <div class="code-container" id="code-safe-clean">
+                <div class="code-line"><span class="line-num">1</span><span class="code-text"><span style="color:#f43f5e;">@app.get</span>(<span style="color:#fbbf24;">"/api/invoices/{invoice_id}"</span>)</span></div>
+                <div class="code-line"><span class="line-num">2</span><span class="code-text"><span style="color:#38bdf8;">async def</span> get_invoice(invoice_id: int, current_user = Depends(get_current_user), db = Depends(get_db)):</span></div>
+                <div class="code-line"><span class="line-num">3</span><span class="code-text">&nbsp;&nbsp;<span style="color:#34d399;"># 1. SCOPED DATABASE QUERY (The Gold Standard):</span></span></div>
+                <div class="code-line"><span class="line-num">4</span><span class="code-text">&nbsp;&nbsp;<span style="color:#34d399;"># Filter me hamesha 'owner_id == current_user.id' include karo!</span></span></div>
+                <div class="code-line"><span class="line-num">5</span><span class="code-text">&nbsp;&nbsp;<span style="color:#e2e8f0;">invoice = db.query(Invoice).filter(</span></span></div>
+                <div class="code-line"><span class="line-num">6</span><span class="code-text">&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#e2e8f0;">Invoice.id == invoice_id,</span></span></div>
+                <div class="code-line"><span class="line-num">7</span><span class="code-text">&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#e2e8f0;">Invoice.owner_id == current_user.id</span>  <span style="color:#34d399;"># 🔒 OWNERSHIP BOUNDARY</span></span></div>
+                <div class="code-line"><span class="line-num">8</span><span class="code-text">&nbsp;&nbsp;<span style="color:#e2e8f0;">).first()</span></span></div>
+                <div class="code-line"><span class="line-num">9</span><span class="code-text">&nbsp;&nbsp;</span></div>
+                <div class="code-line"><span class="line-num">10</span><span class="code-text">&nbsp;&nbsp;<span style="color:#38bdf8;">if not</span> invoice:</span></div>
+                <div class="code-line"><span class="line-num">11</span><span class="code-text">&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#34d399;"># Doosre user ka record exist bhi karta ho toh bhi 404 milega (No info leak)</span></span></div>
+                <div class="code-line"><span class="line-num">12</span><span class="code-text">&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#38bdf8;">raise</span> HTTPException(status_code=404, detail=<span style="color:#fbbf24;">"Invoice not found"</span>)</span></div>
+                <div class="code-line"><span class="line-num">13</span><span class="code-text">&nbsp;&nbsp;</span></div>
+                <div class="code-line"><span class="line-num">14</span><span class="code-text">&nbsp;&nbsp;<span style="color:#38bdf8;">return</span> invoice</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3 Golden Rules of Defense -->
+          <div style="margin-top:2rem;">
+            <h3 style="font-size:1.1rem; color:#38bdf8; margin-bottom:0.8rem; font-family:var(--font-heading);">
+              <span class="lang-hi">BOLA Ko Permanently Khatam Karne Ke 3 Niyam</span>
+              <span class="lang-en">The 3 Golden Rules to Prevent BOLA Permanently</span>
+            </h3>
+            <ol class="golden-rules-list">
+              <li><strong>User-Scoped Queries:</strong> Kabhi bhi akele client parameter par query mat chalao. Hamesha database filter me <code>WHERE id = :id AND tenant_id = :current_user_tenant</code> enforce karein.</li>
+              <li><strong>Cryptographically Secure Random UUIDs (v4):</strong> Sequential integers (<code>1001, 1002</code>) ko hata kar random UUIDs use karein taaki attacker loop ya brute-force na kar sake (par yaad rahe, authorization check fir bhi zaroori hai!).</li>
+              <li><strong>Centralized Policy Guards / Middleware:</strong> Har controller function me manual checks likhne ke bajaye ek centralized RBAC/ABAC policy guard banayein jo automatic verify kare.</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           TAB 5: Testing Checklist (Expanded with Real Pentesting Checks)
+           ==================================================================== -->
+      <div id="tab-testing" class="tab-content">
+        <div class="card-panel">
+          <div class="card-title-badge-row">
+            <div class="blue-circle-num">5</div>
+            <div>
+              <h2 class="panel-header-title">Comprehensive BOLA Pentesting Checklist</h2>
+              <p style="font-size:0.86rem; color:#94a3b8; margin:0;">Real-world security assessments & bug bounty hunting checks</p>
+            </div>
+          </div>
+
+          <div class="checklist-meta-header">
+            <div class="checklist-guide-msg">
+              <span class="lang-hi">Har test case ko inspect karein aur <strong>Pass (Secure)</strong> ya <strong>Fail (Vulnerable)</strong> mark karein:</span>
+              <span class="lang-en">Audit each test case and mark as <strong>Pass (Secure)</strong> or <strong>Fail (Vulnerable)</strong>:</span>
+            </div>
+            <div class="checklist-counter-badge">
+              <span id="checklist-progress-counter">0 of 7 Checks Audited (0 Passed | 0 Vulnerable)</span>
+            </div>
+          </div>
+
+          <div class="checklist-container">
+            <!-- Item 1 -->
+            <div class="checklist-item" id="check-item-1" onclick="handleCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">1</span>
+              </div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">1. Map All Endpoints Taking Object Identifiers (Reconnaissance)</span>
+                  <span class="lang-en">1. Map All Endpoints Taking Object Identifiers (Reconnaissance)</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Path variables (<code>/users/{id}</code>), query parameters (<code>?account_id=...</code>), JSON bodies (<code>{"order_id": 55}</code>), aur custom headers (<code>X-User-Id</code>) ko note down karein.</span>
+                  <span class="lang-en">Enumerate and catalog all API endpoints accepting resource identifiers across path parameters, query strings, request bodies, or headers.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test (Testing Steps):</div>
+                  <span class="lang-hi">1. Burp Suite me Target > Site Map open karein aur authenticated browsing traffic filter karein.<br>2. Regex filter <code>[0-9a-fA-F-]{4,}</code> run karke identify karein kahan IDs accept ho rahi hain (e.g. <code>/api/v1/invoices/1092</code> ya <code>/api/orders?id=501</code>).<br>3. Endpoints ki inventory spreadsheet me mark karein: kaunsa resource kiske dwara owned hai.</span>
+                  <span class="lang-en">1. In Burp Suite, inspect Target > Site Map and filter for authenticated API traffic.<br>2. Apply regex filters for numerical IDs and UUIDs to identify endpoints consuming entity keys (e.g. <code>/api/v1/invoices/{id}</code>).<br>3. Document each route and note the expected owning user role in your test matrix.</span>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Item 2 -->
+            <div class="checklist-item" id="check-item-2" onclick="handleCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">2</span>
+              </div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">2. Setup Two Distinct Test Accounts (User A - Attacker, User B - Victim)</span>
+                  <span class="lang-en">2. Setup Two Distinct Test Accounts (User A - Attacker, User B - Victim)</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Dono accounts me login karke unke respective resources (invoices, profile IDs, documents) ki baseline list banayein.</span>
+                  <span class="lang-en">Provision two independent test accounts belonging to the exact same privilege tier to verify horizontal authorization boundaries.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test (Testing Steps):</div>
+                  <span class="lang-hi">1. Do alag private browser windows me User A (Kaif) aur User B (Om) ke accounts login karein.<br>2. Kaif ke browser me document ID <code>101</code> generate karein aur Om ke browser me document ID <code>202</code> note karein.<br>3. Dono ke valid <code>Authorization: Bearer &lt;JWT&gt;</code> tokens Burp Repeater tabs me label karke save karein.</span>
+                  <span class="lang-en">1. Log in to two separate browser sessions: User A (Kaif) and User B (Om).<br>2. Generate identifiable resources in both accounts (e.g., Kaif creates document <code>101</code>, Om creates document <code>202</code>).<br>3. Capture and label their respective <code>Authorization: Bearer</code> tokens in Burp Suite Repeater tabs.</span>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Item 3 -->
+            <div class="checklist-item" id="check-item-3" onclick="handleCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">3</span>
+              </div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">3. Automate Token Swapping with Burp Suite 'Autorize'</span>
+                  <span class="lang-en">3. Automate Token Swapping with Burp Suite 'Autorize'</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Burp Autorize me User B ka Bearer token configure karein. Browser me User A bankar click karein. Autorize automatically token replace karke 200 OK responses ko highlight karega.</span>
+                  <span class="lang-en">Leverage Burp Suite's 'Autorize' BApp to automatically replay intercepted requests with the secondary user's token.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test (Testing Steps):</div>
+                  <span class="lang-hi">1. Burp Extender se <strong>Autorize</strong> install karein aur Om ka <code>Authorization: Bearer</code> header paste karein.<br>2. Browser me Kaif bankar sabhi features (profile, invoices, settings) click karein.<br>3. Autorize table me <strong>Bypassed! (Red)</strong> status check karein jahan Om ka token Kaif ke private resource par 200 OK receive kar raha hai.</span>
+                  <span class="lang-en">1. Launch Burp's <strong>Autorize</strong> extension and supply Om's bearer authentication token into the configuration.<br>2. Browse the application while logged in as Kaif, exercising all viewing and reporting features.<br>3. Inspect the Autorize output table: any request flagged as <strong>Bypassed!</strong> indicates that Om accessed Kaif's entity.</span>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Item 4 -->
+            <div class="checklist-item" id="check-item-4" onclick="handleCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">4</span>
+              </div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">4. Test State-Changing HTTP Verbs (PUT, PATCH, DELETE)</span>
+                  <span class="lang-en">4. Test State-Changing HTTP Verbs (PUT, PATCH, DELETE)</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Agar <code>GET /api/users/1002</code> 403 Forbidden deta hai, toh <code>PUT /api/users/1002</code> ya <code>DELETE</code> test karein. 40% dev teams Read protect karti hain par Write bhool jaati hain!</span>
+                  <span class="lang-en">Audit modification and destruction methods: developers frequently enforce authorization on GET queries while neglecting write handlers.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test (Testing Steps):</div>
+                  <span class="lang-hi">1. Burp Repeater me Kaif ke token ke sath request bhein: <code>PUT /api/v1/invoices/202</code> (Om ka invoice).<br>2. Payload me <code>{"amount": 0, "status": "PAID"}</code> inject karein.<br>3. Agar server <code>HTTP 200 OK</code> return karta hai aur Om ka invoice modify ho jata hai, toh ye <strong>CRITICAL BOLA FAIL</strong> hai.</span>
+                  <span class="lang-en">1. In Burp Repeater, prepare a mutation request using Kaif's credentials: <code>PUT /api/v1/invoices/202</code> (targeting Om's invoice).<br>2. Inject state changes such as <code>{"amount": 0, "status": "PAID"}</code>.<br>3. If the server responds with <code>200 OK</code> and persists the modification in Om's record, flag as <strong>CRITICAL BOLA FAIL</strong>.</span>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Item 5 -->
+            <div class="checklist-item" id="check-item-5" onclick="handleCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">5</span>
+              </div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">5. Fuzzing Data Types & Parameter Encoding</span>
+                  <span class="lang-en">5. Fuzzing Data Types & Parameter Encoding</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">ID parameter ko array wrap karein (<code>{"id": [1002]}</code>), type juggling karein (<code>{"id": "1002"}</code>), ya URL encoding karein. Kahi ORM type bypass toh nahi kar raha?</span>
+                  <span class="lang-en">Evaluate input parser behaviors against type confusion (arrays, string vs integer) and parameter pollution.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test (Testing Steps):</div>
+                  <span class="lang-hi">1. Request payload me ID format badalkar test karein: <code>{"id": [202]}</code>, <code>{"id": {"$gt": 0}}</code>, ya <code>id[]=202</code>.<br>2. URL encoding test karein: <code>GET /api/documents/%32%30%32</code>.<br>3. Check karein kya backend ka type validation fail hokar database query me authorization filter bypass kar deta hai.</span>
+                  <span class="lang-en">1. Transmit varied type representations: wrap integers in arrays (<code>{"id": [202]}</code>), strings (<code>{"id": "202"}</code>), or NoSQL objects (<code>{"$ne": null}</code>).<br>2. Apply double URL-encoding to path keys (e.g. <code>/api/docs/%2532%2530%2532</code>).<br>3. If the type confusion causes the backend query to skip tenant comparison filters, mark as <strong>Vulnerable</strong>.</span>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Item 6 -->
+            <div class="checklist-item" id="check-item-6" onclick="handleCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">6</span>
+              </div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">6. Check Secondary Endpoints for Leaked UUIDs</span>
+                  <span class="lang-en">6. Check Secondary Endpoints for Leaked UUIDs</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Agar target UUID use karta hai, toh public search, user comments, social feed, ya activity audit logs me dekhein ki kya victim ka UUID kahin publicly leak ho raha hai.</span>
+                  <span class="lang-en">Verify that applications relying on unpredictable UUIDs do not leak victim UUIDs through auxiliary public endpoints.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test (Testing Steps):</div>
+                  <span class="lang-hi">1. Application ke public features (user profile directory, product reviews, shared links, export PDFs) inspect karein.<br>2. Search karein kya victim Om ka UUID (<code>a8b1...</code>) responses ke metadata me visible hai.<br>3. Leaked UUID ko private endpoints (<code>/api/v1/contracts/{uuid}</code>) par bhej kar check karein ki authorization check fail hota hai ya nahi.</span>
+                  <span class="lang-en">1. Crawl all public and community endpoints (comments, activity streams, public collaborator lists).<br>2. Search HTTP responses for victim Om's GUID/UUID strings.<br>3. Replay the discovered UUID against privileged object endpoints. If access is granted without ownership verification, mark as <strong>Vulnerable</strong>.</span>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Item 7 -->
+            <div class="checklist-item" id="check-item-7" onclick="handleCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">7</span>
+              </div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">7. Multi-Tenant Organization Boundary Verification</span>
+                  <span class="lang-en">7. Multi-Tenant Organization Boundary Verification</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">SaaS apps me <code>tenant_id</code>, <code>org_id</code>, ya <code>workspace_id</code> parameters ko alter karke check karein ki dusri company ka workspace load toh nahi ho raha.</span>
+                  <span class="lang-en">Verify tenant boundary enforcement in multi-tenant SaaS environments by manipulating organizational context identifiers.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test (Testing Steps):</div>
+                  <span class="lang-hi">1. Do alag organizations (Company A aur Company B) create karein.<br>2. Company A ke admin token ke sath request headers me <code>X-Tenant-ID: org_b_id</code> inject karein.<br>3. Agar server Company B ka data ya employee list return karta hai, toh tenant boundary isolation <strong>COMPLETELY BROKEN</strong> hai.</span>
+                  <span class="lang-en">1. Create two distinct corporate workspaces: Organization A and Organization B.<br>2. While authenticated as Organization A, inject Organization B's ID via headers (<code>X-Org-Id</code>, <code>X-Tenant-Id</code>) or query params.<br>3. If the backend serves Organization B's internal data or user records, mark as <strong>FAIL (Multi-Tenant BOLA)</strong>.</span>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           TAB 6: Live Lab (Enhanced with Verbs, Presets & SQL Logs)
+           ==================================================================== -->
+      <div id="tab-lab" class="tab-content">
+        <div class="card-panel">
+          <div class="card-title-badge-row">
+            <div class="blue-circle-num">⚡</div>
+            <h2 class="panel-header-title">Live Interactive BOLA Sandbox</h2>
+          </div>
+
+          <p class="panel-body-text">
+            <span class="lang-hi">Aap <strong>Kaif (User ID: 1001)</strong> ke roop me logged in hain. Niche quick-preset buttons se target select karein ya khud ID type karein. Aap HTTP Verb (<code>GET</code>, <code>PUT</code>, <code>DELETE</code>) bhi switch kar sakte hain:</span>
+            <span class="lang-en">You are authenticated as <strong>Kaif (User ID: 1001)</strong>. Choose a target from quick-presets or enter an ID manually. You can also switch HTTP verbs (<code>GET</code>, <code>PUT</code>, <code>DELETE</code>):</span>
+          </p>
+
+          <div class="lab-simulator">
+            <div class="auth-token-box">
+              <div><strong>Active Session:</strong> Kaif (Role: <code>standard_user</code> | Own ID: <code>1001</code>)</div>
+              <div style="color:var(--cyan);">Token: <code>Bearer eyJhbG...KaifSession1001</code></div>
+            </div>
+
+            <!-- Quick Preset Buttons -->
+            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:1rem;">
+              <span style="font-size:0.78rem; color:#94a3b8; font-weight:600;">Quick Target Presets:</span>
+              <button class="sim-preset-btn" data-id="1001">User 1001 (Kaif - Self)</button>
+              <button class="sim-preset-btn target-btn" data-id="1002">Target 1002 (Om - Finance)</button>
+              <button class="sim-preset-btn target-btn" data-id="1003">Target 1003 (Sarah Connor - CTO)</button>
+              <button class="sim-preset-btn" data-id="9999">ID 9999 (Non-Existent)</button>
+            </div>
+
+            <!-- Interactive URL Bar with Verb Select -->
+            <div class="interactive-control-bar">
+              <select id="sim-verb-select" class="http-method-select">
+                <option value="GET">GET</option>
+                <option value="PUT">PUT (Modify)</option>
+                <option value="DELETE">DELETE (Destroy)</option>
+              </select>
+              <span style="font-family:var(--font-mono); color:#64748b;">/api/users/</span>
+              <input type="text" id="sim-id-input" class="url-input-field" value="1002" placeholder="User ID">
+              <button id="sim-send-btn" class="btn-send">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                Send Request
+              </button>
+            </div>
+
+            <!-- Editable Request Body Container (Appears when PUT is selected) -->
+            <div id="sim-body-container" style="display:none; margin-bottom:1rem; background:#0b1222; border:1px solid #1e293b; padding:10px; border-radius:var(--radius-sm);">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                <label style="font-size:0.75rem; color:#94a3b8; font-family:var(--font-mono);">Request Payload (JSON Body for State Modification):</label>
+              </div>
+              <pre id="sim-body-pre" style="width:100%; min-height:50px; background:#070d1a; border:1px solid #334155; border-radius:4px; padding:8px; font-family:var(--font-mono); font-size:0.82rem; margin:0 0 6px 0; box-sizing:border-box; overflow:auto;"></pre>
+              <textarea id="sim-body-input" rows="2" style="width:100%; background:#070d1a; color:#fbbf24; font-family:var(--font-mono); font-size:0.82rem; border:1px solid #334155; border-radius:4px; padding:6px;" oninput="if(window.syntaxHighlightJson){document.getElementById('sim-body-pre').innerHTML = window.syntaxHighlightJson(this.value);}">{"email": "attacker@evil.com", "private_notes": "Account hacked by Kaif via BOLA!"}</textarea>
+            </div>
+
+            <!-- Dynamic Alert Box -->
+            <div id="sim-alert-banner" style="display:none; padding:12px 16px; border-radius:var(--radius-sm); border-left:4px solid #ef4444; margin-bottom:1rem; font-size:0.88rem; line-height:1.5;"></div>
+
+            <!-- Live Output Terminal -->
+            <div class="terminal-pane">
+              <div class="terminal-header">
+                <span class="terminal-label">Simulated HTTP Response</span>
+                <span id="sim-status" style="font-size:0.8rem; color:#34d399; font-family:var(--font-mono); font-weight:700;">Ready</span>
+              </div>
+              <div class="code-container" style="min-height:160px;">
+                <pre id="sim-response-body" style="font-family:var(--font-mono); font-size:0.84rem; color:#cbd5e1; margin:0;">// Select a preset button above or enter an ID and click "Send Request"</pre>
+              </div>
+            </div>
+
+            <!-- Real-Time Simulated SQL Execution Log -->
+            <div style="margin-top:1rem; background:#060a14; border:1px solid rgba(255,255,255,0.06); border-radius:var(--radius-sm); padding:10px 14px; font-family:var(--font-mono); font-size:0.78rem;">
+              <div style="color:#64748b; margin-bottom:3px;">[DATABASE ENGINE MONITOR]:</div>
+              <div id="sim-sql-log" style="color:#38bdf8;">SQL &gt; Idle. Waiting for API query execution...</div>
+            </div>
+
+            <!-- Simulator What Happened Explanation Section -->
+            <div id="sim-explanation-box" style="margin-top:1rem; background:rgba(15,23,42,0.85); border:1px solid rgba(56,189,248,0.25); border-radius:var(--radius-sm); padding:12px 16px;">
+              <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+                <span style="font-size:1.1rem;">💡</span>
+                <span style="font-size:0.88rem; font-weight:700; color:#38bdf8; font-family:var(--font-heading);">Explanation:</span>
+              </div>
+              <div id="sim-explanation-text" style="font-size:0.86rem; color:#cbd5e1; line-height:1.6;">
+                <span class="lang-hi">Upar kisi bhi Target button par click karein ya ID daal kar "Send Request" dabayein taaki BOLA vulnerability ka real-time explanation yahan render ho sake.</span>
+                <span class="lang-en">Click any target preset button above or enter an ID to see a real-time architectural explanation of what just happened.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           TAB 7: Questions (Renamed from Key Takeaways)
+           ==================================================================== -->
+      <div id="tab-questions" class="tab-content">
+        <div class="card-panel">
+          <div class="card-title-badge-row">
+            <div class="blue-circle-num">🤔</div>
+            <div>
+              <h2 class="panel-header-title">Questions & Tricky Interview Scenarios</h2>
+              <p style="font-size:0.86rem; color:#94a3b8; margin:0;">Master the tough questions asked by FAANG & top security firms</p>
+            </div>
+          </div>
+
+          <div class="faq-grid">
+            <!-- Question 1 -->
+            <div class="faq-card">
+              <div class="faq-question">
+                <span>❓</span>
+                <span class="lang-hi">1. Agar developer auto-increment IDs (1001, 1002) ki jagah UUID v4 use kare, toh kya BOLA 100% solve ho jata hai?</span>
+                <span class="lang-en">1. Does replacing auto-increment IDs with UUIDv4 completely fix BOLA?</span>
+              </div>
+              <div class="faq-answer">
+                <span class="lang-hi"><strong>Bilkul NAHI!</strong> Ye interview ka sabse bada trap question hai. UUID use karne se ID enumeration (brute-force guessing) ruk jata hai, lekin access control nahi banta. Isko <em>"Security through Obscurity"</em> kehte hain. Agar victim ka UUID kisi public comment, email invite link, ya referral URL me leak ho gaya, toh attacker us UUID par direct request bhej kar poora data chura sakta hai kyunki backend me authorization check abhi bhi gayab hai!</span>
+                <span class="lang-en"><strong>Absolutely NOT!</strong> This is the classic "Security through Obscurity" fallacy. While UUIDs prevent automated sequential guessing, they do not enforce authorization. If a UUID is disclosed via shared links, emails, or public profile pages, an attacker can directly query it and exfiltrate data if backend authorization logic is absent.</span>
+              </div>
+            </div>
+
+            <!-- Question 2 -->
+            <div class="faq-card">
+              <div class="faq-question">
+                <span>❓</span>
+                <span class="lang-hi">2. BOLA (API1) aur BFLA (API5) me kya fundamental difference hai?</span>
+                <span class="lang-en">2. What is the fundamental difference between BOLA (API1) and BFLA (API5)?</span>
+              </div>
+              <div class="faq-answer">
+                <span class="lang-hi"><strong>BOLA (Object Level / Horizontal):</strong> Dono users ka role same hai (Normal User vs Normal User). Lekin User A User B ke personal <em>object</em> (jaise invoice ya Personally Identifiable Information (PII) profile) ko access kar leta hai.<br>
+                <strong>BFLA (Function Level / Vertical):</strong> Yahan role boundary tooti hai. Ek Normal User ek privileged <em>function</em> ya administrative endpoint (jaise <code>DELETE /api/v1/admin/users</code>) ko call kar leta hai kyunki endpoint par role validation miss ho gaya.</span>
+                <span class="lang-en"><strong>BOLA (Object Level):</strong> Horizontal privilege violation between peer users. User A accesses User B's object or Personally Identifiable Information (PII).<br>
+                <strong>BFLA (Function Level):</strong> Vertical privilege violation. A standard user accesses an administrative function or endpoint (e.g. <code>POST /api/v1/admin/purge</code>) due to missing role checks.</span>
+              </div>
+            </div>
+
+            <!-- Question 3 -->
+            <div class="faq-card">
+              <div class="faq-question">
+                <span>❓</span>
+                <span class="lang-hi">3. Kya GraphQL APIs me bhi BOLA vulnerability hoti hai?</span>
+                <span class="lang-en">3. Does BOLA exist in GraphQL APIs?</span>
+              </div>
+              <div class="faq-answer">
+                <span class="lang-hi"><strong>HAAN, 100%!</strong> GraphQL me endpoints fixed nahi hote, par queries aur mutations hote hain. For example: <code>query { getAccount(id: "1002") { balance, transactions } }</code>. Agar backend resolver function me object ownership check nahi hai, toh attacker GraphQL query me ID change karke mass data exfiltrate kar sakta hai.</span>
+                <span class="lang-en"><strong>YES, 100%!</strong> GraphQL replaces REST URLs with queries (e.g. <code>query { getAccount(id: "1002") { balance } }</code>). If the underlying resolver function queries the model by ID without verifying current user ownership, BOLA is fully exploitable.</span>
+              </div>
+            </div>
+
+            <!-- Question 4 -->
+            <div class="faq-card">
+              <div class="faq-question">
+                <span>❓</span>
+                <span class="lang-hi">4. Kya BOLA sirf Read operations (GET) par hota hai?</span>
+                <span class="lang-en">4. Is BOLA limited only to Read (GET) operations?</span>
+              </div>
+              <div class="faq-answer">
+                <span class="lang-hi"><strong>Nahi! State-changing BOLA (PUT, PATCH, DELETE) sabse zyada khatarnak hota hai.</strong> Agar koi user <code>PUT /api/users/1002</code> bhej kar email badal de (Account Takeover), ya <code>DELETE /api/orders/5541</code> bhej kar doosre ka order cancel kar de, toh ye devastating business damage karta hai.</span>
+                <span class="lang-en"><strong>No! State-changing BOLA (PUT, PATCH, DELETE) is far more hazardous.</strong> Exploiting write endpoints enables account takeovers (modifying victim email) or unauthorized record deletion.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <footer class="app-footer-custom">
+        <div class="footer-divider-glow"></div>
+        <div class="footer-inner-content">
+          <div class="footer-brand-row">
+            <div class="footer-badge-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                <path d="m9 12 2 2 4-4"/>
+              </svg>
+            </div>
+            <div class="footer-author-text">
+              <span class="footer-credit-label">Designed and Developed by</span>
+              <span class="footer-author-name">Irshad Akaram</span>
+            </div>
+          </div>
+        </div>
+      </footer>
+
+    </main>
+  </div>
+
+  <script src="assets/js/main.js"></script>
+<script>
+    // Sync BOLA request body highlight
+    function syncBolaReqHighlight() {
+      const bi = document.getElementById('sim-body-input');
+      const bp = document.getElementById('sim-body-pre');
+      if (bi && bp && window.syntaxHighlightJson) {
+        bp.innerHTML = window.syntaxHighlightJson(bi.value);
+      }
+    }
+    document.addEventListener('DOMContentLoaded', () => {
+      syncBolaReqHighlight();
+    });
+</script>
+</body>
+</html>

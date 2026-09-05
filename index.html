@@ -1,0 +1,1515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CyberLab – Break It. Understand It. Secure It.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy:       #030712;
+      --navy-card:  #071124;
+      --cyan:       #00d4ff;
+      --cyan-glow:  rgba(0, 212, 255, 0.35);
+      --blue:       #1545d6;
+      --green:      #10b981;
+      --purple:     #a855f7;
+      --white:      #ffffff;
+      --gray:       #94a3b8;
+      --gray2:      #64748b;
+      --border:     rgba(0, 212, 255, 0.12);
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background-color: var(--navy);
+      color: #e2e8f0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Constellation canvas behind all content */
+    #cyberCanvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* Ambient Glow Effects */
+    .ambient-glow-top {
+      position: fixed;
+      top: -240px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 850px;
+      height: 520px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(0, 212, 255, 0.12) 0%, rgba(21, 69, 214, 0.05) 50%, transparent 70%);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .ambient-glow-right {
+      position: fixed;
+      top: 10%;
+      right: -150px;
+      width: 650px;
+      height: 650px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(168, 85, 247, 0.08) 0%, rgba(0, 212, 255, 0.04) 50%, transparent 70%);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Subtle Cyber Dot-Grid Overlay */
+    .grid-overlay {
+      position: fixed;
+      inset: 0;
+      background-image:
+        radial-gradient(rgba(0, 212, 255, 0.06) 1px, transparent 1px);
+      background-size: 36px 36px;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    header, section, .dev-footer-wrap, .section-divider {
+      position: relative;
+      z-index: 2;
+    }
+
+    /* Scroll offset so elements stop comfortably below the header */
+    .card, .cards-section {
+      scroll-margin-top: 100px;
+    }
+
+    /* ============================================================
+       TOP BAR (Fully Transparent Navbar, Clean Floating Minimalist Dock)
+    ============================================================ */
+    .top-header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 48px;
+      background: transparent;
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+      border: none;
+      box-shadow: none;
+    }
+
+    .logo-wrap {
+      display: flex;
+      align-items: center;
+      text-decoration: none;
+    }
+
+    .logo-img {
+      height: 74px;
+      width: auto;
+      object-fit: contain;
+      filter: drop-shadow(0 0 16px rgba(0, 212, 255, 0.55));
+      transition: transform 0.25s ease, filter 0.25s ease;
+    }
+
+    .logo-wrap:hover .logo-img {
+      transform: scale(1.04);
+      filter: drop-shadow(0 0 24px rgba(0, 212, 255, 0.8));
+    }
+
+    /* Clean, Organized Button Pills */
+    .nav-pill-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      list-style: none;
+    }
+
+    .nav-item {
+      position: relative;
+    }
+
+    .nav-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 16px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(0, 212, 255, 0.14);
+      color: #94a3b8;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      cursor: pointer;
+    }
+
+    .nav-pill:hover {
+      color: var(--cyan);
+      background: rgba(0, 212, 255, 0.09);
+      border-color: rgba(0, 212, 255, 0.4);
+      box-shadow: 0 0 16px rgba(0, 212, 255, 0.22);
+      transform: translateY(-1px);
+    }
+
+    .nav-pill.active {
+      color: var(--cyan);
+      background: rgba(0, 212, 255, 0.12);
+      border-color: rgba(0, 212, 255, 0.35);
+      box-shadow: 0 0 14px rgba(0, 212, 255, 0.2);
+    }
+
+    .nav-pill svg {
+      transition: transform 0.2s ease;
+    }
+    .nav-pill:hover svg {
+      transform: scale(1.1);
+    }
+
+    /* Checklist Dropdown */
+    .checklist-dropdown {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      width: 200px;
+      background: rgba(7, 17, 36, 0.95);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(0, 212, 255, 0.25);
+      border-radius: 12px;
+      padding: 6px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7), 0 0 25px rgba(0, 212, 255, 0.12);
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 200;
+    }
+
+    .nav-item:hover .checklist-dropdown {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+
+    .dropdown-item {
+      display: flex !important;
+      align-items: center !important;
+      gap: 10px !important;
+      padding: 9px 12px !important;
+      border-radius: 8px !important;
+      color: #cbd5e1 !important;
+      font-size: 13px !important;
+      font-weight: 500 !important;
+      text-decoration: none !important;
+      transition: background 0.18s ease, color 0.18s ease !important;
+      border: 1px solid transparent !important;
+    }
+
+    .dropdown-item:hover {
+      background: rgba(0, 212, 255, 0.12) !important;
+      color: var(--cyan) !important;
+      border-color: rgba(0, 212, 255, 0.25) !important;
+    }
+
+    .dropdown-item svg {
+      color: var(--cyan);
+      flex-shrink: 0;
+    }
+
+    /* ============================================================
+       HERO
+    ============================================================ */
+    .hero {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-items: center;
+      gap: 36px;
+      padding: 44px 54px 50px;
+      min-height: 500px;
+      position: relative;
+    }
+
+    .hero-content {
+      max-width: 580px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .eyebrow {
+      font-size: 11px;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: var(--cyan);
+      font-weight: 700;
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .eyebrow::before {
+      content: '';
+      display: inline-block;
+      width: 20px;
+      height: 2px;
+      background: var(--cyan);
+      border-radius: 1px;
+    }
+
+    .hero-title {
+      font-size: 52px;
+      font-weight: 900;
+      line-height: 1.14;
+      letter-spacing: -1.2px;
+      margin-bottom: 22px;
+      color: var(--white);
+    }
+
+    .hero-title .accent {
+      background: linear-gradient(90deg, #00d4ff 0%, #0284c7 50%, #38bdf8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: none;
+    }
+
+    .hero-desc {
+      font-size: 15.5px;
+      line-height: 1.75;
+      color: var(--gray);
+      max-width: 500px;
+      margin-bottom: 34px;
+    }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .btn-hero-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 13px 30px;
+      border-radius: 11px;
+      background: linear-gradient(135deg, #1545d6 0%, #00bcd4 100%);
+      color: var(--white);
+      font-size: 15px;
+      font-weight: 700;
+      text-decoration: none;
+      box-shadow: 0 4px 24px rgba(0, 188, 212, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      transition: all 0.25s ease;
+      cursor: pointer;
+    }
+
+    .btn-hero-primary:hover {
+      box-shadow: 0 6px 32px rgba(0, 212, 255, 0.65);
+      transform: translateY(-2px);
+    }
+
+    .hero-visual {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .hero-globe-glow {
+      display: none; /* glowing effect removed */
+    }
+
+    .hero-img {
+      width: 100%;
+      max-width: 620px;
+      height: auto;
+      filter: none; /* glowing effect removed */
+      animation: floatGlobe 6s ease-in-out infinite;
+      position: relative;
+      z-index: 2;
+      mix-blend-mode: screen;
+    }
+
+    @keyframes floatGlobe {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-12px); }
+    }
+
+    .section-divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.2), transparent);
+      margin: 0 54px;
+    }
+
+    /* ============================================================
+       CARDS SECTION
+    ============================================================ */
+    .cards-section {
+      padding: 44px 54px 50px;
+    }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 22px;
+    }
+
+    .card {
+      border-radius: 18px;
+      padding: 26px 24px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.3s ease, border-color 0.3s ease;
+      background: var(--navy-card);
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+    }
+
+    /* 1. Web Card (Now Purple - from Mobile) */
+    .card-web {
+      background: linear-gradient(155deg, rgba(28, 12, 48, 0.92) 0%, rgba(16, 7, 30, 0.96) 100%);
+      border: 1.5px solid rgba(124, 58, 237, 0.45);
+      box-shadow: 0 0 32px rgba(124, 58, 237, 0.1);
+    }
+    .card-web:hover {
+      border-color: rgba(168, 85, 247, 0.65);
+      box-shadow: 0 12px 42px rgba(124, 58, 237, 0.26);
+    }
+
+    /* 2. API Card (Now Blue / Cyan - from Web) */
+    .card-api {
+      background: linear-gradient(155deg, rgba(8, 24, 48, 0.92) 0%, rgba(5, 15, 32, 0.96) 100%);
+      border: 1.5px solid rgba(0, 168, 204, 0.38);
+      box-shadow: 0 0 32px rgba(0, 168, 204, 0.08);
+    }
+    .card-api:hover {
+      border-color: rgba(0, 212, 255, 0.6);
+      box-shadow: 0 12px 42px rgba(0, 212, 255, 0.2);
+    }
+
+    /* 3. Mobile Card (Now Green - from API) */
+    .card-mobile {
+      background: linear-gradient(155deg, rgba(6, 32, 22, 0.92) 0%, rgba(4, 20, 14, 0.96) 100%);
+      border: 1.5px solid rgba(16, 185, 129, 0.38);
+      box-shadow: 0 0 32px rgba(16, 185, 129, 0.08);
+    }
+    .card-mobile:hover {
+      border-color: rgba(16, 185, 129, 0.65);
+      box-shadow: 0 12px 42px rgba(16, 185, 129, 0.22);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      margin-bottom: 10px;
+    }
+
+    .card-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 11px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 19px;
+      flex-shrink: 0;
+    }
+
+    /* Icon Colors Swapped */
+    .icon-web {
+      background: rgba(124, 58, 237, 0.2);
+      border: 1px solid rgba(168, 85, 247, 0.35);
+      color: var(--purple);
+    }
+    .icon-api {
+      background: rgba(0, 168, 204, 0.16);
+      border: 1px solid rgba(0, 212, 255, 0.3);
+      color: var(--cyan);
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      font-size: 16px;
+    }
+    .icon-mobile {
+      background: rgba(16, 185, 129, 0.16);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: var(--green);
+    }
+
+    .card-header h2 {
+      font-size: 21px;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+      color: var(--white);
+    }
+
+    .card-desc {
+      font-size: 13px;
+      color: var(--gray);
+      line-height: 1.6;
+      margin-bottom: 20px;
+      min-height: 38px;
+    }
+
+    .card-body {
+      display: grid;
+      grid-template-columns: 1fr 125px;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 22px;
+      flex: 1;
+    }
+
+    .card-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .card-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 12px;
+      color: #8fa5c2;
+      line-height: 1.4;
+    }
+
+    .chk {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9px;
+      font-weight: 700;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* Checkmark Colors Swapped */
+    .chk-web {
+      background: rgba(168, 85, 247, 0.15);
+      color: #c084fc;
+      border: 1px solid rgba(168, 85, 247, 0.3);
+    }
+
+    .chk-api {
+      background: rgba(0, 212, 255, 0.14);
+      color: var(--cyan);
+      border: 1px solid rgba(0, 212, 255, 0.28);
+    }
+
+    .chk-mobile {
+      background: rgba(16, 185, 129, 0.14);
+      color: var(--green);
+      border: 1px solid rgba(16, 185, 129, 0.28);
+    }
+
+    .card-visual {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      background: transparent;
+      padding: 0;
+    }
+
+    .card-visual::before {
+      content: '';
+      position: absolute;
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .card-web .card-visual::before {
+      background: radial-gradient(circle, rgba(168, 85, 247, 0.24) 0%, transparent 70%);
+    }
+
+    .card-api .card-visual::before {
+      background: radial-gradient(circle, rgba(0, 212, 255, 0.22) 0%, transparent 70%);
+    }
+
+    .card-mobile .card-visual::before {
+      background: radial-gradient(circle, rgba(16, 185, 129, 0.22) 0%, transparent 70%);
+    }
+
+    .card-visual img {
+      width: 100%;
+      max-width: 125px;
+      height: auto;
+      object-fit: contain;
+      position: relative;
+      z-index: 2;
+      transition: transform 0.35s ease, filter 0.35s ease;
+    }
+
+    .card-web .card-visual img {
+      filter: drop-shadow(0 6px 16px rgba(168, 85, 247, 0.38));
+    }
+
+    .card-api .card-visual img {
+      filter: drop-shadow(0 6px 16px rgba(0, 212, 255, 0.35));
+    }
+
+    .card-mobile .card-visual img {
+      filter: drop-shadow(0 6px 16px rgba(16, 185, 129, 0.35));
+    }
+
+    .card:hover .card-visual img {
+      transform: translateY(-4px) scale(1.06);
+    }
+
+    .card-web:hover .card-visual img {
+      filter: drop-shadow(0 10px 24px rgba(168, 85, 247, 0.6));
+    }
+    .card-api:hover .card-visual img {
+      filter: drop-shadow(0 10px 24px rgba(0, 212, 255, 0.55));
+    }
+    .card-mobile:hover .card-visual img {
+      filter: drop-shadow(0 10px 24px rgba(16, 185, 129, 0.55));
+    }
+
+    /* Card Action Button Colors Swapped */
+    .card-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 11px 20px;
+      border-radius: 9px;
+      font-size: 13.5px;
+      font-weight: 600;
+      text-decoration: none;
+      width: 100%;
+      cursor: pointer;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: all 0.2s ease;
+    }
+
+    .btn-web {
+      background: linear-gradient(135deg, #6b26d9 0%, #9333ea 100%);
+      color: var(--white);
+      box-shadow: 0 4px 16px rgba(124, 58, 237, 0.3);
+    }
+    .btn-web:hover {
+      box-shadow: 0 6px 24px rgba(168, 85, 247, 0.5);
+      transform: translateY(-1px);
+    }
+
+    .btn-api {
+      background: linear-gradient(135deg, #134ed6 0%, #00a4cc 100%);
+      color: var(--white);
+      box-shadow: 0 4px 16px rgba(0, 164, 204, 0.28);
+    }
+    .btn-api:hover {
+      box-shadow: 0 6px 24px rgba(0, 212, 255, 0.45);
+      transform: translateY(-1px);
+    }
+
+    .btn-mobile {
+      background: linear-gradient(135deg, #05885f 0%, #10b981 100%);
+      color: var(--white);
+      box-shadow: 0 4px 16px rgba(16, 185, 129, 0.28);
+    }
+    .btn-mobile:hover {
+      box-shadow: 0 6px 24px rgba(16, 185, 129, 0.45);
+      transform: translateY(-1px);
+    }
+
+    /* ============================================================
+       DESIGN & DEVELOPED BY IRSHAD AKARAM CARD (Centered Footer)
+    ============================================================ */
+    .dev-footer-wrap {
+      padding: 30px 24px 50px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+    }
+
+    .dev-card {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 32px;
+      padding: 18px 32px;
+      width: 100%;
+      max-width: 820px;
+      background: linear-gradient(135deg, rgba(7, 17, 36, 0.95) 0%, rgba(3, 10, 24, 0.98) 100%);
+      border: 1px solid rgba(0, 212, 255, 0.22);
+      border-radius: 18px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      overflow: hidden;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .dev-card:hover {
+      border-color: rgba(0, 212, 255, 0.5);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), 0 0 35px rgba(0, 212, 255, 0.2);
+      transform: translateY(-2px);
+    }
+
+    .dev-card-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .dev-avatar {
+      position: relative;
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #1545d6 0%, #00bcd4 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      box-shadow: 0 0 20px rgba(0, 212, 255, 0.35);
+      flex-shrink: 0;
+    }
+
+    .dev-online-dot {
+      position: absolute;
+      top: -2px;
+      right: -2px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #10b981;
+      border: 2px solid #071124;
+      box-shadow: 0 0 8px #10b981;
+      animation: pulseDot 2s infinite;
+    }
+
+    @keyframes pulseDot {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.25); opacity: 0.7; }
+    }
+
+    .dev-text {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .dev-role {
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--cyan);
+      font-weight: 700;
+    }
+
+    .dev-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--white);
+      letter-spacing: -0.2px;
+    }
+
+    .dev-author {
+      background: linear-gradient(90deg, #00d4ff, #a855f7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-weight: 800;
+    }
+
+    .dev-sub {
+      font-size: 12px;
+      color: var(--gray2);
+    }
+
+    .dev-badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 7px 16px;
+      border-radius: 100px;
+      background: rgba(0, 212, 255, 0.08);
+      border: 1px solid rgba(0, 212, 255, 0.25);
+      color: #e2e8f0;
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .dev-badge-pill svg {
+      color: var(--cyan);
+    }
+
+    /* ============================================================
+       INTERACTIVE CHECKLIST MODAL
+    ============================================================ */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(2, 6, 18, 0.88);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .modal-overlay.open {
+      opacity: 1;
+      visibility: visible;
+    }
+    .modal-box {
+      width: 100%;
+      max-width: 540px;
+      background: linear-gradient(160deg, #09152e 0%, #050d1e 100%);
+      border: 1px solid rgba(0, 212, 255, 0.25);
+      border-radius: 18px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.85), 0 0 35px rgba(0, 212, 255, 0.15);
+      overflow: hidden;
+      transform: scale(0.94) translateY(12px);
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .modal-overlay.open .modal-box {
+      transform: scale(1) translateY(0);
+    }
+    .modal-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 22px;
+      border-bottom: 1px solid rgba(0, 212, 255, 0.1);
+    }
+    .modal-title-group {
+      display: flex;
+      align-items: center;
+      gap: 13px;
+    }
+    .modal-icon-badge {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: rgba(0, 212, 255, 0.1);
+      border: 1px solid rgba(0, 212, 255, 0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 19px;
+    }
+    .modal-title-group h3 {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--white);
+    }
+    .modal-title-group p {
+      font-size: 12px;
+      color: var(--gray);
+      margin-top: 2px;
+    }
+    .modal-close-btn {
+      background: transparent;
+      border: none;
+      color: var(--gray);
+      font-size: 24px;
+      cursor: pointer;
+      line-height: 1;
+      padding: 4px 8px;
+      border-radius: 6px;
+      transition: color 0.15s, background 0.15s;
+    }
+    .modal-close-btn:hover {
+      color: var(--cyan);
+      background: rgba(0, 212, 255, 0.1);
+    }
+    .modal-nav-tabs {
+      display: flex;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 6px 16px;
+      gap: 8px;
+      border-bottom: 1px solid rgba(0, 212, 255, 0.08);
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 9px 12px;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--gray);
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      transition: all 0.2s;
+    }
+    .tab-btn:hover {
+      color: var(--white);
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .tab-btn.active {
+      background: rgba(0, 212, 255, 0.12);
+      border-color: rgba(0, 212, 255, 0.25);
+      color: var(--cyan);
+    }
+    .modal-body {
+      padding: 16px 22px;
+      max-height: 320px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .check-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.025);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+    .check-row:hover {
+      background: rgba(0, 212, 255, 0.06);
+      border-color: rgba(0, 212, 255, 0.2);
+    }
+    .check-row input[type="checkbox"] {
+      accent-color: var(--cyan);
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+    .check-row-label {
+      font-size: 13px;
+      color: #cbd5e1;
+      line-height: 1.4;
+      flex: 1;
+    }
+    .check-row.checked .check-row-label {
+      text-decoration: line-through;
+      color: var(--gray2);
+    }
+    .modal-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 22px;
+      background: rgba(0, 0, 0, 0.25);
+      border-top: 1px solid rgba(0, 212, 255, 0.08);
+    }
+    .checklist-progress-text {
+      font-size: 12px;
+      color: var(--cyan);
+      font-weight: 600;
+    }
+    .modal-reset-btn {
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 6px;
+      color: var(--gray);
+      padding: 5px 12px;
+      font-size: 11.5px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .modal-reset-btn:hover {
+      color: var(--white);
+      border-color: rgba(0, 212, 255, 0.35);
+      background: rgba(0, 212, 255, 0.08);
+    }
+
+    /* ============================================================
+       RESPONSIVE
+    ============================================================ */
+    @media (max-width: 1100px) {
+      .top-header, .hero, .cards-section, .dev-footer-wrap { padding-left: 32px; padding-right: 32px; }
+      .section-divider { margin: 0 32px; }
+      .hero-title { font-size: 42px; }
+      .hero-img { max-width: 520px; }
+    }
+
+    @media (max-width: 860px) {
+      .hero {
+        grid-template-columns: 1fr;
+        padding-top: 24px;
+        padding-bottom: 40px;
+        gap: 32px;
+      }
+      .hero-visual { order: -1; }
+      .hero-img { max-width: 360px; }
+      .hero-title { font-size: 36px; }
+      .cards-grid { grid-template-columns: 1fr; }
+      .nav-pill-group { flex-wrap: wrap; justify-content: flex-end; }
+      .dev-card { flex-direction: column; align-items: flex-start; gap: 16px; }
+    }
+
+    @media (max-width: 580px) {
+      .hero-title { font-size: 30px; }
+      .card-body { grid-template-columns: 1fr; justify-items: center; }
+      .card-visual img { max-width: 140px; }
+      .top-header { flex-direction: column; gap: 12px; padding: 12px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Ambient Glows -->
+  <div class="ambient-glow-top"></div>
+  <div class="ambient-glow-right"></div>
+
+  <!-- Cyber Defense Constellation Canvas -->
+  <canvas id="cyberCanvas"></canvas>
+
+  <!-- Dot Grid Overlay -->
+  <div class="grid-overlay"></div>
+
+  <!-- ============================================================
+       TOP BAR (No Horizontal Line, Clean Minimalist Dock)
+  ============================================================ -->
+  <header class="top-header">
+    <a href="#" class="logo-wrap">
+      <img src="assets/images/cyberlab-logo.png" alt="CyberLab Avatar Logo" class="logo-img" />
+    </a>
+
+    <!-- Clean, Organized Button Pills (No Get Started, No PRO) -->
+    <ul class="nav-pill-group">
+      <li class="nav-item">
+        <a href="#web" class="nav-pill" onclick="scrollToTarget('web'); return false;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          Web Security
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="#api" class="nav-pill" onclick="scrollToTarget('api'); return false;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          API Security
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="#mobile" class="nav-pill" onclick="scrollToTarget('mobile'); return false;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+          Mobile Security
+        </a>
+      </li>
+      <li class="nav-item">
+        <!-- Checklist Button (No PRO Tag) -->
+        <a href="#checklist" class="nav-pill" onclick="openChecklist(); return false;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          Checklist
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.6; margin-left:1px;"><polyline points="6 9 12 15 18 9"/></svg>
+        </a>
+        <!-- Dropdown: Web, API, Mobile with hyperlink # -->
+        <div class="checklist-dropdown">
+          <a href="#" class="dropdown-item" onclick="openChecklist('web'); return false;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            Web Security
+          </a>
+          <a href="#" class="dropdown-item" onclick="openChecklist('api'); return false;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+            API Security
+          </a>
+          <a href="#" class="dropdown-item" onclick="openChecklist('mobile'); return false;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+            Mobile Security
+          </a>
+        </div>
+      </li>
+    </ul>
+  </header>
+
+  <!-- ============================================================
+       HERO
+  ============================================================ -->
+  <section class="hero">
+    <div class="hero-content">
+      <p class="eyebrow">Advanced Cybersecurity Notes</p>
+      <h1 class="hero-title">
+        Break It. Understand It.<br>
+        <span class="accent">Secure It.</span>
+      </h1>
+      <p class="hero-desc">
+        Simulate real-world exploits, practice in hands-on security labs, and forge the offensive and defensive skills to safeguard modern Web, API, and Mobile platforms.
+      </p>
+      <div class="hero-actions">
+        <!-- Smooth Scroll to Web, API, Mobile cards -->
+        <a href="#cards-section" class="btn-hero-primary" onclick="scrollToTarget('cards-section'); return false;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Start Learning
+        </a>
+      </div>
+    </div>
+
+    <div class="hero-visual">
+      <div class="hero-globe-glow"></div>
+      <img src="assets/images/hero-globe.png" alt="Cybersecurity Global Network" class="hero-img" />
+    </div>
+  </section>
+
+  <div class="section-divider"></div>
+
+  <!-- ============================================================
+       CARDS (Web, API, Mobile)
+  ============================================================ -->
+  <section class="cards-section" id="cards-section">
+    <div class="cards-grid">
+
+      <!-- 1. WEB SECURITY CARD -->
+      <div class="card card-web" id="web">
+        <div class="card-header">
+          <div class="card-icon icon-web">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          </div>
+          <h2>Web Security</h2>
+        </div>
+        <p class="card-desc">Learn and practice security issues in modern web applications.</p>
+        
+        <div class="card-body">
+          <ul class="card-list">
+            <li><span class="chk chk-web">✓</span> OWASP Top 10</li>
+            <li><span class="chk chk-web">✓</span> Client-Side &amp; Server-Side Issues</li>
+            <li><span class="chk chk-web">✓</span> Authentication &amp; Session Management</li>
+            <li><span class="chk chk-web">✓</span> Web Exploitation Labs</li>
+            <li><span class="chk chk-web">✓</span> Real-World Scenarios</li>
+          </ul>
+          <div class="card-visual">
+            <img src="assets/images/web.png" alt="Web Security 3D Graphic" />
+          </div>
+        </div>
+
+        <a href="WebSec/index.html" class="card-btn btn-web">Explore Web Security →</a>
+      </div>
+
+      <!-- 2. API SECURITY CARD -->
+      <div class="card card-api" id="api">
+        <div class="card-header">
+          <div class="card-icon icon-api">&lt;/&gt;</div>
+          <h2>API Security</h2>
+        </div>
+        <p class="card-desc">Understand and secure modern APIs and microservices.</p>
+        
+        <div class="card-body">
+          <ul class="card-list">
+            <li><span class="chk chk-api">✓</span> OWASP API Top 10</li>
+            <li><span class="chk chk-api">✓</span> Authentication &amp; Authorization</li>
+            <li><span class="chk chk-api">✓</span> Business Logic Vulnerabilities</li>
+            <li><span class="chk chk-api">✓</span> API Testing &amp; Exploitation</li>
+            <li><span class="chk chk-api">✓</span> Real-World Use Cases</li>
+          </ul>
+          <div class="card-visual">
+            <img src="assets/images/api.png" alt="API Security 3D Graphic" />
+          </div>
+        </div>
+
+        <a href="API_Security/index.html" class="card-btn btn-api">Explore API Security →</a>
+      </div>
+
+      <!-- 3. MOBILE SECURITY CARD -->
+      <div class="card card-mobile" id="mobile">
+        <div class="card-header">
+          <div class="card-icon icon-mobile">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+          </div>
+          <h2>Mobile Security</h2>
+        </div>
+        <p class="card-desc">Learn security testing for Android and iOS applications.</p>
+        
+        <div class="card-body">
+          <ul class="card-list">
+            <li><span class="chk chk-mobile">✓</span> Mobile App Architecture</li>
+            <li><span class="chk chk-mobile">✓</span> Static &amp; Dynamic Analysis</li>
+            <li><span class="chk chk-mobile">✓</span> Mobile-Specific Vulnerabilities</li>
+            <li><span class="chk chk-mobile">✓</span> Reverse Engineering Basics</li>
+            <li><span class="chk chk-mobile">✓</span> Real-World Scenarios</li>
+          </ul>
+          <div class="card-visual">
+            <img src="assets/images/mobile.png" alt="Mobile Security 3D Graphic" />
+          </div>
+        </div>
+
+        <a href="#" class="card-btn btn-mobile">Explore Mobile Security →</a>
+      </div>
+
+    </div>
+  </section>
+
+
+
+  <!-- ============================================================
+       DESIGNED & DEVELOPED BY IRSHAD AKARAM CARD
+  ============================================================ -->
+  <div class="dev-footer-wrap">
+    <div class="dev-card">
+      <div class="dev-card-left">
+        <div class="dev-avatar">
+          <span>⚡</span>
+          <span class="dev-online-dot"></span>
+        </div>
+        <div class="dev-text">
+          <span class="dev-role">CYBER DEFENSE PLATFORM</span>
+          <h3 class="dev-title">Designed &amp; Developed by <span class="dev-author">Irshad Akaram</span></h3>
+          <p class="dev-sub">Engineered for security researchers, penetration testers &amp; developers</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       INTERACTIVE CHECKLIST MODAL
+  ============================================================ -->
+  <div class="modal-overlay" id="checklistModal" onclick="if(event.target===this)closeChecklist()">
+    <div class="modal-box">
+      <div class="modal-head">
+        <div class="modal-title-group">
+          <div class="modal-icon-badge">📋</div>
+          <div>
+            <h3>Security Verification Checklist</h3>
+            <p>Track your lab assessments & compliance testing</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" onclick="closeChecklist()" aria-label="Close modal">&times;</button>
+      </div>
+
+      <div class="modal-nav-tabs">
+        <button class="tab-btn active" id="tab-web" onclick="switchChecklistTab('web', this)">
+          <span>🌐</span> Web Security
+        </button>
+        <button class="tab-btn" id="tab-api" onclick="switchChecklistTab('api', this)">
+          <span>&lt;/&gt;</span> API Security
+        </button>
+        <button class="tab-btn" id="tab-mobile" onclick="switchChecklistTab('mobile', this)">
+          <span>📱</span> Mobile Security
+        </button>
+      </div>
+
+      <div class="modal-body" id="checklistContainer"></div>
+      
+      <div class="modal-footer">
+        <span class="checklist-progress-text" id="checklistProgress">0 of 5 Completed</span>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <a id="modalLaunchBtn" href="WebSec/index.html" class="modal-reset-btn" style="color: var(--cyan); border-color: rgba(0,212,255,0.35); text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+            <span>Open Lab Guide →</span>
+          </a>
+          <button class="modal-reset-btn" onclick="resetChecklist()">Reset Progress</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       CYBER CONSTELLATION CANVAS & INTERACTIVE SCRIPT
+  ============================================================ -->
+  <script>
+    // Smooth Scroll Helper (Stops gracefully above sticky header)
+    function scrollToTarget(id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const headerOffset = 95; // stops comfortably above the element
+      const elementPosition = el.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
+    }
+
+    // High-End Cyber Constellation & Neural Defense Background Animation
+    (function initCyberConstellation() {
+      const canvas = document.getElementById('cyberCanvas');
+      const ctx = canvas.getContext('2d');
+
+      let width = (canvas.width = window.innerWidth);
+      let height = (canvas.height = window.innerHeight);
+
+      let mouse = { x: null, y: null, maxDist: 150 };
+
+      window.addEventListener('resize', () => {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+        initParticles();
+      });
+
+      window.addEventListener('mousemove', (e) => {
+        mouse.x = e.clientX;
+        mouse.y = e.clientY;
+      });
+
+      window.addEventListener('mouseout', () => {
+        mouse.x = null;
+        mouse.y = null;
+      });
+
+      const particles = [];
+      const particleCount = Math.min(Math.floor((width * height) / 14000), 75);
+      const colors = ['#00d4ff', '#1a6fd8', '#38bdf8', '#818cf8'];
+
+      class Particle {
+        constructor() {
+          this.x = Math.random() * width;
+          this.y = Math.random() * height;
+          this.radius = Math.random() * 2 + 1;
+          this.color = colors[Math.floor(Math.random() * colors.length)];
+          this.vx = (Math.random() - 0.5) * 0.65;
+          this.vy = (Math.random() - 0.5) * 0.65;
+          this.pulse = Math.random() * Math.PI;
+          this.pulseSpeed = 0.02 + Math.random() * 0.02;
+        }
+
+        update() {
+          this.x += this.vx;
+          this.y += this.vy;
+
+          if (this.x < 0) this.x = width;
+          else if (this.x > width) this.x = 0;
+          if (this.y < 0) this.y = height;
+          else if (this.y > height) this.y = 0;
+
+          this.pulse += this.pulseSpeed;
+        }
+
+        draw() {
+          const currentRadius = this.radius + Math.sin(this.pulse) * 0.6;
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, Math.max(currentRadius, 0.8), 0, Math.PI * 2);
+          ctx.fillStyle = this.color;
+          ctx.shadowBlur = 10;
+          ctx.shadowColor = this.color;
+          ctx.globalAlpha = 0.75 + Math.sin(this.pulse) * 0.2;
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+
+      function initParticles() {
+        particles.length = 0;
+        for (let i = 0; i < particleCount; i++) {
+          particles.push(new Particle());
+        }
+      }
+
+      initParticles();
+
+      function animate() {
+        ctx.clearRect(0, 0, width, height);
+
+        // Connect nearby nodes with delicate glowing cyber filaments
+        const maxConnectionDist = 135;
+        for (let i = 0; i < particles.length; i++) {
+          for (let j = i + 1; j < particles.length; j++) {
+            const dx = particles[i].x - particles[j].x;
+            const dy = particles[i].y - particles[j].y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
+            if (dist < maxConnectionDist) {
+              const alpha = (1 - dist / maxConnectionDist) * 0.22;
+              ctx.save();
+              ctx.strokeStyle = '#00d4ff';
+              ctx.globalAlpha = alpha;
+              ctx.lineWidth = 0.85;
+              ctx.beginPath();
+              ctx.moveTo(particles[i].x, particles[i].y);
+              ctx.lineTo(particles[j].x, particles[j].y);
+              ctx.stroke();
+              ctx.restore();
+            }
+          }
+
+          // Interactive mouse connectivity
+          if (mouse.x !== null && mouse.y !== null) {
+            const mdx = particles[i].x - mouse.x;
+            const mdy = particles[i].y - mouse.y;
+            const mdist = Math.sqrt(mdx * mdx + mdy * mdy);
+
+            if (mdist < mouse.maxDist) {
+              const alpha = (1 - mdist / mouse.maxDist) * 0.38;
+              ctx.save();
+              ctx.strokeStyle = '#38bdf8';
+              ctx.globalAlpha = alpha;
+              ctx.lineWidth = 1.1;
+              ctx.beginPath();
+              ctx.moveTo(particles[i].x, particles[i].y);
+              ctx.lineTo(mouse.x, mouse.y);
+              ctx.stroke();
+              ctx.restore();
+            }
+          }
+
+          particles[i].update();
+          particles[i].draw();
+        }
+
+        requestAnimationFrame(animate);
+      }
+
+      animate();
+    })();
+
+    // Interactive Checklist Data
+    const checklistData = {
+      web: [
+        'A01: Broken Access Control & Privilege Escalation',
+        'A02: Cryptographic Failures & Sensitive Data Exposure',
+        'A03: Injection (SQLi, NoSQL, OS Command Injection)',
+        'A04: Insecure Design & Business Logic Flaws',
+        'A05: Security Misconfiguration & Default Credentials',
+        'A06: Vulnerable and Outdated Components (SCA)',
+        'A07: Identification and Authentication Failures',
+        'A08: Software and Data Integrity Failures (CI/CD)',
+        'A09: Security Logging and Monitoring Failures',
+        'A10: Server-Side Request Forgery (SSRF)'
+      ],
+      api: [
+        'API1: Broken Object Level Authorization (BOLA)',
+        'API2: Broken Authentication & Token Invalidation',
+        'API3: Broken Object Property Level Authorization (Mass Assignment)',
+        'API4: Unrestricted Resource Consumption & Rate Limiting',
+        'API5: Broken Function Level Authorization (BFLA)',
+        'API6: Unrestricted Access to Sensitive Business Logic',
+        'API7: Server Side Request Forgery in Microservices',
+        'API8: Security Misconfigurations & CORS Wildcards',
+        'API9: Improper Inventory Management (Shadow & Zombie APIs)',
+        'API10: Unsafe Consumption of Third-Party APIs'
+      ],
+      mobile: [
+        'MASVS-STORAGE: Insecure Data Storage & Shared Preferences',
+        'MASVS-CRYPTO: Weak Key Generation & Broken Algorithms',
+        'MASVS-AUTH: Biometric Bypass & Insecure Session Tokens',
+        'MASVS-NETWORK: Missing SSL Pinning & MitM Interception',
+        'MASVS-PLATFORM: IPC Vulnerabilities & Exported Components',
+        'MASVS-CODE: Reverse Engineering & Hardcoded Secrets',
+        'MASVS-RESILIENCE: Root/Jailbreak Detection Bypass',
+        'MASVS-PRIVACY: Sensitive Clipboard & Screen Recording Leakage'
+      ]
+    };
+
+    let currentTab = 'web';
+    const checkedItems = JSON.parse(localStorage.getItem('cyberlab_checks') || '{}');
+
+    function renderChecklist() {
+      const container = document.getElementById('checklistContainer');
+      const items = checklistData[currentTab] || [];
+      container.innerHTML = '';
+
+      let completedCount = 0;
+
+      items.forEach((item, index) => {
+        const key = `${currentTab}_${index}`;
+        const isChecked = !!checkedItems[key];
+        if (isChecked) completedCount++;
+
+        const row = document.createElement('label');
+        row.className = `check-row ${isChecked ? 'checked' : ''}`;
+        row.innerHTML = `
+          <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleCheck('${key}', this)" />
+          <span class="check-row-label">${item}</span>
+        `;
+        container.appendChild(row);
+      });
+
+      document.getElementById('checklistProgress').textContent = `${completedCount} of ${items.length} Completed`;
+      
+      const launchBtn = document.getElementById('modalLaunchBtn');
+      if (launchBtn) {
+        if (currentTab === 'web') {
+          launchBtn.href = 'WebSec/index.html';
+          launchBtn.style.display = 'inline-flex';
+          launchBtn.innerHTML = '<span>Open WebSec Labs →</span>';
+        } else if (currentTab === 'api') {
+          launchBtn.href = 'API_Security/index.html';
+          launchBtn.style.display = 'inline-flex';
+          launchBtn.innerHTML = '<span>Open API Labs →</span>';
+        } else {
+          launchBtn.style.display = 'none';
+        }
+      }
+    }
+
+    function toggleCheck(key, checkbox) {
+      checkedItems[key] = checkbox.checked;
+      localStorage.setItem('cyberlab_checks', JSON.stringify(checkedItems));
+      checkbox.closest('.check-row').classList.toggle('checked', checkbox.checked);
+      
+      const items = checklistData[currentTab] || [];
+      let completedCount = 0;
+      items.forEach((_, idx) => {
+        if (checkedItems[`${currentTab}_${idx}`]) completedCount++;
+      });
+      document.getElementById('checklistProgress').textContent = `${completedCount} of ${items.length} Completed`;
+    }
+
+    function switchChecklistTab(tab, btn) {
+      currentTab = tab;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      else {
+        const activeBtn = document.getElementById(`tab-${tab}`);
+        if (activeBtn) activeBtn.classList.add('active');
+      }
+      renderChecklist();
+    }
+
+    function openChecklist(tab) {
+      if (tab) {
+        currentTab = tab;
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        const activeBtn = document.getElementById(`tab-${tab}`);
+        if (activeBtn) activeBtn.classList.add('active');
+      }
+      renderChecklist();
+      document.getElementById('checklistModal').classList.add('open');
+    }
+
+    function closeChecklist() {
+      document.getElementById('checklistModal').classList.remove('open');
+    }
+
+    function resetChecklist() {
+      const items = checklistData[currentTab] || [];
+      items.forEach((_, idx) => {
+        delete checkedItems[`${currentTab}_${idx}`];
+      });
+      localStorage.setItem('cyberlab_checks', JSON.stringify(checkedItems));
+      renderChecklist();
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeChecklist();
+    });
+  </script>
+</body>
+</html>

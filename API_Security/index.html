@@ -1,0 +1,1168 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Modern API Security - Interactive Security Lab &amp; Vulnerability Guide</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Sora:wght@400;500;600;700;800&family=Fira+Code:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+
+  <style>
+    /* ==========================================================================
+       Modern API Security - High-Fidelity Cyber Lab Aesthetic
+       ========================================================================== */
+    :root {
+      --bg-deep: #030712;
+      --card-bg: rgba(13, 19, 38, 0.85);
+      --font-display: 'Sora', -apple-system, sans-serif;
+      --font-body: 'IBM Plex Sans', -apple-system, sans-serif;
+      --font-code: 'Fira Code', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: #030712;
+      background-image: 
+        radial-gradient(circle at 50% 0%, rgba(14, 165, 233, 0.15) 0%, transparent 65%),
+        radial-gradient(circle at 90% 20%, rgba(99, 102, 241, 0.10) 0%, transparent 55%);
+      background-repeat: no-repeat;
+      color: #f1f5f9;
+      font-family: var(--font-body);
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    .page-wrapper {
+      position: relative;
+      z-index: 1;
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 1.15rem 2rem 3.5rem 2rem;
+    }
+
+    /* Header */
+    .top-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      margin-bottom: 1.5rem;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+    }
+
+    .brand-shield-icon {
+      width: 38px;
+      height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      filter: drop-shadow(0 0 14px rgba(14, 165, 233, 0.5));
+    }
+
+    .brand-text-block {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .brand-title {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-subtitle {
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      color: #38bdf8;
+      text-transform: uppercase;
+      margin-top: 1px;
+    }
+
+    .header-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      background: rgba(14, 165, 233, 0.1);
+      border: 1px solid rgba(14, 165, 233, 0.3);
+      color: #38bdf8;
+      font-size: 0.74rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+    }
+
+    /* Hero Section - Compact for Above-The-Fold Card Visibility */
+    .hero-layout {
+      display: grid;
+      grid-template-columns: 1.12fr 0.88fr;
+      gap: 2.5rem;
+      align-items: center;
+      margin-bottom: 1.25rem;
+      position: relative;
+    }
+
+    @media (max-width: 1024px) {
+      .hero-layout {
+        grid-template-columns: 1fr;
+        text-align: center;
+        margin-bottom: 1.5rem;
+      }
+      .hero-content {
+        margin: 0 auto;
+        align-items: center;
+      }
+    }
+
+    /* Hero Content Column with Uniform Equal Spacing */
+    .hero-content {
+      max-width: 590px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.15rem;
+    }
+
+    .hero-pill-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 14px;
+      border-radius: 9999px;
+      background: rgba(14, 165, 233, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      color: #38bdf8;
+      font-size: 0.76rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      align-self: flex-start;
+      margin: 0;
+    }
+
+    /* Master API Security - Strictly One Line */
+    .hero-h1 {
+      font-family: var(--font-display);
+      font-size: clamp(2rem, 3.2vw, 3rem);
+      font-weight: 800;
+      line-height: 1.15;
+      letter-spacing: -0.03em;
+      color: #ffffff;
+      margin: 0;
+      white-space: nowrap;
+    }
+
+    .hero-h1 .gradient-text {
+      background: linear-gradient(135deg, #0ea5e9 0%, #38bdf8 50%, #60a5fa 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: inline;
+      filter: drop-shadow(0 2px 14px rgba(14, 165, 233, 0.4));
+    }
+
+    .hero-p {
+      font-size: 0.92rem;
+      line-height: 1.6;
+      color: #94a3b8;
+      margin: 0;
+      font-weight: 400;
+    }
+
+    .hero-cta-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 26px;
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      color: #ffffff;
+      font-family: var(--font-display);
+      font-size: 0.9rem;
+      font-weight: 700;
+      border-radius: 9999px;
+      text-decoration: none;
+      box-shadow: 0 4px 22px rgba(2, 132, 199, 0.45);
+      border: 1px solid rgba(56, 189, 248, 0.45);
+      transition: all 0.25s ease;
+      align-self: flex-start;
+      margin: 0;
+    }
+
+    .hero-cta-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 28px rgba(2, 132, 199, 0.65);
+      background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+    }
+
+    .hero-cta-btn svg {
+      transition: transform 0.2s ease;
+    }
+
+    .hero-cta-btn:hover svg {
+      transform: translateX(4px);
+    }
+
+    /* API Checklist Button In Middle of Explore API Security Topics to Explore API Security */
+    .hero-checklist-full-btn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 18px;
+      background: rgba(12, 23, 42, 0.85);
+      border: 1px solid rgba(56, 189, 248, 0.38);
+      box-shadow: 0 0 18px rgba(14, 165, 233, 0.14);
+      border-radius: 12px;
+      text-decoration: none;
+      transition: all 0.25s ease;
+      max-width: 490px;
+      width: 100%;
+      margin: 0;
+      align-self: flex-start;
+    }
+
+    .hero-checklist-full-btn:hover {
+      border-color: #38bdf8;
+      background: rgba(14, 165, 233, 0.12);
+      box-shadow: 0 0 24px rgba(14, 165, 233, 0.28);
+      transform: translateY(-2px);
+    }
+
+    .chk-btn-icon {
+      font-size: 1.25rem;
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #38bdf8;
+      flex-shrink: 0;
+    }
+
+    .chk-btn-content {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .chk-btn-title {
+      font-family: var(--font-display);
+      font-size: 0.94rem;
+      font-weight: 700;
+      color: #ffffff;
+      line-height: 1.25;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .chk-btn-sub {
+      font-size: 0.76rem;
+      color: #94a3b8;
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      transition: color 0.2s ease;
+    }
+
+    .hero-checklist-full-btn:hover .chk-btn-title {
+      color: #38bdf8;
+    }
+
+    .hero-checklist-full-btn:hover .chk-btn-sub {
+      color: #e2e8f0;
+    }
+
+    /* Enlarged Earth PNG Graphic Side */
+    .hero-visual-side {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .hero-globe-img {
+      width: 100%;
+      max-width: 580px;
+      height: auto;
+      filter: drop-shadow(0 0 45px rgba(14, 165, 233, 0.45));
+      animation: gentle-float 6s ease-in-out infinite;
+      user-select: none;
+      pointer-events: none;
+    }
+
+    @keyframes gentle-float {
+      0%, 100% { transform: translateY(0px) scale(1); }
+      50% { transform: translateY(-8px) scale(1.02); }
+    }
+
+    /* Section Title */
+    .topics-header-group {
+      margin-bottom: 1.25rem;
+    }
+
+    .topics-main-title {
+      font-family: var(--font-display);
+      font-size: 1.55rem;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: -0.02em;
+      margin: 0 0 0.3rem 0;
+    }
+
+    .topics-sub-title {
+      font-size: 0.88rem;
+      color: #94a3b8;
+      max-width: 820px;
+      line-height: 1.5;
+    }
+
+    /* ==========================================================================
+       Vulnerability Cards Grid - 4 Columns, Rectangular Landscape
+       Matching media_1788600211875.png
+       ========================================================================== */
+    .cyber-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.25rem;
+      margin-bottom: 3.5rem;
+    }
+
+    @media (max-width: 1240px) {
+      .cyber-cards-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    @media (max-width: 900px) {
+      .cyber-cards-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 600px) {
+      .cyber-cards-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Individual Card */
+    .cyber-card {
+      background: var(--card-bg);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 1.3rem 1.4rem 1.2rem 1.4rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 195px;
+      text-decoration: none;
+      position: relative;
+      overflow: hidden;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .cyber-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--card-accent);
+      box-shadow: 0 0 24px var(--card-accent), 0 10px 25px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Card Top */
+    .cyber-card-top {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 0.75rem;
+    }
+
+    .card-icon-box {
+      width: 40px;
+      height: 40px;
+      border-radius: 9px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--card-accent);
+      flex-shrink: 0;
+      transition: all 0.25s ease;
+    }
+
+    .card-icon-box svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .cyber-card:hover .card-icon-box {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: var(--card-accent);
+      box-shadow: 0 0 12px var(--card-accent);
+    }
+
+    .card-title-group {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .card-main-name {
+      font-family: var(--font-display);
+      font-size: 1.02rem;
+      font-weight: 700;
+      color: #ffffff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.25;
+    }
+
+    .card-sub-label {
+      font-size: 0.76rem;
+      color: #94a3b8;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 2px;
+    }
+
+    /* Card Description (Clean 2 lines) */
+    .cyber-card-desc {
+      font-size: 0.84rem;
+      color: #94a3b8;
+      line-height: 1.5;
+      margin-bottom: 1.15rem;
+      flex-grow: 1;
+    }
+
+    /* Card Bottom Action Button */
+    .cyber-card-bottom {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+    }
+
+    .explore-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 15px;
+      border-radius: 7px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      font-family: var(--font-display);
+      border: 1px solid var(--card-accent);
+      color: var(--card-accent);
+      background: transparent;
+      transition: all 0.22s ease;
+    }
+
+    .explore-btn span {
+      transition: transform 0.2s ease;
+    }
+
+    .cyber-card:hover .explore-btn {
+      background: var(--card-accent);
+      color: #030712;
+      box-shadow: 0 0 14px var(--card-accent);
+    }
+
+    .cyber-card:hover .explore-btn span {
+      transform: translateX(3px);
+    }
+
+    /* Bottom Checklist Banner */
+    .checklist-banner {
+      background: rgba(12, 23, 42, 0.85);
+      border: 1px solid rgba(56, 189, 248, 0.38);
+      box-shadow: 0 0 25px rgba(14, 165, 233, 0.15);
+      border-radius: 14px;
+      padding: 1.25rem 1.85rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
+      margin-bottom: 2.75rem;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      flex-wrap: wrap;
+      text-decoration: none;
+      transition: all 0.25s ease;
+    }
+
+    .checklist-banner:hover {
+      border-color: #38bdf8;
+      box-shadow: 0 0 32px rgba(14, 165, 233, 0.25);
+      transform: translateY(-2px);
+    }
+
+    .banner-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex: 1;
+      min-width: 280px;
+    }
+
+    .banner-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #38bdf8;
+      font-size: 1.25rem;
+      flex-shrink: 0;
+    }
+
+    .banner-title {
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #ffffff;
+      white-space: nowrap;
+    }
+
+    .banner-divider {
+      color: rgba(255, 255, 255, 0.2);
+      font-weight: 300;
+    }
+
+    .banner-desc {
+      font-size: 0.88rem;
+      color: #94a3b8;
+      margin: 0;
+    }
+
+    .banner-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #38bdf8;
+      font-family: var(--font-display);
+      font-size: 0.94rem;
+      font-weight: 700;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+
+    /* Footer Signoff */
+    .footer-signoff {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      padding-top: 2rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      margin-top: 1rem;
+    }
+
+    .signature-wrap {
+      text-align: right;
+      font-family: var(--font-display);
+      font-size: 0.9rem;
+      color: #94a3b8;
+    }
+
+    .signature-wrap .author-name {
+      color: #38bdf8;
+      font-weight: 700;
+      position: relative;
+      display: inline-block;
+    }
+
+    .signature-wrap .author-name::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      bottom: -3px;
+      width: 100%;
+      height: 2px;
+      background: linear-gradient(90deg, #38bdf8 0%, #818cf8 100%);
+      border-radius: 2px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="page-wrapper">
+
+    <!-- Top Header (Clean: Removed Light mode button and Hindi/English switch) -->
+    <header class="top-header">
+      <a href="index.html" class="brand-group">
+        <div class="brand-shield-icon">
+          <svg viewBox="0 0 38 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M19 1L3 8V20C3 31.5 9.8 40.5 19 43C28.2 40.5 35 31.5 35 20V8L19 1Z" fill="#0284C7" fill-opacity="0.25" stroke="#38BDF8" stroke-width="2.2" stroke-linejoin="round"/>
+            <path d="M19 12V32M13 22L19 16L25 22" stroke="#38BDF8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="brand-text-block">
+          <span class="brand-title">API Security</span>
+          <span class="brand-subtitle">LEARN &bull; PRACTICE &bull; SECURE</span>
+        </div>
+      </a>
+
+      <div style="display:flex; align-items:center; gap:12px;">
+        <a href="../index.html" style="display:inline-flex; align-items:center; gap:6px; padding:6px 14px; border-radius:8px; background:rgba(255,255,255,0.04); border:1px solid rgba(56,189,248,0.3); color:#94a3b8; font-size:0.8rem; font-weight:600; text-decoration:none; transition:all 0.2s ease;" onmouseover="this.style.color='#38bdf8'; this.style.borderColor='#38bdf8'; this.style.background='rgba(56,189,248,0.12)'" onmouseout="this.style.color='#94a3b8'; this.style.borderColor='rgba(56,189,248,0.3)'; this.style.background='rgba(255,255,255,0.04)'">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          CyberLab Hub
+        </a>
+        <div class="header-tag">
+          <span>🛡️</span> OWASP API Security Top 10 + Real-World Labs
+        </div>
+      </div>
+    </header>
+
+    <!-- Hero Section (Headline: "Master API Security" in ONE line, enlarged Earth PNG, and Checklist button down to Explore button) -->
+    <section class="hero-layout">
+      <div class="hero-content">
+        <div class="hero-pill-badge">
+          <span>&lt;/&gt;</span> OWASP API Security Top 10 + Modern Attack Vectors
+        </div>
+        
+        <h1 class="hero-h1">
+          Master <span class="gradient-text">API Security</span>
+        </h1>
+
+        <p class="hero-p">
+          Deep-dive architectural vulnerabilities, step-by-step exploit scenarios, real-world case studies, and enterprise-grade defenses across our comprehensive interactive API security curriculum.
+        </p>
+
+        <a href="#topics-grid" class="hero-cta-btn">
+          <span>Explore API Security</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </a>
+
+        <!-- API Security Checklist Button in middle of Explore API Security and Explore API Security Topics -->
+        <a href="rate-limiting.html#tab-checklist" class="hero-checklist-full-btn" title="Open Complete API Security Checklist">
+          <div class="chk-btn-icon">📋</div>
+          <div class="chk-btn-content">
+            <span class="chk-btn-title">API Security Checklist <span>&rarr;</span></span>
+            <span class="chk-btn-sub">Step-by-step checklist to identify &amp; fix API security flaws</span>
+          </div>
+        </a>
+      </div>
+
+      <!-- Enlarged 3D Earth Cyber Globe Network Asset -->
+      <div class="hero-visual-side">
+        <img src="assets/images/hero_globe.png" alt="API Security Cyber Network Globe" class="hero-globe-img">
+      </div>
+    </section>
+
+    <!-- Section Title -->
+    <div class="topics-header-group" id="topics-grid">
+      <h2 class="topics-main-title">Explore API Security Topics</h2>
+      <p class="topics-sub-title">
+        OWASP API Security Top 10 (2023) aur modern architecture par based sabse critical vulnerabilities ko samjhein.
+      </p>
+    </div>
+
+    <!-- 4-Column Vulnerability Cards Grid (Wider, Lower Height, Matching media_1788600211875.png) -->
+    <div class="cyber-cards-grid">
+
+      <!-- Card 00: API Fundamentals -->
+      <a href="api-intro.html"  class="cyber-card" style="--card-accent: #38bdf8;" title="00. API Fundamentals - Foundations & Architecture">
+        <div class="cyber-card-top">
+          <div class="card-icon-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+          </div>
+          <div class="card-title-group">
+            <h3 class="card-main-name">00. API Fundamentals</h3>
+            <span class="card-sub-label">Foundations & Architecture</span>
+          </div>
+        </div>
+        <p class="cyber-card-desc">REST architecture, authentication tokens, status codes, and security foundations.</p>
+        <div class="cyber-card-bottom">
+          <span class="explore-btn">
+            Explore <span>&rarr;</span>
+          </span>
+        </div>
+      </a>
+
+      <!-- Card 01: BOLA -->
+      <a href="bola.html"  class="cyber-card" style="--card-accent: #0ea5e9;" title="01. BOLA - Broken Object Level Auth">
+        <div class="cyber-card-top">
+          <div class="card-icon-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <div class="card-title-group">
+            <h3 class="card-main-name">01. BOLA</h3>
+            <span class="card-sub-label">Broken Object Level Auth</span>
+          </div>
+        </div>
+        <p class="cyber-card-desc">Manipulating object IDs in API endpoints to access or modify other users' records.</p>
+        <div class="cyber-card-bottom">
+          <span class="explore-btn">
+            Explore <span>&rarr;</span>
+          </span>
+        </div>
+      </a>
+
+      <!-- Card 02: BFLA -->
+      <a href="bfla.html"  class="cyber-card" style="--card-accent: #f59e0b;" title="02. BFLA - Broken Function Level Auth">
+        <div class="cyber-card-top">
+          <div class="card-icon-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+          </div>
+          <div class="card-title-group">
+            <h3 class="card-main-name">02. BFLA</h3>
+            <span class="card-sub-label">Broken Function Level Auth</span>
+          </div>
+        </div>
+        <p class="cyber-card-desc">Accessing administrative or privileged endpoints due to missing role validation.</p>
+        <div class="cyber-card-bottom">
+          <span class="explore-btn">
+            Explore <span>&rarr;</span>
+          </span>
+        </div>
+      </a>
+
+      <!-- Card 03: IDOR -->
+      <a href="idor.html"  class="cyber-card" style="--card-accent: #a855f7;" title="03. IDOR - Insecure Direct Object Reference">
+        <div class="cyber-card-top">
+          <div class="card-icon-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <div class="card-title-group">
+            <h3 class="card-main-name">03. IDOR</h3>
+            <span class="card-sub-label">Insecure Direct Object Reference</span>
+          </div>
+        </div>
+        <p class="cyber-card-desc">Bypassing access controls to read, update, or delete sensitive data objects directly.</p>
+        <div class="cyber-card-bottom">
+          <span class="explore-btn">
+            Explore <span>&rarr;</span>
+          </span>
+        </div>
+      </a>
+
+      <!-- Card 04: Broken Auth -->
+      <a href="jwt.html"  class="cyber-card" style="--card-accent: #10b981;" title="04. Broken Auth - JWT & Session Vulnerabilities">
+        <div class="cyber-card-top">
+          <div class="card-icon-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-1.5 6.1L19.5 8.2a2.8 2.8 0 1 0-4-4L13.6 6.1"/><circle cx="8" cy="16" r="6"/></svg>
+          </div>
+          <div class="card-title-group">
+            <h3 class="card-main-name">04. Broken Auth</h3>
+            <span class="card-sub-label">JWT & Session Vulnerabilities</span>
+          </div>
+        </div>
+        <p class="cyber-card-desc">Exploiting weak token signing, algorithm confusion, and session flaws.</p>
+        <div class="cyber-card-bottom">
+          <span class="explore-btn">
+            Explore <span>&rarr;</span>
+          </span>
+        </div>
+      </a>
+
+      <!-- Card 05: Mass Assignment -->
+      <a href="mass-assignment.html"  class="cyber-card" style="--card-accent: #f43f5e;" title="05. Mass Assignment - BOPLA & Property Tampering">
+        <div class="cyber-card-top">
+          <div class="card-icon-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg>
+          </div>
+          <div class="card-title-group">
+            <h3 class="card-main-name">05. Mass Assignment</h3>
+            <span class="card-sub-label">BOPLA & Property Tampering</span>
+          </div>
+        </div>
+        <p class="cyber-card-desc">Injecting unexpected JSON properties into requests to overwrite internal attributes.</p>
+        <div class="cyber-card-bottom">
+          <span class="explore-btn">
+            Explore <span>&rarr;</span>
+          </span>
+        </div>
+      </a>
+
+      <!-- Card 06: Data Exposure -->
+      <a href="excessive-data-exposure.html"  class="cyber-card" style="--card-accent: #06b6d4;" title="06. Data Exposure - PII & Sensitive Field Leaks">
+        <div class="cyber-card-top">
+          <div class="card-icon-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </div>
+          <div class="card-title-group">
+            <h3 class="card-main-name">06. Data Exposure</h3>
+            <span class="card-sub-label">PII & Sensitive Field Leaks</span>
+          </div>
+        </div>
+        <p class="cyber-card-desc">APIs returning complete data objects relying on client-side filtering.</p>
+        <div class="cyber-card-bottom">
+          <span class="explore-btn">
+            Explore <span>&rarr;</span>
+          </span>
+        </div>
+      </a>
+
+      <!-- Card 07: Rate Limiting -->
+      <a href="rate-limiting.html"  class="cyber-card" style="--card-accent: #f97316;" title="07. Rate Limiting - Resource Consumption & DoS">
+        <div class="cyber-card-top">
+          <div class="card-icon-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <div class="card-title-group">
+            <h3 class="card-main-name">07. Rate Limiting</h3>
+            <span class="card-sub-label">Resource Consumption & DoS</span>
+          </div>
+        </div>
+        <p class="cyber-card-desc">Missing rate controls allowing credential stuffing and resource exhaustion.</p>
+        <div class="cyber-card-bottom">
+          <span class="explore-btn">
+            Explore <span>&rarr;</span>
+          </span>
+        </div>
+      </a>
+
+      <!-- Card 08: SSRF -->
+      <a href="ssrf.html"  class="cyber-card" style="--card-accent: #2563eb;" title="08. SSRF - Server-Side Request Forgery">
+        <div class="cyber-card-top">
+          <div class="card-icon-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          </div>
+          <div class="card-title-group">
+            <h3 class="card-main-name">08. SSRF</h3>
+            <span class="card-sub-label">Server-Side Request Forgery</span>
+          </div>
+        </div>
+        <p class="cyber-card-desc">Forcing the API server to make unintended requests to internal networks and metadata.</p>
+        <div class="cyber-card-bottom">
+          <span class="explore-btn">
+            Explore <span>&rarr;</span>
+          </span>
+        </div>
+      </a>
+
+      <!-- Card 09: NoSQL Injection -->
+      <a href="nosql-injection.html"  class="cyber-card" style="--card-accent: #8b5cf6;" title="09. NoSQL Injection - BSON Operator & Query Injection">
+        <div class="cyber-card-top">
+          <div class="card-icon-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+          </div>
+          <div class="card-title-group">
+            <h3 class="card-main-name">09. NoSQL Injection</h3>
+            <span class="card-sub-label">BSON Operator & Query Injection</span>
+          </div>
+        </div>
+        <p class="cyber-card-desc">Injecting BSON query operators to bypass authentication and extract documents.</p>
+        <div class="cyber-card-bottom">
+          <span class="explore-btn">
+            Explore <span>&rarr;</span>
+          </span>
+        </div>
+      </a>
+
+      <!-- Card 10: Command Injection -->
+      <a href="javascript:void(0)" onclick="alertRoadmap('10. Command Injection')" class="cyber-card" style="--card-accent: #22c55e;" title="10. Command Injection - OS Command Execution">
+        <div class="cyber-card-top">
+          <div class="card-icon-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+          </div>
+          <div class="card-title-group">
+            <h3 class="card-main-name">10. Command Injection</h3>
+            <span class="card-sub-label">OS Command Execution</span>
+          </div>
+        </div>
+        <p class="cyber-card-desc">Executing arbitrary operating system commands via unsanitized input parameters.</p>
+        <div class="cyber-card-bottom">
+          <span class="explore-btn">
+            Explore <span>&rarr;</span>
+          </span>
+        </div>
+      </a>
+
+      <!-- Card 11: XXE Injection -->
+      <a href="javascript:void(0)" onclick="alertRoadmap('11. XXE Injection')" class="cyber-card" style="--card-accent: #6366f1;" title="11. XXE Injection - XML External Entity Exploits">
+        <div class="cyber-card-top">
+          <div class="card-icon-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+          </div>
+          <div class="card-title-group">
+            <h3 class="card-main-name">11. XXE Injection</h3>
+            <span class="card-sub-label">XML External Entity Exploits</span>
+          </div>
+        </div>
+        <p class="cyber-card-desc">Exploiting vulnerable XML parsers to read server files or trigger internal SSRF.</p>
+        <div class="cyber-card-bottom">
+          <span class="explore-btn">
+            Explore <span>&rarr;</span>
+          </span>
+        </div>
+      </a>
+
+      <!-- Card 12: GraphQL Security -->
+      <a href="javascript:void(0)" onclick="alertRoadmap('12. GraphQL Security')" class="cyber-card" style="--card-accent: #14b8a6;" title="12. GraphQL Security - Query Depth & Introspection">
+        <div class="cyber-card-top">
+          <div class="card-icon-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+          </div>
+          <div class="card-title-group">
+            <h3 class="card-main-name">12. GraphQL Security</h3>
+            <span class="card-sub-label">Query Depth & Introspection</span>
+          </div>
+        </div>
+        <p class="cyber-card-desc">Abusing nested queries, batching attacks, and field-level authorization gaps.</p>
+        <div class="cyber-card-bottom">
+          <span class="explore-btn">
+            Explore <span>&rarr;</span>
+          </span>
+        </div>
+      </a>
+
+      <!-- Card 13: Business Logic -->
+      <a href="javascript:void(0)" onclick="alertRoadmap('13. Business Logic')" class="cyber-card" style="--card-accent: #ef4444;" title="13. Business Logic - Workflow & Price Tampering">
+        <div class="cyber-card-top">
+          <div class="card-icon-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          </div>
+          <div class="card-title-group">
+            <h3 class="card-main-name">13. Business Logic</h3>
+            <span class="card-sub-label">Workflow & Price Tampering</span>
+          </div>
+        </div>
+        <p class="cyber-card-desc">Circumventing application business workflows, price tampering, and state flaws.</p>
+        <div class="cyber-card-bottom">
+          <span class="explore-btn">
+            Explore <span>&rarr;</span>
+          </span>
+        </div>
+      </a>
+
+      <!-- Card 14: CORS Misconfig -->
+      <a href="javascript:void(0)" onclick="alertRoadmap('14. CORS Misconfig')" class="cyber-card" style="--card-accent: #0284c7;" title="14. CORS Misconfig - Origin Spoofing & Trust Exploits">
+        <div class="cyber-card-top">
+          <div class="card-icon-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M16 8l-8 8"/><path d="M8 8l8 8"/></svg>
+          </div>
+          <div class="card-title-group">
+            <h3 class="card-main-name">14. CORS Misconfig</h3>
+            <span class="card-sub-label">Origin Spoofing & Trust Exploits</span>
+          </div>
+        </div>
+        <p class="cyber-card-desc">Misconfigured cross-origin trust headers leading to token and data theft.</p>
+        <div class="cyber-card-bottom">
+          <span class="explore-btn">
+            Explore <span>&rarr;</span>
+          </span>
+        </div>
+      </a>
+
+      <!-- Card 15: API Key Security -->
+      <a href="javascript:void(0)" onclick="alertRoadmap('15. API Key Security')" class="cyber-card" style="--card-accent: #7c3aed;" title="15. API Key Security - Secrets Exposure & Scope Flaws">
+        <div class="cyber-card-top">
+          <div class="card-icon-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7.5" cy="15.5" r="5.5"/><path d="M11.5 11.5L22 1l-3 5 2 2-5 3"/></svg>
+          </div>
+          <div class="card-title-group">
+            <h3 class="card-main-name">15. API Key Security</h3>
+            <span class="card-sub-label">Secrets Exposure & Scope Flaws</span>
+          </div>
+        </div>
+        <p class="cyber-card-desc">Hardcoded API tokens, over-privileged keys, and missing rotation policies.</p>
+        <div class="cyber-card-bottom">
+          <span class="explore-btn">
+            Explore <span>&rarr;</span>
+          </span>
+        </div>
+      </a>
+
+      <!-- Card 16: OAuth & OpenID -->
+      <a href="javascript:void(0)" onclick="alertRoadmap('16. OAuth & OpenID')" class="cyber-card" style="--card-accent: #16a34a;" title="16. OAuth & OpenID - Token Hijacking & PKCE Bypasses">
+        <div class="cyber-card-top">
+          <div class="card-icon-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+          </div>
+          <div class="card-title-group">
+            <h3 class="card-main-name">16. OAuth & OpenID</h3>
+            <span class="card-sub-label">Token Hijacking & PKCE Bypasses</span>
+          </div>
+        </div>
+        <p class="cyber-card-desc">Redirect URI manipulation, authorization code theft, and PKCE bypasses.</p>
+        <div class="cyber-card-bottom">
+          <span class="explore-btn">
+            Explore <span>&rarr;</span>
+          </span>
+        </div>
+      </a>
+
+      <!-- Card 17: Webhooks Security -->
+      <a href="javascript:void(0)" onclick="alertRoadmap('17. Webhooks Security')" class="cyber-card" style="--card-accent: #d97706;" title="17. Webhooks Security - HMAC Signatures & Replay Defense">
+        <div class="cyber-card-top">
+          <div class="card-icon-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
+          </div>
+          <div class="card-title-group">
+            <h3 class="card-main-name">17. Webhooks Security</h3>
+            <span class="card-sub-label">HMAC Signatures & Replay Defense</span>
+          </div>
+        </div>
+        <p class="cyber-card-desc">Missing payload signature verifications and callback SSRF vulnerabilities.</p>
+        <div class="cyber-card-bottom">
+          <span class="explore-btn">
+            Explore <span>&rarr;</span>
+          </span>
+        </div>
+      </a>
+
+      <!-- Card 18: Race Conditions -->
+      <a href="javascript:void(0)" onclick="alertRoadmap('18. Race Conditions')" class="cyber-card" style="--card-accent: #db2777;" title="18. Race Conditions - Concurrency & State Exploits">
+        <div class="cyber-card-top">
+          <div class="card-icon-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          </div>
+          <div class="card-title-group">
+            <h3 class="card-main-name">18. Race Conditions</h3>
+            <span class="card-sub-label">Concurrency & State Exploits</span>
+          </div>
+        </div>
+        <p class="cyber-card-desc">Concurrent request windows enabling balance double-spending and limit bypasses.</p>
+        <div class="cyber-card-bottom">
+          <span class="explore-btn">
+            Explore <span>&rarr;</span>
+          </span>
+        </div>
+      </a>
+
+      <!-- Card 19: File Upload -->
+      <a href="javascript:void(0)" onclick="alertRoadmap('19. File Upload')" class="cyber-card" style="--card-accent: #0891b2;" title="19. File Upload - Unrestricted File Uploads">
+        <div class="cyber-card-top">
+          <div class="card-icon-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          </div>
+          <div class="card-title-group">
+            <h3 class="card-main-name">19. File Upload</h3>
+            <span class="card-sub-label">Unrestricted File Uploads</span>
+          </div>
+        </div>
+        <p class="cyber-card-desc">Uploading web shells or scripts due to unrestricted extensions and MIME trust.</p>
+        <div class="cyber-card-bottom">
+          <span class="explore-btn">
+            Explore <span>&rarr;</span>
+          </span>
+        </div>
+      </a>
+
+      <!-- Card 20: Deserialization -->
+      <a href="javascript:void(0)" onclick="alertRoadmap('20. Deserialization')" class="cyber-card" style="--card-accent: #dc2626;" title="20. Deserialization - Insecure Object Deserialization">
+        <div class="cyber-card-top">
+          <div class="card-icon-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+          </div>
+          <div class="card-title-group">
+            <h3 class="card-main-name">20. Deserialization</h3>
+            <span class="card-sub-label">Insecure Object Deserialization</span>
+          </div>
+        </div>
+        <p class="cyber-card-desc">Unsafe deserialization of untrusted payloads leading to remote code execution.</p>
+        <div class="cyber-card-bottom">
+          <span class="explore-btn">
+            Explore <span>&rarr;</span>
+          </span>
+        </div>
+      </a>
+
+      <!-- Card 21: Gateway & WAF -->
+      <a href="javascript:void(0)" onclick="alertRoadmap('21. Gateway & WAF')" class="cyber-card" style="--card-accent: #0284c7;" title="21. Gateway & WAF - Bypasses & Routing Smuggling">
+        <div class="cyber-card-top">
+          <div class="card-icon-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d="M15 3v18"/></svg>
+          </div>
+          <div class="card-title-group">
+            <h3 class="card-main-name">21. Gateway & WAF</h3>
+            <span class="card-sub-label">Bypasses & Routing Smuggling</span>
+          </div>
+        </div>
+        <p class="cyber-card-desc">Path normalization flaws, HTTP request smuggling, and gateway bypasses.</p>
+        <div class="cyber-card-bottom">
+          <span class="explore-btn">
+            Explore <span>&rarr;</span>
+          </span>
+        </div>
+      </a>
+
+      <!-- Card 22: Serverless APIs -->
+      <a href="javascript:void(0)" onclick="alertRoadmap('22. Serverless APIs')" class="cyber-card" style="--card-accent: #9333ea;" title="22. Serverless APIs - Cloud Functions & Over-Privilege">
+        <div class="cyber-card-top">
+          <div class="card-icon-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
+          </div>
+          <div class="card-title-group">
+            <h3 class="card-main-name">22. Serverless APIs</h3>
+            <span class="card-sub-label">Cloud Functions & Over-Privilege</span>
+          </div>
+        </div>
+        <p class="cyber-card-desc">Excessive IAM execution roles, cold-start persistence, and event injection.</p>
+        <div class="cyber-card-bottom">
+          <span class="explore-btn">
+            Explore <span>&rarr;</span>
+          </span>
+        </div>
+      </a>
+
+      <!-- Card 23: Cloud Metadata -->
+      <a href="javascript:void(0)" onclick="alertRoadmap('23. Cloud Metadata')" class="cyber-card" style="--card-accent: #e11d48;" title="23. Cloud Metadata - IMDSv1/v2 & Role Exfiltration">
+        <div class="cyber-card-top">
+          <div class="card-icon-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><rect x="9" y="10" width="6" height="4" rx="1"/></svg>
+          </div>
+          <div class="card-title-group">
+            <h3 class="card-main-name">23. Cloud Metadata</h3>
+            <span class="card-sub-label">IMDSv1/v2 & Role Exfiltration</span>
+          </div>
+        </div>
+        <p class="cyber-card-desc">Targeting 169.254.169.254 to steal temporary IAM credentials and tokens.</p>
+        <div class="cyber-card-bottom">
+          <span class="explore-btn">
+            Explore <span>&rarr;</span>
+          </span>
+        </div>
+      </a>
+
+    </div>
+
+    <!-- Footer Signoff -->
+    <footer class="footer-signoff">
+      <div class="signature-wrap">
+        <span>Designed and Developed by</span>
+        <span class="author-name">Irshad Akaram</span>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- Core Scripts -->
+  <script src="assets/js/main.js"></script>
+
+  <script>
+    function alertRoadmap(topicName) {
+      const msg = `${topicName} is currently in our upcoming curriculum roadmap! Check back soon.`;
+      if (typeof showToast === 'function') {
+        showToast(msg);
+      } else {
+        alert(msg);
+      }
+    }
+  </script>
+</body>
+</html>

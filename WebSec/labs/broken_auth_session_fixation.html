@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⬆️ Security Lab: Session Fixation to Privilege Escalation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0b0f19;
+    --panel: #111827;
+    --panel-2: #1f2937;
+    --border: #374151;
+    --accent: #f59e0b;
+    --danger: #ef4444;
+    --safe: #10b981;
+    --blue: #3b82f6;
+    --purple: #a855f7;
+    --cyan: #06b6d4;
+    --text: #f9fafb;
+    --text-muted: #9ca3af;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', system-ui, sans-serif;
+  }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+    line-height: 1.6;
+  }
+
+  /* ── Dynamic Animated Cyber Background ── */
+  .cyber-bg {
+    position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden;
+  }
+  .cyber-grid {
+    position: absolute; inset: -120px;
+    background-image: 
+      radial-gradient(rgba(255, 255, 255, 0.12) 1.2px, transparent 1.2px),
+      linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+    background-size: 32px 32px, 96px 96px, 96px 96px;
+    opacity: 0.85;
+    animation: gridDrift 60s linear infinite;
+  }
+  @keyframes gridDrift {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(96px, 96px); }
+  }
+  .cyber-orb {
+    position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.35; will-change: transform;
+  }
+  .orb-1 { width: 600px; height: 600px; background: radial-gradient(circle, #ef4444 0%, rgba(239,68,68,0) 70%); top: -100px; left: -100px; animation: floatOrb1 16s ease-in-out infinite alternate; }
+  .orb-2 { width: 650px; height: 650px; background: radial-gradient(circle, #f59e0b 0%, rgba(245,158,11,0) 70%); bottom: -100px; right: -120px; animation: floatOrb2 20s ease-in-out infinite alternate; }
+  .orb-3 { width: 500px; height: 500px; background: radial-gradient(circle, #a855f7 0%, rgba(168,85,247,0) 70%); top: 35%; right: 20%; animation: floatOrb3 18s ease-in-out infinite alternate; }
+  .orb-4 { width: 550px; height: 550px; background: radial-gradient(circle, #3b82f6 0%, rgba(59,130,246,0) 70%); bottom: 10%; left: 15%; animation: floatOrb4 22s ease-in-out infinite alternate; }
+  @keyframes floatOrb1 { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(-60px, 140px) scale(0.92); } }
+  @keyframes floatOrb2 { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(-80px, -70px) scale(0.9); } }
+  @keyframes floatOrb3 { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(-100px, -50px) scale(1.05); } }
+  @keyframes floatOrb4 { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(90px, 70px) scale(0.9); } }
+
+  .container {
+    max-width: 1380px;
+    margin: 0 auto;
+    padding: 24px 20px 60px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── Header ── */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 26px;
+  }
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 13px;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+  .back-link:hover {
+    color: var(--text);
+    border-color: var(--accent);
+    transform: translateX(-3px);
+  }
+  .header-title h1 {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .header-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    border-radius: 20px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--danger);
+    font-weight: 600;
+  }
+
+  /* ── Interactive 4-Stage Synchronized Pipeline Bar ── */
+  .flow-stream-bar {
+    background: rgba(17, 24, 39, 0.85);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+    gap: 10px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  }
+  .flow-stream-bar::after {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 60%; height: 2px;
+    background: linear-gradient(90deg, transparent, #ef4444, #f59e0b, transparent);
+    animation: pipelineLaser 3s linear infinite;
+  }
+  @keyframes pipelineLaser {
+    0% { left: -60%; }
+    100% { left: 140%; }
+  }
+  .flow-step-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--text-muted);
+    transition: all 0.3s;
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 6px;
+  }
+  .flow-step-item:hover {
+    background: rgba(255,255,255,0.05);
+  }
+  .flow-step-item.active {
+    color: #f59e0b;
+    font-weight: 700;
+    text-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
+    background: rgba(245, 158, 11, 0.1);
+  }
+  .flow-step-item.completed {
+    color: var(--safe);
+  }
+  .flow-step-item.rce-active {
+    color: #f87171;
+    font-weight: 700;
+    text-shadow: 0 0 12px rgba(239, 68, 68, 0.8);
+    background: rgba(239, 68, 68, 0.12);
+  }
+  .flow-dot-pulse {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #64748b;
+  }
+  .flow-step-item.active .flow-dot-pulse {
+    background: #f59e0b;
+    box-shadow: 0 0 8px #f59e0b;
+    animation: pulseDot 1.4s infinite alternate;
+  }
+  .flow-step-item.rce-active .flow-dot-pulse {
+    background: #ef4444;
+    box-shadow: 0 0 10px #ef4444;
+    animation: pulseDotRed 1.2s infinite alternate;
+  }
+  .flow-step-item.completed .flow-dot-pulse {
+    background: var(--safe);
+    box-shadow: 0 0 6px var(--safe);
+  }
+  @keyframes pulseDot {
+    0% { transform: scale(1); opacity: 0.7; }
+    100% { transform: scale(1.5); opacity: 1; }
+  }
+  @keyframes pulseDotRed {
+    0% { transform: scale(1); opacity: 0.8; box-shadow: 0 0 4px #ef4444; }
+    100% { transform: scale(1.6); opacity: 1; box-shadow: 0 0 14px #ef4444; }
+  }
+  .flow-connector {
+    color: #4b5563;
+    font-size: 13px;
+  }
+
+  /* ── 2-Column Split Layout ── */
+  .lab-split-layout {
+    display: grid;
+    grid-template-columns: 1.05fr 1fr;
+    gap: 24px;
+    margin-bottom: 28px;
+  }
+  @media (max-width: 1040px) {
+    .lab-split-layout { grid-template-columns: 1fr; }
+    .flow-stream-bar { flex-direction: column; align-items: flex-start; }
+    .flow-connector { display: none; }
+  }
+
+  /* ── Cards & Panels ── */
+  .card-panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+  }
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .panel-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+  }
+
+  /* ── Attack Presets ── */
+  .preset-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .preset-btn {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-family: var(--mono);
+    font-size: 12px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .preset-btn:hover {
+    border-color: var(--accent);
+    background: rgba(245, 158, 11, 0.08);
+  }
+  .preset-btn.active {
+    border-color: var(--danger);
+    background: rgba(239, 68, 68, 0.15);
+    color: #fca5a5;
+  }
+  .preset-tag {
+    font-size: 10.5px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.06);
+    font-weight: 600;
+  }
+
+  /* ── Form Controls ── */
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .form-label {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--text-muted);
+    display: flex;
+    justify-content: space-between;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .form-input, .form-select {
+    width: 100%;
+    background: #090d16;
+    border: 1px solid var(--border);
+    color: #38bdf8;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    outline: none;
+    transition: all 0.2s;
+  }
+  .form-input:focus, .form-select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
+  }
+  .row-2col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  /* ── Action Row (Execute + Reset) ── */
+  .action-row {
+    display: flex;
+    gap: 12px;
+  }
+  .btn-execute {
+    flex: 1;
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: #fff;
+    border: none;
+    padding: 13px;
+    border-radius: 8px;
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 13.5px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+    transition: all 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .btn-execute:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.6);
+  }
+  .btn-execute:active {
+    transform: translateY(0);
+  }
+
+  .btn-reset {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    padding: 13px 18px;
+    border-radius: 8px;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .btn-reset:hover {
+    color: var(--text);
+    border-color: var(--accent);
+    background: rgba(245, 158, 11, 0.1);
+    transform: translateY(-2px);
+  }
+
+  /* ── Right Column: Multi-Tab Console & Visualizer ── */
+  .tab-nav {
+    display: flex;
+    gap: 8px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 10px;
+  }
+  .tab-btn {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 11.5px;
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .tab-btn:hover {
+    color: var(--text);
+    border-color: var(--accent);
+  }
+  .tab-btn.active {
+    background: rgba(59, 130, 246, 0.15);
+    border-color: var(--blue);
+    color: #93c5fd;
+    font-weight: 600;
+  }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* Dual Browser Split Box */
+  .split-browsers-box {
+    background: #050811;
+    border: 1px solid #1e293b;
+    border-radius: 8px;
+    padding: 12px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    min-height: 290px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .browser-card {
+    border-radius: 6px;
+    padding: 10px 12px;
+    border: 1px solid #334155;
+    background: #0f172a;
+  }
+  .browser-card.attacker { border-left: 4px solid #ef4444; }
+  .browser-card.victim { border-left: 4px solid #3b82f6; }
+  .browser-title {
+    display: flex;
+    justify-content: space-between;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  /* Session Table Box */
+  .sess-box {
+    background: #050811;
+    border: 1px solid #1e293b;
+    border-radius: 8px;
+    padding: 14px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    min-height: 290px;
+    max-height: 380px;
+    overflow-y: auto;
+  }
+  .sess-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+  }
+  .sess-table th, .sess-table td {
+    padding: 8px;
+    border-bottom: 1px solid #1e293b;
+  }
+  .sess-table th { color: #94a3b8; font-size: 10.5px; text-transform: uppercase; }
+
+  /* HTTP Terminal */
+  .terminal-box {
+    background: #050811;
+    border: 1px solid #1e293b;
+    border-radius: 8px;
+    padding: 14px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: #cbd5e1;
+    min-height: 290px;
+    max-height: 380px;
+    overflow-y: auto;
+    line-height: 1.65;
+  }
+  .t-prompt { color: #10b981; font-weight: 600; }
+  .t-cmd { color: #facc15; }
+  .t-err { color: #f87171; font-weight: 700; }
+  .t-info { color: #38bdf8; }
+  .t-highlight { background: rgba(239, 68, 68, 0.2); color: #fca5a5; padding: 2px 4px; border-radius: 4px; }
+  .t-success { color: #4ade80; font-weight: 600; }
+
+  /* Verdict Banner */
+  .verdict-banner {
+    border-radius: 10px;
+    padding: 14px 18px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    transition: all 0.3s;
+  }
+  .verdict-banner.danger {
+    background: rgba(239, 68, 68, 0.14);
+    border: 1.5px solid #ef4444;
+    color: #fecaca;
+  }
+  .verdict-banner.warning {
+    background: rgba(245, 158, 11, 0.14);
+    border: 1.5px solid #f59e0b;
+    color: #fef08a;
+  }
+  .verdict-banner.safe {
+    background: rgba(16, 185, 129, 0.14);
+    border: 1.5px solid #10b981;
+    color: #a7f3d0;
+  }
+  .verdict-title {
+    font-weight: 700;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* ── Code Comparison & Remediation Section ── */
+  .breakdown-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+    margin-bottom: 30px;
+  }
+  .breakdown-card h3 {
+    font-size: 16px;
+    font-family: var(--mono);
+    color: #38bdf8;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .code-comparison-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 14px;
+  }
+  @media (max-width: 820px) {
+    .code-comparison-grid { grid-template-columns: 1fr; }
+  }
+  .code-box {
+    background: #05070f;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.6;
+  }
+  .code-box.vulnerable { border-left: 4px solid var(--danger); }
+  .code-box.secure { border-left: 4px solid var(--safe); }
+  .code-box-title {
+    font-weight: 700;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    text-transform: uppercase;
+    font-size: 11.5px;
+  }
+  .code-box.vulnerable .code-box-title { color: var(--danger); }
+  .code-box.secure .code-box-title { color: var(--safe); }
+
+  /* ── Standard Modern Footer ── */
+  .modern-footer { padding: 40px 18px 30px; text-align: center; position: relative; z-index: 1; }
+  .footer-badge {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: linear-gradient(145deg, #1f2937, #111827);
+    padding: 12px 28px; border-radius: 30px; font-family: var(--mono); font-size: 13.5px;
+    color: #9ca3af; border: 1px solid #374151;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.25); cursor: default;
+  }
+  .footer-badge:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 30px rgba(239, 68, 68, 0.25);
+    border-color: #ef4444;
+    color: #f9fafb;
+  }
+  .dev-name {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+    background: linear-gradient(90deg, #3B82F6, #A855F7, #F43F5E, #F59E0B, #3B82F6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    background-size: 200% auto;
+    animation: gradient-flow 4s linear infinite;
+  }
+  @keyframes gradient-flow {
+    0% { background-position: 0% center; }
+    100% { background-position: 200% center; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Dynamic Cyber Background -->
+<div class="cyber-bg" aria-hidden="true">
+  <div class="cyber-orb orb-1"></div>
+  <div class="cyber-orb orb-2"></div>
+  <div class="cyber-orb orb-3"></div>
+  <div class="cyber-orb orb-4"></div>
+  <div class="cyber-grid"></div>
+</div>
+
+<div class="container">
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-left">
+      <a href="../guides/Broken_Auth.html" class="back-link">← Back to Broken Authentication Notes</a>
+      <div class="header-title">
+        <h1>⬆️ Session Fixation to Administrative Privilege Escalation</h1>
+      </div>
+    </div>
+    <div class="header-badge">
+      <span>● ACTIVE LAB</span>
+    </div>
+  </header>
+
+  <!-- Interactive 4-Stage Synchronized Pipeline Bar -->
+  <div class="flow-stream-bar" id="pipeline-stream">
+    <div class="flow-step-item active" id="step-1" onclick="applyPreset(1)">
+      <span class="flow-dot-pulse"></span>
+      <span>1. Attacker Seeds Trap Session</span>
+    </div>
+    <span class="flow-connector">➔</span>
+    <div class="flow-step-item" id="step-2" onclick="applyPreset(2)">
+      <span class="flow-dot-pulse"></span>
+      <span>2. Deliver Trap URL to Victim</span>
+    </div>
+    <span class="flow-connector">➔</span>
+    <div class="flow-step-item" id="step-3" onclick="applyPreset(3)">
+      <span class="flow-dot-pulse"></span>
+      <span>3. Admin Logs In (No Rotation)</span>
+    </div>
+    <span class="flow-connector">➔</span>
+    <div class="flow-step-item" id="step-4" onclick="applyPreset(4)">
+      <span class="flow-dot-pulse"></span>
+      <span>4. Attacker Hijacks Admin Session</span>
+    </div>
+  </div>
+
+  <!-- Dual Split Lab Layout -->
+  <div class="lab-split-layout">
+
+    <!-- Left Column: Session Fixation Attack Console -->
+    <div class="card-panel">
+      <div class="panel-header">
+        <div class="panel-title">
+          <span>⚙️ Session Fixation Exploit Controller</span>
+        </div>
+        <span style="font-family:var(--mono); font-size:11px; color:#64748b;">Target: Corporate Portal</span>
+      </div>
+
+      <!-- Quick Attack Presets -->
+      <div class="form-group">
+        <label class="form-label">
+          <span>Exploit Presets:</span>
+          <span style="color:var(--accent)">Stage-Driven</span>
+        </label>
+        <div class="preset-list">
+          <button type="button" class="preset-btn active" id="preset-btn-1" onclick="applyPreset(1)">
+            <span>1. Stage 1: Generate Trap Session (Guest State)</span>
+            <span class="preset-tag" style="color:var(--safe)">SEED SESSION</span>
+          </button>
+          <button type="button" class="preset-btn" id="preset-btn-2" onclick="applyPreset(2)">
+            <span>2. Stage 2: Deliver Trap Link with URL Parameter (?sid=)</span>
+            <span class="preset-tag" style="color:var(--accent)">TRAP SENT</span>
+          </button>
+          <button type="button" class="preset-btn" id="preset-btn-3" onclick="applyPreset(3)">
+            <span>3. Stage 3: Superadmin Authenticates (Fails Rotation)</span>
+            <span class="preset-tag" style="color:var(--danger)">ELEVATION</span>
+          </button>
+          <button type="button" class="preset-btn" id="preset-btn-4" onclick="applyPreset(4)">
+            <span>4. Stage 4: Attacker Assumes Admin Role Instantly</span>
+            <span class="preset-tag" style="color:var(--danger)">FULL HIJACK</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Form Inputs -->
+      <div class="form-group">
+        <label class="form-label" for="fixed-sid">
+          <span>Attacker Pre-Set Session ID:</span>
+        </label>
+        <input type="text" id="fixed-sid" class="form-input" value="SESS_FIXED_994820">
+      </div>
+
+      <div class="row-2col">
+        <div class="form-group">
+          <label class="form-label" for="fixation-vector">
+            <span>Fixation Vector:</span>
+          </label>
+          <select id="fixation-vector" class="form-select">
+            <option value="url" selected>URL Parameter (?PHPSESSID=...)</option>
+            <option value="cookie_toss">Subdomain Cookie Toss</option>
+            <option value="stored_xss">Stored XSS Document.Cookie</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="server-rotation">
+            <span>Server Session Rotation:</span>
+          </label>
+          <select id="server-rotation" class="form-select">
+            <option value="disabled" selected>DISABLED (Vulnerable)</option>
+            <option value="enabled">ENABLED (session_regenerate_id)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="victim-role">
+          <span>Target Victim Role:</span>
+        </label>
+        <input type="text" id="victim-role" class="form-input" value="Super Administrator (uid=1)">
+      </div>
+
+      <!-- Action Row: Execute + Reset -->
+      <div class="action-row">
+        <button type="button" class="btn-execute" id="btn-fire" onclick="fireFixationStep()">
+          <span>🚀 Execute Fixation Step</span>
+        </button>
+        <button type="button" class="btn-reset" onclick="resetLab()">
+          <span>↺ Reset Lab</span>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Right Column: Multi-Tab Live Inspector -->
+    <div class="card-panel">
+      <div class="tab-nav">
+        <button type="button" class="tab-btn active" onclick="switchTab('tab-browsers', this)">👥 Dual Browser View</button>
+        <button type="button" class="tab-btn" onclick="switchTab('tab-session-store', this)">💾 Server Session Store</button>
+        <button type="button" class="tab-btn" onclick="switchTab('tab-traffic', this)">🌐 HTTP Traffic</button>
+      </div>
+
+      <!-- Tab 1: Dual Browser Split View -->
+      <div id="tab-browsers" class="tab-content active">
+        <div class="split-browsers-box">
+          <!-- Attacker Browser -->
+          <div class="browser-card attacker">
+            <div class="browser-title">
+              <span style="color:#ef4444;">🕵️ Attacker Browser (Kali Firefox)</span>
+              <span id="attacker-badge" style="color:#94a3b8;">Guest (Unauth)</span>
+            </div>
+            <div style="font-size:11px; color:#cbd5e1;">
+              Active Cookie: <code id="attacker-cookie" style="color:#f59e0b;">PHPSESSID=SESS_FIXED_994820</code><br>
+              Status: <span id="attacker-status" style="color:#94a3b8;">Waiting for victim to authenticate...</span>
+            </div>
+          </div>
+
+          <!-- Victim Browser -->
+          <div class="browser-card victim">
+            <div class="browser-title">
+              <span style="color:#38bdf8;">👤 Victim Browser (Admin Chrome)</span>
+              <span id="victim-badge" style="color:#94a3b8;">Unauthenticated</span>
+            </div>
+            <div style="font-size:11px; color:#cbd5e1;">
+              Loaded URL: <span id="victim-url" style="color:#93c5fd;">https://corp.local/login</span><br>
+              Active Cookie: <code id="victim-cookie" style="color:#64748b;">[None]</code><br>
+              Auth State: <span id="victim-status" style="color:#94a3b8;">Browsing portal...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 2: Server Session Store -->
+      <div id="tab-session-store" class="tab-content">
+        <div class="sess-box">
+          <table class="sess-table">
+            <thead>
+              <tr>
+                <th>Session ID</th>
+                <th>User / Identity</th>
+                <th>Role</th>
+                <th>Elevated?</th>
+              </tr>
+            </thead>
+            <tbody id="sess-tbody">
+              <tr>
+                <td style="color:#f59e0b;">SESS_FIXED_994820</td>
+                <td>Anonymous Guest</td>
+                <td>None</td>
+                <td style="color:#64748b;">No</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab 3: HTTP Traffic -->
+      <div id="tab-traffic" class="tab-content">
+        <div class="terminal-box" id="terminal-content">
+          <span class="t-info">// HTTP Session Exchange Monitor</span><br>
+          <span class="t-prompt">server@auth-core:~$</span> <span class="t-cmd">tail -f /var/log/auth.log</span><br>
+          <span style="color:#64748b;">[Ready for session tracking events...]</span>
+        </div>
+      </div>
+
+      <!-- Verdict Banner -->
+      <div class="verdict-banner safe" id="verdict-card">
+        <div class="verdict-title" id="verdict-title">
+          <span>🛡️ STATUS: INITIAL TRAP SESSION CREATED</span>
+        </div>
+        <div id="verdict-desc">
+          Attacker generated fixed session ID SESS_FIXED_994820. Currently unauthenticated.
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Technical Breakdown & Vulnerability Remediation -->
+  <div class="breakdown-card">
+    <h3>🔍 Technical Mechanics: How Session Fixation Enables Account Hijacking</h3>
+    <p style="font-size:13.5px; color:#cbd5e1; margin-bottom:14px;">
+      In a secure authentication workflow, the server must <strong>regenerate</strong> the session identifier immediately upon user authentication. Session Fixation occurs when an application accepts a session ID provided by an unauthenticated client (or via URL query parameters) and continues to reuse that same session ID <em>after</em> the user successfully logs in.
+    </p>
+    <p style="font-size:13.5px; color:#cbd5e1;">
+      Because the attacker already knows the session ID (having pre-seeded or fixed it), as soon as the privileged victim logs in, the session token is upgraded to an authenticated admin session on the server. The attacker, still holding that exact same session token, refreshes their browser and immediately inherits all administrative powers.
+    </p>
+
+    <div class="code-comparison-grid">
+      <!-- Vulnerable Code -->
+      <div class="code-box vulnerable">
+        <div class="code-box-title">❌ Vulnerable Login Handler (No Rotation)</div>
+<pre><code><span style="color:#64748b;">// login.php — Flawed session management</span>
+&lt;?php
+  session_start(); <span style="color:#64748b;">// Accepts pre-set session ID from cookie/URL</span>
+
+  if (verify_credentials($_POST['user'], $_POST['pass'])) {
+      <span style="color:#ef4444;">// VULNERABLE: Binds user data to existing session</span>
+      <span style="color:#ef4444;">// without generating a brand new session ID!</span>
+      $_SESSION['authenticated'] = true;
+      $_SESSION['user_id'] = $user['id'];
+      $_SESSION['role'] = $user['role']; <span style="color:#ef4444;">// Attacker session now elevated!</span>
+      header("Location: /dashboard.php");
+  }
+?&gt;</code></pre>
+      </div>
+
+      <!-- Secure Remediation -->
+      <div class="code-box secure">
+        <div class="code-box-title">✅ Secure Login Handler (With Session Rotation)</div>
+<pre><code><span style="color:#64748b;">// login.php — Hardened session rotation</span>
+&lt;?php
+  session_start();
+
+  if (verify_credentials($_POST['user'], $_POST['pass'])) {
+      <span style="color:#10b981;">// SECURE: Immediately invalidate old session and issue new token!</span>
+      session_regenerate_id(true);
+
+      $_SESSION['authenticated'] = true;
+      $_SESSION['user_id'] = $user['id'];
+      $_SESSION['role'] = $user['role'];
+
+      <span style="color:#10b981;">// Enforce strict cookie flags (prevent URL session passing)</span>
+      <span style="color:#64748b;">// ini_set('session.use_only_cookies', 1);</span>
+      header("Location: /dashboard.php");
+  }
+?&gt;</code></pre>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Footer -->
+<footer class="modern-footer">
+  <div class="footer-badge">
+    <span class="footer-text">Designed and developed by <strong class="dev-name">Irshad Akaram</strong></span>
+  </div>
+</footer>
+
+<script>
+  let currentStage = 1;
+
+  function switchTab(tabId, btn) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    btn.classList.add('active');
+  }
+
+  function applyPreset(stage) {
+    currentStage = stage;
+
+    // Update pipeline steps
+    for (let i = 1; i <= 4; i++) {
+      const stepEl = document.getElementById('step-' + i);
+      const presetBtn = document.getElementById('preset-btn-' + i);
+      stepEl.classList.remove('active', 'completed', 'rce-active');
+      presetBtn.classList.remove('active');
+
+      if (i < stage) {
+        stepEl.classList.add('completed');
+      } else if (i === stage) {
+        if (stage === 4) {
+          stepEl.classList.add('rce-active');
+        } else {
+          stepEl.classList.add('active');
+        }
+        presetBtn.classList.add('active');
+      }
+    }
+
+    const sid = document.getElementById('fixed-sid').value.trim();
+
+    if (stage === 1) {
+      document.getElementById('attacker-badge').textContent = 'Guest (Unauth)';
+      document.getElementById('attacker-badge').style.color = '#94a3b8';
+      document.getElementById('attacker-status').textContent = 'Waiting for victim to authenticate...';
+      document.getElementById('victim-badge').textContent = 'Unauthenticated';
+      document.getElementById('victim-status').textContent = 'Browsing portal...';
+      document.getElementById('victim-url').textContent = 'https://corp.local/login';
+      document.getElementById('victim-cookie').textContent = '[None]';
+
+      updateVerdict('safe', 'STAGE 1: TRAP SESSION SEEDED', 'Attacker obtained unauthenticated session ID: ' + sid);
+    } else if (stage === 2) {
+      document.getElementById('victim-url').textContent = 'https://corp.local/login?PHPSESSID=' + sid;
+      document.getElementById('victim-cookie').textContent = 'PHPSESSID=' + sid;
+      document.getElementById('victim-status').textContent = 'Victim clicked trap link! Session fixed in victim browser.';
+
+      updateVerdict('warning', 'STAGE 2: TRAP LINK DELIVERED', 'Victim browser adopted fixed session: ' + sid);
+    } else if (stage === 3) {
+      document.getElementById('victim-badge').textContent = 'Super Administrator (uid=1)';
+      document.getElementById('victim-badge').style.color = '#10b981';
+      document.getElementById('victim-status').textContent = 'LOGGED IN! Server did NOT regenerate session ID!';
+      document.getElementById('sess-tbody').innerHTML = `<tr><td style="color:#ef4444; font-weight:700;">${sid}</td><td>admin (uid=1)</td><td style="color:#f87171; font-weight:700;">Super Administrator</td><td style="color:#ef4444; font-weight:700;">YES (CRITICAL)</td></tr>`;
+
+      updateVerdict('danger', 'STAGE 3: ADMIN LOGGED IN (NO ROTATION)', 'Session ' + sid + ' elevated to Super Administrator privileges!');
+    } else if (stage === 4) {
+      document.getElementById('attacker-badge').textContent = 'Super Administrator (HIJACKED)';
+      document.getElementById('attacker-badge').style.color = '#ef4444';
+      document.getElementById('attacker-status').textContent = 'FULL ADMIN ACCESS ACQUIRED VIA PRE-FIXED SESSION!';
+
+      updateVerdict('danger', 'STAGE 4: FULL ADMIN ACCOUNT HIJACKED', 'Attacker reused fixed session ID to gain complete administrative takeover!');
+    }
+  }
+
+  function updateVerdict(type, title, desc) {
+    const card = document.getElementById('verdict-card');
+    card.className = 'verdict-banner ' + type;
+    document.getElementById('verdict-title').innerHTML = `<span>${title}</span>`;
+    document.getElementById('verdict-desc').textContent = desc;
+  }
+
+  function fireFixationStep() {
+    const sid = document.getElementById('fixed-sid').value.trim();
+    const term = document.getElementById('terminal-content');
+    const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
+
+    if (currentStage === 1) {
+      term.innerHTML += `<br><span class="t-info">[${timestamp}] Attacker requests new guest session:</span><br>` +
+        `<span class="t-prompt">GET / HTTP/1.1</span> -&gt; <span class="t-success">Set-Cookie: PHPSESSID=${escapeHtml(sid)}</span><br>` +
+        `<span style="color:#94a3b8;">Trap session registered in attacker cookie jar.</span><br>`;
+      updateVerdict('safe', '🛡️ STATUS: TRAP SESSION READY', 'Attacker holds session ID ' + sid + '. Ready for delivery.');
+    } else if (currentStage === 2) {
+      term.innerHTML += `<br><span class="t-info">[${timestamp}] Phishing email/link delivered to victim:</span><br>` +
+        `<span class="t-cmd">https://corp.local/login?PHPSESSID=${escapeHtml(sid)}</span><br>` +
+        `<span class="t-err">Server accepts session ID from GET parameter without validation!</span><br>` +
+        `<span class="t-info">Victim browser sets Cookie: PHPSESSID=${escapeHtml(sid)}</span><br>`;
+      updateVerdict('warning', '⚠️ TRAP SESSION ADOPTED BY VICTIM', 'Victim browser is now bound to the attacker-known session identifier.');
+    } else if (currentStage === 3) {
+      term.innerHTML += `<br><span class="t-info">[${timestamp}] Victim submits credentials:</span><br>` +
+        `POST /login HTTP/1.1<br>` +
+        `Cookie: PHPSESSID=${escapeHtml(sid)}<br>` +
+        `username=admin&amp;password=********<br>` +
+        `<span class="t-success">HTTP/1.1 302 Found (Authentication Successful)</span><br>` +
+        `<span class="t-err">FLAW DETECTED: No Set-Cookie header issued! Session ID remains ${escapeHtml(sid)}!</span><br>`;
+      updateVerdict('danger', '🔥 SESSION PRIVILEGES ELEVATED TO ADMIN', 'Target logged in, but server kept old session ID. Attacker can now access as admin!');
+    } else if (currentStage === 4) {
+      term.innerHTML += `<br><span class="t-info">[${timestamp}] Attacker sends request with pre-fixed session:</span><br>` +
+        `GET /admin/dashboard.php HTTP/1.1<br>` +
+        `Cookie: <span class="t-highlight">PHPSESSID=${escapeHtml(sid)}</span><br>` +
+        `<span class="t-prompt">HTTP/1.1 200 OK</span><br>` +
+        `<span class="t-success">Welcome Super Administrator! Access Granted to All Corporate Systems.</span><br>` +
+        `<span class="t-highlight">💀 CRITICAL COMPROMISE: TOTAL PRIVILEGE ESCALATION ESTABLISHED!</span><br>`;
+      updateVerdict('danger', '💀 CRITICAL TAKEOVER: PRIVILEGE ESCALATION', 'Attacker authenticated as administrator without ever entering credentials.');
+    }
+
+    term.scrollTop = term.scrollHeight;
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+  }
+
+  function resetLab() {
+    applyPreset(1);
+    document.getElementById('terminal-content').innerHTML = 
+      `<span class="t-info">// HTTP Session Exchange Monitor</span><br>` +
+      `<span class="t-prompt">server@auth-core:~$</span> <span class="t-cmd">tail -f /var/log/auth.log</span><br>` +
+      `<span style="color:#64748b;">[Ready for session tracking events...]</span>`;
+    document.getElementById('attacker-badge').textContent = 'Guest (Unauth)';
+    document.getElementById('attacker-badge').style.color = '#94a3b8';
+    document.getElementById('attacker-status').textContent = 'Waiting for victim to authenticate...';
+    document.getElementById('victim-badge').textContent = 'Unauthenticated';
+    document.getElementById('victim-badge').style.color = '#94a3b8';
+    document.getElementById('victim-status').textContent = 'Browsing portal...';
+    document.getElementById('victim-url').textContent = 'https://corp.local/login';
+    document.getElementById('victim-cookie').textContent = '[None]';
+    document.getElementById('sess-tbody').innerHTML = 
+      `<tr><td style="color:#f59e0b;">SESS_FIXED_994820</td><td>Anonymous Guest</td><td>None</td><td style="color:#64748b;">No</td></tr>`;
+  }
+</script>
+
+</body>
+</html>

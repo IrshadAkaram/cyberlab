@@ -1,0 +1,2731 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mass Assignment | API Security Notes</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Sora:wght@400;500;600;700;800&family=Fira+Code:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="assets/css/style.css">
+
+  <style>
+    /* ==========================================================================
+       Module 05: Mass Assignment Custom Styling - High Contrast Cyber Theme
+       ========================================================================== */
+    body {
+      background: #040814;
+      color: #f1f5f9;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      overflow-y: visible;
+      font-family: var(--font-sans);
+    }
+
+    /* Master Layout: Sidebar + Main Area */
+    .app-dashboard-layout {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* Left Sidebar */
+    .dashboard-sidebar {
+      width: 280px;
+      background: #070d1c;
+      border-right: 1px solid rgba(255, 255, 255, 0.07);
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      position: sticky;
+      top: 0;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #1e293b transparent;
+    }
+
+    .sidebar-header {
+      padding: 1.5rem 1.4rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .sidebar-brand-title {
+      font-family: var(--font-heading);
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.02em;
+    }
+    .sidebar-brand-title span {
+      color: #38bdf8;
+    }
+
+    .sidebar-section-heading {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #64748b;
+      padding: 0.8rem 1.4rem 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .vuln-nav-list {
+      list-style: none;
+      padding: 0 0.8rem;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin: 0;
+    }
+
+    .vuln-nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      border-radius: var(--radius-pill);
+      color: #f1f5f9;
+      text-decoration: none;
+      font-size: 0.86rem;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .vuln-nav-item:hover {
+      background: rgba(255, 255, 255, 0.04);
+      color: #f1f5f9;
+    }
+
+    .vuln-nav-item.active {
+      background: #1d4ed8;
+      color: #ffffff;
+      font-weight: 700;
+      box-shadow: 0 4px 14px rgba(29, 78, 216, 0.4);
+    }
+
+    .nav-num-badge {
+      font-size: 0.72rem;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 2px 7px;
+      border-radius: var(--radius-pill);
+      color: inherit;
+    }
+
+    .vuln-nav-item.active .nav-num-badge {
+      background: rgba(0, 0, 0, 0.25);
+      color: #fff;
+    }
+
+    /* Main Content Body */
+    .dashboard-main {
+      flex: 1;
+      padding: 1.4rem 2.4rem 0;
+      max-width: 1480px;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* Top Action Bar */
+    .main-top-actionbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      padding-bottom: 12px;
+    }
+
+    /* Header Hero Grid */
+    .hero-top-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 1fr;
+      gap: 1.8rem;
+      margin-bottom: 1.4rem;
+      align-items: center;
+    }
+
+    @media (max-width: 1024px) {
+      .hero-top-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+      }
+    }
+
+    .category-tag-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 0.75rem;
+    }
+
+    .pill-index-tag {
+      font-family: var(--font-mono);
+      background: #0284c7;
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.75rem;
+      padding: 2px 8px;
+      border-radius: var(--radius-pill);
+    }
+
+    .pill-category-name {
+      color: #f1f5f9;
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+
+    .main-vuln-h1 {
+      font-family: var(--font-heading);
+      font-size: 2.35rem;
+      font-weight: 800;
+      line-height: 1.2;
+      color: #ffffff;
+      margin-bottom: 0.6rem;
+      letter-spacing: -0.02em;
+    }
+
+    .main-vuln-h1 span.title-blue {
+      color: #38bdf8;
+    }
+
+    .main-vuln-desc {
+      font-size: 1.05rem;
+      color: #f1f5f9;
+      margin-bottom: 1.2rem;
+      line-height: 1.6;
+    }
+
+    /* Meta Badges */
+    .meta-tags-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 1.2rem;
+    }
+
+    .meta-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 10px;
+      border-radius: var(--radius-pill);
+      font-size: 0.74rem;
+      white-space: nowrap;
+      font-weight: 600;
+    }
+
+    .meta-chip.danger {
+      background: rgba(239, 68, 68, 0.12);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.35);
+    }
+
+    .meta-chip.info {
+      background: rgba(56, 189, 248, 0.12);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+
+    .meta-chip.purple {
+      background: rgba(168, 85, 247, 0.12);
+      color: #c084fc;
+      border: 1px solid rgba(168, 85, 247, 0.3);
+    }
+
+    /* Quote Bubble (Exact match to jwt.html) */
+    .quote-bubble {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      border-radius: var(--radius-md);
+      padding: 0.75rem 1.2rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #bae6fd !important;
+      font-size: 0.88rem;
+      margin-bottom: 1rem;
+    }
+
+    .quote-bubble div,
+    .quote-bubble p,
+    .quote-bubble span {
+      color: #bae6fd !important;
+    }
+
+    .quote-bubble strong {
+      color: #ffffff !important;
+    }
+
+    .quote-icon-box {
+      width: 26px;
+      height: 26px;
+      background: #0284c7;
+      color: #fff;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      font-weight: bold;
+      flex-shrink: 0;
+    }
+
+    /* Hero Glass Graphic (Strictly Fixed Width 530px) */
+    .hero-glass-graphic {
+      background: rgba(7, 14, 30, 0.90);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(56, 189, 248, 0.28);
+      border-radius: var(--radius-lg);
+      padding: 1.15rem 1.3rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 30px rgba(56, 189, 248, 0.1);
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      max-width: 530px;
+      margin-left: auto;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .attacker-graphic-node {
+      text-align: center;
+    }
+
+    .attacker-avatar-circle {
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      background: rgba(239, 68, 68, 0.12);
+      border: 2px solid rgba(239, 68, 68, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      margin: 0 auto 6px;
+      box-shadow: 0 0 16px rgba(239, 68, 68, 0.2);
+    }
+
+    .attacker-label {
+      font-size: 0.84rem;
+      font-weight: 700;
+      color: #fca5a5;
+    }
+
+    .attacker-sub {
+      font-size: 0.72rem;
+      color: #94a3b8;
+      font-family: var(--font-mono);
+    }
+
+    .graphic-center-flow {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      flex: 1;
+      max-width: 170px;
+    }
+
+    .graphic-url-pill {
+      background: #020617;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: var(--radius-sm);
+      padding: 4px 8px;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: #f1f5f9;
+      white-space: nowrap;
+    }
+
+    .graphic-swap-box {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 2px 0;
+    }
+
+    .swap-id-badge {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .swap-id-badge {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: var(--radius-sm);
+    }
+
+    .swap-id-badge.from {
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+
+    .swap-id-badge.to {
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .flow-state-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #ef4444;
+      margin-top: 2px;
+    }
+
+    .target-profile-card,
+    .target-profile-card *,
+    .unauth-note {
+      text-align: left !important;
+      text-justify: none !important;
+    }
+
+    .target-profile-card {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: var(--radius-md);
+      padding: 0.85rem 1rem;
+      min-width: 170px;
+      max-width: 175px;
+      box-sizing: border-box;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .target-profile-card h4 {
+      font-size: 0.92rem;
+      color: #fff;
+      margin: 0;
+      font-weight: 700;
+    }
+
+    .target-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+
+    .target-pill-status {
+      font-size: 0.65rem;
+      font-family: var(--font-mono);
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-weight: 700;
+    }
+
+    .target-pill-status.breach {
+      background: rgba(239, 68, 68, 0.2);
+      color: #fca5a5;
+      border: 1px solid rgba(239, 68, 68, 0.4);
+    }
+
+    .target-pill-status.secure {
+      background: rgba(52, 211, 153, 0.2);
+      color: #6ee7b7;
+      border: 1px solid rgba(52, 211, 153, 0.4);
+    }
+
+    .target-profile-card p {
+      font-size: 0.74rem;
+      color: #e2e8f0;
+      font-family: var(--font-mono);
+      margin: 1px 0 !important;
+      white-space: nowrap;
+      line-height: 1.4 !important;
+    }
+
+    .target-profile-card p code {
+      color: #38bdf8;
+      background: transparent !important;
+      border: none !important;
+      padding: 0 !important;
+    }
+
+    .unauth-note {
+      font-size: 0.68rem;
+      color: #f87171;
+      margin-top: 4px;
+      display: block;
+      font-weight: 600;
+      line-height: 1.25;
+    }
+
+    /* Navigation Tabs */
+    .tabs-underline-nav {
+      display: flex;
+      gap: 1.8rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      margin-bottom: 1.8rem;
+      overflow-x: scroll !important;
+      scrollbar-gutter: stable;
+      scrollbar-width: thin;
+      scrollbar-color: #38bdf8 rgba(255, 255, 255, 0.1);
+      padding-bottom: 8px;
+      -webkit-overflow-scrolling: touch;
+      scroll-behavior: smooth;
+      position: relative;
+    }
+
+    .tabs-underline-nav::-webkit-scrollbar {
+      height: 8px !important;
+      display: block !important;
+      -webkit-appearance: none !important;
+    }
+
+    .tabs-underline-nav::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.08) !important;
+      border-radius: 4px;
+    }
+
+    .tabs-underline-nav::-webkit-scrollbar-thumb {
+      background: #0284c7 !important;
+      border-radius: 4px;
+    }
+
+    .tabs-underline-nav::-webkit-scrollbar-thumb:hover {
+      background: #38bdf8 !important;
+    }
+
+    .tab-underline-btn {
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      color: #cbd5e1 !important;
+      padding: 10px 4px 12px;
+      font-size: 0.95rem;
+      font-family: var(--font-heading);
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      position: relative;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+
+    .tab-underline-btn:hover {
+      color: #f1f5f9 !important;
+      background: transparent !important;
+    }
+
+    .tab-underline-btn.active {
+      color: #38bdf8 !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      font-weight: 700;
+    }
+
+    .tab-underline-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      width: 100%;
+      height: 2.5px;
+      background: #38bdf8;
+      box-shadow: 0 0 10px #38bdf8;
+      border-radius: 2px;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+      animation: fadeInTab 0.25s ease forwards;
+    }
+
+    @keyframes fadeInTab {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Cards Panels */
+    .card-panel {
+      background: rgba(7, 14, 28, 0.90);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(56, 189, 248, 0.18);
+      border-radius: var(--radius-lg);
+      padding: 1.8rem;
+      margin-bottom: 0.5rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .card-title-badge-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 1.4rem;
+    }
+
+    .card-title-badge-row .panel-header-title {
+      margin: 0;
+    }
+
+    .blue-circle-num {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #1d4ed8, #0284c7);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 0.95rem;
+      flex-shrink: 0;
+      box-shadow: 0 0 12px rgba(2, 132, 199, 0.4);
+    }
+
+    .panel-header-title {
+      font-family: var(--font-heading);
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #38bdf8;
+      letter-spacing: -0.01em;
+    }
+
+    .panel-body-text {
+      font-size: 0.96rem;
+      color: #f1f5f9;
+      line-height: 1.75;
+      margin-bottom: 1.2rem;
+    }
+
+    /* Lead Definitions (Exact match to jwt.html & style.css) */
+    .def-lead-card {
+      background: rgba(14, 165, 233, 0.05);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      border-radius: var(--radius-md);
+      padding: 1.2rem 1.6rem;
+      margin-bottom: 1.6rem;
+    }
+
+    .def-lead-title {
+      font-family: var(--font-heading);
+      font-size: 1.12rem;
+      font-weight: 700;
+      margin-bottom: 0.8rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .def-lead-text {
+      font-size: 1.02rem !important;
+      line-height: 1.75 !important;
+      color: #f1f5f9 !important;
+      margin: 0;
+      text-align: justify !important;
+      text-justify: inter-word !important;
+    }
+
+    .def-lead-text span,
+    .def-lead-text p {
+      color: #f1f5f9 !important;
+      font-size: 1.02rem !important;
+      line-height: 1.75 !important;
+      text-align: justify !important;
+      text-justify: inter-word !important;
+    }
+
+    .def-lead-text strong,
+    .def-lead-text b {
+      color: #ffffff !important;
+      font-weight: 700;
+    }
+
+    /* Code Wrap Enforcement */
+    code {
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+
+    /* Attack Scenarios Styling */
+    .scenarios-container {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      margin: 1.2rem 0;
+    }
+
+    .scenario-card {
+      background: #080f20;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .scenario-card:hover {
+      border-color: rgba(56, 189, 248, 0.3);
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+    }
+
+    .scenario-header {
+      padding: 1rem 1.4rem;
+      background: rgba(255, 255, 255, 0.02);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .scenario-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 3px 9px;
+      border-radius: var(--radius-pill);
+      background: rgba(56, 189, 248, 0.12);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.25);
+    }
+
+    .scenario-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #f8fafc;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .scenario-body {
+      padding: 1.25rem 1.4rem;
+    }
+
+    .scenario-desc {
+      color: #f1f5f9 !important;
+      font-size: 0.94rem;
+      line-height: 1.7;
+      margin-bottom: 1.1rem;
+      text-align: justify !important;
+      text-justify: inter-word !important;
+    }
+    .scenario-desc span {
+      color: #f1f5f9 !important;
+    }
+
+    .split-terminal-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.2rem;
+      margin-top: 1rem;
+    }
+
+    @media (max-width: 900px) {
+      .split-terminal-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .terminal-box {
+      background: #060b18;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .terminal-topbar {
+      background: #0a1124;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .term-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 4px;
+    }
+
+    .term-dot.red { background: #ef4444; }
+    .term-dot.yellow { background: #f59e0b; }
+    .term-dot.green { background: #10b981; }
+
+    .term-file-name {
+      font-size: 0.76rem;
+      font-weight: 600;
+      color: #94a3b8;
+      font-family: var(--font-mono);
+      letter-spacing: 0.04em;
+      flex: 1;
+      margin-left: 6px;
+    }
+
+    .term-copy-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #94a3b8;
+      font-size: 0.72rem;
+      font-family: var(--font-mono);
+      padding: 3px 9px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .term-copy-btn:hover {
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      border-color: rgba(56, 189, 248, 0.3);
+    }
+
+    .terminal-box pre,
+    .compare-box pre {
+      margin: 0;
+      padding: 1rem 1.15rem;
+      font-family: var(--font-mono);
+      font-size: 0.83rem;
+      line-height: 1.65;
+      color: #e2e8f0;
+      overflow-x: auto;
+      flex: 1;
+      white-space: pre;
+      word-break: normal;
+      tab-size: 2;
+    }
+
+    .terminal-box pre code,
+    .compare-box pre code {
+      background: transparent !important;
+      border: none !important;
+      padding: 0 !important;
+      font-size: inherit !important;
+      font-family: inherit !important;
+      color: inherit !important;
+      box-shadow: none !important;
+      border-radius: 0 !important;
+      display: block;
+      white-space: pre !important;
+      word-break: normal !important;
+    }
+
+    :not(pre) > code {
+      background: rgba(56, 189, 248, 0.1);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 0.86em;
+      word-break: break-word;
+    }
+
+    /* Code & Terminal Syntax Highlighting */
+    .t-verb { color: #38bdf8; font-weight: 700; }
+    .t-path { color: #f87171; font-weight: 700; }
+    .t-proto { color: #94a3b8; }
+    .t-head { color: #a78bfa; }
+    .t-key { color: #38bdf8; }
+    .t-str { color: #a3e635; }
+    .t-num { color: #f472b6; }
+    .t-status { color: #ef4444; font-weight: 700; }
+    .t-status.green { color: #34d399; }
+    .t-comm { color: #64748b; font-style: italic; }
+    .t-kw { color: #c084fc; font-weight: 700; }
+    .t-fn { color: #38bdf8; font-weight: 600; }
+    .t-cls { color: #facc15; font-weight: 700; }
+    .t-dec { color: #f43f5e; font-weight: 600; }
+    .t-type { color: #34d399; }
+    .t-bool { color: #f472b6; font-weight: 700; }
+    .t-op { color: #94a3b8; }
+
+    .scenario-impact {
+      margin-top: 1rem;
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.82rem;
+      line-height: 1.55;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .scenario-impact.crit {
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px solid rgba(239, 68, 68, 0.25);
+      color: #fca5a5;
+    }
+
+    .scenario-impact.danger {
+      background: rgba(245, 158, 11, 0.08);
+      border: 1px solid rgba(245, 158, 11, 0.25);
+      color: #fde68a;
+    }
+
+    /* Tab 4: Code Prevention */
+    .code-compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.2rem;
+      margin: 1.2rem 0;
+    }
+
+    @media (max-width: 900px) {
+      .code-compare-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .compare-box {
+      background: #060b18;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .compare-box.vulnerable {
+      border-top: 3px solid #ef4444;
+    }
+
+    .compare-box.secure {
+      border-top: 3px solid #10b981;
+    }
+
+    .compare-header {
+      padding: 10px 14px;
+      background: #0a1124;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .compare-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .compare-dot.red { background: #ef4444; }
+    .compare-dot.green { background: #10b981; }
+
+    .compare-title {
+      font-size: 0.84rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      font-family: var(--font-sans);
+    }
+
+/* compare-box pre unified with terminal-box pre */
+
+    .golden-rules-card {
+      background: rgba(14, 165, 233, 0.04);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      border-radius: var(--radius-md);
+      padding: 1.4rem;
+      margin-top: 1.8rem;
+    }
+
+    .golden-rules-title {
+      font-family: var(--font-heading);
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #38bdf8;
+      margin-top: 0;
+      margin-bottom: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Attack Preset Buttons Horizontal Alignment */
+    .sim-preset-btn {
+      display: inline-flex !important;
+      flex-direction: row !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 8px !important;
+      white-space: nowrap !important;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #f1f5f9;
+      padding: 7px 15px;
+      border-radius: var(--radius-pill);
+      font-size: 0.82rem;
+      font-family: var(--font-heading);
+      font-weight: 600;
+      cursor: pointer;
+      line-height: 1;
+      transition: all 0.2s ease;
+    }
+
+    .sim-preset-btn .preset-icon {
+      font-size: 0.95rem;
+      line-height: 1;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+
+    .sim-preset-btn .preset-label {
+      display: inline-block;
+      white-space: nowrap;
+      line-height: 1;
+    }
+
+    .sim-preset-btn:hover {
+      background: rgba(56, 189, 248, 0.15);
+      border-color: #38bdf8;
+      color: #ffffff;
+      transform: translateY(-1px);
+    }
+
+    .sim-preset-btn.active, .sim-preset-btn.active-preset {
+      background: #1d4ed8 !important;
+      border-color: #3b82f6 !important;
+      color: #ffffff !important;
+      box-shadow: 0 0 14px rgba(59, 130, 246, 0.5);
+    }
+
+    /* Light Theme Overrides */
+    html[data-theme="light"] .panel-header-title { color: #0f172a; }
+    html[data-theme="light"] .scenario-card { background: #ffffff; border-color: rgba(0,0,0,0.08); }
+    html[data-theme="light"] .scenario-header { background: #f8fafc; border-color: rgba(0,0,0,0.06); }
+    html[data-theme="light"] .scenario-title { color: #0f172a; }
+    html[data-theme="light"] .scenario-desc { color: #334155; }
+    html[data-theme="light"] .terminal-box { background: #0f172a; border-color: #334155; }
+    html[data-theme="light"] .terminal-topbar { background: #1e293b; border-color: #334155; }
+    html[data-theme="light"] .compare-box { background: #0f172a; }
+    html[data-theme="light"] .compare-header { background: #1e293b; }
+    html[data-theme="light"] .golden-rules-card { background: #f0f9ff; border-color: #bae6fd; }
+    html[data-theme="light"] .golden-rules-title { color: #0284c7; }
+      .lab-mode-tab-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #94a3b8;
+      font-size: 0.72rem;
+      font-family: var(--font-heading);
+      padding: 3px 9px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .lab-mode-tab-btn.active, .lab-mode-tab-btn:hover {
+      background: rgba(56, 189, 248, 0.18);
+      border-color: rgba(56, 189, 248, 0.45);
+      color: #38bdf8;
+    }
+
+      /* How It Works & Pillars Step Box (Standardized from jwt.html) */
+    .hw-step-box {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-md);
+      padding: 1.25rem 1.4rem;
+      transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+      position: relative;
+      border-left: 4px solid #38bdf8;
+    }
+
+    .hw-step-box:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    }
+
+    .hw-step-box h4 {
+      font-family: var(--font-heading);
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin: 0 0 0.5rem 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .hw-step-box p {
+      color: #f1f5f9;
+      font-size: 0.94rem;
+      line-height: 1.7;
+      margin: 0;
+      text-align: justify !important;
+      text-justify: inter-word !important;
+    }
+
+    .hw-step-box code {
+      background: rgba(15, 23, 42, 0.9);
+      color: #38bdf8;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 0.86em;
+      border: 1px solid rgba(56, 189, 248, 0.25);
+    }
+
+    .hw-step-box.step-1 {
+      border-left-color: #10b981;
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(15, 23, 42, 0.6));
+    }
+    .hw-step-box.step-1 h4 { color: #34d399; }
+
+    .hw-step-box.step-2 {
+      border-left-color: #f59e0b;
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(15, 23, 42, 0.6));
+    }
+    .hw-step-box.step-2 h4 { color: #fbbf24; }
+
+    .hw-step-box.step-3 {
+      border-left-color: #0ea5e9;
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.08), rgba(15, 23, 42, 0.6));
+    }
+    .hw-step-box.step-3 h4 { color: #38bdf8; }
+
+    .hw-step-box.step-4 {
+      border-left-color: #ef4444;
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(15, 23, 42, 0.6));
+    }
+    .hw-step-box.step-4 h4 { color: #f87171; }
+
+    .hw-step-box.step-5 {
+      border-left-color: #a855f7;
+      background: linear-gradient(135deg, rgba(168, 85, 247, 0.08), rgba(15, 23, 42, 0.6));
+    }
+    .hw-step-box.step-5 h4 { color: #c084fc; }
+
+    html[data-theme="light"] .hw-step-box {
+      background: #f8fafc;
+      border-color: #f1f5f9;
+      border-left-width: 4px;
+    }
+    html[data-theme="light"] .hw-step-box:hover {
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    }
+    html[data-theme="light"] .hw-step-box.step-1 { border-left: 4px solid #10b981 !important; }
+    html[data-theme="light"] .hw-step-box.step-1 h4 { color: #047857 !important; }
+    html[data-theme="light"] .hw-step-box.step-2 { border-left: 4px solid #f59e0b !important; }
+    html[data-theme="light"] .hw-step-box.step-2 h4 { color: #b45309 !important; }
+    html[data-theme="light"] .hw-step-box.step-3 { border-left: 4px solid #0284c7 !important; }
+    html[data-theme="light"] .hw-step-box.step-3 h4 { color: #0369a1 !important; }
+    html[data-theme="light"] .hw-step-box.step-4 { border-left: 4px solid #ef4444 !important; }
+    html[data-theme="light"] .hw-step-box.step-4 h4 { color: #b91c1c !important; }
+    html[data-theme="light"] .hw-step-box.step-5 { border-left: 4px solid #9333ea !important; }
+    html[data-theme="light"] .hw-step-box.step-5 h4 { color: #7e22ce !important; }
+    html[data-theme="light"] .hw-step-box p { color: #334155 !important; }
+    html[data-theme="light"] .hw-step-box code { background: #e2e8f0; color: #0284c7; border-color: #bae6fd; }
+
+  
+    /* Scope Dark vs Light Mode Typography in mass-assignment.html */
+    html[data-theme="light"] .main-vuln-desc,
+    html[data-theme="light"] .panel-body-text,
+    html[data-theme="light"] .def-lead-text,
+    html[data-theme="light"] .scenario-desc,
+    html[data-theme="light"] .hw-step-box p,
+    html[data-theme="light"] .faq-answer,
+    html[data-theme="light"] .def-lead-text span,
+    html[data-theme="light"] .main-vuln-desc span,
+    html[data-theme="light"] .scenario-desc span,
+    html[data-theme="light"] .panel-body-text span,
+    html[data-theme="light"] .hw-step-box p span,
+    html[data-theme="light"] .faq-answer span {
+      color: #1e293b !important;
+    }
+
+    html[data-theme="light"] strong,
+    html[data-theme="light"] b {
+      color: #0f172a !important;
+      font-weight: 700;
+    }
+
+  </style>
+</head>
+<body>
+
+  <div class="app-dashboard-layout">
+
+    <!-- ====================================================================
+         SIDEBAR NAVIGATION (21 MODULES)
+         ==================================================================== -->
+    <aside class="dashboard-sidebar">
+      <div class="sidebar-header">
+        <div class="brand-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+        <a href=\"index.html\" class=\"sidebar-brand-title\" style=\"text-decoration:none; display:block;\">API <span>Security</span></a>
+      </div>
+
+      <div class="sidebar-section-heading">Foundations</div>
+      <ul class="vuln-nav-list" style="margin-bottom: 0.5rem;">
+        <li><a href="api-intro.html" class="vuln-nav-item"><span class="nav-num-badge">00</span> API Fundamentals</a></li>
+      </ul>
+
+      <div class="sidebar-section-heading">Common Vulnerabilities</div>
+      <ul class="vuln-nav-list">
+        <li><a href="bola.html" class="vuln-nav-item"><span class="nav-num-badge">01</span> BOLA</a></li>
+        <li><a href="bfla.html" class="vuln-nav-item"><span class="nav-num-badge">02</span> BFLA</a></li>
+        <li><a href="idor.html" class="vuln-nav-item"><span class="nav-num-badge">03</span> IDOR</a></li>
+        <li><a href="jwt.html" class="vuln-nav-item"><span class="nav-num-badge">04</span> JWT Vulnerabilities</a></li>
+        <li><a href="mass-assignment.html" class="vuln-nav-item active"><span class="nav-num-badge">05</span> Mass Assignment</a></li>
+        <li><a href="excessive-data-exposure.html" class="vuln-nav-item"><span class="nav-num-badge">06</span> Excessive Data Exposure</a></li>
+        <li><a href="rate-limiting.html" class="vuln-nav-item"><span class="nav-num-badge">07</span> Rate Limiting</a></li>
+        <li><a href="ssrf.html" class="vuln-nav-item"><span class="nav-num-badge">08</span> SSRF</a></li>
+        <li><a href="nosql-injection.html" class="vuln-nav-item"><span class="nav-num-badge">09</span> NoSQL Injection</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">10</span> Command Injection</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">11</span> XXE</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">12</span> GraphQL Security</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">13</span> Business Logic Issues</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">14</span> CORS Misconfiguration</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">15</span> API Key Security</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">16</span> OAuth & OpenID Security</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">17</span> Webhooks Security</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">18</span> Race Conditions</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">19</span> File Upload Vulnerabilities</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">20</span> Deserialization Issues</a></li>
+      </ul>
+    </aside>
+
+    <!-- ====================================================================
+         MAIN CONTENT AREA
+         ==================================================================== -->
+    <main class="dashboard-main">
+
+      <!-- Top Action Bar -->
+      <div class="main-top-actionbar">
+        <div style="font-size: 0.84rem; color: #94a3b8;">
+          <a href="api-intro.html" style="color:#38bdf8; text-decoration:none;">Modules</a> &rsaquo;
+          <span>05 / 20 Mass Assignment Vulnerabilities</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <!-- Dark / Light Mode Toggle Button -->
+          <button class="theme-toggle-btn" id="themeToggleBtn" title="Switch Theme">
+            <span>☀️</span> <span class="theme-label">Light Mode</span>
+          </button>
+
+          <!-- Dual Language Switcher -->
+          <div class="lang-switch-wrapper">
+            <span id="lbl-hi" class="lang-label active">Hindi</span>
+            <label class="switch">
+              <input type="checkbox" id="langToggle">
+              <span class="slider"></span>
+            </label>
+            <span id="lbl-en" class="lang-label">English</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hero Section -->
+      <section class="hero-top-grid">
+        <div>
+          <div class="category-tag-row">
+            <span class="pill-index-tag">05</span>
+            <span class="pill-category-name">Object Auto-Binding & Data Exposure</span>
+          </div>
+
+          <h1 class="main-vuln-h1">
+            Mass Assignment<br>
+            <span class="title-blue">Vulnerabilities</span>
+          </h1>
+
+          <p class="main-vuln-desc">
+            <span class="lang-hi">Jab backend API bina kisi strict filtering ya whitelisting ke client ke bheje hue poore JSON payload ko directly database model me bind (save) kar deti hai, jisse attacker protected properties (jaise <code>role: "admin"</code> ya <code>balance: 99999</code>) tamper kar leta hai.</span>
+            <span class="lang-en">When a backend API blindly binds client-supplied JSON input directly into internal database objects without strict schema whitelisting, allowing attackers to overwrite protected fields like <code>role: "admin"</code> or <code>credit_balance: 99999</code>.</span>
+          </p>
+
+          <!-- Meta tags row -->
+          <div class="meta-tags-row">
+            <span class="meta-chip danger">
+              <span class="badge-dot" style="background:#ef4444; width:6px; height:6px; border-radius:50%;"></span> High / Critical Severity
+            </span>
+            <span class="meta-chip info">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+              CWE-915 / OWASP API3
+            </span>
+            <span class="meta-chip purple">
+              ★ Object Auto-Binding
+            </span>
+          </div>
+
+          <!-- Highlight Insight Quote Bubble -->
+          <div class="quote-bubble">
+            <div class="quote-icon-box">💡</div>
+            <div>
+              <span class="lang-hi"><strong>Core Insight:</strong> Developer convenience aksar security vulnerability ban jati hai! ORM framework me <code>User.update(req.body)</code> likhna asaan hota hai, lekin bina explicit DTO validation ke attacker backend ke kisi bhi hidden column ko overwrite kar sakta hai.</span>
+              <span class="lang-en"><strong>Core Insight:</strong> Developer convenience often breeds security flaws! Writing <code>User.update(req.body)</code> in ORMs is effortless, but without strict schema whitelisting, attackers can overwrite any internal column in the database.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Box (Interactive Attack Flow Widget - Fixed Width 530px) -->
+        <div class="hero-glass-graphic" id="massHeroWidget">
+          <div class="hero-widget-header">
+            <div class="hero-widget-badge">
+              <span class="pulse-live-dot"></span>
+              <span class="hero-badge-title">Interactive Attack Flow</span>
+            </div>
+            <div class="hero-sim-pills">
+              <button type="button" class="hero-sim-btn" id="btnMassNormal" title="Show Normal Profile Update">
+                <span>👤</span> <span>Normal (User)</span>
+              </button>
+              <button type="button" class="hero-sim-btn active exploit" id="btnMassExploit" title="Show Mass Assignment Exploit">
+                <span>⚡</span> <span>Mass Assignment</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="hero-widget-body">
+            <div class="attacker-graphic-node" id="massAttackerNode">
+              <div class="attacker-avatar-circle" id="massAttackerAvatar">🥷</div>
+              <div class="attacker-label" id="massAttackerLabel">Irshad (Attacker)</div>
+              <div class="attacker-sub" id="massAttackerSub">Role: user (ID: 1001)</div>
+            </div>
+
+            <div class="graphic-center-flow">
+              <div class="graphic-url-pill" id="massUrlPill">
+                <span class="m-verb" id="massVerb" style="color:#ef4444; font-weight:700;">PUT</span> <span class="m-path" id="massPath">/api/v1/profile</span>
+              </div>
+              <div class="graphic-swap-box" id="massSwapBox">
+                <span class="swap-id-badge from" id="massBadgeFrom">role: "user"</span>
+                <span class="swap-arrow-icon" id="massSwapArrow" style="color:var(--text-dim); font-size:0.8rem;">➔</span>
+                <span class="swap-id-badge to" id="massBadgeTo">role: "admin"</span>
+              </div>
+              <div class="flow-beam-track" id="massBeamTrack">
+                <div class="flow-beam-particle exploit" id="massBeamParticle"></div>
+              </div>
+              <span class="flow-state-label" id="massFlowStateText">Blind ORM Auto-Binding</span>
+            </div>
+
+            <div class="target-profile-card exploit" id="massTargetCard">
+              <div class="target-card-top">
+                <h4 id="massTargetName">Database Record</h4>
+                <span class="target-pill-status breach" id="massTargetStatus">HTTP 200</span>
+              </div>
+              <p id="massTargetBio">Bio: <code>"Security Tester"</code></p>
+              <p id="massTargetRole">Role: <code style="color:#ef4444; font-weight:700;">"admin"</code></p>
+              <p id="massTargetPlan">Tier: <code>enterprise</code></p>
+              <span class="unauth-note" id="massTargetNote">🚨 Privilege Escalated to Admin</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           TABS NAVIGATION (7 TABS)
+           ==================================================================== -->
+      <nav class="tabs-underline-nav">
+        <button class="tab-underline-btn active" data-tab="tab-overview">
+          <span>📖</span> <span class="lang-hi">1. Overview</span><span class="lang-en">1. Overview</span>
+        </button>
+        <button class="tab-underline-btn" data-tab="tab-how-it-works">
+          <span>⚙️</span> <span class="lang-hi">2. How It Works</span><span class="lang-en">2. How It Works</span>
+        </button>
+        <button class="tab-underline-btn" data-tab="tab-example">
+          <span>&lt;/&gt;</span> <span class="lang-hi">3. Real-World Scenarios</span><span class="lang-en">3. Real-World Scenarios</span>
+        </button>
+        <button class="tab-underline-btn" data-tab="tab-prevention">
+          <span>🛡️</span> <span class="lang-hi">4. Code Prevention</span><span class="lang-en">4. Code Prevention</span>
+        </button>
+        <button class="tab-underline-btn" data-tab="tab-testing">
+          <span>📋</span> <span class="lang-hi">5. Testing Checklist</span><span class="lang-en">5. Testing Checklist</span>
+        </button>
+        <button class="tab-underline-btn" data-tab="tab-lab">
+          <span>⚡</span> <span class="lang-hi">6. Live Lab</span><span class="lang-en">6. Live Lab</span>
+        </button>
+        <button class="tab-underline-btn" data-tab="tab-questions">
+          <span>❓</span> <span class="lang-hi">7. Frequently Asked Questions</span><span class="lang-en">7. Frequently Asked Questions</span>
+        </button>
+      </nav>
+
+      <!-- ====================================================================
+           TAB 1: OVERVIEW
+           ==================================================================== -->
+      <div class="tab-content active" id="tab-overview">
+        <div class="card-panel">
+          <div class="card-title-badge-row">
+            <div class="blue-circle-num">1</div>
+            <h2 class="panel-header-title">
+              <span class="lang-hi">Mass Assignment Kya Hota Hai? Core Fundamentals</span>
+              <span class="lang-en">What is Mass Assignment? Core Fundamentals</span>
+            </h2>
+          </div>
+
+          <!-- Section A: ORM & Auto-Binding Fundamentals -->
+          <div class="def-lead-card" style="margin-bottom:1.8rem; border-left:4px solid #38bdf8;">
+            <div class="def-lead-title" style="color:#38bdf8;">
+              <span>⚙️</span>
+              <span class="lang-hi">Object Auto-Binding Kya Hai Aur Frameworks Iska Use Kyu Karte Hain?</span>
+              <span class="lang-en">What is Object Auto-Binding & Why Do Modern Frameworks Use It?</span>
+            </div>
+            <div class="def-lead-text">
+              <span class="lang-hi">
+                Modern web frameworks (jaise <strong>Spring Boot, Ruby on Rails, Django, FastAPI, Express + Prisma/Sequelize</strong>) developers ki productivity badhane ke liye ek feature provide karte hain jise <em>Object Auto-Binding</em> ya <em>Mass Assignment</em> kaha jata hai.<br><br>
+                Sochiye agar ek user profile me 20 fields hain (naam, phone, bio, address, city, etc.). Ek traditional developer ko database update karne ke liye 20 alag lines manually assign karni padti thi:<br>
+                <div style="margin:8px 0; padding:8px 12px; background:#070e1e; border:1px solid rgba(56,189,248,0.25); border-radius:6px; font-family:var(--font-mono); font-size:0.84rem; color:#38bdf8;">
+                  <code>user.name = req.body.name; user.bio = req.body.bio; ...</code>
+                </div>
+                Frameworks ne is development velocity ko fast karne ke liye auto-binding feature introduce kiya, jahan developer sirf ek shorthand statement likhta hai:<br>
+                <div style="margin:8px 0; padding:8px 12px; background:#070e1e; border:1px solid rgba(52,211,153,0.25); border-radius:6px; font-family:var(--font-mono); font-size:0.84rem; color:#34d399;">
+                  <code>User.update(where={id}, data=req.body)</code> &nbsp;|&nbsp; Python: <code>User(**request.json())</code>
+                </div>
+                <strong>🚨 Khatra (The Vulnerability):</strong> Framework client ke bheje hue JSON ke har key-value pair ko bina validation ke direct database entity se bind kar deta hai. Agar attacker ne request JSON me internal privileged keys inject kar di:<br>
+                <div style="margin:8px 0; padding:8px 12px; background:#070e1e; border:1px solid rgba(239,68,68,0.3); border-radius:6px; font-family:var(--font-mono); font-size:0.84rem; color:#f87171;">
+                  <code>"role": "admin"</code> &nbsp;|&nbsp; <code>"wallet_balance": 99999</code> &nbsp;|&nbsp; <code>"is_verified": true</code>
+                </div>
+                ...toh server bina authorization verify kiye in privileged values ko bhi database me overwrite kar deta hai!
+              </span>
+              <span class="lang-en">
+                Modern web frameworks (such as <strong>Spring Boot, Ruby on Rails, Django, FastAPI, Express + Prisma</strong>) introduce <em>Object Auto-Binding</em> to accelerate developer velocity.<br><br>
+                Instead of manually extracting 20 individual fields line by line:<br>
+                <div style="margin:8px 0; padding:8px 12px; background:#070e1e; border:1px solid rgba(56,189,248,0.25); border-radius:6px; font-family:var(--font-mono); font-size:0.84rem; color:#38bdf8;">
+                  <code>user.name = req.body.name; user.bio = req.body.bio; ...</code>
+                </div>
+                Developers rely on a single shorthand statement:<br>
+                <div style="margin:8px 0; padding:8px 12px; background:#070e1e; border:1px solid rgba(52,211,153,0.25); border-radius:6px; font-family:var(--font-mono); font-size:0.84rem; color:#34d399;">
+                  <code>User.update(where={id}, data=req.body)</code> &nbsp;|&nbsp; Python: <code>User(**request.json())</code>
+                </div>
+                <strong>🚨 The Security Flaw:</strong> The framework blindly iterates over every client-supplied JSON key and writes it directly to the database model. If an attacker injects protected attributes:<br>
+                <div style="margin:8px 0; padding:8px 12px; background:#070e1e; border:1px solid rgba(239,68,68,0.3); border-radius:6px; font-family:var(--font-mono); font-size:0.84rem; color:#f87171;">
+                  <code>"role": "admin"</code> &nbsp;|&nbsp; <code>"wallet_balance": 99999</code> &nbsp;|&nbsp; <code>"is_verified": true</code>
+                </div>
+                ...the backend blindly saves them to the database without administrative validation!
+              </span>
+            </div>
+          </div>
+
+          <!-- Section B: Real-World Mental Model (Job Application Form) -->
+          <div class="def-lead-card" style="margin-bottom:1.8rem; border-left:4px solid #38bdf8;">
+            <div class="def-lead-title" style="color:#38bdf8;">
+              <span>📝</span>
+              <span class="lang-hi">Real-Life Example: Job Application Form Ka "For Office Use Only" Section</span>
+              <span class="lang-en">Real-World Mental Model: The Job Application "For Office Use Only" Box</span>
+            </div>
+            <div class="def-lead-text">
+              <span class="lang-hi">
+                Maan lijiye <strong>Irshad</strong> ek company me job application form bharta hai. Form ke do hisse hain:<br>
+                1. <strong>Candidate Section:</strong> Name, Email, Phone Number, Education.<br>
+                2. <strong>For HR / Office Use Only (Protected Section):</strong> Selected: [Yes/No], Starting Salary: [ ₹_____ ], Department Role: [Manager/Trainee].<br><br>
+                Agar company ka HR clerk aalasi hai aur candidate ke laaye hue poore paper ko bina padhe direct stamp laga kar official database me upload kar deta hai, toh Irshad kya karega? Irshad pen se "Office Use Only" wale section me khud hi likh dega: <code>Selected: YES, Salary: ₹25,00,000, Role: VP of Engineering</code>!<br><br>
+                <strong>Yahi Mass Assignment hai:</strong> API developer ne frontend form par toh sirf <code>bio</code> aur <code>full_name</code> ka input box diya, lekin backend par aane wale poore JSON ko bina filter kiye database me chipka diya!
+              </span>
+              <span class="lang-en">
+                Imagine <strong>Irshad</strong> filling out a paper job application form with two distinct sections:<br>
+                1. <strong>Applicant Section:</strong> Name, Email, Experience.<br>
+                2. <strong>For HR / Management Use Only:</strong> Hired: [Yes/No], Salary: [$_____], Assigned Role: [Executive/Staff].<br><br>
+                If the automated HR scanning system blindly saves whatever is written on the page into company payroll records, Irshad could write into the "Office Use Only" box: <code>Hired: YES, Salary: $250,000, Role: Executive Director</code>!<br><br>
+                <strong>This is Mass Assignment:</strong> The frontend only shows fields for <code>name</code> and <code>bio</code>, but the backend API blindly persists any additional parameter injected into the HTTP request body directly into the database.
+              </span>
+            </div>
+          </div>
+
+          <!-- ============================================================
+               SECTION C: The 4 Pillars of Mass Assignment Prevention (Standardized Architecture from jwt.html)
+               ============================================================ -->
+          <h3 style="font-size:1.2rem; color:#38bdf8; margin:2rem 0 0.8rem; font-weight:700;">
+            <span class="lang-hi">Mass Assignment Security Ke 4 Pillars</span>
+            <span class="lang-en">The 4 Pillars of Mass Assignment Prevention</span>
+          </h3>
+
+          <p class="panel-body-text">
+            <span class="lang-hi">Kisi bhi production application me Object Auto-Binding vulnerabilities ko khatam karne ke liye in 4 architectural aur model-level pillars ka palan karna anivarya (mandatory) hai:</span>
+            <span class="lang-en">Production architectures must adhere to these 4 non-negotiable security pillars to prevent Object Auto-Binding and parameter injection:</span>
+          </p>
+
+          <div style="display:flex; flex-direction:column; gap:1.2rem; margin-top:1rem;">
+            <!-- Pillar 1 -->
+            <div class="hw-step-box step-1">
+              <h4>Pillar 1: Strict DTO Whitelisting & Input Schemas (Contract-First Design)</h4>
+              <p>
+                <span class="lang-hi">
+                  <strong>Kyu Zaroori Hai:</strong> ORM models database table ke direct reflection hote hain jisme internal system columns jaise <code>id</code>, <code>role</code>, <code>wallet_balance</code>, aur <code>is_verified</code> maujood hote hain. Agar endpoint direct request body ko database entity se bind karta hai, to attacker Burp Suite se arbitrary parameters inject karke system integrity compromise kar leta hai. Frontend form me field hide karna ya disable karna koi protection nahi deta.<br>
+                  <strong>Secure Solution:</strong> Database entity aur network layer ke beech strict <strong>Data Transfer Objects (DTOs)</strong> introduce karein (jaise Python me <code>Pydantic</code>, Node.js me <code>class-validator / Zod</code>). DTO me sirf vahi fields define hon jinhe normal user legally update kar sakta hai (e.g., <code>name</code>, <code>bio</code>). Controller sirf validated DTO ka instance accept kare.
+                </span>
+                <span class="lang-en">
+                  <strong>Why it's Critical:</strong> ORM models directly mirror database tables containing privileged columns like <code>id</code>, <code>role</code>, <code>wallet_balance</code>, and <code>is_verified</code>. Blind entity binding allows attackers to forge HTTP requests containing privileged properties, bypassing all frontend UI constraints.<br>
+                  <strong>Secure Solution:</strong> Enforce strict <strong>Data Transfer Objects (DTOs)</strong> or validation schemas (such as <code>Pydantic</code> in Python or <code>Zod</code> in Node.js) between controllers and database models. DTOs must declare exclusively mutable user fields, rejecting any unauthorized properties.
+                </span>
+              </p>
+            </div>
+
+            <!-- Pillar 2 -->
+            <div class="hw-step-box step-2">
+              <h4>Pillar 2: Model-Level Attribute Immutability & Read-Only Protection</h4>
+              <p>
+                <span class="lang-hi">
+                  <strong>Kyu Zaroori Hai:</strong> Agar kisi developer ne future me naye route par DTO lagana miss kar diya ya generic helper function use kar liya, to model level par security na hone se poora database fir se exposed ho jayega. Sirf API layer par validation par depend rehna single-point-of-failure banata hai.<br>
+                  <strong>Secure Solution:</strong> Database ORM level par sensitive columns ko <strong>read-only</strong> ya <strong>immutable</strong> declare karein. For example, Django me <code>editable=False</code>, Rails me <code>attr_readonly :role, :wallet_balance</code>, aur Prisma me separate update types generate karein. Is defense-in-depth approach se agar code me galti se auto-binding ho bhi jaye, to database driver runtime par column overwrite ko block kar dega.
+                </span>
+                <span class="lang-en">
+                  <strong>Why it's Critical:</strong> Relying solely on API-layer validation leaves applications vulnerable if a developer bypasses DTOs on newly introduced endpoints or internal utility routes.<br>
+                  <strong>Secure Solution:</strong> Enforce model-level immutability at the ORM layer. Mark attributes like <code>role</code> and <code>balance</code> as read-only (e.g., <code>editable=False</code> in Django or <code>attr_readonly</code> in Rails). With defense-in-depth, unauthorized writes are blocked at the persistence boundary.
+                </span>
+              </p>
+            </div>
+
+            <!-- Pillar 3 -->
+            <div class="hw-step-box step-3">
+              <h4>Pillar 3: Explicit Property Destructuring (Zero Wildcard Unpacking)</h4>
+              <p>
+                <span class="lang-hi">
+                  <strong>Kyu Zaroori Hai:</strong> Modern JavaScript aur Python me wildcard unpacking shorthand (jaise <code>...req.body</code>, <code>**request.json()</code>, ya <code>User.update(data)</code>) Mass Assignment vulnerabilities ki sabse mukhya vajah hain. Ye shorthand client ke bheje hue har unexpected parameter ko database query me zabardasti inject kar deta hai.<br>
+                  <strong>Secure Solution:</strong> Wildcard unpacking ko code review aur linter rules (ESLint / Flake8) ke zariye completely ban karein. Hamesha explicit property assignment karein: <code>user.bio = dto.bio; user.name = dto.name;</code> ya explicit update object banayein: <code>prisma.user.update({ where: { id }, data: { name: dto.name, bio: dto.bio } })</code>. Surplus client keys automatically drop ho jayengi.
+                </span>
+                <span class="lang-en">
+                  <strong>Why it's Critical:</strong> Wildcard unpacking shorthand like <code>...req.body</code> or <code>**request.json()</code> automatically unpacks every client key-value pair directly into database operations, facilitating parameter injection.<br>
+                  <strong>Secure Solution:</strong> Prohibit wildcard unpacking using automated linter policies. Mandate explicit property assignment: <code>user.bio = dto.bio; user.name = dto.name;</code> or construct explicit data mappings. Unrecognized payload properties are discarded before reaching the database.
+                </span>
+              </p>
+            </div>
+
+            <!-- Pillar 4 -->
+            <div class="hw-step-box step-4">
+              <h4>Pillar 4: Fail-Closed Schema Validation & Extra Field Forbidding</h4>
+              <p>
+                <span class="lang-hi">
+                  <strong>Kyu Zaroori Hai:</strong> Default framework parsers unknown parameters ko silently drop ya ignore kar dete hain. Silent ignorance se attack attempts chup jate hain aur agar downstream code raw request dictionary ko inspect kar raha ho to vulnerability trigger ho sakti hai.<br>
+                  <strong>Secure Solution:</strong> Validation engine ko <strong>Fail-Closed</strong> mode me configure karein. Pydantic me <code>model_config = ConfigDict(extra='forbid')</code> ya Zod me <code>.strict()</code> use karein. Isse agar attacker request me 1 bhi unexpected key (jaise <code>"role": "admin"</code>) bhejta hai, to server request ko process karne ke bajaye turant <code>HTTP 422 Unprocessable Entity</code> return kare aur SIEM telemetry alert log kare.
+                </span>
+                <span class="lang-en">
+                  <strong>Why it's Critical:</strong> Permissive schema engines silently ignore unexpected parameters without alerting security monitoring, hiding probing attempts and leaving downstream handlers exposed.<br>
+                  <strong>Secure Solution:</strong> Configure validation schemas in <strong>Fail-Closed</strong> mode (e.g., <code>extra = 'forbid'</code> in Pydantic, <code>.strict()</code> in Zod). Any unexpected property causes immediate rejection with HTTP 422 Unprocessable Entity and logs security telemetry.
+                </span>
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           TAB 2: HOW IT WORKS
+           ==================================================================== -->
+      <div class="tab-content" id="tab-how-it-works">
+        <div class="card-panel">
+          <div class="card-title-badge-row">
+            <div class="blue-circle-num">2</div>
+            <h2 class="panel-header-title">
+              <span class="lang-hi">Mass Assignment Ka Execution Pipeline & Exploitation Vectors</span>
+              <span class="lang-en">Mass Assignment Execution Pipeline & Exploitation Vectors</span>
+            </h2>
+          </div>
+
+          <p class="panel-body-text">
+            <span class="lang-hi">Mass Assignment vulnerability kaise trigger hoti hai aur real enterprise systems me attacker iska fayda utha kar konse 4 major attacks execute karta hai:</span>
+            <span class="lang-en">How Mass Assignment vulnerabilities execute end-to-end and the 4 critical attack vectors hackers exploit in production environments:</span>
+          </p>
+
+          <!-- 4-Step Pipeline Flow -->
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap:1rem; margin-bottom:2rem;">
+            <div style="background:#050b18; border:1px solid rgba(255,255,255,0.08); border-top:3px solid #38bdf8; border-radius:var(--radius-md); padding:1rem;">
+              <span style="font-family:var(--font-mono); font-size:0.75rem; color:#38bdf8; font-weight:700;">STAGE 01</span>
+              <h4 style="color:#38bdf8; font-size:0.92rem; margin:6px 0 4px;">Schema Discovery</h4>
+              <p style="font-size:0.82rem; color:#94a3b8; line-height:1.5; margin:0;">Attacker Swagger docs, JavaScript bundle files, ya profile GET response inspect karke hidden database column names dhoondta hai (jaise <code>is_admin</code>, <code>role</code>, <code>balance</code>).</p>
+            </div>
+
+            <div style="background:#050b18; border:1px solid rgba(255,255,255,0.08); border-top:3px solid #a855f7; border-radius:var(--radius-md); padding:1rem;">
+              <span style="font-family:var(--font-mono); font-size:0.75rem; color:#c084fc; font-weight:700;">STAGE 02</span>
+              <h4 style="color:#38bdf8; font-size:0.92rem; margin:6px 0 4px;">Payload Tampering</h4>
+              <p style="font-size:0.82rem; color:#94a3b8; line-height:1.5; margin:0;">Attacker normal form request ko Burp Suite me intercept karta hai aur JSON body me target property inject karta hai: <code>{"role": "admin", "wallet_balance": 99999}</code>.</p>
+            </div>
+
+            <div style="background:#050b18; border:1px solid rgba(255,255,255,0.08); border-top:3px solid #f59e0b; border-radius:var(--radius-md); padding:1rem;">
+              <span style="font-family:var(--font-mono); font-size:0.75rem; color:#fbbf24; font-weight:700;">STAGE 03</span>
+              <h4 style="color:#38bdf8; font-size:0.92rem; margin:6px 0 4px;">Blind Auto-Binding</h4>
+              <p style="font-size:0.82rem; color:#94a3b8; line-height:1.5; margin:0;">Backend framework bina kisi field check ke poore JSON dictionary ko database ORM update query me daal deta hai: <code>UPDATE users SET role='admin'...</code></p>
+            </div>
+
+            <div style="background:#050b18; border:1px solid rgba(255,255,255,0.08); border-top:3px solid #ef4444; border-radius:var(--radius-md); padding:1rem;">
+              <span style="font-family:var(--font-mono); font-size:0.75rem; color:#f87171; font-weight:700;">STAGE 04</span>
+              <h4 style="color:#38bdf8; font-size:0.92rem; margin:6px 0 4px;">Privilege Takeover</h4>
+              <p style="font-size:0.82rem; color:#94a3b8; line-height:1.5; margin:0;">Attacker ka standard account instant superadmin ya unlimited balance account me convert ho jata hai. Zero authentication alarm triggers!</p>
+            </div>
+          </div>
+
+          <!-- 4 Critical Enterprise Exploitation Vectors -->
+          <h3 style="font-size:1.15rem; color:#38bdf8; margin-bottom:1rem; font-weight:700;">
+            <span class="lang-hi">4 High-Impact Exploitation Vectors (Real Enterprise Threats)</span>
+            <span class="lang-en">4 High-Impact Exploitation Vectors (Real Enterprise Threats)</span>
+          </h3>
+
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1.2rem;">
+            <!-- Vector 1 -->
+            <div style="background:#060c1c; border:1px solid rgba(239,68,68,0.25); border-radius:var(--radius-sm); padding:1.1rem;">
+              <div style="color:#f87171; font-weight:700; font-size:0.9rem; margin-bottom:4px;">1. Privilege Escalation (User ➔ Superadmin)</div>
+              <p style="font-size:0.83rem; color:#f1f5f9; line-height:1.6; margin:0;">
+                Profile update ya registration endpoint par <code>"role": "admin"</code>, <code>"is_admin": true</code>, ya <code>"permissions": ["*"]</code> inject karke attacker bina kisi admin approval ke system superadmin ban jata hai.
+              </p>
+            </div>
+
+            <!-- Vector 2 -->
+            <div style="background:#060c1c; border:1px solid rgba(245,158,11,0.25); border-radius:var(--radius-sm); padding:1.1rem;">
+              <div style="color:#fbbf24; font-weight:700; font-size:0.9rem; margin-bottom:4px;">2. Financial / Billing Manipulation</div>
+              <p style="font-size:0.83rem; color:#f1f5f9; line-height:1.6; margin:0;">
+                E-commerce ya fintech API me order place karte waqt <code>"price": 0.00</code>, <code>"is_paid": true</code>, ya wallet API me <code>"wallet_balance": 999999</code> inject karke bina paise diye orders place kar lena.
+              </p>
+            </div>
+
+            <!-- Vector 3 -->
+            <div style="background:#060c1c; border:1px solid rgba(56,189,248,0.25); border-radius:var(--radius-sm); padding:1.1rem;">
+              <div style="color:#38bdf8; font-weight:700; font-size:0.9rem; margin-bottom:4px;">3. Security & Verification Bypasses</div>
+              <p style="font-size:0.83rem; color:#f1f5f9; line-height:1.6; margin:0;">
+                Account settings me <code>"is_verified": true</code>, <code>"email_verified": true</code>, ya <code>"mfa_enabled": false</code> bhej kar email verification aur 2FA mechanisms ko completely bypass kar dena.
+              </p>
+            </div>
+
+            <!-- Vector 4 -->
+            <div style="background:#060c1c; border:1px solid rgba(168,85,247,0.25); border-radius:var(--radius-sm); padding:1.1rem;">
+              <div style="color:#c084fc; font-weight:700; font-size:0.9rem; margin-bottom:4px;">4. Multi-Tenant Organization Re-binding</div>
+              <p style="font-size:0.83rem; color:#f1f5f9; line-height:1.6; margin:0;">
+                SaaS application me user profile update me <code>"tenant_id": 999</code> ya <code>"organization_id": 1002</code> bhej kar attacker apna account kisi doosri company ke private organization me migrate kar leta hai.
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           TAB 3: REAL-WORLD SCENARIOS
+           ==================================================================== -->
+      <div class="tab-content" id="tab-example">
+        <div class="card-panel">
+          <div class="card-title-badge-row">
+            <div class="blue-circle-num">3</div>
+            <h2 class="panel-header-title">
+              <span class="lang-hi">Real-World Enterprise Attack Scenarios</span>
+              <span class="lang-en">Real-World Enterprise Attack Scenarios</span>
+            </h2>
+          </div>
+
+          <div class="scenarios-container">
+
+            <!-- Scenario 1: Self-Promotion to Superadmin -->
+            <div class="scenario-card">
+              <div class="scenario-header">
+                <div class="scenario-badge">Scenario 01 &bull; Cloud SaaS Portal</div>
+                <h3 class="scenario-title">Profile Update Mass Assignment (Self-Promotion to Admin)</h3>
+              </div>
+              <div class="scenario-body">
+                <p class="scenario-desc">
+                  <span class="lang-hi">Organization me <strong>Bhavesh</strong> (User ID: <code>1002</code>) ek authorized <code>admin</code> hai jabki <strong>Irshad</strong> (User ID: <code>1001</code>) ek normal <code>user</code> hai. Irshad apne profile update request (<code>PUT /api/v1/users/1001</code>) me bio ke sath unauthorized parameter <code>"role": "admin"</code> inject karta hai. Vulnerable backend ORM bina authorization check ke Irshad ko bhi Bhavesh jaisa high-privileged Admin bana deta hai!</span>
+                  <span class="lang-en">In the enterprise portal, <strong>Bhavesh</strong> (User ID: <code>1002</code>) is the designated <code>admin</code>, while <strong>Irshad</strong> (User ID: <code>1001</code>) is a standard <code>user</code>. Irshad sends a profile update (<code>PUT /api/v1/users/1001</code>) with an unauthorized <code>"role": "admin"</code> field. The vulnerable ORM blindly writes the parameter, granting Irshad full administrative clearance equivalent to Bhavesh!</span>
+                </p>
+
+                <div class="split-terminal-grid">
+                  <div class="terminal-box">
+                    <div class="terminal-topbar">
+                      <span class="term-dot red"></span><span class="term-dot yellow"></span><span class="term-dot green"></span>
+                      <span class="term-file-name">HTTP REQUEST (Injected role: "admin")</span>
+                      <button class="term-copy-btn" onclick="copyTerm(this)">Copy</button>
+                    </div>
+                    <pre><code><span class="t-verb">PUT</span> <span class="t-path">/api/v1/users/1001</span> <span class="t-proto">HTTP/1.1</span>
+<span class="t-head">Host:</span> <span class="t-str">cloud-saas.com</span>
+<span class="t-head">Authorization:</span> <span class="t-str">Bearer eyJhbGciOi...[Irshad_Session]</span>
+<span class="t-head">Content-Type:</span> <span class="t-str">application/json</span>
+
+<span class="t-op">{</span>
+  <span class="t-key">"name"</span><span class="t-op">:</span> <span class="t-str">"Irshad"</span><span class="t-op">,</span>
+  <span class="t-key">"bio"</span><span class="t-op">:</span> <span class="t-str">"Certified Ethical Hacker"</span><span class="t-op">,</span>
+  <span class="t-comm">// INJECTED PRIVILEGED PROPERTY:</span>
+  <span class="t-key" style="color:#ef4444; font-weight:700;">"role"</span><span class="t-op">:</span> <span class="t-str" style="color:#ef4444; font-weight:700;">"admin"</span>
+<span class="t-op">}</span></code></pre>
+                  </div>
+
+                  <div class="terminal-box">
+                    <div class="terminal-topbar">
+                      <span class="term-dot red"></span><span class="term-dot yellow"></span><span class="term-dot green"></span>
+                      <span class="term-file-name">HTTP RESPONSE (Privilege Escalated)</span>
+                      <button class="term-copy-btn" onclick="copyTerm(this)">Copy</button>
+                    </div>
+                    <pre><code><span class="t-proto">HTTP/1.1</span> <span class="t-status green">200 OK</span>
+<span class="t-head">Content-Type:</span> <span class="t-str">application/json</span>
+
+<span class="t-op">{</span>
+  <span class="t-key">"id"</span><span class="t-op">:</span> <span class="t-num">1001</span><span class="t-op">,</span>
+  <span class="t-key">"name"</span><span class="t-op">:</span> <span class="t-str">"Irshad"</span><span class="t-op">,</span>
+  <span class="t-key">"bio"</span><span class="t-op">:</span> <span class="t-str">"Certified Ethical Hacker"</span><span class="t-op">,</span>
+  <span class="t-key" style="color:#ef4444; font-weight:700;">"role"</span><span class="t-op">:</span> <span class="t-str" style="color:#ef4444; font-weight:700;">"admin"</span><span class="t-op">,</span>
+  <span class="t-key">"updated_at"</span><span class="t-op">:</span> <span class="t-str">"2026-09-05T07:30:00Z"</span>
+<span class="t-op">}</span></code></pre>
+                  </div>
+                </div>
+
+                <div class="scenario-impact crit">
+                  <strong>💥 Critical Enterprise Impact:</strong> Irshad ko system administrative rights mil gaye. Wo company ke baaki users ka data read, modify ya delete kar sakta hai!
+                </div>
+              </div>
+            </div>
+
+            <!-- Scenario 2: E-Commerce Zero-Dollar Checkout -->
+            <div class="scenario-card">
+              <div class="scenario-header">
+                <div class="scenario-badge">Scenario 02 &bull; E-Commerce Platform</div>
+                <h3 class="scenario-title">Order Creation Total Price & Payment Status Overwrite</h3>
+              </div>
+              <div class="scenario-body">
+                <p class="scenario-desc">
+                  <span class="lang-hi">Checkout API me attacker Irshad ₹50,000 ka laptop cart me dalta hai, lekin order creation request me <code>"total_price": 0.00</code> aur <code>"is_paid": true</code> inject kar deta hai. Server payment gateway verify karne ke bajaye client ke JSON values save kar leta hai!</span>
+                  <span class="lang-en">During checkout of an expensive item, attacker Irshad injects <code>"total_price": 0.00</code> and <code>"is_paid": true</code>. The backend blindly writes client values directly into the orders table!</span>
+                </p>
+
+                <div class="split-terminal-grid">
+                  <div class="terminal-box">
+                    <div class="terminal-topbar">
+                      <span class="term-dot red"></span><span class="term-dot yellow"></span><span class="term-dot green"></span>
+                      <span class="term-file-name">HTTP REQUEST (Tampered Price & Status)</span>
+                      <button class="term-copy-btn" onclick="copyTerm(this)">Copy</button>
+                    </div>
+                    <pre><code><span class="t-verb">POST</span> <span class="t-path">/api/v1/orders/checkout</span> <span class="t-proto">HTTP/1.1</span>
+<span class="t-head">Host:</span> <span class="t-str">megastore.com</span>
+<span class="t-head">Content-Type:</span> <span class="t-str">application/json</span>
+
+<span class="t-op">{</span>
+  <span class="t-key">"item_id"</span><span class="t-op">:</span> <span class="t-num">802</span><span class="t-op">,</span>
+  <span class="t-key">"quantity"</span><span class="t-op">:</span> <span class="t-num">1</span><span class="t-op">,</span>
+  <span class="t-comm">// INJECTED FINANCIAL PARAMETERS:</span>
+  <span class="t-key" style="color:#ef4444; font-weight:700;">"total_amount"</span><span class="t-op">:</span> <span class="t-num" style="color:#ef4444; font-weight:700;">0.00</span><span class="t-op">,</span>
+  <span class="t-key" style="color:#ef4444; font-weight:700;">"is_paid"</span><span class="t-op">:</span> <span class="t-bool" style="color:#ef4444; font-weight:700;">true</span>
+<span class="t-op">}</span></code></pre>
+                  </div>
+
+                  <div class="terminal-box">
+                    <div class="terminal-topbar">
+                      <span class="term-dot red"></span><span class="term-dot yellow"></span><span class="term-dot green"></span>
+                      <span class="term-file-name">HTTP RESPONSE (Order Dispatched For Free)</span>
+                      <button class="term-copy-btn" onclick="copyTerm(this)">Copy</button>
+                    </div>
+                    <pre><code><span class="t-proto">HTTP/1.1</span> <span class="t-status green">201 Created</span>
+<span class="t-head">Content-Type:</span> <span class="t-str">application/json</span>
+
+<span class="t-op">{</span>
+  <span class="t-key">"order_id"</span><span class="t-op">:</span> <span class="t-num">94821</span><span class="t-op">,</span>
+  <span class="t-key">"status"</span><span class="t-op">:</span> <span class="t-str">"PROCESSING"</span><span class="t-op">,</span>
+  <span class="t-key">"total_amount"</span><span class="t-op">:</span> <span class="t-num">0.00</span><span class="t-op">,</span>
+  <span class="t-key">"payment_status"</span><span class="t-op">:</span> <span class="t-str" style="color:#34d399; font-weight:700;">"PAID"</span>
+<span class="t-op">}</span></code></pre>
+                  </div>
+                </div>
+
+                <div class="scenario-impact crit">
+                  <strong>💥 Financial Loss Impact:</strong> Zero rupees pay kiye bina warehouse me shipment confirm ho gayi, resulting in direct revenue theft.
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           TAB 4: CODE PREVENTION
+           ==================================================================== -->
+      <div class="tab-content" id="tab-prevention">
+        <div class="card-panel">
+          <div class="card-title-badge-row">
+            <div class="blue-circle-num">4</div>
+            <h2 class="panel-header-title">
+              <span class="lang-hi">Code Prevention: Mass Assignment Ko Sahi Se Kaise Fix Karein?</span>
+              <span class="lang-en">Code Prevention: How to Properly Remediate Mass Assignment</span>
+            </h2>
+          </div>
+
+          <p class="panel-body-text">
+            <span class="lang-hi">Neeche Python (FastAPI + Pydantic) aur Node.js (Express + Prisma) ka vulnerable vs. secure code implementation dekhein:</span>
+            <span class="lang-en">Below is the comparison between vulnerable blind auto-binding vs. strict DTO whitelisting in FastAPI and Node.js:</span>
+          </p>
+
+                    <div class="code-compare-grid">
+            <!-- Vulnerable Box -->
+            <div class="compare-box vulnerable">
+              <div class="compare-header">
+                <span class="compare-dot red"></span>
+                <span class="compare-title">❌ Vulnerable Implementation (FastAPI / Prisma)</span>
+                <button class="term-copy-btn" onclick="copyTerm(this)" style="margin-left:auto;">Copy</button>
+              </div>
+              <pre><code><span class="t-comm"># ❌ VULNERABLE: Blindly unpacking all JSON keys into database!</span>
+<span class="t-dec">@app.put</span>(<span class="t-str">"/api/v1/users/{user_id}"</span>)
+<span class="t-kw">async def</span> <span class="t-fn">update_profile</span>(user_id: <span class="t-type">int</span>, payload: <span class="t-type">dict</span>, db: <span class="t-cls">Session</span> <span class="t-op">=</span> <span class="t-fn">Depends</span>(get_db)):
+    user <span class="t-op">=</span> db.<span class="t-fn">query</span>(<span class="t-cls">User</span>).<span class="t-fn">filter</span>(<span class="t-cls">User</span>.id <span class="t-op">==</span> user_id).<span class="t-fn">first</span>()
+    
+    <span class="t-comm"># 🚨 DANGER: Attacker passes {"role": "admin"} and it</span>
+    <span class="t-comm"># overwrites the database column directly!</span>
+    <span class="t-kw">for</span> key, value <span class="t-kw">in</span> payload.<span class="t-fn">items</span>():
+        <span class="t-fn">setattr</span>(user, key, value)  <span class="t-comm"># 💥 Blind Mass Assignment</span>
+        
+    db.<span class="t-fn">commit</span>()
+    <span class="t-kw">return</span> user</code></pre>
+            </div>
+
+            <!-- Secure Box -->
+            <div class="compare-box secure">
+              <div class="compare-header">
+                <span class="compare-dot green"></span>
+                <span class="compare-title">🛡️ Secure Implementation (Strict Pydantic DTO Schema)</span>
+                <button class="term-copy-btn" onclick="copyTerm(this)" style="margin-left:auto;">Copy</button>
+              </div>
+              <pre><code><span class="t-comm"># 🛡️ SECURE: Explicit Whitelisting with Pydantic DTO Schema</span>
+<span class="t-kw">from</span> pydantic <span class="t-kw">import</span> <span class="t-cls">BaseModel</span>, <span class="t-cls">Extra</span>
+
+<span class="t-kw">class</span> <span class="t-cls">ProfileUpdateDTO</span>(<span class="t-cls">BaseModel</span>):
+    name:  <span class="t-type">str</span> <span class="t-op">|</span> <span class="t-type">None</span> <span class="t-op">=</span> <span class="t-type">None</span>
+    bio:   <span class="t-type">str</span> <span class="t-op">|</span> <span class="t-type">None</span> <span class="t-op">=</span> <span class="t-type">None</span>
+    phone: <span class="t-type">str</span> <span class="t-op">|</span> <span class="t-type">None</span> <span class="t-op">=</span> <span class="t-type">None</span>
+
+    <span class="t-kw">class</span> <span class="t-cls">Config</span>:
+        <span class="t-comm"># 🔒 Reject any unexpected parameters with HTTP 422!</span>
+        extra <span class="t-op">=</span> <span class="t-cls">Extra</span>.forbid
+
+<span class="t-dec">@app.put</span>(<span class="t-str">"/api/v1/users/{user_id}"</span>)
+<span class="t-kw">async def</span> <span class="t-fn">update_profile</span>(user_id: <span class="t-type">int</span>, data: <span class="t-cls">ProfileUpdateDTO</span>, current_user <span class="t-op">=</span> <span class="t-fn">Depends</span>(get_current_user)):
+    <span class="t-comm"># Only whitelisted fields can be updated:</span>
+    user <span class="t-op">=</span> db.<span class="t-fn">query</span>(<span class="t-cls">User</span>).<span class="t-fn">filter</span>(<span class="t-cls">User</span>.id <span class="t-op">==</span> current_user.id).<span class="t-fn">first</span>()
+    <span class="t-kw">if</span> data.name:  user.name  <span class="t-op">=</span> data.name
+    <span class="t-kw">if</span> data.bio:   user.bio   <span class="t-op">=</span> data.bio
+    <span class="t-kw">if</span> data.phone: user.phone <span class="t-op">=</span> data.phone
+    db.<span class="t-fn">commit</span>()
+    <span class="t-kw">return</span> user</code></pre>
+            </div>
+          </div>
+
+          <!-- Node.js / Express Implementation Grid -->
+          <div style="margin-top:1.6rem;">
+            <h4 style="font-size:0.95rem; color:#38bdf8; margin-bottom:10px; display:flex; align-items:center; gap:8px;">
+              <span>⚡</span> <span>Node.js / Express Implementation (Vulnerable vs. Secure DTO)</span>
+            </h4>
+            <div class="code-compare-grid">
+              <!-- Node Vulnerable -->
+              <div class="compare-box vulnerable">
+                <div class="compare-header">
+                  <span class="compare-dot red"></span>
+                  <span class="compare-title">❌ Vulnerable (Blind req.body Unpacking)</span>
+                  <button class="term-copy-btn" onclick="copyTerm(this)" style="margin-left:auto;">Copy</button>
+                </div>
+                <pre><code><span class="t-comm">// ❌ DANGER: Blindly passing entire req.body into ORM update!</span>
+app.<span class="t-fn">put</span>(<span class="t-str">"/api/v1/users/:id"</span>, <span class="t-kw">async</span> (req, res) <span class="t-op">=&gt;</span> {
+  <span class="t-kw">const</span> userId <span class="t-op">=</span> req.params.id;
+
+  <span class="t-comm">// Attacker sends { "role": "admin", "wallet_balance": 99999 }</span>
+  <span class="t-comm">// Prisma / Sequelize automatically updates all columns!</span>
+  <span class="t-kw">const</span> updated <span class="t-op">=</span> <span class="t-kw">await</span> prisma.user.<span class="t-fn">update</span>({
+    where: { id: <span class="t-fn">parseInt</span>(userId) },
+    data: req.body <span class="t-comm">// 🚨 Mass Assignment vulnerability!</span>
+  });
+
+  res.<span class="t-fn">json</span>({ success: <span class="t-bool">true</span>, user: updated });
+});</code></pre>
+              </div>
+
+              <!-- Node Secure -->
+              <div class="compare-box secure">
+                <div class="compare-header">
+                  <span class="compare-dot green"></span>
+                  <span class="compare-title">🛡️ Secure (Explicit Field Whitelisting)</span>
+                  <button class="term-copy-btn" onclick="copyTerm(this)" style="margin-left:auto;">Copy</button>
+                </div>
+                <pre><code><span class="t-comm">// 🛡️ SECURE: Whitelist permissible fields explicitly via DTO</span>
+<span class="t-kw">import</span> { <span class="t-cls">IsString</span>, <span class="t-cls">IsOptional</span>, <span class="t-cls">Length</span> } <span class="t-kw">from</span> <span class="t-str">'class-validator'</span>;
+
+<span class="t-kw">class</span> <span class="t-cls">UpdateProfileDTO</span> {
+  <span class="t-dec">@IsOptional</span>() <span class="t-dec">@IsString</span>() <span class="t-dec">@Length</span>(<span class="t-num">2</span>, <span class="t-num">50</span>)
+  name?: <span class="t-type">string</span>;
+
+  <span class="t-dec">@IsOptional</span>() <span class="t-dec">@IsString</span>() <span class="t-dec">@Length</span>(<span class="t-num">0</span>, <span class="t-num">250</span>)
+  bio?: <span class="t-type">string</span>;
+}
+
+app.<span class="t-fn">put</span>(<span class="t-str">"/api/v1/users/:id"</span>, <span class="t-fn">validateDTO</span>(<span class="t-cls">UpdateProfileDTO</span>), <span class="t-kw">async</span> (req, res) <span class="t-op">=&gt;</span> {
+  <span class="t-kw">const</span> userId <span class="t-op">=</span> req.user.id; <span class="t-comm">// Enforce authenticated identity</span>
+  <span class="t-kw">const</span> { name, bio } <span class="t-op">=</span> req.validatedBody; <span class="t-comm">// Strict sanitized extraction</span>
+
+  <span class="t-comm">// 🔒 Only whitelisted properties reach the database!</span>
+  <span class="t-kw">const</span> updated <span class="t-op">=</span> <span class="t-kw">await</span> prisma.user.<span class="t-fn">update</span>({
+    where: { id: <span class="t-fn">parseInt</span>(userId) },
+    data: {
+      ...(name <span class="t-op">&amp;&amp;</span> { name }),
+      ...(bio  <span class="t-op">&amp;&amp;</span> { bio })
+    }
+  });
+
+  res.<span class="t-fn">json</span>({ success: <span class="t-bool">true</span>, user: updated });
+});</code></pre>
+              </div>
+            </div>
+          </div>
+
+          <!-- Golden Rules Card -->
+          <div class="golden-rules-card">
+            <h4 class="golden-rules-title">
+              <span>🌟</span>
+              <span>Golden Rules of Mass Assignment Defense</span>
+            </h4>
+            <ul class="golden-rules-list">
+              <li><strong>Rule 1 (Never Unpack Raw Request Body):</strong> Kabhi bhi <code>User.update(req.body)</code> ya <code>setattr(obj, k, v)</code> ko unvalidated client input par mat chalayein.</li>
+              <li><strong>Rule 2 (Enforce Strict DTOs / Schemas):</strong> Har endpoint ke liye ek dedicated Data Transfer Object schema banayein jisme sirf vahi fields hon jo user ko legally edit karne ki permission hai.</li>
+              <li><strong>Rule 3 (Configure Extra = Forbid):</strong> Schemas me extra properties ko reject karne ka rule lagayein taaki koi extra parameters stealthily pass na ho sakein.</li>
+              <li><strong>Rule 4 (Model-Level Read-Only Fields):</strong> Database schema me <code>role</code>, <code>is_admin</code>, <code>wallet_balance</code>, aur <code>tenant_id</code> ko application code level par immutable rakhein.</li>
+            </ul>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           TAB 5: TESTING CHECKLIST (100% COMMON DESIGN, NO LOCALSTORAGE)
+           ==================================================================== -->
+      <div class="tab-content" id="tab-testing">
+        <div class="card-panel">
+          <div class="card-title-badge-row">
+            <div class="blue-circle-num">5</div>
+            <h2 class="panel-header-title">
+              <span class="lang-hi">Mass Assignment Security Testing Checklist (Pentester Playbook)</span>
+              <span class="lang-en">Mass Assignment Security Testing Checklist (Pentester Playbook)</span>
+            </h2>
+          </div>
+
+          <p class="panel-body-text">
+            <span class="lang-hi">Apne APIs par Mass Assignment vulnerability test karne ke liye ye 7-point testing playbook follow karein:</span>
+            <span class="lang-en">Follow this comprehensive 7-point pentester verification playbook to discover Mass Assignment flaws:</span>
+          </p>
+
+          <div class="checklist-meta-header">
+            <div class="checklist-guide-msg">
+              <span class="lang-hi">Har test case ko inspect karein aur <strong>Pass (Secure)</strong> ya <strong>Fail (Vulnerable)</strong> mark karein:</span>
+              <span class="lang-en">Audit each test case and mark as <strong>Pass (Secure)</strong> or <strong>Fail (Vulnerable)</strong>:</span>
+            </div>
+            <div class="checklist-counter-badge">
+              <span id="checklist-progress-counter">0 of 7 Checks Audited (0 Passed | 0 Vulnerable)</span>
+            </div>
+          </div>
+
+          <div class="checklist-container">
+            <!-- Item 1 -->
+            <div class="checklist-item" id="check-item-1" onclick="handleCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">1</span>
+              </div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">1. Schema & Hidden Property Reconnaissance</span>
+                  <span class="lang-en">1. Schema & Hidden Property Reconnaissance</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Swagger/OpenAPI JSON, documentation, client JS bundles aur profile GET responses inspect karke sensitive internal object properties (e.g. <code>role</code>, <code>is_admin</code>, <code>status</code>) map karein.</span>
+                  <span class="lang-en">Discover hidden model properties through OpenAPI definitions, Swagger specifications, client bundles, and administrative responses.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test (Testing Steps):</div>
+                  <span class="lang-hi">1. Common API doc endpoints check karein: <code>/swagger.json</code>, <code>/api-docs</code>, <code>/openapi.json</code>, <code>/v2/api-docs</code>.<br>2. Client-side JS code me object models search karein (e.g. <code>UserSchema</code>, <code>permissions</code>, <code>balance</code>, <code>is_verified</code>).<br>3. Discovered hidden properties ki dictionary banayein fuzzing ke liye.</span>
+                  <span class="lang-en">1. Probe standard documentation URLs: <code>/v1/swagger.json</code>, <code>/api-docs</code>, <code>/openapi.json</code>.<br>2. Inspect client JavaScript application code for internal model definitions (e.g., <code>is_admin</code>, <code>wallet_balance</code>, <code>account_tier</code>).<br>3. Compile candidate properties for mass assignment payload generation.</span>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Item 2 -->
+            <div class="checklist-item" id="check-item-2" onclick="handleCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">2</span>
+              </div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">2. Role Elevation Fuzzing on Registration & Profile</span>
+                  <span class="lang-en">2. Role Elevation Fuzzing on Registration & Profile</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Registration (<code>POST /register</code>) aur Profile (<code>PUT /profile</code>) par <code>{"role": "admin"}</code>, <code>{"role": "superuser"}</code>, <code>{"is_admin": true}</code> inject karke test karein.</span>
+                  <span class="lang-en">Inject privileged role properties into user registration and account update payloads to test for automatic binding.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test (Testing Steps):</div>
+                  <span class="lang-hi">1. Burp Suite me user registration request capture karein: <code>POST /api/v1/auth/register</code>.<br>2. JSON payload me inject karein: <code>{"username": "irshad", "password": "Pass123!", "role": "admin", "is_admin": true}</code>.<br>3. Account create hone ke baad <code>GET /api/v1/profile</code> check karein: Agar role <code>admin</code> ho chuka hai, toh <strong>CRITICAL FAIL</strong>.</span>
+                  <span class="lang-en">1. Intercept a user registration or profile update request in Burp Suite.<br>2. Inject privileged attributes into the JSON body: <code>{"role": "admin", "is_admin": true, "admin": 1}</code>.<br>3. Inspect the returned JSON or call <code>GET /profile</code>: if administrative status is accepted, flag as <strong>CRITICAL FAIL</strong>.</span>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Item 3 -->
+            <div class="checklist-item" id="check-item-3" onclick="handleCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">3</span>
+              </div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">3. Account Verification & 2FA Bypass Probing</span>
+                  <span class="lang-en">3. Account Verification & 2FA Bypass Probing</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Account creation aur update requests me <code>{"is_verified": true}</code>, <code>{"email_confirmed": true}</code>, <code>{"mfa_enabled": false}</code> inject karke bypass verify karein.</span>
+                  <span class="lang-en">Test whether security verification flags can be overridden via client-supplied object auto-binding.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test (Testing Steps):</div>
+                  <span class="lang-hi">1. Unverified account signup ke waqt body me add karein: <code>{"email_verified": true, "is_active": true, "mfa_passed": true}</code>.<br>2. Check karein kya email confirmation link click kiye bina account direct activate ho jata hai.<br>3. Agar server bina verification token ke client values database me save kar leta hai, toh ye <strong>FAIL</strong> hai.</span>
+                  <span class="lang-en">1. Submit account creation with verification flags injected: <code>{"email_verified": true, "mfa_enabled": false, "status": "ACTIVE"}</code>.<br>2. Attempt to authenticate without completing email verification or MFA challenges.<br>3. If the account is instantly active, mark as <strong>FAIL (Verification Auto-Binding)</strong>.</span>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Item 4 -->
+            <div class="checklist-item" id="check-item-4" onclick="handleCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">4</span>
+              </div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">4. Financial & Pricing Manipulation Checks</span>
+                  <span class="lang-en">4. Financial & Pricing Manipulation Checks</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Order checkout requests me <code>{"total_price": 0.00}</code>, <code>{"discount": 100}</code>, <code>{"is_paid": true}</code> inject karke dekhein kya server client values accept karta hai.</span>
+                  <span class="lang-en">Verify whether financial calculations, prices, or payment statuses can be manipulated via request bodies.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test (Testing Steps):</div>
+                  <span class="lang-hi">1. E-commerce checkout request intercept karein: <code>POST /api/v1/orders/checkout</code>.<br>2. Body me inject karein: <code>{"items": [{"id": 101, "qty": 1}], "total_amount": 0.01, "currency": "INR", "is_paid": true}</code>.<br>3. Agar order 0.01 me confirm ho jata hai, toh backend pricing controller auto-binding se compromise hai.</span>
+                  <span class="lang-en">1. Intercept an e-commerce checkout request: <code>POST /api/v1/checkout</code>.<br>2. Inject pricing overrides: <code>{"unit_price": 1.00, "total_discount": 99.99, "payment_status": "COMPLETED"}</code>.<br>3. If the database updates order total to the client-supplied price rather than recalculating server-side, mark as <strong>CRITICAL FAIL</strong>.</span>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Item 5 -->
+            <div class="checklist-item" id="check-item-5" onclick="handleCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">5</span>
+              </div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">5. Tenant & Organization ID Injection</span>
+                  <span class="lang-en">5. Tenant & Organization ID Injection</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Multi-tenant APIs me <code>{"tenant_id": 999}</code> ya <code>{"organization_id": 1002}</code> pass karke dekhein kya user account cross-tenant boundary breach kar pata hai.</span>
+                  <span class="lang-en">Test cross-tenant boundary integrity by injecting arbitrary organizational identifiers into entity updates.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test (Testing Steps):</div>
+                  <span class="lang-hi">1. User profile update request (<code>PATCH /api/v1/users/me</code>) intercept karein.<br>2. Body me dusri company ka ID daalein: <code>{"organization_id": 9999, "tenant_id": "target_corp"}</code>.<br>3. Check karein kya user agle login par Target Corporation ke private documents aur settings access kar pata hai.</span>
+                  <span class="lang-en">1. Intercept a user profile update request (<code>PATCH /api/v1/users/me</code>).<br>2. Inject a foreign tenant identifier: <code>{"organization_id": 9999, "tenant_id": "target_corp"}</code>.<br>3. Re-authenticate and verify whether the user inherits access to the target tenant's environment.</span>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Item 6 -->
+            <div class="checklist-item" id="check-item-6" onclick="handleCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">6</span>
+              </div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">6. DTO Extra Parameter Rejection Verification</span>
+                  <span class="lang-en">6. DTO Extra Parameter Rejection Verification</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Verify karein ki kya backend unexpected parameters aane par <code>HTTP 422 Unprocessable Entity</code> ya <code>400 Bad Request</code> return karta hai ya silently accept kar leta hai.</span>
+                  <span class="lang-en">Ensure frameworks strictly forbid undeclared payload properties (e.g. Pydantic 'extra=forbid', NestJS 'forbidNonWhitelisted: true').</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test (Testing Steps):</div>
+                  <span class="lang-hi">1. Normal API request me fake unknown parameter add karein: <code>{"username": "test", "hacker_param_xyz": "malicious"}</code>.<br>2. Check karein kya framework <code>HTTP 422 Unprocessable Entity</code> ya <code>400 Bad Request</code> phenkta hai.<br>3. Agar server 200 OK deta hai aur extra fields ko silently parse karta hai, toh auto-binding risk high hai.</span>
+                  <span class="lang-en">1. Submit a valid request appended with an arbitrary unknown key: <code>{"random_extra_param": "test_val"}</code>.<br>2. Verify whether the API responds with <code>HTTP 422 / 400 Bad Request</code>.<br>3. If the server silently accepts undeclared parameters, strict schema validation is missing.</span>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Item 7 -->
+            <div class="checklist-item" id="check-item-7" onclick="handleCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">7</span>
+              </div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">7. Code Review for Wildcard Model Unpacking</span>
+                  <span class="lang-en">7. Code Review for Wildcard Model Unpacking</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Source code review me <code>**kwargs</code>, <code>User.update(req.body)</code>, aur <code>setattr()</code> wildcard loops identify karke DTO whitelisting enforce karein.</span>
+                  <span class="lang-en">Conduct static code review to identify hazardous blind unpacking patterns in backend controllers.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test (Testing Steps):</div>
+                  <span class="lang-hi">1. Backend codebase me grep karein: <code>req.body</code>, <code>**request.data</code>, <code>Object.assign(user, req.body)</code>, <code>User.create(params)</code>.<br>2. Verify karein ki koi bhi controller raw request dictionary ko seedha database model me unpack na kar raha ho.<br>3. Hamesha explicit DTOs aur allowed fields whitelist check karein.</span>
+                  <span class="lang-en">1. Search source code repositories for blind model unpacking: <code>User.update(req.body)</code>, <code>**kwargs</code>, <code>Object.assign(entity, body)</code>.<br>2. Identify instances where request data is directly passed to ORM persistence methods without field whitelisting.<br>3. Require explicit DTO mappings to resolve all instances.</span>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           TAB 6: INTERACTIVE LAB SIMULATOR
+           ==================================================================== -->
+      <div class="tab-content" id="tab-lab">
+        <div class="card-panel">
+          <div class="card-title-badge-row">
+            <div class="blue-circle-num">6</div>
+            <h2 class="panel-header-title">
+              <span class="lang-hi">Live Lab: Mass Assignment Exploit Simulator</span>
+              <span class="lang-en">Live Lab: Mass Assignment Exploit Simulator</span>
+            </h2>
+          </div>
+
+          <p class="panel-body-text">
+            <span class="lang-hi">Aap attacker <strong>Irshad (User ID: 1001)</strong> ke roop me authenticated hain. Niche request body me extra parameters inject karein ya quick presets select karke test karein ki backend ORM bina filtering ke unhe database me update karta hai ya nahi:</span>
+            <span class="lang-en">You are authenticated as <strong>Irshad (User ID: 1001)</strong>. Inject surplus parameters into the JSON request body or click presets to observe how blind ORM auto-binding alters database state:</span>
+          </p>
+
+          <div class="lab-simulator">
+            <!-- Simulator Header Status -->
+            <div class="lab-head">
+              <div class="lab-status">
+                <span class="pulse-dot"></span>
+                <span style="font-family:var(--font-mono); font-weight:700; letter-spacing:0.5px;">API PROFILE SERVICE: LIVE</span>
+              </div>
+              <div style="font-size:0.75rem; color:#94a3b8; font-family:var(--font-mono);">
+                Endpoint: PUT /api/v1/users/1001
+              </div>
+            </div>
+
+            <!-- Active User Session Bar -->
+            <div class="auth-token-box">
+              <div><strong>Active Session:</strong> Irshad (User ID: <code>1001</code> | Current Role: <code id="labCurrentRole">user</code> | Balance: <code id="labCurrentBalance">$50</code>)</div>
+              <div style="color:var(--cyan);">Binding Mode: <code>Blind ORM Entity Unpack</code></div>
+            </div>
+
+            <!-- Attack Preset Buttons -->
+            <div style="display:flex; gap:12px; align-items:center; margin-bottom:1.2rem; flex-wrap:wrap;">
+              <span style="font-size:0.8rem; color:#94a3b8; font-weight:600; white-space:nowrap;">Attack Presets:</span>
+              <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; flex:1;">
+                <button type="button" class="sim-preset-btn active" id="btnPresetNormal" onclick="loadMassPreset('normal')">
+                  <span class="preset-icon">👤</span><span class="preset-label">Normal Update (Bio Only)</span>
+                </button>
+                <button type="button" class="sim-preset-btn" id="btnPresetRole" onclick="loadMassPreset('role')" style="border-color:rgba(239,68,68,0.4); color:#f87171;">
+                  <span class="preset-icon">⚡</span><span class="preset-label">Privilege Escalation (role: "admin")</span>
+                </button>
+                <button type="button" class="sim-preset-btn" id="btnPresetMoney" onclick="loadMassPreset('money')" style="border-color:rgba(245,158,11,0.4); color:#fbbf24;">
+                  <span class="preset-icon">💸</span><span class="preset-label">Financial Tamper (balance: 99999)</span>
+                </button>
+                <button type="button" class="sim-preset-btn" id="btnPresetVerify" onclick="loadMassPreset('verify')" style="border-color:rgba(168,85,247,0.5); color:#c084fc;">
+                  <span class="preset-icon">🛡️</span><span class="preset-label">VIP Bypass (is_verified: true)</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Dynamic Alert Banner -->
+            <div id="mass-alert-banner" style="display:block; padding:12px 16px; border-radius:var(--radius-sm); margin-bottom:1.2rem; font-size:0.88rem; line-height:1.5; background:rgba(52, 211, 153, 0.1); border:1px solid rgba(52, 211, 153, 0.3); border-left:4px solid #34d399; color:#6ee7b7;">
+              ✅ <strong>Legitimate Update:</strong> Standard bio update processed. Only permissible user fields modified.
+            </div>
+
+            <!-- Split Console: Request Payload on Left vs Database State & API Response on Right -->
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap:1.2rem;">
+              <!-- Left Console: Interactive HTTP Request with Colorful JSON -->
+              <div style="background:rgba(15,23,42,0.85); border:1px solid rgba(255,255,255,0.08); border-radius:var(--radius-md); padding:1.1rem; display:flex; flex-direction:column;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                  <div style="font-size:0.75rem; color:#38bdf8; font-family:var(--font-mono); font-weight:700; display:flex; align-items:center; gap:6px;">
+                    <span style="width:8px; height:8px; border-radius:50%; background:#38bdf8; display:inline-block; box-shadow:0 0 8px rgba(56,189,248,0.8);"></span>
+                    <span>HTTP REQUEST PAYLOAD (PUT /api/v1/users/1001)</span>
+                  </div>
+                  <div style="display:flex; gap:6px;">
+                    <button type="button" id="tabReqViewHighlight" class="lab-mode-tab-btn active" onclick="switchReqView('highlight')" title="View colorful syntax-highlighted request">⚡ Highlighted</button>
+                    <button type="button" id="tabReqViewEdit" class="lab-mode-tab-btn" onclick="switchReqView('edit')" title="Directly edit request JSON">✏️ Edit JSON</button>
+                  </div>
+                </div>
+
+                <!-- Highlighted View (Active by default) -->
+                <pre id="labRequestBox" style="width:100%; height:190px; background:#070d1a; border:1px solid rgba(56, 189, 248, 0.25); border-radius:4px; font-family:var(--font-mono); font-size:0.82rem; padding:10px; overflow:auto; margin:0 0 14px 0; box-sizing:border-box; line-height:1.5; color:#f1f5f9;"></pre>
+
+                <!-- Raw Editable View (Hidden by default, toggled via Edit button) -->
+                <textarea id="labJsonInput" style="display:none; width:100%; height:190px; background:#070d1a; border:1px solid rgba(56, 189, 248, 0.35); color:#38bdf8; font-family:var(--font-mono); font-size:0.84rem; padding:10px; border-radius:4px; box-sizing:border-box; margin-bottom:14px; resize:vertical; line-height:1.5;" oninput="syncReqHighlight()"></textarea>
+
+                <button type="button" class="btn-send" onclick="executeMassLabTest()" style="width:100%; justify-content:center; padding:10px; font-size:0.9rem; margin-top:auto;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                  Send PUT Request to API (Trigger Auto-Binding)
+                </button>
+              </div>
+
+              <!-- Right Console: Backend Database Record & Response with Colorful JSON -->
+              <div style="background:rgba(15,23,42,0.85); border:1px solid rgba(255,255,255,0.08); border-radius:var(--radius-md); padding:1.1rem; display:flex; flex-direction:column;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                  <div style="font-size:0.75rem; color:#34d399; font-family:var(--font-mono); font-weight:700; display:flex; align-items:center; gap:6px;">
+                    <span style="width:8px; height:8px; border-radius:50%; background:#34d399; display:inline-block; box-shadow:0 0 8px rgba(52,211,153,0.8);"></span>
+                    <span>DATABASE RECORD STATE (POST-BINDING)</span>
+                  </div>
+                  <span id="labStatusBadge" style="font-weight:700; color:#34d399; font-family:var(--font-mono); font-size:0.75rem;">HTTP/1.1 200 OK</span>
+                </div>
+
+                <pre id="labResponseBox" style="width:100%; height:190px; background:#070d1a; border:1px solid rgba(52, 211, 153, 0.25); border-radius:4px; color:#f1f5f9; font-family:var(--font-mono); font-size:0.82rem; padding:10px; overflow:auto; margin:0; box-sizing:border-box; line-height:1.5;"></pre>
+
+                <!-- Explanation Box -->
+                <div id="labExplanationBox" style="margin-top:14px; padding:12px 14px; background:rgba(15,23,42,0.9); border:1px solid rgba(56,189,248,0.25); border-left:4px solid #38bdf8; border-radius:var(--radius-sm); font-size:0.84rem; color:#f1f5f9; line-height:1.55;">
+                  Select an attack preset or inject custom properties (e.g. <code>"role": "admin"</code>) in the JSON editor to see how unvalidated parameters directly alter database state!
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           TAB 7: FREQUENTLY ASKED QUESTIONS
+           ==================================================================== -->
+      <div class="tab-content" id="tab-questions">
+        <div class="card-panel">
+          <div class="card-title-badge-row">
+            <div class="blue-circle-num">7</div>
+            <h2 class="panel-header-title">
+              <span class="lang-hi">Frequently Asked Questions (FAQ)</span>
+              <span class="lang-en">Frequently Asked Questions (FAQ)</span>
+            </h2>
+          </div>
+
+          <p class="panel-body-text">
+            <span class="lang-hi">Top security interviews aur certifications (OSCP, CEH, API Pentesting) me puche jane wale Mass Assignment ke core questions:</span>
+            <span class="lang-en">Critical interview and certification questions covering Mass Assignment &amp; Parameter Tampering:</span>
+          </p>
+
+          <div class="faq-grid" style="display:flex; flex-direction:column; gap:1.2rem; margin-top:1.5rem;">
+            <!-- FAQ 1 -->
+            <div class="hw-step-box step-1">
+              <h4>
+                <span class="lang-hi">Q1: Mass Assignment aur BFLA me kya difference hota hai?</span>
+                <span class="lang-en">Q1: What is the fundamental difference between Mass Assignment and BFLA?</span>
+              </h4>
+              <p>
+                <span class="lang-hi"><strong>Answer:</strong> <strong>BFLA (Broken Function Level Authorization):</strong> Attacker direct kisi sensitive administrative endpoint (jaise <code>DELETE /api/admin/users/5</code>) ko invoke karta hai kyunki endpoint par functional permission check gayab hota hai.<br><br><strong>Mass Assignment:</strong> Attacker usi normal public endpoint (jaise <code>PUT /api/profile</code>) ko call karta hai jiska permission uske paas hota hai, lekin request body ke andar extra unauthorized parameters (jaise <code>"role": "admin"</code>) inject kar deta hai jise server ka ORM bina filter kiye database me bind kar leta hai.</span>
+                <span class="lang-en"><strong>Answer:</strong> In <strong>BFLA (Broken Function Level Authorization)</strong>, an attacker directly invokes a restricted administrative endpoint (e.g. <code>DELETE /api/admin/users/5</code>) due to missing functional permission checks. In <strong>Mass Assignment</strong>, the attacker calls an endpoint they legitimately have access to (e.g. <code>PUT /api/profile</code>), but injects unauthorized properties (e.g. <code>"role": "admin"</code>) that the backend ORM blindly binds to the database.</span>
+              </p>
+            </div>
+
+            <!-- FAQ 2 -->
+            <div class="hw-step-box step-2">
+              <h4>
+                <span class="lang-hi">Q2: Kya frontend form me fields hide ya disable kar dena Mass Assignment se bacha sakta hai?</span>
+                <span class="lang-en">Q2: Does hiding or disabling fields in the client-side UI prevent Mass Assignment?</span>
+              </h4>
+              <p>
+                <span class="lang-hi"><strong>Answer:</strong> <strong>Bilkul nahi!</strong> Frontend security kabhi bhi security boundary nahi hoti. Attacker browser UI use hi nahi karta; wo Burp Suite, Postman ya cURL script se raw HTTP requests bhejta hai. Backend API par aane wali har request ko independently validate, sanitize aur strictly whitelist karna mandatory hai.</span>
+                <span class="lang-en"><strong>Answer:</strong> <strong>Absolutely not!</strong> Client-side enforcement is never a security boundary. Attackers bypass browser interfaces entirely using HTTP clients like Burp Suite, Postman, or cURL. The backend API must independently validate, sanitize, and strictly whitelist all incoming fields.</span>
+              </p>
+            </div>
+
+            <!-- FAQ 3 -->
+            <div class="hw-step-box step-3">
+              <h4>
+                <span class="lang-hi">Q3: Attacker ko backend ke hidden database columns ka naam kaise pata chalta hai?</span>
+                <span class="lang-en">Q3: How do attackers discover internal database column names to inject?</span>
+              </h4>
+              <p>
+                <span class="lang-hi"><strong>Answer:</strong> (1) <strong>API Schema Leak:</strong> Swagger/OpenAPI docs (<code>/docs</code>, <code>/swagger.json</code>) me full database model expose hota hai.<br>(2) <strong>GET Request Response:</strong> Jab user profile fetch karta hai (<code>GET /profile</code>), toh server response me <code>{"role": "user", "is_verified": false, "balance": 50}</code> bhejta hai. Attacker wahi keys PUT request me wapas bhej kar value change kar deta hai.<br>(3) <strong>Fuzzing &amp; Guessing:</strong> Standard wordlists (SecLists) me <code>role, admin, is_admin, approved, verified, plan, tier</code> jaise 100 common field names hote hain jinhe automated tools se test kiya jata hai.</span>
+                <span class="lang-en"><strong>Answer:</strong> (1) <strong>API Schema Leaks:</strong> Public Swagger/OpenAPI documentation (<code>/docs</code>, <code>/openapi.json</code>) often displays internal data models.<br>(2) <strong>Reflective GET Responses:</strong> Fetching account details (<code>GET /profile</code>) frequently reveals internal property names (<code>{"role": "user", "is_verified": false, "balance": 50}</code>) which can be replayed in PUT/PATCH bodies.<br>(3) <strong>Parameter Fuzzing:</strong> Standard security wordlists (e.g., SecLists) contain popular administrative parameter names (<code>role, is_admin, verified, tier, balance</code>) used in automated brute-forcing.</span>
+              </p>
+            </div>
+
+            <!-- FAQ 4 -->
+            <div class="hw-step-box step-4">
+              <h4>
+                <span class="lang-hi">Q4: Kya Blacklisting (unwanted fields ko delete karna) achha solution hai?</span>
+                <span class="lang-en">Q4: Is blacklisting (manually deleting prohibited keys) an effective defense?</span>
+              </h4>
+              <p>
+                <span class="lang-hi"><strong>Answer:</strong> <strong>Nahi, Blacklisting dangerous aur fragile hai!</strong> Agar aap sirf <code>delete req.body.role</code> karte hain, toh kal koi naya developer database me <code>is_superuser</code> ya <code>account_balance</code> column add karega, aur wo blacklist se chhoot jayega! Security best practice hamesha <strong>Whitelisting (Strict Allowlist)</strong> hoti hai—sirf vahi accept karo jo explicitly allowed hai.</span>
+                <span class="lang-en"><strong>Answer:</strong> <strong>No, blacklisting is dangerous and error-prone!</strong> If you only sanitize known fields like <code>delete req.body.role</code>, any newly added database column (e.g., <code>is_superuser, tier, credits</code>) will bypass the check by default. Industry best practice mandates <strong>Strict Whitelisting (Allowlisting)</strong>—only explicit, pre-approved fields are permitted into the ORM.</span>
+              </p>
+            </div>
+
+            <!-- FAQ 5 -->
+            <div class="hw-step-box step-5">
+              <h4>
+                <span class="lang-hi">Q5: DTO pattern kya hota hai aur ye Mass Assignment ko kaise 100% rokta hai?</span>
+                <span class="lang-en">Q5: What is the DTO pattern and how does it prevent Mass Assignment?</span>
+              </h4>
+              <p>
+                <span class="lang-hi"><strong>Answer:</strong> <strong>DTO (Data Transfer Object):</strong> Ye ek aisi class ya schema hoti hai jo sirf client se aane wale data ka shape define karti hai, database table ka nahi. Jaise Database table me 25 columns hain, lekin <code>UserProfileUpdateDTO</code> me sirf 2 fields hain: <code>name</code> aur <code>bio</code>. Jab client extra fields bhejta hai, toh DTO unhe filter karke drop kar deta hai, isliye database tak koi sensitive property kabhi pahunch hi nahi pati.</span>
+                <span class="lang-en"><strong>Answer:</strong> A <strong>Data Transfer Object (DTO)</strong> is an explicit data contract defining precisely which attributes an endpoint accepts, completely decoupled from internal database schemas. Even if a user table has 25 columns, a <code>UserProfileUpdateDTO</code> only permits <code>name</code> and <code>bio</code>. Any undeclared parameters sent in the HTTP payload are immediately stripped before reaching the ORM.</span>
+              </p>
+            </div>
+
+            <!-- FAQ 6 -->
+            <div class="hw-step-box step-1">
+              <h4>
+                <span class="lang-hi">Q6: Mass Assignment ko automated tools (SAST / DAST) kaise detect karte hain?</span>
+                <span class="lang-en">Q6: How do automated tools (SAST and DAST) identify Mass Assignment?</span>
+              </h4>
+              <p>
+                <span class="lang-hi"><strong>Answer:</strong> <strong>SAST (Semgrep, SonarQube):</strong> Source code scan karke check karte hain ki kya request body directly ORM methods (jaise <code>User.update(req.body)</code>) me pass ho rahi hai bina kisi DTO validation ke.<br><br><strong>DAST (Burp Suite, OWASP ZAP):</strong> Profile update aur registration endpoints par standard privilege parameters inject karke response inspect karte hain ki kya profile state modify hui.</span>
+                <span class="lang-en"><strong>Answer:</strong> <strong>SAST Tools (Semgrep, SonarQube):</strong> Perform static analysis on source code to detect when raw incoming request bodies are bound directly to database entities without intermediate DTO validation.<br><br><strong>DAST Tools (Burp Suite, OWASP ZAP):</strong> Dynamically inject administrative parameter variations into JSON request bodies and verify if subsequent responses or user profiles reflect privilege escalation.</span>
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           GLOBAL FOOTER (STANDARDIZED)
+           ==================================================================== -->
+      <footer class="app-footer-custom">
+        <div class="footer-divider-glow"></div>
+        <div class="footer-inner-content">
+          <div class="footer-brand-row">
+            <div class="footer-badge-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                <path d="m9 12 2 2 4-4"/>
+              </svg>
+            </div>
+            <div class="footer-author-text">
+              <span class="footer-credit-label">Designed and Developed by</span>
+              <span class="footer-author-name">Irshad Akaram</span>
+            </div>
+          </div>
+        </div>
+      </footer>
+
+    </main>
+  </div>
+
+  <!-- Scripts -->
+  <script src="assets/js/main.js"></script>
+  <script>
+    /* ==========================================================================
+       Module 05: Mass Assignment Interactive Logic
+       ========================================================================== */
+
+    // Tab Navigation
+    document.querySelectorAll('.tab-underline-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetTab = btn.getAttribute('data-tab');
+        document.querySelectorAll('.tab-underline-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        const activeContent = document.getElementById(targetTab);
+        if (activeContent) activeContent.classList.add('active');
+      });
+    });
+
+    // Hero Widget Attack Flow Toggle
+    const btnMassNormal = document.getElementById('btnMassNormal');
+    const btnMassExploit = document.getElementById('btnMassExploit');
+    const massTargetRole = document.getElementById('massTargetRole');
+    const massTargetPlan = document.getElementById('massTargetPlan');
+    const massTargetNote = document.getElementById('massTargetNote');
+    const massTargetStatus = document.getElementById('massTargetStatus');
+    const massBadgeTo = document.getElementById('massBadgeTo');
+    const massFlowStateText = document.getElementById('massFlowStateText');
+    const massVerb = document.getElementById('massVerb');
+    const massBeamParticle = document.getElementById('massBeamParticle');
+
+    function setHeroMode(mode) {
+      if (mode === 'normal') {
+        btnMassNormal.classList.add('active');
+        btnMassExploit.classList.remove('active', 'exploit');
+        massTargetRole.innerHTML = 'Role: <code style="color:#38bdf8;">"user"</code>';
+        massTargetPlan.innerHTML = 'Tier: <code>standard</code>';
+        massTargetNote.innerHTML = '✅ Normal profile update (bio only)';
+        massTargetNote.style.color = '#34d399';
+        massTargetStatus.className = 'target-pill-status secure';
+        massTargetStatus.innerText = 'HTTP 200';
+        massBadgeTo.className = 'swap-id-badge from';
+        massBadgeTo.innerText = 'bio: "Hello"';
+        massFlowStateText.innerText = 'Safe Whitelisted Binding';
+        massFlowStateText.style.color = '#34d399';
+        massVerb.style.color = '#38bdf8';
+        if (massBeamParticle) massBeamParticle.className = 'flow-beam-particle';
+      } else {
+        btnMassExploit.classList.add('active', 'exploit');
+        btnMassNormal.classList.remove('active');
+        massTargetRole.innerHTML = 'Role: <code style="color:#ef4444; font-weight:700;">"admin"</code>';
+        massTargetPlan.innerHTML = 'Tier: <code>enterprise</code>';
+        massTargetNote.innerHTML = '🚨 Privilege Escalated to Admin';
+        massTargetNote.style.color = '#ef4444';
+        massTargetStatus.className = 'target-pill-status breach';
+        massTargetStatus.innerText = 'HTTP 200';
+        massBadgeTo.className = 'swap-id-badge to';
+        massBadgeTo.innerText = 'role: "admin"';
+        massFlowStateText.innerText = 'Blind ORM Auto-Binding';
+        massFlowStateText.style.color = '#ef4444';
+        massVerb.style.color = '#ef4444';
+        if (massBeamParticle) massBeamParticle.className = 'flow-beam-particle exploit';
+      }
+    }
+
+    if (btnMassNormal) btnMassNormal.addEventListener('click', () => setHeroMode('normal'));
+    if (btnMassExploit) btnMassExploit.addEventListener('click', () => setHeroMode('exploit'));
+
+    // Copy Term Code helper
+    function copyTerm(btn) {
+      const parent = btn.closest('.terminal-box') || btn.closest('.compare-box');
+      if (!parent) return;
+      const pre = parent.querySelector('pre');
+      if (!pre) return;
+      navigator.clipboard.writeText(pre.innerText).then(() => {
+        const orig = btn.innerText;
+        btn.innerText = 'Copied!';
+        btn.style.color = '#34d399';
+        setTimeout(() => {
+          btn.innerText = orig;
+          btn.style.color = '';
+        }, 1800);
+      });
+    }
+
+    // ==========================================
+    // Interactive Lab Simulator Logic
+    // ==========================================
+    let activeMassPreset = 'normal';
+
+    const massPresets = {
+      normal: {
+        body: {
+          name: "Irshad",
+          bio: "Cybersecurity Pentester & Bug Hunter",
+          phone: "+91-9876543210"
+        }
+      },
+      role: {
+        body: {
+          name: "Irshad",
+          bio: "Cybersecurity Pentester & Bug Hunter",
+          role: "admin"
+        }
+      },
+      money: {
+        body: {
+          name: "Irshad",
+          bio: "Cybersecurity Pentester & Bug Hunter",
+          wallet_balance: 99999
+        }
+      },
+      verify: {
+        body: {
+          name: "Irshad",
+          bio: "Cybersecurity Pentester & Bug Hunter",
+          is_verified: true,
+          plan: "enterprise"
+        }
+      }
+    };
+
+    // Colorful JSON Syntax Highlighter
+    function syntaxHighlightJSON(json) {
+      if (typeof json !== 'string') {
+        json = JSON.stringify(json, null, 2);
+      }
+      json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      return json.replace(/("(\u[a-zA-Z0-9]{4}|\[^u]|[^\"])*"(\s*:)?|(true|false|null)|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?|[{}\[\],])/g, function (match) {
+        if (/^"/.test(match)) {
+          if (/:$/.test(match)) {
+            const keyText = match.slice(0, -1);
+            let color = '#38bdf8'; // sky cyan
+            if (/role|wallet|balance|verified|plan|total|paid/i.test(keyText)) {
+              color = '#f87171'; // red for sensitive/injected parameters
+            }
+            return '<span class="t-key" style="color:' + color + '; font-weight:600;">' + keyText + '</span><span class="t-op">:</span>';
+          } else {
+            let style = 'color:#a3e635;'; // lime green
+            if (/admin|enterprise|COMPROMISED|EXPLOIT/i.test(match)) {
+              style = 'color:#f87171; font-weight:700; background:rgba(239,68,68,0.15); padding:1px 4px; border-radius:3px;';
+            } else if (/ACTIVE|PAID/i.test(match)) {
+              style = 'color:#34d399; font-weight:700;';
+            }
+            return '<span class="t-str" style="' + style + '">' + match + '</span>';
+          }
+        } else if (/true|false/.test(match)) {
+          const bColor = match === 'true' ? '#ef4444; font-weight:700; background:rgba(239,68,68,0.15); padding:1px 4px; border-radius:3px;' : '#c084fc; font-weight:700;';
+          return '<span class="t-bool" style="color:' + bColor + '">' + match + '</span>';
+        } else if (/null/.test(match)) {
+          return '<span style="color:#ef4444; font-weight:700;">' + match + '</span>';
+        } else if (/[{}\[\],]/.test(match)) {
+          return '<span class="t-op" style="color:#94a3b8;">' + match + '</span>';
+        }
+        // Numbers
+        const numVal = parseFloat(match);
+        const numStyle = (numVal > 1000) ? 'color:#fbbf24; font-weight:700; background:rgba(245,158,11,0.15); padding:1px 4px; border-radius:3px;' : 'color:#f472b6;';
+        return '<span class="t-num" style="' + numStyle + '">' + match + '</span>';
+      });
+    }
+
+    function renderHighlightedRequest(bodyObj) {
+      const reqBox = document.getElementById('labRequestBox');
+      if (!reqBox) return;
+      const verb = '<span class="t-verb">PUT</span>';
+      const path = '<span class="t-path">/api/v1/users/1001</span>';
+      const proto = '<span class="t-proto">HTTP/1.1</span>';
+      const host = '<span class="t-head">Host:</span> <span class="t-str">api.enterprise.internal</span>';
+      const auth = '<span class="t-head">Authorization:</span> <span class="t-str">Bearer eyJhbGciOi...[Irshad_Session_1001]</span>';
+      const ctype = '<span class="t-head">Content-Type:</span> <span class="t-str">application/json</span>';
+
+      const jsonColored = syntaxHighlightJSON(bodyObj);
+      reqBox.innerHTML = verb + ' ' + path + ' ' + proto + '\n' + host + '\n' + auth + '\n' + ctype + '\n\n' + jsonColored;
+    }
+
+    function syncReqHighlight() {
+      const raw = document.getElementById('labJsonInput').value.trim();
+      try {
+        const parsed = JSON.parse(raw);
+        renderHighlightedRequest(parsed);
+      } catch (e) {
+        const reqBox = document.getElementById('labRequestBox');
+        if (reqBox) {
+          reqBox.innerHTML = '<span style="color:#ef4444;">// JSON Syntax Error:\n' + e.message + '</span>\n\n<span style="color:#94a3b8;">' + raw.replace(/</g, '&lt;') + '</span>';
+        }
+      }
+    }
+
+    function switchReqView(mode) {
+      const reqBox = document.getElementById('labRequestBox');
+      const txtInput = document.getElementById('labJsonInput');
+      const btnH = document.getElementById('tabReqViewHighlight');
+      const btnE = document.getElementById('tabReqViewEdit');
+
+      if (mode === 'edit') {
+        if (reqBox) reqBox.style.display = 'none';
+        if (txtInput) txtInput.style.display = 'block';
+        if (btnH) btnH.classList.remove('active');
+        if (btnE) btnE.classList.add('active');
+        if (txtInput) txtInput.focus();
+      } else {
+        syncReqHighlight();
+        if (txtInput) txtInput.style.display = 'none';
+        if (reqBox) reqBox.style.display = 'block';
+        if (btnE) btnE.classList.remove('active');
+        if (btnH) btnH.classList.add('active');
+      }
+    }
+
+    function loadMassPreset(presetKey) {
+      activeMassPreset = presetKey;
+      document.querySelectorAll('.sim-preset-btn').forEach(b => b.classList.remove('active', 'active-preset'));
+      const activeBtn = document.getElementById({
+        normal: 'btnPresetNormal',
+        role: 'btnPresetRole',
+        money: 'btnPresetMoney',
+        verify: 'btnPresetVerify'
+      }[presetKey]);
+      if (activeBtn) activeBtn.classList.add('active');
+
+      const data = massPresets[presetKey];
+      if (data) {
+        document.getElementById('labJsonInput').value = JSON.stringify(data.body, null, 2);
+        renderHighlightedRequest(data.body);
+      }
+      executeMassLabTest();
+    }
+
+    function executeMassLabTest() {
+      const inputRaw = document.getElementById('labJsonInput').value.trim();
+      const statusBadge = document.getElementById('labStatusBadge');
+      const respBox = document.getElementById('labResponseBox');
+      const explBox = document.getElementById('labExplanationBox');
+      const alertBanner = document.getElementById('mass-alert-banner');
+      const currentRoleEl = document.getElementById('labCurrentRole');
+      const currentBalanceEl = document.getElementById('labCurrentBalance');
+
+      if (statusBadge) {
+        statusBadge.innerHTML = '<span style="color:#fbbf24;">Executing ORM Auto-Binding...</span>';
+      }
+
+      setTimeout(() => {
+        let parsed;
+        try {
+          parsed = JSON.parse(inputRaw);
+          renderHighlightedRequest(parsed);
+        } catch (e) {
+          if (statusBadge) statusBadge.innerHTML = '<span style="color:#ef4444;">HTTP/1.1 400 Bad Request</span>';
+          if (respBox) respBox.innerHTML = syntaxHighlightJSON({ error: "Bad Request", message: "Malformed JSON payload syntax" });
+          if (alertBanner) {
+            alertBanner.style.background = 'rgba(239, 68, 68, 0.12)';
+            alertBanner.style.border = '1px solid rgba(239, 68, 68, 0.35)';
+            alertBanner.style.borderLeft = '4px solid #ef4444';
+            alertBanner.style.color = '#fca5a5';
+            alertBanner.innerHTML = '❌ <strong>Invalid JSON:</strong> Please fix the JSON syntax to test.';
+          }
+          return;
+        }
+
+        // Base database record for user Irshad
+        let dbRecord = {
+          user_id: 1001,
+          username: "irshad_sec",
+          name: parsed.name || "Irshad",
+          bio: parsed.bio || "Cybersecurity Enthusiast",
+          phone: parsed.phone || "+91-9876543210",
+          role: "user",
+          wallet_balance: 50.00,
+          is_verified: false,
+          plan: "free",
+          account_status: "ACTIVE"
+        };
+
+        let hasExploit = false;
+        let exploitMessage = "";
+        let bannerText = "";
+
+        // Check for unauthorized mass assignment injections
+        if (parsed.role !== undefined && parsed.role !== "user") {
+          dbRecord.role = parsed.role;
+          hasExploit = true;
+          exploitMessage += `<strong>🚨 Privilege Escalation:</strong> Injected property <code>"role": "${parsed.role}"</code> was auto-bound into the database record without admin verification!<br>`;
+          bannerText = `🚨 <strong>CRITICAL MASS ASSIGNMENT:</strong> User escalated privileges to <code>"${parsed.role}"</code>!`;
+        }
+
+        if (parsed.wallet_balance !== undefined && parsed.wallet_balance != 50) {
+          dbRecord.wallet_balance = parseFloat(parsed.wallet_balance);
+          hasExploit = true;
+          exploitMessage += `<strong>💸 Financial Tampering:</strong> Injected property <code>"wallet_balance": ${parsed.wallet_balance}</code> directly modified the database ledger!<br>`;
+          bannerText = `🚨 <strong>FINANCIAL OVERWRITE:</strong> Wallet balance manipulated to $${parsed.wallet_balance}!`;
+        }
+
+        if (parsed.is_verified === true || parsed.email_verified === true) {
+          dbRecord.is_verified = true;
+          hasExploit = true;
+          exploitMessage += `<strong>🛡️ Verification Bypass:</strong> Injected property <code>"is_verified": true</code> bypassed identity verification!<br>`;
+          if (!bannerText) bannerText = `🚨 <strong>VERIFICATION BYPASS:</strong> Account verification bypassed via client JSON!`;
+        }
+
+        if (parsed.plan && parsed.plan !== "free") {
+          dbRecord.plan = parsed.plan;
+          hasExploit = true;
+          exploitMessage += `<strong>⭐ VIP Tier Bypass:</strong> Upgraded subscription plan to <code>"${parsed.plan}"</code> without billing!<br>`;
+        }
+
+        // Update active session indicators
+        if (currentRoleEl) {
+          currentRoleEl.innerText = dbRecord.role;
+          currentRoleEl.style.color = dbRecord.role === 'admin' ? '#ef4444' : '#38bdf8';
+        }
+        if (currentBalanceEl) {
+          currentBalanceEl.innerText = `$${dbRecord.wallet_balance}`;
+          currentBalanceEl.style.color = dbRecord.wallet_balance > 50 ? '#34d399' : '#cbd5e1';
+        }
+
+        if (hasExploit) {
+          if (statusBadge) statusBadge.innerHTML = '<span style="color:#ef4444;">HTTP/1.1 200 OK (🚨 EXPLOIT SUCCESSFUL)</span>';
+          if (alertBanner) {
+            alertBanner.style.background = 'rgba(239, 68, 68, 0.12)';
+            alertBanner.style.border = '1px solid rgba(239, 68, 68, 0.35)';
+            alertBanner.style.borderLeft = '4px solid #ef4444';
+            alertBanner.style.color = '#fca5a5';
+            alertBanner.innerHTML = bannerText;
+          }
+          if (explBox) {
+            explBox.innerHTML = `${exploitMessage} The vulnerable backend executed <code>User.update(where={id: 1001}, data=req.body)</code> without DTO whitelisting. The database record was compromised!`;
+          }
+        } else {
+          if (statusBadge) statusBadge.innerHTML = '<span style="color:#34d399;">HTTP/1.1 200 OK (Standard Update)</span>';
+          if (alertBanner) {
+            alertBanner.style.background = 'rgba(52, 211, 153, 0.1)';
+            alertBanner.style.border = '1px solid rgba(52, 211, 153, 0.3)';
+            alertBanner.style.borderLeft = '4px solid #34d399';
+            alertBanner.style.color = '#6ee7b7';
+            alertBanner.innerHTML = '✅ <strong>Legitimate Update:</strong> Standard profile fields updated. No unauthorized database columns modified.';
+          }
+          if (explBox) {
+            explBox.innerHTML = '<strong>✅ Safe Operation:</strong> Only permissible fields (<code>name</code>, <code>bio</code>, <code>phone</code>) were updated. No privileged attributes were altered in the database record.';
+          }
+        }
+
+        if (respBox) respBox.innerHTML = syntaxHighlightJSON(dbRecord);
+      }, 150);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadMassPreset('normal');
+    });
+  </script>
+</body>
+</html>

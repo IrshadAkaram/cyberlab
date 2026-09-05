@@ -1,0 +1,3007 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JWT Vulnerabilities | API Security Notes</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Sora:wght@400;500;600;700;800&family=Fira+Code:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="assets/css/style.css">
+
+  <style>
+    /* ==========================================================================
+       Module 02: BFLA Custom Styling - High Contrast Cyber Theme
+       ========================================================================== */
+    body {
+      background: #040814;
+      color: #e2e8f0;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      overflow-y: visible;
+      font-family: var(--font-sans);
+    }
+
+    /* Master Layout: Sidebar + Main Area */
+    .app-dashboard-layout {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* Left Sidebar */
+    .dashboard-sidebar {
+      width: 280px;
+      background: #070d1c;
+      border-right: 1px solid rgba(255, 255, 255, 0.07);
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      position: sticky;
+      top: 0;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #1e293b transparent;
+    }
+
+    .sidebar-header {
+      padding: 1.5rem 1.4rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .sidebar-brand-title {
+      font-family: var(--font-heading);
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.02em;
+    }
+    .sidebar-brand-title span {
+      color: #38bdf8;
+    }
+
+    .sidebar-section-heading {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #64748b;
+      padding: 0.8rem 1.4rem 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .vuln-nav-list {
+      list-style: none;
+      padding: 0 0.8rem;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin: 0;
+    }
+
+    .vuln-nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      border-radius: var(--radius-pill);
+      color: #cbd5e1;
+      text-decoration: none;
+      font-size: 0.86rem;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .vuln-nav-item:hover {
+      background: rgba(255, 255, 255, 0.04);
+      color: #f1f5f9;
+    }
+
+    .vuln-nav-item.active {
+      background: #1d4ed8;
+      color: #ffffff;
+      font-weight: 700;
+      box-shadow: 0 4px 14px rgba(29, 78, 216, 0.4);
+    }
+
+    .nav-num-badge {
+      font-size: 0.72rem;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 2px 7px;
+      border-radius: var(--radius-pill);
+      color: inherit;
+    }
+
+    .vuln-nav-item.active .nav-num-badge {
+      background: rgba(0, 0, 0, 0.25);
+      color: #fff;
+    }
+
+    /* Main Content Body */
+    .dashboard-main {
+      flex: 1;
+      padding: 1.4rem 2.4rem 0;
+      max-width: 1480px;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* Top Action Bar */
+    .main-top-actionbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      padding-bottom: 12px;
+    }
+
+    /* Header Hero Grid */
+    .hero-top-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 1fr;
+      gap: 1.8rem;
+      margin-bottom: 1.4rem;
+      align-items: center;
+    }
+
+    @media (max-width: 1024px) {
+      .hero-top-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+      }
+    }
+
+    .category-tag-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 0.75rem;
+    }
+
+    .pill-index-tag {
+      font-family: var(--font-mono);
+      background: #0284c7;
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.75rem;
+      padding: 2px 8px;
+      border-radius: var(--radius-pill);
+    }
+
+    .pill-category-name {
+      color: #cbd5e1;
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+
+    .main-vuln-h1 {
+      font-family: var(--font-heading);
+      font-size: 2.35rem;
+      font-weight: 800;
+      line-height: 1.2;
+      color: #ffffff;
+      margin-bottom: 0.6rem;
+      letter-spacing: -0.02em;
+    }
+
+    .main-vuln-h1 span.title-blue {
+      color: #38bdf8;
+    }
+
+    .main-vuln-desc {
+      font-size: 1.05rem;
+      color: #f1f5f9;
+      margin-bottom: 1.2rem;
+      line-height: 1.6;
+    }
+
+    /* Meta Badges */
+    .meta-tags-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 1.2rem;
+    }
+
+    .meta-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 10px;
+      border-radius: var(--radius-pill);
+      font-size: 0.74rem;
+      white-space: nowrap;
+      font-weight: 600;
+    }
+
+    .meta-chip.danger {
+      background: rgba(239, 68, 68, 0.12);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.35);
+    }
+
+    .meta-chip.info {
+      background: rgba(56, 189, 248, 0.12);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.35);
+    }
+
+    .meta-chip.purple {
+      background: rgba(168, 85, 247, 0.14);
+      color: #c084fc;
+      border: 1px solid rgba(168, 85, 247, 0.35);
+    }
+
+    /* Quote Bubble */
+    .quote-bubble {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      border-radius: var(--radius-md);
+      padding: 0.75rem 1.2rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #bae6fd;
+      font-size: 0.88rem;
+    }
+
+    .quote-icon-box {
+      width: 26px;
+      height: 26px;
+      background: #0284c7;
+      color: #fff;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      font-weight: bold;
+      flex-shrink: 0;
+    }
+
+    /* Hero Glass Graphic */
+    .hero-glass-graphic {
+      background: rgba(7, 14, 30, 0.90);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(56, 189, 248, 0.28);
+      border-radius: var(--radius-lg);
+      padding: 1.15rem 1.3rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 30px rgba(56, 189, 248, 0.1);
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      max-width: 530px;
+      margin-left: auto;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .attacker-graphic-node {
+      text-align: center;
+    }
+
+    .attacker-avatar-circle {
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      background: rgba(239, 68, 68, 0.12);
+      border: 1.5px solid #ef4444;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      margin: 0 auto 6px;
+      box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
+    }
+
+    .attacker-label {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #f87171;
+    }
+    .attacker-sub {
+      font-size: 0.72rem;
+      color: #cbd5e1;
+    }
+
+    .graphic-center-flow {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .graphic-url-pill {
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      padding: 5px 12px;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+    }
+    .graphic-url-pill .m-verb { color: #f43f5e; font-weight: 700; }
+    .graphic-url-pill .m-path { color: #f1f5f9; }
+
+    .graphic-swap-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .swap-id-badge {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: var(--radius-sm);
+    }
+    .swap-id-badge.from { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
+    .swap-id-badge.to { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+
+    .target-profile-card {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: var(--radius-md);
+      padding: 0.85rem 1rem;
+      text-align: left;
+      min-width: 170px;
+      max-width: 175px;
+      box-sizing: border-box;
+      flex-shrink: 0;
+    }
+
+    .target-profile-card h4 {
+      font-size: 0.92rem;
+      color: #fff;
+      margin-bottom: 2px;
+      font-weight: 700;
+    }
+    .target-profile-card p {
+      font-size: 0.74rem;
+      color: #e2e8f0;
+      font-family: var(--font-mono);
+      margin: 1px 0;
+      white-space: nowrap;
+    }
+
+    .unauth-note {
+      font-size: 0.68rem;
+      color: #f87171;
+      margin-top: 5px;
+      display: block;
+      font-weight: 600;
+      line-height: 1.25;
+    }
+
+    /* Dual Language Switcher */
+    .lang-switch-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 3px 8px;
+      border-radius: var(--radius-pill);
+    }
+
+    .lang-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #cbd5e1;
+      cursor: pointer;
+      user-select: none;
+      transition: color 0.2s;
+    }
+    .lang-label.active {
+      color: #38bdf8;
+      font-weight: 700;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 28px;
+      height: 16px;
+    }
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #1e293b;
+      transition: .3s;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 10px;
+      width: 10px;
+      left: 2px;
+      bottom: 2px;
+      background-color: #38bdf8;
+      transition: .3s;
+      border-radius: 50%;
+    }
+    input:checked + .slider {
+      background-color: #0284c7;
+    }
+    input:checked + .slider:before {
+      transform: translateX(12px);
+      background-color: #fff;
+    }
+
+    /* Navigation Tabs */
+    .tabs-underline-nav {
+      display: flex;
+      gap: 1.8rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      margin-bottom: 1.8rem;
+      overflow-x: scroll !important;
+      scrollbar-gutter: stable;
+      scrollbar-width: thin;
+      scrollbar-color: #38bdf8 rgba(255, 255, 255, 0.1);
+      padding-bottom: 8px;
+      -webkit-overflow-scrolling: touch;
+      scroll-behavior: smooth;
+      position: relative;
+    }
+
+    .tabs-underline-nav::-webkit-scrollbar {
+      height: 8px !important;
+      display: block !important;
+      -webkit-appearance: none !important;
+    }
+
+    .tabs-underline-nav::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.08) !important;
+      border-radius: 4px;
+    }
+
+    .tabs-underline-nav::-webkit-scrollbar-thumb {
+      background: #0284c7 !important;
+      border-radius: 4px;
+    }
+
+    .tabs-underline-nav::-webkit-scrollbar-thumb:hover {
+      background: #38bdf8 !important;
+    }
+
+    .tab-underline-btn {
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      color: #cbd5e1 !important;
+      padding: 10px 4px 12px;
+      font-size: 0.95rem;
+      font-family: var(--font-heading);
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      position: relative;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+
+    .tab-underline-btn:hover {
+      color: #f1f5f9 !important;
+      background: transparent !important;
+    }
+
+    .tab-underline-btn.active {
+      color: #38bdf8 !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      font-weight: 700;
+    }
+
+    .tab-underline-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      width: 100%;
+      height: 2.5px;
+      background: #38bdf8;
+      box-shadow: 0 0 10px #38bdf8;
+      border-radius: 2px;
+    }
+
+    /* Cards Panels */
+    .card-panel {
+      background: rgba(7, 14, 28, 0.90);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(56, 189, 248, 0.18);
+      border-radius: var(--radius-lg);
+      padding: 1.8rem;
+      margin-bottom: 0.5rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .card-title-badge-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 1.4rem;
+    }
+
+    .card-title-badge-row .panel-header-title {
+      margin: 0;
+    }
+
+    .blue-circle-num {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #1d4ed8, #0284c7);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 0.95rem;
+      flex-shrink: 0;
+      box-shadow: 0 0 12px rgba(2, 132, 199, 0.4);
+    }
+
+    .panel-header-title {
+      font-family: var(--font-heading);
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.01em;
+    }
+
+    .panel-body-text {
+      font-size: 0.96rem;
+      color: #f1f5f9;
+      line-height: 1.75;
+      margin-bottom: 1.2rem;
+    }
+
+    /* Execution Pipeline Steps (How It Works) */
+    .hw-step-box {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-md);
+      padding: 1.25rem 1.4rem;
+      transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+      position: relative;
+      border-left: 4px solid #38bdf8;
+    }
+
+    .hw-step-box:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    }
+
+    .hw-step-box h4 {
+      font-family: var(--font-heading);
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin: 0 0 0.5rem 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .hw-step-box p {
+      color: #f1f5f9;
+      font-size: 0.94rem;
+      line-height: 1.7;
+      margin: 0;
+    }
+
+    .hw-step-box code {
+      background: rgba(15, 23, 42, 0.9);
+      color: #38bdf8;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 0.86em;
+      border: 1px solid rgba(56, 189, 248, 0.25);
+    }
+
+    .hw-step-box.step-1 {
+      border-left-color: #10b981;
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(15, 23, 42, 0.6));
+    }
+    .hw-step-box.step-1 h4 { color: #34d399; }
+
+    .hw-step-box.step-2 {
+      border-left-color: #f59e0b;
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(15, 23, 42, 0.6));
+    }
+    .hw-step-box.step-2 h4 { color: #fbbf24; }
+
+    .hw-step-box.step-3 {
+      border-left-color: #0ea5e9;
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.08), rgba(15, 23, 42, 0.6));
+    }
+    .hw-step-box.step-3 h4 { color: #38bdf8; }
+
+    .hw-step-box.step-4 {
+      border-left-color: #ef4444;
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(15, 23, 42, 0.6));
+    }
+    .hw-step-box.step-4 h4 { color: #f87171; }
+
+    .hw-step-box.step-5 {
+      border-left-color: #a855f7;
+      background: linear-gradient(135deg, rgba(168, 85, 247, 0.08), rgba(15, 23, 42, 0.6));
+    }
+    .hw-step-box.step-5 h4 { color: #c084fc; }
+
+    .checklist-guide-msg {
+      font-size: 0.82rem;
+      color: #cbd5e1;
+      margin-bottom: 1rem;
+      font-family: var(--font-mono);
+    }
+
+    /* Role Switcher Toolbar in Lab */
+    .role-switcher-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0.9rem 1.2rem;
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      border-radius: var(--radius-md);
+      margin-bottom: 1.2rem;
+      flex-wrap: wrap;
+    }
+
+    .role-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: var(--radius-pill);
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.05);
+      color: #cbd5e1;
+      transition: all 0.2s ease;
+    }
+
+    .role-btn.active.user {
+      background: #1d4ed8;
+      border-color: #38bdf8;
+      color: #ffffff;
+      box-shadow: 0 0 14px rgba(56, 189, 248, 0.4);
+    }
+
+    .role-btn.active.admin {
+      background: #b91c1c;
+      border-color: #ef4444;
+      color: #ffffff;
+      box-shadow: 0 0 14px rgba(239, 68, 68, 0.4);
+    }
+
+    /* Comparison Table BOLA vs BFLA */
+    .bfla-matrix-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.5rem 0;
+      font-size: 0.9rem;
+    }
+    .bfla-matrix-table th {
+      background: rgba(56, 189, 248, 0.12);
+      color: #38bdf8;
+      font-weight: 700;
+      text-align: left;
+      padding: 12px 16px;
+      border: 1px solid rgba(56, 189, 248, 0.25);
+    }
+    .bfla-matrix-table td {
+      padding: 12px 16px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #f1f5f9;
+      vertical-align: top;
+    }
+    .bfla-matrix-table tr:nth-child(even) td {
+      background: rgba(15, 23, 42, 0.4);
+    }
+
+    /* Light Theme Overrides */
+    html[data-theme="light"] body {
+      background: #f8fafc;
+      color: #0f172a;
+    }
+    html[data-theme="light"] .dashboard-sidebar {
+      background: #ffffff;
+      border-right-color: #e2e8f0;
+    }
+    html[data-theme="light"] .sidebar-brand-title {
+      color: #0f172a;
+    }
+    html[data-theme="light"] .vuln-nav-item {
+      color: #475569;
+    }
+    html[data-theme="light"] .vuln-nav-item:hover {
+      background: #f1f5f9;
+      color: #0f172a;
+    }
+    html[data-theme="light"] .vuln-nav-item.active {
+      background: #0284c7;
+      color: #ffffff;
+    }
+    html[data-theme="light"] .main-vuln-h1 {
+      color: #0f172a;
+    }
+    html[data-theme="light"] .main-vuln-desc {
+      color: #334155;
+    }
+    html[data-theme="light"] .pill-category-name {
+      color: #64748b;
+    }
+    html[data-theme="light"] .hero-glass-graphic {
+      background: #ffffff;
+      border-color: #e2e8f0;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    }
+    html[data-theme="light"] .card-panel {
+      background: #ffffff;
+      border-color: #e2e8f0;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    }
+    html[data-theme="light"] .card-title-badge-row .panel-header-title {
+      color: #0f172a !important;
+    }
+    html[data-theme="light"] .panel-body-text {
+      color: #334155 !important;
+    }
+    html[data-theme="light"] .tabs-underline-nav {
+      scrollbar-color: #0284c7 #e2e8f0;
+      border-bottom-color: rgba(0, 0, 0, 0.08);
+    }
+    html[data-theme="light"] .tabs-underline-nav::-webkit-scrollbar-track {
+      background: #e2e8f0 !important;
+    }
+    html[data-theme="light"] .tabs-underline-nav::-webkit-scrollbar-thumb {
+      background: #0284c7 !important;
+    }
+    html[data-theme="light"] .tab-underline-btn {
+      color: #64748b !important;
+    }
+    html[data-theme="light"] .tab-underline-btn:hover {
+      color: #0f172a !important;
+    }
+    html[data-theme="light"] .tab-underline-btn.active {
+      color: #0284c7 !important;
+    }
+    html[data-theme="light"] .hw-step-box {
+      background: #ffffff !important;
+      border: 1px solid #e2e8f0 !important;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+    }
+    html[data-theme="light"] .hw-step-box:hover {
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08) !important;
+    }
+    html[data-theme="light"] .hw-step-box.step-1 { border-left: 4px solid #10b981 !important; }
+    html[data-theme="light"] .hw-step-box.step-1 h4 { color: #047857 !important; }
+    html[data-theme="light"] .hw-step-box.step-2 { border-left: 4px solid #f59e0b !important; }
+    html[data-theme="light"] .hw-step-box.step-2 h4 { color: #b45309 !important; }
+    html[data-theme="light"] .hw-step-box.step-3 { border-left: 4px solid #0284c7 !important; }
+    html[data-theme="light"] .hw-step-box.step-3 h4 { color: #0369a1 !important; }
+    html[data-theme="light"] .hw-step-box.step-4 { border-left: 4px solid #ef4444 !important; }
+    html[data-theme="light"] .hw-step-box.step-4 h4 { color: #b91c1c !important; }
+    html[data-theme="light"] .hw-step-box.step-5 { border-left: 4px solid #9333ea !important; }
+    html[data-theme="light"] .hw-step-box.step-5 h4 { color: #7e22ce !important; }
+    html[data-theme="light"] .hw-step-box p {
+      color: #334155 !important;
+    }
+    html[data-theme="light"] .hw-step-box code {
+      background: #f1f5f9 !important;
+      color: #0284c7 !important;
+      border-color: #cbd5e1 !important;
+    }
+    html[data-theme="light"] .checklist-guide-msg {
+      color: #64748b !important;
+    }
+    html[data-theme="light"] .bfla-matrix-table th {
+      background: #f0fdf4;
+      color: #0369a1;
+      border-color: #cbd5e1;
+    }
+    html[data-theme="light"] .bfla-matrix-table td {
+      border-color: #e2e8f0;
+      color: #1e293b;
+    }
+    html[data-theme="light"] .bfla-matrix-table tr:nth-child(even) td {
+      background: #f8fafc;
+    }
+    html[data-theme="light"] .role-switcher-bar {
+      background: #ffffff;
+      border-color: #e2e8f0;
+    }
+  
+
+    /* Token Visual Dissect Box */
+    .jwt-dissect-box {
+      background: #090d16;
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: var(--radius-md);
+      padding: 1.1rem;
+      margin: 1.2rem 0;
+      font-family: var(--font-mono);
+      font-size: 0.88rem;
+      word-break: break-all;
+      line-height: 1.6;
+    }
+    .jwt-part-header { color: #f43f5e; font-weight: 700; background: rgba(244, 63, 94, 0.12); padding: 2px 5px; border-radius: 4px; }
+    .jwt-part-payload { color: #c084fc; font-weight: 700; background: rgba(192, 132, 252, 0.12); padding: 2px 5px; border-radius: 4px; }
+    .jwt-part-sig { color: #38bdf8; font-weight: 700; background: rgba(56, 189, 248, 0.12); padding: 2px 5px; border-radius: 4px; }
+    .jwt-dot { color: #64748b; font-weight: 900; margin: 0 1px; }
+
+    html[data-theme="light"] .jwt-dissect-box {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+    }
+  
+    /* ==========================================================================
+       JWT Module: Tab 3 (Attack Scenarios), Tab 4 (Prevention), Tab 5 (Checklist)
+       ========================================================================== */
+    .panel-main-heading {
+      font-family: var(--font-heading);
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #f8fafc;
+      margin: 0;
+      letter-spacing: -0.01em;
+    }
+
+    /* Tab 3: Real-World Scenarios */
+    .scenarios-container {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      margin: 1.2rem 0;
+    }
+
+    .scenario-card {
+      background: #080f20;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .scenario-card:hover {
+      border-color: rgba(56, 189, 248, 0.3);
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+    }
+
+    .scenario-header {
+      padding: 1rem 1.4rem;
+      background: rgba(255, 255, 255, 0.02);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .scenario-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 3px 9px;
+      border-radius: var(--radius-pill);
+      background: rgba(56, 189, 248, 0.12);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.25);
+    }
+
+    .scenario-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #f8fafc;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .scenario-body {
+      padding: 1.25rem 1.4rem;
+    }
+
+    .scenario-desc {
+      color: #cbd5e1;
+      font-size: 0.92rem;
+      line-height: 1.7;
+      margin-bottom: 1.1rem;
+      text-align: justify;
+    }
+
+    .split-terminal-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.2rem;
+      margin-top: 1rem;
+    }
+
+    @media (max-width: 900px) {
+      .split-terminal-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .terminal-box {
+      background: #060b18;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .terminal-topbar {
+      background: #0a1124;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .term-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 4px;
+    }
+
+    .term-dot.red { background: #ef4444; }
+    .term-dot.yellow { background: #f59e0b; }
+    .term-dot.green { background: #10b981; }
+
+    .term-file-name {
+      font-size: 0.76rem;
+      font-weight: 600;
+      color: #94a3b8;
+      font-family: var(--font-mono);
+      letter-spacing: 0.04em;
+      flex: 1;
+      margin-left: 6px;
+    }
+
+    .term-copy-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #94a3b8;
+      font-size: 0.72rem;
+      font-family: var(--font-mono);
+      padding: 3px 9px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .term-copy-btn:hover {
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      border-color: rgba(56, 189, 248, 0.3);
+    }
+
+    .terminal-box pre {
+      margin: 0;
+      padding: 1rem 1.1rem;
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      line-height: 1.65;
+      color: #cbd5e1;
+      overflow-x: auto;
+      flex: 1;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    /* Terminal Syntax Highlighting */
+    .t-verb { color: #38bdf8; font-weight: 700; }
+    .t-path { color: #f87171; font-weight: 700; }
+    .t-proto { color: #94a3b8; }
+    .t-head { color: #a78bfa; }
+    .t-key { color: #38bdf8; }
+    .t-str { color: #fbbf24; }
+    .t-num { color: #f472b6; }
+    .t-status { color: #ef4444; font-weight: 700; }
+    .t-status.green { color: #34d399; }
+    .t-comm { color: #64748b; font-style: italic; }
+
+    .scenario-impact {
+      margin-top: 1rem;
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.82rem;
+      line-height: 1.55;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .scenario-impact.crit {
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px solid rgba(239, 68, 68, 0.25);
+      color: #fca5a5;
+    }
+
+    .scenario-impact.danger {
+      background: rgba(245, 158, 11, 0.08);
+      border: 1px solid rgba(245, 158, 11, 0.25);
+      color: #fde68a;
+    }
+
+    /* Tab 4: Code Prevention */
+    .code-compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.2rem;
+      margin: 1.2rem 0;
+    }
+
+    @media (max-width: 900px) {
+      .code-compare-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .compare-box {
+      background: #060b18;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .compare-box.vulnerable {
+      border-top: 3px solid #ef4444;
+    }
+
+    .compare-box.secure {
+      border-top: 3px solid #10b981;
+    }
+
+    .compare-header {
+      padding: 10px 14px;
+      background: #0a1124;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .compare-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .compare-dot.red { background: #ef4444; }
+    .compare-dot.green { background: #10b981; }
+
+    .compare-title {
+      font-size: 0.84rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      font-family: var(--font-sans);
+    }
+
+    .compare-box pre {
+      margin: 0;
+      padding: 1.1rem;
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      line-height: 1.65;
+      color: #cbd5e1;
+      overflow-x: auto;
+      flex: 1;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .golden-rules-card {
+      background: rgba(14, 165, 233, 0.04);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      border-radius: var(--radius-md);
+      padding: 1.4rem;
+      margin-top: 1.8rem;
+    }
+
+    .golden-rules-title {
+      font-family: var(--font-heading);
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #38bdf8;
+      margin-top: 0;
+      margin-bottom: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Light Theme Overrides for Tabs 3, 4, 5 */
+    html[data-theme=light] .panel-main-heading { color: #0f172a; }
+    html[data-theme=light] .scenario-card { background: #ffffff; border-color: rgba(0,0,0,0.08); }
+    html[data-theme=light] .scenario-header { background: #f8fafc; border-color: rgba(0,0,0,0.06); }
+    html[data-theme=light] .scenario-title { color: #0f172a; }
+    html[data-theme=light] .scenario-desc { color: #334155; }
+    html[data-theme=light] .terminal-box { background: #0f172a; border-color: #334155; }
+    html[data-theme=light] .terminal-topbar { background: #1e293b; border-color: #334155; }
+    html[data-theme=light] .compare-box { background: #0f172a; }
+    html[data-theme=light] .compare-header { background: #1e293b; }
+    html[data-theme=light] .golden-rules-card { background: #f0f9ff; border-color: #bae6fd; }
+    html[data-theme=light] .golden-rules-title { color: #0284c7; }
+    html[data-theme=light] .checklist-item { background: #ffffff; border-color: rgba(0,0,0,0.08); }
+    html[data-theme=light] .checklist-item:hover { background: #f8fafc; border-color: #0284c7; }
+    html[data-theme=light] 
+    html[data-theme=light] 
+
+  
+    /* Attack Preset Buttons Horizontal Alignment */
+    .sim-preset-btn {
+      display: inline-flex !important;
+      flex-direction: row !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 8px !important;
+      white-space: nowrap !important;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #cbd5e1;
+      padding: 7px 15px;
+      border-radius: var(--radius-pill);
+      font-size: 0.82rem;
+      font-family: var(--font-heading);
+      font-weight: 600;
+      cursor: pointer;
+      line-height: 1;
+      transition: all 0.2s ease;
+    }
+
+    .sim-preset-btn .preset-icon {
+      font-size: 0.95rem;
+      line-height: 1;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+
+    .sim-preset-btn .preset-label {
+      display: inline-block;
+      white-space: nowrap;
+      line-height: 1;
+    }
+
+    .sim-preset-btn:hover {
+      background: rgba(56, 189, 248, 0.15);
+      border-color: #38bdf8;
+      color: #ffffff;
+      transform: translateY(-1px);
+    }
+
+    .sim-preset-btn.active, .sim-preset-btn.active-preset {
+      background: #1d4ed8 !important;
+      border-color: #3b82f6 !important;
+      color: #ffffff !important;
+      box-shadow: 0 0 14px rgba(59, 130, 246, 0.5);
+    }
+
+      code { word-break: break-word; overflow-wrap: anywhere; }
+  </style>
+</head>
+<body>
+  <!-- Global Constellation Canvas -->
+  
+
+  <div class="app-dashboard-layout">
+    
+    <!-- ========================================================================
+         LEFT SIDEBAR: 20 Common Vulnerabilities
+         ======================================================================== -->
+    <aside class="dashboard-sidebar">
+      <div class="sidebar-header">
+        <div class="brand-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+        <a href=\"index.html\" class=\"sidebar-brand-title\" style=\"text-decoration:none; display:block;\">API <span>Security</span></a>
+      </div>
+
+      <div class="sidebar-section-heading">Foundations</div>
+      <ul class="vuln-nav-list" style="margin-bottom: 0.5rem;">
+        <li><a href="api-intro.html" class="vuln-nav-item"><span class="nav-num-badge">00</span> API Fundamentals</a></li>
+      </ul>
+
+      <div class="sidebar-section-heading">Common Vulnerabilities</div>
+
+      <ul class="vuln-nav-list">
+        <li><a href="bola.html" class="vuln-nav-item"><span class="nav-num-badge">01</span> BOLA</a></li>
+        <li><a href="bfla.html" class="vuln-nav-item"><span class="nav-num-badge">02</span> BFLA</a></li>
+        <li><a href="idor.html" class="vuln-nav-item"><span class="nav-num-badge">03</span> IDOR</a></li>
+        <li><a href="jwt.html" class="vuln-nav-item active"><span class="nav-num-badge">04</span> JWT Vulnerabilities</a></li>
+        <li><a href="mass-assignment.html" class="vuln-nav-item"><span class="nav-num-badge">05</span> Mass Assignment</a></li>
+        <li><a href="excessive-data-exposure.html" class="vuln-nav-item"><span class="nav-num-badge">06</span> Excessive Data Exposure</a></li>
+        <li><a href="rate-limiting.html" class="vuln-nav-item"><span class="nav-num-badge">07</span> Rate Limiting</a></li>
+        <li><a href="ssrf.html" class="vuln-nav-item"><span class="nav-num-badge">08</span> SSRF</a></li>
+        <li><a href="nosql-injection.html" class="vuln-nav-item"><span class="nav-num-badge">09</span> NoSQL Injection</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">10</span> Command Injection</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">11</span> XXE</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">12</span> GraphQL Security</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">13</span> Business Logic Issues</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">14</span> CORS Misconfiguration</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">15</span> API Key Security</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">16</span> OAuth & OpenID Security</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">17</span> Webhooks Security</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">18</span> Race Conditions</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">19</span> File Upload Vulnerabilities</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">20</span> Deserialization Issues</a></li>
+      </ul>
+    </aside>
+
+    <!-- ========================================================================
+         MAIN DASHBOARD BODY
+         ======================================================================== -->
+    <main class="dashboard-main">
+      
+      <!-- Top Action Bar -->
+      <div class="main-top-actionbar">
+        <div style="font-size:0.86rem; color:var(--text-dim); display:flex; align-items:center; gap:6px;">
+          <span>Modules</span> <span>›</span> <span style="color:var(--cyan); font-weight:600;">04 / 20 JSON Web Token Vulnerabilities</span>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:12px;">
+          <!-- Dark / Light Mode Toggle Button -->
+          <button class="theme-toggle-btn" id="themeToggleBtn" title="Switch Theme">
+            <span>☀️</span> <span class="theme-label">Light Mode</span>
+          </button>
+
+          <!-- Dual Language Switcher -->
+          <div class="lang-switch-wrapper">
+            <span id="lbl-hi" class="lang-label active">Hindi</span>
+            <label class="switch">
+              <input type="checkbox" id="langToggle">
+              <span class="slider"></span>
+            </label>
+            <span id="lbl-en" class="lang-label">English</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hero Header -->
+      <section class="hero-top-grid">
+        <div>
+          <div class="category-tag-row">
+            <span class="pill-index-tag">04</span>
+            <span class="pill-category-name">Broken Authentication & Cryptography</span>
+          </div>
+
+          <h1 class="main-vuln-h1">
+            JSON Web Token<br>
+            <span class="title-blue">(JWT) Vulnerabilities</span>
+          </h1>
+
+          <p class="main-vuln-desc">
+            <span class="lang-hi">Jab API stateless JWT tokens ke cryptographic verification me galati karti hai—jaise unverified algorithms (`none`), weak symmetric secrets, asymmetric-to-symmetric key confusion, ya unsafe header injection.</span>
+            <span class="lang-en">When APIs fail to securely verify stateless JSON Web Tokens—allowing signature bypass via `none` algorithms, weak secret brute-forcing, asymmetric-to-symmetric algorithm confusion, or unvalidated header parameters.</span>
+          </p>
+
+          <div class="meta-tags-row">
+            <span class="meta-chip danger">
+              <span class="badge-dot" style="background:#ef4444; width:6px; height:6px; border-radius:50%;"></span> High / Critical Severity
+            </span>
+            <span class="meta-chip info">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+              CWE-347 / OWASP API2
+            </span>
+            <span class="meta-chip purple">
+              ★ Authentication & Crypto
+            </span>
+          </div>
+
+          <!-- Highlight Insight Quote Bubble -->
+          <div class="quote-bubble">
+            <div class="quote-icon-box">💡</div>
+            <div>
+              <span class="lang-hi"><strong>Core Insight:</strong> JWT base64url encoded hota hai, encrypted nahi. Token ki integrity sirf uske cryptographic signature par depend karti hai—agar signature verification me loop-hole ho, to attacker koi bhi claim fake kar sakta hai.</span>
+              <span class="lang-en"><strong>Core Insight:</strong> A JWT is merely encoded, never encrypted by default. Its entire trustworthiness hinges on cryptographic signature validation. If signature verification falters, identity is completely forgeable.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Visual Graphic Box (Interactive Simulator Widget - Fixed Width 530px) -->
+        <div class="hero-glass-graphic" id="jwtHeroWidget">
+          <div class="hero-widget-header">
+            <div class="hero-widget-badge">
+              <span class="pulse-live-dot"></span>
+              <span class="hero-badge-title">Interactive Attack Flow</span>
+            </div>
+            <div class="hero-sim-pills">
+              <button type="button" class="hero-sim-btn" id="btnJwtNormal" title="Show Normal Valid Token">
+                <span>👤</span> <span>Normal (User)</span>
+              </button>
+              <button type="button" class="hero-sim-btn active exploit" id="btnJwtExploit" title="Show JWT Exploit">
+                <span>⚡</span> <span>JWT Exploit</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="hero-widget-body">
+            <div class="attacker-graphic-node" id="jwtAttackerNode">
+              <div class="attacker-avatar-circle" id="jwtAttackerAvatar">🥷</div>
+              <div class="attacker-label" id="jwtAttackerLabel">Kaif (Attacker)</div>
+              <div class="attacker-sub" id="jwtAttackerSub">Role: user (ID: 1001)</div>
+            </div>
+
+            <div class="graphic-center-flow">
+              <div class="graphic-url-pill" id="jwtUrlPill">
+                <span class="m-verb" id="jwtVerb" style="color:#ef4444; font-weight:700;">GET</span> <span class="m-path" id="jwtPath">/api/v1/admin/dashboard</span>
+              </div>
+              <div class="graphic-swap-box" id="jwtSwapBox">
+                <span class="swap-id-badge from" id="jwtBadgeFrom">HS256</span>
+                <span class="swap-arrow-icon" id="jwtSwapArrow" style="color:var(--text-dim); font-size:0.8rem;">➔</span>
+                <span class="swap-id-badge to" id="jwtBadgeTo">none</span>
+              </div>
+              <div class="flow-beam-track" id="jwtBeamTrack">
+                <div class="flow-beam-particle exploit" id="jwtBeamParticle"></div>
+              </div>
+              <span class="flow-state-label" id="jwtFlowStateText">Signature Stripping</span>
+            </div>
+
+            <div class="target-profile-card exploit" id="jwtTargetCard">
+              <div class="target-card-top">
+                <h4 id="jwtTargetName">Admin API</h4>
+                <span class="target-pill-status breach" id="jwtTargetStatus">HTTP 200</span>
+              </div>
+              <p id="jwtTargetAlg">Alg: <code>none</code></p>
+              <p id="jwtTargetRole">Role: <code>admin (Kaif)</code></p>
+              <p id="jwtTargetAuth">AuthZ: <code style="color:#ef4444; font-weight:700;">bypassed</code></p>
+              <span class="unauth-note" id="jwtTargetNote">🚨 Full administrative takeover</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Navigation Tabs -->
+      <nav class="tabs-underline-nav">
+        <button class="tab-underline-btn active" data-tab="tab-overview">
+          <span>📖</span> <span class="lang-hi">1. Overview</span><span class="lang-en">1. Overview</span>
+        </button>
+        <button class="tab-underline-btn" data-tab="tab-how-it-works">
+          <span>⚙️</span> <span class="lang-hi">2. How It Works</span><span class="lang-en">2. How It Works</span>
+        </button>
+        <button class="tab-underline-btn" data-tab="tab-example">
+          <span>&lt;/&gt;</span> <span class="lang-hi">3. Real-World Scenarios</span><span class="lang-en">3. Real-World Scenarios</span>
+        </button>
+        <button class="tab-underline-btn" data-tab="tab-prevention">
+          <span>🛡️</span> <span class="lang-hi">4. Code Prevention</span><span class="lang-en">4. Code Prevention</span>
+        </button>
+        <button class="tab-underline-btn" data-tab="tab-testing">
+          <span>📋</span> <span class="lang-hi">5. Testing Checklist</span><span class="lang-en">5. Testing Checklist</span>
+        </button>
+        <button class="tab-underline-btn" data-tab="tab-lab">
+          <span>⚡</span> <span class="lang-hi">6. Live Lab</span><span class="lang-en">6. Live Lab</span>
+        </button>
+        <button class="tab-underline-btn" data-tab="tab-questions">
+          <span>❓</span> <span class="lang-hi">7. Frequently Asked Questions</span><span class="lang-en">7. Frequently Asked Questions</span>
+        </button>
+      </nav>
+
+      <!-- ========================================================================
+           TAB CONTENT PANELS
+           ======================================================================== -->
+      <div class="tab-content-wrapper">
+
+        <!-- ==================== TAB 1: OVERVIEW ==================== -->
+        <div class="tab-content active" id="tab-overview">
+          <div class="card-panel">
+            
+            <div class="card-title-badge-row">
+              <div class="blue-circle-num">1</div>
+              <h2 class="panel-main-heading">
+                <span class="lang-hi">Cryptography, JWT Anatomy aur Core Concepts</span>
+                <span class="lang-en">Cryptography, JWT Anatomy and Core Concepts</span>
+              </h2>
+            </div>
+
+            <!-- ============================================================
+                 SECTION A: Cryptography Fundamentals
+                 ============================================================ -->
+            <div class="def-lead-card" style="margin-bottom:1.8rem; border-left:4px solid #38bdf8;">
+              <div class="def-lead-title" style="color:#38bdf8;">
+                <span>🔐</span>
+                <span class="lang-hi">Cryptography Kya Hoti Hai Aur API Security Me Kyu Zaroori Hai?</span>
+                <span class="lang-en">What is Cryptography & Why is it Essential in API Security?</span>
+              </div>
+              <div class="def-lead-text">
+                <span class="lang-hi">
+                  <strong>Cryptography</strong> computer science aur mathematics ki wo branch hai jiska kaam human-readable sensitive information (Plaintext) ko aisi unreadable form (Ciphertext) me badalna hai jise sirf wahi vyakti ya system padh sake jiske paas authorized cryptographic secret key ho.<br><br>
+                  Web aur API architecture me servers open internet par untrusted clients (browsers, mobile apps) se communicate karte hain. Bina cryptography ke koi bhi hacker network traffic intercept karke passwords, bank balances ya identity chura sakta hai ya beech me badal sakta hai (Man-in-the-Middle Attack).
+                </span>
+                <span class="lang-en">
+                  <strong>Cryptography</strong> is the foundational science of mathematically transforming human-readable data (Plaintext) into secure, unreadable format (Ciphertext) so that only parties possessing the authorized cryptographic key can decrypt, read, or verify it.<br><br>
+                  In modern API architectures, clients and microservices communicate across untrusted public networks. Without cryptography, any adversary could intercept, modify, or fabricate identity claims and financial transactions in transit (Man-in-the-Middle attacks).
+                </span>
+              </div>
+
+              <!-- 4 Core Goals of Cryptography Cards -->
+              <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:1rem; margin-top:1.2rem;">
+                <div style="background:rgba(168, 85, 247, 0.08); border:1px solid rgba(168, 85, 247, 0.25); border-radius:var(--radius-sm); padding:10px 14px;">
+                  <div style="font-weight:700; color:#c084fc; font-size:0.86rem; margin-bottom:4px;">1. Confidentiality (Privacy / Data Protection)</div>
+                  <div style="font-size:0.8rem; color:#cbd5e1; line-height:1.5;">
+                    <span class="lang-hi">Sirf authorized recipient hi data read kar sake. Data raste me kisi unauthorized person ko dikhayi na de (e.g. AES encryption, TLS).</span>
+                    <span class="lang-en">Ensures data remains secret from eavesdroppers during transit and storage (e.g., AES encryption, TLS/HTTPS).</span>
+                  </div>
+                </div>
+
+                <div style="background:rgba(56, 189, 248, 0.08); border:1px solid rgba(56, 189, 248, 0.25); border-radius:var(--radius-sm); padding:10px 14px;">
+                  <div style="font-weight:700; color:#38bdf8; font-size:0.86rem; margin-bottom:4px;">2. Integrity (Tamper-Proofing)</div>
+                  <div style="font-size:0.8rem; color:#cbd5e1; line-height:1.5;">
+                    <span class="lang-hi">Yeh guarantee ki data generate hone ke baad raste me 1 bit bhi tamper ya modify nahi kiya gaya hai (e.g. SHA-256 Hashing, HMAC).</span>
+                    <span class="lang-en">Guarantees that information has not been altered, tampered with, or injected during transit (e.g., Cryptographic Hashes, HMAC).</span>
+                  </div>
+                </div>
+
+                <div style="background:rgba(52, 211, 153, 0.08); border:1px solid rgba(52, 211, 153, 0.25); border-radius:var(--radius-sm); padding:10px 14px;">
+                  <div style="font-weight:700; color:#34d399; font-size:0.86rem; margin-bottom:4px;">3. Authentication (Identity Verification)</div>
+                  <div style="font-size:0.8rem; color:#cbd5e1; line-height:1.5;">
+                    <span class="lang-hi">Sender ki asli identity verify karna. Server confirm karta hai ki token sach me legitimate login system ne hi issue kiya tha.</span>
+                    <span class="lang-en">Confirms the true identity of the requester, proving that the digital artifact was genuinely created by an authentic authority.</span>
+                  </div>
+                </div>
+
+                <div style="background:rgba(251, 191, 36, 0.08); border:1px solid rgba(251, 191, 36, 0.25); border-radius:var(--radius-sm); padding:10px 14px;">
+                  <div style="font-weight:700; color:#fbbf24; font-size:0.86rem; margin-bottom:4px;">4. Non-Repudiation (Undeniable Proof)</div>
+                  <div style="font-size:0.8rem; color:#cbd5e1; line-height:1.5;">
+                    <span class="lang-hi">Sender baad me yeh inkaar nahi kar sakta ki usne yeh transaction ya token sign nahi kiya tha (Digital Signatures: RSA, ECDSA).</span>
+                    <span class="lang-en">Prevents the author from denying the authenticity of their signature on a document or contract (Asymmetric Digital Signatures).</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ============================================================
+                 SECTION B: In-Depth Beginner-Friendly JWT Definition
+                 ============================================================ -->
+            <div class="def-lead-card" style="margin-bottom:2rem; border-left:4px solid #0284c7;">
+              <div class="def-lead-title" style="color:#38bdf8;">
+                <span>📜</span>
+                <span class="lang-hi">JSON Web Token (RFC 7519) Kya Hota Hai? Real-Life Concept</span>
+                <span class="lang-en">What is a JSON Web Token (RFC 7519)? The Real-World Mental Model</span>
+              </div>
+              <div class="def-lead-text">
+                <span class="lang-hi">
+                  <strong>JSON Web Token (JWT)</strong> ek open standard (RFC 7519) digital format hai jo do parties (jaise aapka browser/mobile app aur backend API server) ke beech user identity aur permissions ko ek self-contained, tamper-proof package me transmit karne ke liye use hota hai.<br><br>
+                  <strong>✈️ Real-Life Example (Airport Boarding Pass Analogy):</strong><br>
+                  Maan lijiye aap airport par security check-in karte hain. Airline aapko ek <em>Boarding Pass</em> deti hai jisme aapka naam (Kaif), flight number, seat number (14B), aur ek official digital cryptographic barcode stamp hota hai. Jab aap flight ke gate par jate hain, to gate agent corporate headquarters ko phone karke database check nahi karta; wo sirf aapke boarding pass par laga <strong>official digital seal / barcode scan</strong> karta hai. Airline ke cryptographic stamp ki wajah se gate agent ko turant 100% bharosa ho jata hai ki aapne apna seat number ya naam pen se badalkar VIP nahi banaya hai!<br><br>
+                  <strong>JWT bilkul yahi Boarding Pass hai:</strong>
+                  Jab user login karta hai, to authentication server ek token issue karta hai. Agli har API request ke sath browser yeh token bhejta hai. Backend API database me query kiye bina sirf uske cryptographic signature ko verify karke user ko authenticate kar leti hai.
+                </span>
+                <span class="lang-en">
+                  A <strong>JSON Web Token (JWT)</strong> is an open RFC 7519 industry standard defining a compact, self-contained, URL-safe container for transferring verifiable security claims between a client and an API server.<br><br>
+                  <strong>✈️ The Airport Boarding Pass Mental Model:</strong><br>
+                  When you check in at an airport, the airline hands you a <em>Boarding Pass</em> containing your identity, flight number, seat (14B), and an official cryptographic barcode seal. At the boarding gate, the agent does not telephone corporate headquarters or query the central database for all 300 passengers. They simply scan the digital signature on the pass. Because the airline's cryptographic stamp is intact, the agent instantly trusts that you didn't erase your seat number with a pen to claim First Class!<br><br>
+                  <strong>JWT is that digital boarding pass for web APIs:</strong>
+                  Upon login, the server issues a signed JWT containing user attributes. On every subsequent API call, the backend verifies the signature locally within microseconds without executing costly database session queries.
+                </span>
+              </div>
+
+              <!-- Critical Misconception Warning Box -->
+              <div style="margin-top:1.2rem; background:rgba(239, 68, 68, 0.08); border:1px solid rgba(239, 68, 68, 0.3); border-left:4px solid #ef4444; border-radius:var(--radius-sm); padding:10px 14px;">
+                <div style="font-weight:700; color:#f87171; font-size:0.86rem; margin-bottom:4px;">⚠️ Sabse Badi Galatfehmi (The Critical Misconception):</div>
+                <div style="font-size:0.84rem; color:#e2e8f0; line-height:1.6;">
+                  <span class="lang-hi"><strong>JWT Encrypted NAHI hota!</strong> JWT sirf Base64URL-encoded hota hai. Koi bhi vyakti token ko <a href="https://jwt.io" target="_blank" style="color:#38bdf8; text-decoration:underline;">jwt.io</a> me daal kar aapka user ID, email aur role saaf padh sakta hai. JWT ki security <em>Gopniyata (Secrecy)</em> me nahi, balki <strong>Akhandata (Tamper-Resistance via Signature)</strong> me hoti hai—yani koi use modify nahi kar sakta!</span>
+                  <span class="lang-en"><strong>A JWT is NOT encrypted!</strong> It is merely Base64URL-encoded. Anyone who intercepts the token can decode it at <a href="https://jwt.io" target="_blank" style="color:#38bdf8; text-decoration:underline;">jwt.io</a> and read your user ID, email, and permissions. JWT provides <strong>Tamper-Proof Integrity</strong>, NOT confidentiality (unless encapsulated in a JWE).</span>
+                </div>
+              </div>
+
+              <div class="def-meta-chips" style="margin-top:1.2rem;">
+                <div class="def-chip"><span>Key Standard:</span> <code>RFC 7519 (JWS / JWE)</code></div>
+                <div class="def-chip"><span>Encoding:</span> <code>Base64URL (Not Encrypted)</code></div>
+                <div class="def-chip"><span>Common Algs:</span> <code>HS256 (HMAC), RS256 (RSA), ES256 (ECDSA)</code></div>
+                <div class="def-chip"><span>Core Threat:</span> <code>Signature Stripping, Forgery & Alg Confusion</code></div>
+              </div>
+            </div>
+
+            <!-- ============================================================
+                 SECTION C: Anatomy of a JWT (3 Parts Breakdown)
+                 ============================================================ -->
+            <h3 style="font-size:1.2rem; color:#f8fafc; margin:2rem 0 0.8rem; font-weight:700;">
+              <span class="lang-hi">JWT Ki 3 Parts Ki Anatomy (Header . Payload . Signature)</span>
+              <span class="lang-en">Anatomy of a JWT: 3 Core Components</span>
+            </h3>
+
+            <p class="panel-body-text" style="margin-bottom:0.8rem;">
+              <span class="lang-hi">Ek valid JWT me teen hisse do dots (<code>.</code>) se separated hote hain:</span>
+              <span class="lang-en">A serialized JWT consists of three Base64URL strings concatenated by periods (<code>.</code>):</span>
+            </p>
+
+            <div class="jwt-dissect-box">
+              <span class="jwt-part-header">eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9</span><span class="jwt-dot">.</span><span class="jwt-part-payload">eyJzdWIiOiIxMDAxIiwibmFtZSI6IkthaWYiLCJyb2xlIjoidXNlciIsImlhdCI6MTcyNTUwMTAwMH0</span><span class="jwt-dot">.</span><span class="jwt-part-sig">dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk</span>
+            </div>
+
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:1rem; margin-top:1.2rem; margin-bottom:2.2rem;">
+              <div style="background:rgba(244, 63, 94, 0.06); border:1px solid rgba(244, 63, 94, 0.3); border-radius:var(--radius-md); padding:1.1rem;">
+                <h4 style="color:#f43f5e; font-size:0.95rem; margin-bottom:6px;">1. Header (Red)</h4>
+                <div style="font-size:0.82rem; color:#cbd5e1; line-height:1.55;">
+                  <span class="lang-hi">Batata hai ki token ka format kya hai aur signature kis algorithm se bani hai (jaise <code>{"alg": "HS256", "typ": "JWT"}</code>). Yeh JSON Base64URL-encoded hota hai.</span>
+                  <span class="lang-en">Declares token type and signature algorithm (e.g., <code>{"alg": "HS256", "typ": "JWT"}</code>). Base64URL-encoded JSON.</span>
+                </div>
+              </div>
+
+              <div style="background:rgba(192, 132, 252, 0.06); border:1px solid rgba(192, 132, 252, 0.3); border-radius:var(--radius-md); padding:1.1rem;">
+                <h4 style="color:#c084fc; font-size:0.95rem; margin-bottom:6px;">2. Payload / Claims (Purple)</h4>
+                <div style="font-size:0.82rem; color:#cbd5e1; line-height:1.55;">
+                  <span class="lang-hi">Aapka actual data (claims) jaise User ID (<code>sub</code>), username, role, aur token expiry timestamp (<code>exp</code>). Yeh bhi unencrypted JSON hota hai.</span>
+                  <span class="lang-en">Contains the claims about the user (e.g., <code>sub: 1001, role: user, exp: 1725501000</code>). Anyone who sees the token can read these claims.</span>
+                </div>
+              </div>
+
+              <div style="background:rgba(56, 189, 248, 0.06); border:1px solid rgba(56, 189, 248, 0.3); border-radius:var(--radius-md); padding:1.1rem;">
+                <h4 style="color:#38bdf8; font-size:0.95rem; margin-bottom:6px;">3. Cryptographic Signature (Cyan)</h4>
+                <div style="font-size:0.82rem; color:#cbd5e1; line-height:1.55;">
+                  <span class="lang-hi"><code>Base64(Header) + "." + Base64(Payload)</code> ko server ki secret key se hash karke banta hai. Agar payload me 1 letter bhi badla gaya, to signature match nahi karegi!</span>
+                  <span class="lang-en">Hash of <code>Header + "." + Payload</code> created using the server's private key or secret. The sole mechanism preventing payload tampering.</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- ============================================================
+                 SECTION C: JWT End-to-End Lifecycle & Stateless Validation
+                 ============================================================ -->
+            <div class="def-lead-card" style="margin-top:2.2rem; margin-bottom:1.6rem; border-left:4px solid #38bdf8; background:rgba(15,23,42,0.65);">
+              <div class="def-lead-title" style="color:#38bdf8;">
+                <span>🔄</span>
+                <span class="lang-hi">JWT Lifecycle & Validation Architecture: Agar Server Token Save Nahi Karta, Toh Validation Kaise Karta Hai?</span>
+                <span class="lang-en">JWT Lifecycle & Stateless Validation Architecture: How Does the Server Validate Without Storing the Token?</span>
+              </div>
+              <div class="def-lead-text">
+                <span class="lang-hi">
+                  Sabse bada sawal jo har developer aur security tester ke zehen me aata hai: <em>"Traditional session architecture me server database ya Redis me session_id save karta tha, lekin JWT me server par token save hi nahi hota (Stateless)! Toh server har incoming request ko kaise validate karta hai ki ye genuine hai ya kisi attacker ne tamper kiya hai?"</em> Aayiye is pure 3-stage lifecycle aur cryptographic verification engine ko step-by-step samajhte hain:
+                </span>
+                <span class="lang-en">
+                  The fundamental architectural question: <em>"In traditional session architecture, the server stores active session_ids in a DB or Redis. But JWT is completely stateless—the server stores zero tokens! How does the server verify token authenticity without querying any stored session?"</em> Below is the comprehensive step-by-step cryptographic verification breakdown:
+                </span>
+              </div>
+            </div>
+
+            <!-- Lifecycle Flow Cards (3-Step Pipeline) -->
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap:1.4rem; margin-bottom:1.8rem;">
+
+              <!-- Stage 1: Token Creation & Signing at Server -->
+              <div style="background:#070d1e; border:1px solid rgba(255,255,255,0.08); border-top:3px solid #38bdf8; border-radius:var(--radius-md); padding:1.3rem; display:flex; flex-direction:column;">
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.8rem;">
+                  <span style="font-family:var(--font-mono); font-size:0.75rem; font-weight:700; color:#38bdf8; background:rgba(56,189,248,0.12); padding:3px 8px; border-radius:4px;">STEP 1 &bull; ISSUANCE (SIGNING)</span>
+                  <span style="font-size:1.1rem;">🔑</span>
+                </div>
+                <h4 style="font-size:1.02rem; font-weight:700; color:#f8fafc; margin:0 0 0.6rem;">Server Token Generate Aur Sign Kaise Karta Hai?</h4>
+                <div style="font-size:0.86rem; color:#cbd5e1; line-height:1.65; flex:1;">
+                  <span class="lang-hi">
+                    1. User (<strong>Kaif</strong>) credentials bhejta hai: <code>POST /api/login { user: "kaif", pass: "..." }</code>.<br>
+                    2. Server DB me check karta hai: Password match ho gaya.<br>
+                    3. Server do JSON objects taiyaar karta hai:
+                    <ul style="margin:6px 0 6px 1.2rem; padding:0; color:#94a3b8; font-size:0.82rem;">
+                      <li><strong>Header:</strong> <code>{"alg":"HS256","typ":"JWT"}</code></li>
+                      <li><strong>Payload:</strong> <code style="word-break:break-all; overflow-wrap:anywhere; display:inline-block;">{"sub":"1001", "name":"Kaif", "role":"user", "exp":1725501900}</code></li>
+                    </ul>
+                    4. Server dono ko Base64URL encode karta hai: <code>header_b64 + "." + payload_b64</code>.<br>
+                    5. <strong>Secret Signing:</strong> Server apni private environment key (<code>SERVER_SECRET</code>) se cryptographic HMAC-SHA256 signature calculate karta hai:<br>
+                    <code style="color:#38bdf8; font-size:0.78rem; display:block; margin:6px 0; background:#040814; padding:6px 8px; border-radius:4px; border:1px solid rgba(56,189,248,0.2);">signature = HMAC_SHA256(header_b64 + "." + payload_b64, SERVER_SECRET)</code>
+                    6. Teeno parts ko dot (<code>.</code>) se jodkar compact JWT client ko response me bhej diya jata hai. <strong>Server is token ko database me SAVE NAHI KARTA</strong> — client ko deliver karke server memory se discard kar deta hai!
+                  </span>
+                  <span class="lang-en">
+                    1. User (<strong>Kaif</strong>) logs in via <code>POST /api/login</code>.<br>
+                    2. Server verifies password against database.<br>
+                    3. Server creates Header & Claims Payload.<br>
+                    4. Server encodes both to Base64URL strings.<br>
+                    5. Server signs <code>header + "." + payload</code> using its private secret key (<code>SERVER_SECRET</code>).<br>
+                    6. The combined token is returned to the client. <strong>The server does NOT save the token in any database or session cache</strong>!
+                  </span>
+                </div>
+              </div>
+
+              <!-- Stage 2: Client Transmission -->
+              <div style="background:#070d1e; border:1px solid rgba(255,255,255,0.08); border-top:3px solid #a855f7; border-radius:var(--radius-md); padding:1.3rem; display:flex; flex-direction:column;">
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.8rem;">
+                  <span style="font-family:var(--font-mono); font-size:0.75rem; font-weight:700; color:#c084fc; background:rgba(168,85,247,0.12); padding:3px 8px; border-radius:4px;">STEP 2 &bull; TRANSMISSION</span>
+                  <span style="font-size:1.1rem;">🚀</span>
+                </div>
+                <h4 style="font-size:1.02rem; font-weight:700; color:#f8fafc; margin:0 0 0.6rem;">Client Request Ke Sath Token Bhejna</h4>
+                <div style="font-size:0.86rem; color:#cbd5e1; line-height:1.65; flex:1;">
+                  <span class="lang-hi">
+                    1. Client token ko browser memory ya secure <code>HttpOnly, Secure, SameSite</code> cookie me hold karta hai.<br>
+                    2. Jab bhi Kaif koi protected API call karta hai (jaise account balance dekhna ya order place karna):<br>
+                    Client request ke standard HTTP header me token attach karta hai:
+                    <div style="background:#040814; border:1px solid rgba(168,85,247,0.25); border-radius:4px; padding:8px 10px; margin:8px 0; font-family:var(--font-mono); font-size:0.78rem; color:#e2e8f0; word-break:break-all;">
+                      <span style="color:#a78bfa;">GET</span> /api/v1/profile HTTP/1.1<br>
+                      <span style="color:#38bdf8;">Host:</span> api.enterprise.com<br>
+                      <span style="color:#f472b6;">Authorization:</span> Bearer eyJhbGci...eyJzdWI...dBjft...
+                    </div>
+                    3. Network ke through yeh token bina kisi previous server handshake ke backend API server tak pahunchta hai.
+                  </span>
+                  <span class="lang-en">
+                    1. Client stores token in memory or an HttpOnly cookie.<br>
+                    2. For every protected API call, client transmits token in standard header:<br>
+                    <code>Authorization: Bearer &lt;token&gt;</code><br>
+                    3. The token arrives at the API server without needing any prior server-side session lookup.
+                  </span>
+                </div>
+              </div>
+
+              <!-- Stage 3: Stateless Validation Magic -->
+              <div style="background:#070d1e; border:1px solid rgba(255,255,255,0.08); border-top:3px solid #10b981; border-radius:var(--radius-md); padding:1.3rem; display:flex; flex-direction:column;">
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.8rem;">
+                  <span style="font-family:var(--font-mono); font-size:0.75rem; font-weight:700; color:#34d399; background:rgba(16,185,129,0.12); padding:3px 8px; border-radius:4px;">STEP 3 &bull; VERIFICATION (ZERO DB QUERY)</span>
+                  <span style="font-size:1.1rem;">⚡</span>
+                </div>
+                <h4 style="font-size:1.02rem; font-weight:700; color:#f8fafc; margin:0 0 0.6rem;">Server Bina Database Ke Kaise Validate Karta Hai?</h4>
+                <div style="font-size:0.86rem; color:#cbd5e1; line-height:1.65; flex:1;">
+                  <span class="lang-hi">
+                    Server ke paas database me koi token record nahi hai, fir bhi server <strong>100% mathematical certainty</strong> se kaise verify karta hai?
+                    <ol style="margin:6px 0 6px 1.2rem; padding:0; color:#cbd5e1; font-size:0.82rem;">
+                      <li><strong>Token Split:</strong> Server incoming token ko 3 tukdo me todta hai: <code>header</code>, <code>payload</code>, aur <code>received_signature</code>.</li>
+                      <li><strong>Recalculate Signature:</strong> Server client ke signature par bharosa nahi karta. Server apne hidden <code>SERVER_SECRET</code> key se formula dobara run karta hai:<br>
+                      <code style="color:#34d399; font-size:0.76rem; display:block; margin:4px 0; background:#040814; padding:5px 7px; border-radius:4px;">expected_sig = HMAC_SHA256(header + "." + payload, SERVER_SECRET)</code></li>
+                      <li><strong>Math Comparison:</strong> Server compare karta hai:<br>
+                      <code>expected_sig === received_signature</code></li>
+                      <li><strong>Agar match hua:</strong> Header aur payload me 1 character bhi modify nahi hua! Server payload se <code>user_id: 1001</code> nikal kar request instant allow karta hai.</li>
+                      <li><strong>Agar tamper hua:</strong> Math fail! Token turant reject (HTTP 401).</li>
+                    </ol>
+                  </span>
+                  <span class="lang-en">
+                    Even with zero database lookups, the server validates mathematically:<br>
+                    1. <strong>Split:</strong> Splits token into Header, Payload, and Signature.<br>
+                    2. <strong>Recalculate:</strong> Server runs HMAC-SHA256 over received <code>Header.Payload</code> using its own secret key.<br>
+                    3. <strong>Compare:</strong> If computed signature matches received signature, payload integrity is guaranteed!<br>
+                    4. <strong>Authorize:</strong> Extracts user identity directly from payload and fulfills request in microseconds.
+                  </span>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Deep Dive Breakdown: Legitimate User vs Hacker Tampering Comparison -->
+            <div style="background:#050a16; border:1px solid rgba(255,255,255,0.08); border-radius:var(--radius-md); padding:1.4rem; margin-bottom:2.2rem;">
+              <h4 style="color:#38bdf8; font-size:1.05rem; font-weight:700; margin-top:0; margin-bottom:1rem; display:flex; align-items:center; gap:8px;">
+                <span>🔬</span>
+                <span class="lang-hi">Mathematical Proof: Tampering Kyun Impossible Hai? (Normal User vs Attacker)</span>
+                <span class="lang-en">Mathematical Proof: Why Tampering is Cryptographically Impossible</span>
+              </h4>
+
+              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1.2rem;">
+                <!-- Case A: Normal User -->
+                <div style="background:#070d1e; border:1px solid rgba(16,185,129,0.3); border-radius:var(--radius-sm); padding:1.1rem;">
+                  <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+                    <span style="background:#10b981; color:#fff; font-size:0.7rem; font-weight:700; padding:2px 7px; border-radius:4px;">CASE A</span>
+                    <strong style="color:#34d399; font-size:0.9rem;">Legitimate User Kaif (No Modification)</strong>
+                  </div>
+                  <div style="font-size:0.83rem; color:#cbd5e1; line-height:1.6;">
+                    <span class="lang-hi">
+                      Kaif ka token server par aaya jisme <code>"role": "user"</code> hai.<br>
+                      Server ne compute kiya: <code>HMAC("header.payload", SECRET)</code>.<br>
+                      Server signature: <code style="color:#34d399;">dBjftJeZ4CVP...</code><br>
+                      Received signature: <code style="color:#34d399;">dBjftJeZ4CVP...</code><br>
+                      <strong style="color:#34d399;">MATCH = TRUE!</strong> Server confirm karta hai ki token authentic hai. Zero DB query, instant response.
+                    </span>
+                    <span class="lang-en">
+                      Kaif sends unmodified token with <code>"role": "user"</code>.<br>
+                      Computed hash matches incoming signature perfectly.<br>
+                      <strong style="color:#34d399;">Result: Authenticated.</strong>
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Case B: Attacker Tampering -->
+                <div style="background:#070d1e; border:1px solid rgba(239,68,68,0.3); border-radius:var(--radius-sm); padding:1.1rem;">
+                  <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+                    <span style="background:#ef4444; color:#fff; font-size:0.7rem; font-weight:700; padding:2px 7px; border-radius:4px;">CASE B</span>
+                    <strong style="color:#f87171; font-size:0.9rem;">Attacker Kaif Changes role to "admin"</strong>
+                  </div>
+                  <div style="font-size:0.83rem; color:#cbd5e1; line-height:1.6;">
+                    <span class="lang-hi">
+                      Attacker Kaif ne base64 decode kiya, payload me <code>"role": "admin"</code> badal diya.<br>
+                      Server ne naye payload ko hash kiya: <code>HMAC("header.tampered_payload", SECRET)</code>.<br>
+                      Server calculated signature: <code style="color:#38bdf8;">K9mXv1Qp82Z...</code><br>
+                      Token me signature: <code style="color:#f87171;">dBjftJeZ4CVP...</code> (puraana signature)<br>
+                      <strong style="color:#f87171;">MISMATCH = CRITICAL!</strong> Server immediately throws <code>HTTP 401 Unauthorized (Invalid Signature)</code>. Attacker naya valid signature bana hi nahi sakta kyunki uske paas server ki private <code>SECRET</code> key nahi hai!
+                    </span>
+                    <span class="lang-en">
+                      Attacker modifies payload claim to <code>"role": "admin"</code>.<br>
+                      Server re-hashes data with secret key, yielding a completely different signature.<br>
+                      <strong style="color:#f87171;">Result: Signature mismatch! Access denied.</strong>
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Summary takeaway banner -->
+              <div style="margin-top:1.1rem; padding:10px 14px; background:rgba(56,189,248,0.06); border-left:3px solid #38bdf8; border-radius:4px; font-size:0.84rem; color:#cbd5e1; line-height:1.55;">
+                <span class="lang-hi">
+                  💡 <strong>Kyun JWT "Stateless" Kehlata Hai?</strong> Traditional architecture me 10 Lakh logged-in users ka matlab tha 10 Lakh session records database me store karna aur har single click par DB lookup karna! JWT me server par <strong>ZERO session storage</strong> hoti hai. Token ka validation pure CPU mathematical calculation hai jo microsecond me execute hota hai. Yahi wajah hai ki modern microservices aur distributed systems JWT use karte hain.
+                </span>
+                <span class="lang-en">
+                  💡 <strong>Why JWT is "Stateless":</strong> Traditional architectures stored millions of active session rows in DB/Redis. JWT requires <strong>zero server storage</strong>—token verification is pure CPU cryptographic math executed in microseconds across any distributed microservice.
+                </span>
+              </div>
+            </div>
+
+            <!-- ============================================================
+                 SECTION D: The 4 Pillars of JWT Security (Thoroughly Defined)
+                 ============================================================ -->
+            <h3 style="font-size:1.2rem; color:#f8fafc; margin:2rem 0 0.8rem; font-weight:700;">
+              <span class="lang-hi">JWT Security Ke 4 Pillars</span>
+              <span class="lang-en">The 4 Pillars of JWT Security</span>
+            </h3>
+
+            <p class="panel-body-text">
+              <span class="lang-hi">Kisi bhi production application me JWT implement karte waqt in 4 cryptographic aur architectural pillars ka palan karna anivarya (mandatory) hai:</span>
+              <span class="lang-en">Production JWT architectures must adhere to these 4 non-negotiable security pillars to prevent total authentication collapse:</span>
+            </p>
+
+            <div style="display:flex; flex-direction:column; gap:1.2rem; margin-top:1rem;">
+              <!-- Pillar 1 -->
+              <div class="hw-step-box step-1">
+                <h4>Pillar 1: Strict Algorithm Whitelisting & Header Pinning (Never Trust Client Headers)</h4>
+                <p>
+                  <span class="lang-hi">
+                    <strong>Kyu Zaroori Hai:</strong> JWT ke header me <code>"alg"</code> field hoti hai jo client server ko bhejta hai. Agar backend library bina validation ke header me aane wale algorithm par vishwas kar leti hai, to attacker do khatarnak attacks execute karta hai:<br>
+                    1. <code>"alg": "none"</code> Attack: Attacker algorithm ko "none" kar deta hai aur signature ko blank chhod deta hai. Flawed libraries signature verify kiye bina user ko login kar leti hain!<br>
+                    2. Algorithm Confusion Attack (RS256 ➔ HS256): Server asymmetric RSA public key se check karna chahta hai, lekin attacker header me symmetric HS256 bhej deta hai. Server public key ko HMAC secret samajh kar verify kar leta hai.<br>
+                    <strong>Secure Solution:</strong> Verification code me algorithm ko hardcode karein: <code>jwt.verify(token, key, { algorithms: ['RS256'] })</code>. Header ke <code>alg</code> ko kabhi bhi dynamic choice na banane dein.
+                  </span>
+                  <span class="lang-en">
+                    <strong>Why it's Critical:</strong> The <code>"alg"</code> header is untrusted user input. If your verification library blindly trusts what the client supplies, adversaries perform signature stripping via <code>"alg": "none"</code> or execute Algorithm Confusion by switching asymmetric RS256 to symmetric HS256 and signing with the exposed public key.<br>
+                    <strong>Secure Solution:</strong> Explicitly whitelist permitted algorithms during verification: <code>jwt.verify(token, key, { algorithms: ['RS256'] })</code>. Never allow the unverified token header to dictate server algorithm selection.
+                  </span>
+                </p>
+              </div>
+
+              <!-- Pillar 2 -->
+              <div class="hw-step-box step-2">
+                <h4>Pillar 2: High-Entropy Secrets & Key Storage (Anti-Brute Force Protection)</h4>
+                <p>
+                  <span class="lang-hi">
+                    <strong>Kyu Zaroori Hai:</strong> HMAC-SHA256 (HS256) me ek symmetric password (secret key) use hoti hai. Kyunki JWT token browser ke paas hota hai, attacker us token ko download karke apne computer par offline le ja sakta hai. Wo Hashcat ya John the Ripper jaise tools se per second 10 arab passwords test karta hai. Agar aapka secret <code>"secret"</code>, <code>"company123"</code> ya <code>"jwtpassword"</code> hai, to wo 5 second me crack ho jayega. Ek baar secret mil gaya, to attacker kisi bhi user ya CEO ka fake token mint kar sakta hai.<br>
+                    <strong>Secure Solution:</strong> Secret key hamesha cryptographically secure random number generator (CSPRNG) se kam se kam 256 bits (32 random bytes) ki generate karein aur use environment secret managers (AWS Secrets Manager / Vault) me rakhein, source code me nahi.
+                  </span>
+                  <span class="lang-en">
+                    <strong>Why it's Critical:</strong> In symmetric signing (HS256), the same secret signs and verifies tokens. Attackers extract the JWT and crack weak secrets offline using GPU-accelerated tools (Hashcat) against rockyou dictionaries without sending a single request to your server. A cracked secret permits forging valid signatures for any identity.<br>
+                    <strong>Secure Solution:</strong> Enforce minimum 256-bit cryptographic entropy (e.g., <code>crypto.randomBytes(32).toString('hex')</code>). Securely store keys in hardware security modules (HSM) or cloud secret vaults, never in code repositories.
+                  </span>
+                </p>
+              </div>
+
+              <!-- Pillar 3 -->
+              <div class="hw-step-box step-3">
+                <h4>Pillar 3: Asymmetric Key Separation (Public-Private Key Architecture)</h4>
+                <p>
+                  <span class="lang-hi">
+                    <strong>Kyu Zaroori Hai:</strong> Modern microservice architecture me darjano services (billing, orders, notifications, inventory) hoti hain. Agar aap HS256 symmetric secret use karenge, to har service ko token verify karne ke liye wahi secret key deni padegi. Agar kisi ek chhoti service (jaise logging worker) ka server hack ho gaya, to attacker puri company ke sabhi systems ke liye fake admin tokens generate kar sakega!<br>
+                    <strong>Secure Solution:</strong> Hamesha asymmetric algorithms (<strong>RS256</strong> ya <strong>ES256</strong>) use karein. Sirf Central Authentication Server ke paas token sign karne ki <em>Private Key</em> hoti hai. Baaki sabhi downstream API microservices ko sirf verify karne ke liye <em>Public Key</em> di jati hai. Public key leak hone par bhi koi naya token nahi bana sakta!
+                  </span>
+                  <span class="lang-en">
+                    <strong>Why it's Critical:</strong> In distributed microservice environments, using symmetric HS256 requires sharing the signing secret across every service. If a low-privilege analytics worker is breached, the attacker gains the master signing secret and mints root tokens for the entire enterprise.<br>
+                    <strong>Secure Solution:</strong> Implement asymmetric cryptography (RS256 / ES256). Only the dedicated Identity Provider (IdP) holds the <em>Private Key</em> to sign tokens. Downstream API gateways only receive the <em>Public Key</em> to verify signatures, guaranteeing zero privilege escalation even if a gateway is compromised.
+                  </span>
+                </p>
+              </div>
+
+              <!-- Pillar 4 -->
+              <div class="hw-step-box step-4">
+                <h4>Pillar 4: Short Token Lifetime (TTL) & Stateless Revocation Strategy</h4>
+                <p>
+                  <span class="lang-hi">
+                    <strong>Kyu Zaroori Hai:</strong> Traditional sessions me agar user logout karta hai ya account hack hota hai, to database me session delete karte hi access turant band ho jata hai. Lekin stateless JWT me server database check nahi karta; jab tak token ka expiry time (<code>exp</code>) valid hai, token accept hota rahega! Agar aapne 30-day token banaya aur wo XSS se chori ho gaya, to attacker 30 din tak logged in rahega!<br>
+                    <strong>Secure Solution:</strong> Access tokens ka lifetime bohot chota rakhein (<strong>5 se 15 minutes</strong>). Token renew karne ke liye <em>Refresh Tokens</em> use karein jo HttpOnly, Secure cookie me save hote hain. Instant logout ke liye Redis me revoked token IDs (<code>jti</code>) ki short-lived blocklist rakhein ya database me <code>token_version</code> increment karein.
+                  </span>
+                  <span class="lang-en">
+                    <strong>Why it's Critical:</strong> Stateless JWTs cannot be instantly "deleted" by the server. As long as the expiration claim (<code>exp</code>) is in the future and the signature is valid, the token is accepted. Issuing 30-day access tokens means an XSS theft gives attackers a month of uncontrolled access even after the victim changes their password.<br>
+                    <strong>Secure Solution:</strong> Enforce short access token lifetimes (<strong>5–15 minutes max</strong>) paired with HttpOnly, Secure, SameSite refresh tokens. Support immediate revocation via Redis-backed denylists of unique token IDs (<code>jti</code>) or incrementing a user-level <code>token_version</code> on password change.
+                  </span>
+                </p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ==================== TAB 2: HOW IT WORKS ==================== -->
+        <div class="tab-content" id="tab-how-it-works">
+          <div class="card-panel">
+            <div class="card-title-badge-row">
+              <div class="blue-circle-num">2</div>
+              <h2 class="panel-main-heading">
+                <span class="lang-hi">JWT Attack Vectors Kaise Kaam Karte Hain?</span>
+                <span class="lang-en">How JWT Attack Vectors Work</span>
+              </h2>
+            </div>
+
+            <p style="color:#94a3b8; font-size:0.92rem; margin-bottom:1.5rem; line-height:1.6;">
+              <span class="lang-hi">JWT attacks cryptographic vulnerabilities aur flawed verification logic ka fayda uthate hain. Niche top 4 attack execution pipelines samjhai gayi hain:</span>
+              <span class="lang-en">JWT attacks leverage cryptographic implementation flaws and parser leniency. Below are the 4 primary execution pipelines:</span>
+            </p>
+
+            <!-- Attack 1: None Algorithm -->
+            <div class="hw-step-box step-1">
+              <h4>Vector 1: The "none" Algorithm Signature Stripping</h4>
+              <p>
+                <span class="lang-hi">RFC 7519 me debugging purposes ke liye <code>"none"</code> algorithm define kiya gaya tha. Agar API library is algorithm ko reject nahi karti, to attacker header me <code>"alg": "none"</code> set karke signature part ko pura blank chhod deta hai (<code>header.payload.</code>). Server signature verify kiye bina payload ko valid maan leta hai!</span>
+                <span class="lang-en">RFC 7519 originally permitted an algorithm termed <code>"none"</code> for unsecure tokens. If backend libraries fail to disallow it, an adversary sets <code>"alg": "none"</code>, strips the signature, and modifies claims arbitrarily (<code>header.payload.</code>). The server accepts the forged payload.</span>
+              </p>
+            </div>
+
+            <!-- Attack 2: Algorithm Confusion -->
+            <div class="hw-step-box step-2">
+              <h4>Vector 2: Algorithm Confusion (Asymmetric RS256 ➔ Symmetric HS256)</h4>
+              <p>
+                <span class="lang-hi">Jab server RS256 (RSA asymmetric) use karta hai, to token private key se sign hota hai aur public key se verify. Attacker header ko change karke <code>"alg": "HS256"</code> kar deta hai. Agar server library key parameter ko algorithm-agnostic rakhti hai, to server verification ke dauran public key (jo public hoti hai) ko HMAC secret samajhkar verify karta hai! Attacker usi public key se HS256 token banakar auth bypass kar leta hai.</span>
+                <span class="lang-en">When a server intends to verify asymmetric RS256 signatures using an RSA public key, an attacker changes the algorithm to symmetric <code>HS256</code>. If the verification routine does not enforce RS256, it treats the public key string as the HMAC symmetric secret. The attacker HMAC-signs the forged token using the publicly known public key!</span>
+              </p>
+            </div>
+
+            <!-- Attack 3: Weak Secret Brute-forcing -->
+            <div class="hw-step-box step-3">
+              <h4>Vector 3: Offline HMAC Secret Key Cracking</h4>
+              <p>
+                <span class="lang-hi">Kyunki JWT client ke paas accessible hota hai, attacker token ko offline le jakar tools jaise Hashcat ya John the Ripper (rockyou.txt dictionary) ke sath GPU-accelerated brute force karta hai. Agar secret simple ho (e.g. <code>secret</code>, <code>admin123</code>, <code>jwtpass</code>), to secret minute bhar me nikal aata hai aur attacker arbitrary tokens sign kar sakta hai.</span>
+                <span class="lang-en">Because HMAC tokens are stored on client browsers and APIs, adversaries perform offline dictionary attacks via Hashcat/John the Ripper against rockyou wordlists without triggering server rate limits. Weak static secrets are cracked in seconds.</span>
+              </p>
+            </div>
+
+            <!-- Attack 4: Header Injection (kid / jku) -->
+            <div class="hw-step-box step-4">
+              <h4>Vector 4: Key ID (`kid`) Parameter Injection</h4>
+              <p>
+                <span class="lang-hi">JWT header me optional <code>kid</code> (Key ID) parameter hota hai jo batata hai database ya filesystem me se kaunsi key pick karni hai. Agar backend ise sanitize nahi karta, to attacker Path Traversal (e.g. <code>"kid": "../../../dev/null"</code>) inject karta hai. Linux par <code>/dev/null</code> empty hota hai, jisse HMAC empty string <code>""</code> se verify ho jata hai! Ya SQLi inject karke key value control kar leta hai.</span>
+                <span class="lang-en">The <code>kid</code> header parameter specifies which key file or DB entry to retrieve. Without sanitization, adversaries execute Directory Traversal (e.g., <code>"kid": "../../../dev/null"</code>) forcing validation against an empty buffer, or inject SQL statements returning arbitrary signing keys.</span>
+              </p>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ==================== TAB 3: REAL-WORLD SCENARIOS ==================== -->
+        <div class="tab-content" id="tab-example">
+          <div class="card-panel">
+            <div class="card-title-badge-row">
+              <div class="blue-circle-num">3</div>
+              <h2 class="panel-main-heading">
+                <span class="lang-hi">Real-World Enterprise Attack Scenarios</span>
+                <span class="lang-en">Real-World Enterprise Attack Scenarios</span>
+              </h2>
+            </div>
+
+            <div class="scenarios-container">
+
+              <!-- Scenario 1: None Algorithm Bypass -->
+              <div class="scenario-card">
+                <div class="scenario-header">
+                  <div class="scenario-badge">Scenario 01 &bull; Cloud SaaS Billing</div>
+                  <h3 class="scenario-title">Algorithm "none" Signature Stripping Attack</h3>
+                </div>
+                <div class="scenario-body">
+                  <p class="scenario-desc">
+                    <span class="lang-hi">Attacker <strong>Kaif</strong> (user ID: <code>1001</code>) valid token decode karta hai, payload me <code>"role": "admin"</code> karta hai, header me <code>"alg": "none"</code> karta hai aur signature remove karke privileged billing export endpoint access kar leta hai.</span>
+                    <span class="lang-en">Attacker <strong>Kaif</strong> decodes his valid token, changes role to <code>"admin"</code>, sets <code>"alg": "none"</code>, strips the signature, and accesses financial billing records.</span>
+                  </p>
+
+                  <div class="split-terminal-grid">
+                    <div class="terminal-box">
+                      <div class="terminal-topbar">
+                        <span class="term-dot red"></span><span class="term-dot yellow"></span><span class="term-dot green"></span>
+                        <span class="term-file-name">HTTP REQUEST (Forged Alg None Token)</span>
+                        <button class="term-copy-btn" onclick="copyTerm(this)">Copy</button>
+                      </div>
+                      <pre><code><span class="t-verb">POST</span> <span class="t-path">/api/v1/billing/export-all</span> <span class="t-proto">HTTP/1.1</span>
+<span class="t-head">Host:</span> api.saasplatform.com
+<span class="t-head">Authorization:</span> Bearer eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiIxMDAxIiwicm9sZSI6ImFkbWluIn0.
+<span class="t-head">Content-Type:</span> application/json
+
+{"export_format": "pdf"}</code></pre>
+                    </div>
+
+                    <div class="terminal-box">
+                      <div class="terminal-topbar">
+                        <span class="term-dot red"></span><span class="term-dot yellow"></span><span class="term-dot green"></span>
+                        <span class="term-file-name">SERVER RESPONSE (Auth Bypassed)</span>
+                        <button class="term-copy-btn" onclick="copyTerm(this)">Copy</button>
+                      </div>
+                      <pre><code><span class="t-proto">HTTP/1.1</span> <span class="t-status danger">200 OK</span>
+<span class="t-head">Content-Type:</span> application/json
+
+{
+  <span class="t-key">"status"</span>: <span class="t-str">"export_generated"</span>,
+  <span class="t-key">"authenticated_as"</span>: <span class="t-str">"Kaif"</span>,
+  <span class="t-key">"role"</span>: <span class="t-str">"admin"</span>,
+  <span class="t-key">"records_exported"</span>: <span class="t-num">14250</span>,
+  <span class="t-key">"download_url"</span>: <span class="t-str">"https://s3.internal/exports/financial_full.zip"</span>
+}</code></pre>
+                    </div>
+                  </div>
+                  <div class="scenario-impact crit">
+                    <strong>Critical Impact:</strong> Server verification bypass hone se standard user pure enterprise ka financial data export karne me safal raha.
+                  </div>
+                </div>
+              </div>
+
+              <!-- Scenario 2: RS256 to HS256 Confusion -->
+              <div class="scenario-card">
+                <div class="scenario-header">
+                  <div class="scenario-badge">Scenario 02 &bull; Fintech Core</div>
+                  <h3 class="scenario-title">Algorithm Confusion (RS256 ➔ HS256 with Public Key)</h3>
+                </div>
+                <div class="scenario-body">
+                  <p class="scenario-desc">
+                    <span class="lang-hi">Application <code>https://api.fintech.internal/oauth/public.pem</code> par RSA public key expose karti hai. Attacker us public key ko as symmetric secret use karke HS256 token generate karta hai aur admin impersonate karta hai.</span>
+                    <span class="lang-en">The application exposes its RSA public key via JWKS or an open PEM endpoint. The adversary uses the public key content as the symmetric HMAC key, changing the token algorithm to HS256.</span>
+                  </p>
+
+                  <div class="split-terminal-grid">
+                    <div class="terminal-box">
+                      <div class="terminal-topbar">
+                        <span class="term-dot red"></span><span class="term-dot yellow"></span><span class="term-dot green"></span>
+                        <span class="term-file-name">ATTACK SCRIPT (Node.js)</span>
+                        <button class="term-copy-btn" onclick="copyTerm(this)">Copy</button>
+                      </div>
+                      <pre><code><span class="t-comm">// Load server's public RSA key as raw string</span>
+<span class="t-verb">const</span> pubKey = fs.readFileSync(<span class="t-str">'public.pem'</span>, <span class="t-str">'utf8'</span>);
+<span class="t-verb">const</span> forgedToken = jwt.sign({
+  sub: <span class="t-str">"1001"</span>,
+  name: <span class="t-str">"Kaif"</span>,
+  role: <span class="t-str">"admin"</span>
+}, pubKey, { algorithm: <span class="t-str">'HS256'</span> });</code></pre>
+                    </div>
+
+                    <div class="terminal-box">
+                      <div class="terminal-topbar">
+                        <span class="term-dot red"></span><span class="term-dot yellow"></span><span class="term-dot green"></span>
+                        <span class="term-file-name">SERVER RESPONSE</span>
+                        <button class="term-copy-btn" onclick="copyTerm(this)">Copy</button>
+                      </div>
+                      <pre><code><span class="t-proto">HTTP/1.1</span> <span class="t-status danger">200 OK</span>
+<span class="t-head">Content-Type:</span> application/json
+
+{
+  <span class="t-key">"authorized"</span>: <span class="t-str">true</span>,
+  <span class="t-key">"privilege"</span>: <span class="t-str">"super_admin"</span>,
+  <span class="t-key">"message"</span>: <span class="t-str">"Welcome back, Om (Admin)"</span>
+}</code></pre>
+                    </div>
+                  </div>
+                  <div class="scenario-impact crit">
+                    <strong>Critical Impact:</strong> Asymmetric public key verification logic fail hone se arbitrary identity forging possible ho gayi.
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================== TAB 4: CODE PREVENTION ==================== -->
+        <div class="tab-content" id="tab-prevention">
+          <div class="card-panel">
+            <div class="card-title-badge-row">
+              <div class="blue-circle-num">4</div>
+              <h2 class="panel-main-heading">
+                <span class="lang-hi">JWT Code Prevention & Secure Implementation</span>
+                <span class="lang-en">JWT Code Prevention & Secure Implementation</span>
+              </h2>
+            </div>
+
+            <p style="color:#94a3b8; font-size:0.92rem; margin-bottom:1.5rem; line-height:1.6;">
+              <span class="lang-hi">JWT vulnerabilities se bachne ke liye token verification me algorithm ko explicitly lock karna aur cryptographic keys ko securely manage karna anivarya hai.</span>
+              <span class="lang-en">To prevent JWT vulnerabilities, verify routines must explicitly pin permissible algorithms and safeguard signing keys.</span>
+            </p>
+
+            <!-- Code Comparison Grid -->
+            <div class="code-compare-grid">
+              <!-- Vulnerable -->
+              <div class="compare-box vulnerable">
+                <div class="compare-header">
+                  <span class="compare-dot red"></span>
+                  <span class="compare-title">❌ Vulnerable Implementation (Node.js / Express)</span>
+                </div>
+                <pre><code><span class="t-comm">// VULNERABLE: Relies on incoming token's header algorithm</span>
+app.use((req, res, next) =&gt; {
+  <span class="t-verb">const</span> token = req.headers[<span class="t-str">'authorization'</span>]?.split(<span class="t-str">' '</span>)[<span class="t-num">1</span>];
+  
+  <span class="t-comm">// DANGER: No algorithm whitelist! Accepts 'none' and 'HS256'</span>
+  jwt.verify(token, secretOrPublicKey, (err, decoded) =&gt; {
+    <span class="t-verb">if</span> (err) <span class="t-verb">return</span> res.status(<span class="t-num">401</span>).json({ error: <span class="t-str">"Invalid Token"</span> });
+    req.user = decoded;
+    next();
+  });
+});</code></pre>
+              </div>
+
+              <!-- Secure -->
+              <div class="compare-box secure">
+                <div class="compare-header">
+                  <span class="compare-dot green"></span>
+                  <span class="compare-title">✅ Secure Implementation (Node.js / Express)</span>
+                </div>
+                <pre><code><span class="t-comm">// SECURE: Explicit algorithm pinning and claim validation</span>
+app.use((req, res, next) =&gt; {
+  <span class="t-verb">const</span> token = req.headers[<span class="t-str">'authorization'</span>]?.split(<span class="t-str">' '</span>)[<span class="t-num">1</span>];
+  
+  jwt.verify(token, PUBLIC_RSA_KEY, {
+    algorithms: [<span class="t-str">'RS256'</span>], <span class="t-comm">// Enforce RS256 strictly!</span>
+    issuer: <span class="t-str">'https://auth.company.internal'</span>,
+    audience: <span class="t-str">'https://api.company.internal'</span>,
+    maxAge: <span class="t-str">'15m'</span>
+  }, (err, decoded) =&gt; {
+    <span class="t-verb">if</span> (err) <span class="t-verb">return</span> res.status(<span class="t-num">401</span>).json({ error: <span class="t-str">"Unauthorized"</span> });
+    req.user = decoded;
+    next();
+  });
+});</code></pre>
+              </div>
+            </div>
+
+            <!-- Python FastAPI Example -->
+            <div style="margin-top:1.5rem;">
+              <h4 style="font-size:0.95rem; color:#f8fafc; margin-bottom:8px;">✅ Python (PyJWT) Secure Verification</h4>
+              <div class="terminal-box">
+                <div class="terminal-topbar">
+                  <span class="term-dot red"></span><span class="term-dot yellow"></span><span class="term-dot green"></span>
+                  <span class="term-file-name">security_jwt.py</span>
+                  <button class="term-copy-btn" onclick="copyTerm(this)">Copy</button>
+                </div>
+                <pre><code><span class="t-verb">import</span> jwt
+<span class="t-verb">from</span> fastapi <span class="t-verb">import</span> HTTPException, Security
+
+<span class="t-verb">def</span> <span class="t-str">verify_user_token</span>(token: str):
+    <span class="t-verb">try</span>:
+        <span class="t-comm"># Always pass algorithms as a list; disallows algorithm confusion & none</span>
+        payload = jwt.decode(
+            token,
+            PUBLIC_KEY_PEM,
+            algorithms=[<span class="t-str">"RS256"</span>],
+            options={<span class="t-str">"require"</span>: [<span class="t-str">"exp"</span>, <span class="t-str">"sub"</span>, <span class="t-str">"iss"</span>]},
+            issuer=<span class="t-str">"https://auth.company.internal"</span>
+        )
+        <span class="t-verb">return</span> payload
+    <span class="t-verb">except</span> jwt.PyJWTError:
+        <span class="t-verb">raise</span> HTTPException(status_code=<span class="t-num">401</span>, detail=<span class="t-str">"Invalid or expired token"</span>)</code></pre>
+              </div>
+            </div>
+
+            <!-- 3 Golden Rules Card -->
+            <div class="golden-rules-card" style="margin-top:1.8rem;">
+              <div class="golden-rules-title">
+                <span>🛡️</span> 3 Golden Rules for JWT Defense
+              </div>
+              <ul class="golden-rules-list">
+                <li><strong>Rule 1: Never Trust the `alg` Header:</strong> Verification methods must enforce an explicit allowed algorithms array. Never allow the unauthenticated token header to decide the verification algorithm.</li>
+                <li><strong>Rule 2: Enforce 256-bit Key Entropy:</strong> If using HMAC (HS256), the secret must be generated using a cryptographically secure pseudo-random number generator (CSPRNG) with minimum 32 random bytes.</li>
+                <li><strong>Rule 3: Always Validate Standard Claims:</strong> Require and enforce <code>exp</code> (Expiration), <code>nbf</code> (Not Before), and <code>iss</code> (Issuer). Never issue long-lived access tokens without revocation capabilities.</li>
+              </ul>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ==================== TAB 5: TESTING CHECKLIST ==================== -->
+        <div class="tab-content" id="tab-testing">
+          <div class="card-panel">
+            <div class="card-title-badge-row">
+              <div class="blue-circle-num">5</div>
+              <h2 class="panel-header-title">
+                <span class="lang-hi">JWT Security Testing Checklist (Pentester Playbook)</span>
+                <span class="lang-en">JWT Security Testing Checklist (Pentester Playbook)</span>
+              </h2>
+            </div>
+
+            <p class="panel-body-text">
+              <span class="lang-hi">Apne APIs par JWT verification testing ke liye ye 7-point checklist complete karein:</span>
+              <span class="lang-en">Complete this 7-point verification playbook before deploying JWT authentication to production:</span>
+            </p>
+
+            <div class="checklist-meta-header">
+            <div class="checklist-guide-msg">
+              <span class="lang-hi">Har test case ko inspect karein aur <strong>Pass (Secure)</strong> ya <strong>Fail (Vulnerable)</strong> mark karein:</span>
+              <span class="lang-en">Audit each test case and mark as <strong>Pass (Secure)</strong> or <strong>Fail (Vulnerable)</strong>:</span>
+            </div>
+            <div class="checklist-counter-badge">
+              <span id="checklist-progress-counter">0 of 7 Checks Audited (0 Passed | 0 Vulnerable)</span>
+            </div>
+          </div>
+
+          <div class="checklist-container">
+            <!-- Item 1 -->
+            <div class="checklist-item" id="check-item-1" onclick="handleCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">1</span>
+              </div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">1. Algorithm "none" Explicitly Rejected</span>
+                  <span class="lang-en">1. Algorithm "none" Explicitly Rejected</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Verified that the server returns HTTP 401 when tested with <code>{"alg": "none"}</code>, <code>{"alg": "None"}</code>, and <code>{"alg": "NONE"}</code>.</span>
+                  <span class="lang-en">Verify that backend token validation libraries strictly reject unsigned tokens utilizing the 'none' algorithm.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test (Testing Steps):</div>
+                  <span class="lang-hi">1. Burp Suite me valid JWT intercept karein aur jwt.io me header ko <code>{"alg": "none", "typ": "JWT"}</code> me modify karein.<br>2. Token ke signature part (teesra dot ke baad ka text) ko completely delete karein: <code>header.payload.</code>.<br>3. Request send karein: Agar server <code>HTTP 200 OK</code> return karta hai, toh ye <strong>CRITICAL JWT NONE-ALG FAIL</strong> hai!</span>
+                  <span class="lang-en">1. Intercept a valid JWT in Burp Suite and modify the header to <code>{"alg": "none", "typ": "JWT"}</code>.<br>2. Strip the signature entirely, leaving the trailing dot: <code>&lt;header&gt;.&lt;payload&gt;.</code>.<br>3. Dispatch request: If the server accepts the token with <code>200 OK</code>, mark as <strong>CRITICAL FAIL (Algorithm None Bypass)</strong>.</span>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Item 2 -->
+            <div class="checklist-item" id="check-item-2" onclick="handleCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">2</span>
+              </div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">2. Algorithm Confusion (RS256 vs HS256) Resistance</span>
+                  <span class="lang-en">2. Algorithm Confusion (RS256 vs HS256) Resistance</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Verified that the verification function rejects HS256 tokens signed with the server's RSA public key.</span>
+                  <span class="lang-en">Verify resilience against algorithm confusion attacks where asymmetric RS256 tokens are forged using HS256 with public keys.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test (Testing Steps):</div>
+                  <span class="lang-hi">1. Server ka public RSA key (JWKS endpoint ya SSL certificate se) obtain karein.<br>2. JWT header me <code>"alg": "HS256"</code> change karein aur payload me role admin karein.<br>3. Server ke public key ko HMAC secret key ki tarah use karke token sign karein aur replay karein. Rejection verify karein.</span>
+                  <span class="lang-en">1. Extract the server's public RSA certificate from the public JWKS URL (e.g. <code>/.well-known/jwks.json</code>).<br>2. Modify the JWT header to <code>"alg": "HS256"</code>.<br>3. Sign the forged token using HMAC-SHA256 with the server's public key as the HMAC secret. Verify the server returns <code>401 Unauthorized</code>.</span>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Item 3 -->
+            <div class="checklist-item" id="check-item-3" onclick="handleCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">3</span>
+              </div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">3. High-Entropy HMAC Secret Keys</span>
+                  <span class="lang-en">3. High-Entropy HMAC Secret Keys</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">HMAC secret is stored in a secure secret manager (AWS Secrets Manager / Vault) and tested against Hashcat dictionary attacks.</span>
+                  <span class="lang-en">Verify that HS256 tokens utilize cryptographically strong, high-entropy secret keys resistant to offline dictionary attacks.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test (Testing Steps):</div>
+                  <span class="lang-hi">1. Intercepted HS256 token ko file <code>jwt.txt</code> me save karein.<br>2. Hashcat command run karein: <code>hashcat -m 16500 jwt.txt rockyou.txt</code>.<br>3. Agar Hashcat kuch seconds me weak secret key (jaise <code>secret</code>, <code>123456</code>, <code>jwtsecret</code>) crack kar deta hai, toh ye <strong>FAIL</strong> hai.</span>
+                  <span class="lang-en">1. Save the captured HS256 token into a text file.<br>2. Execute Hashcat against common dictionary wordlists: <code>hashcat -m 16500 jwt.txt rockyou.txt</code>.<br>3. If the secret key is cracked within minutes (e.g., <code>secret123</code>, <code>app-secret</code>), mark as <strong>FAIL (Weak HMAC Key)</strong>.</span>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Item 4 -->
+            <div class="checklist-item" id="check-item-4" onclick="handleCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">4</span>
+              </div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">4. Header Parameter Sanitization (kid, jku, jwk)</span>
+                  <span class="lang-en">4. Header Parameter Sanitization (kid, jku, jwk)</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Disallowed arbitrary <code>jku</code> URLs and sanitized <code>kid</code> against path traversal (<code>../</code>) and SQL injection.</span>
+                  <span class="lang-en">Ensure that JWT header parameters ('kid', 'jku', 'jwk') are strictly validated against injection and SSRF.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test (Testing Steps):</div>
+                  <span class="lang-hi">1. Header me <code>kid</code> parameter manipulate karein: <code>"kid": "../../../../dev/null"</code> (known empty key test) ya SQL injection payload <code>"kid": "' UNION SELECT 'key'--"</code>.<br>2. <code>"jku"</code> parameter me attacker-controlled domain (e.g. <code>https://attacker.com/jwks.json</code>) inject karein.<br>3. Check karein kya backend arbitrary external servers se verification keys fetch karta hai.</span>
+                  <span class="lang-en">1. Test directory traversal in the <code>kid</code> header: <code>"kid": "../../../../dev/null"</code>, signing with an empty byte sequence.<br>2. Inject external URLs in <code>"jku"</code> pointing to a Burp Collaborator instance.<br>3. If the server initiates an outbound SSRF request to fetch the remote JWK, flag as <strong>CRITICAL FAIL (JKU Injection)</strong>.</span>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Item 5 -->
+            <div class="checklist-item" id="check-item-5" onclick="handleCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">5</span>
+              </div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">5. Expiration Claim (`exp`) Enforcement</span>
+                  <span class="lang-en">5. Expiration Claim (`exp`) Enforcement</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Verified that tokens with expired timestamps are rejected immediately with HTTP 401.</span>
+                  <span class="lang-en">Verify that expired tokens are strictly rejected and clock skew allowances do not exceed reasonable limits.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test (Testing Steps):</div>
+                  <span class="lang-hi">1. Valid JWT ke payload me <code>"exp"</code> timestamp ko past time (e.g. 1 hour pehle: <code>Math.floor(Date.now()/1000) - 3600</code>) me set karein.<br>2. Modified token ko original signature ke sath bhein (agar verify nahi karta) ya validly sign karke bhein.<br>3. Verify karein ki server expired token ko <code>HTTP 401 Unauthorized</code> ke sath reject karta hai.</span>
+                  <span class="lang-en">1. In the JWT payload, alter the <code>"exp"</code> claim to a Unix timestamp in the past (e.g., current timestamp minus 3600 seconds).<br>2. Re-sign the token with the correct testing key and transmit to an authenticated endpoint.<br>3. If the server processes the expired token, flag as <strong>FAIL (Missing Expiration Enforcement)</strong>.</span>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Item 6 -->
+            <div class="checklist-item" id="check-item-6" onclick="handleCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">6</span>
+              </div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">6. Short Token Lifetime (5 - 15 Minutes)</span>
+                  <span class="lang-en">6. Short Token Lifetime (5 - 15 Minutes)</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Access tokens have short TTL, with secure HTTP-only cookie refresh tokens used for renewal.</span>
+                  <span class="lang-en">Ensure access tokens enforce short lifespans (5-15 minutes) coupled with secure refresh token rotation.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test (Testing Steps):</div>
+                  <span class="lang-hi">1. JWT payload decode karke <code>exp</code> aur <code>iat</code> (issued at) claims compare karein: <code>TTL = exp - iat</code>.<br>2. Agar access token ka TTL 24 ghante, 30 din ya 1 saal hai, toh ye <strong>HIGH RISK FAIL</strong> hai (token compromise hone par revoke nahi ho sakta).<br>3. Verify karein ki short-lived token (15 mins) ke sath secure refresh token rotation exist karta hai.</span>
+                  <span class="lang-en">1. Decode the JWT payload and calculate lifespan: <code>Duration = exp - iat</code>.<br>2. If the access token has a multi-day or indefinite lifetime (e.g., 30 days without revocation mechanisms), mark as <strong>FAIL</strong>.<br>3. Validate that access tokens expire within 15 minutes and require refresh tokens stored in HTTP-only, secure cookies.</span>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Item 7 -->
+            <div class="checklist-item" id="check-item-7" onclick="handleCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">7</span>
+              </div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">7. Sensitive Data Omitted from Payload</span>
+                  <span class="lang-en">7. Sensitive Data Omitted from Payload</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Payload does not contain passwords, PII, internal IPs, or unencrypted confidential secrets.</span>
+                  <span class="lang-en">Audit the JWT payload to ensure unencrypted confidential data or internal architectural details are not leaked.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test (Testing Steps):</div>
+                  <span class="lang-hi">1. Intercepted JWT ko Base64 decode karein.<br>2. Claims inspect karein: Check karein kya payload me user passwords, credit card numbers, Aadhaar/SSN, private encryption keys ya internal database credentials store hain.<br>3. Yaad rahe JWT signed hota hai, <strong>encrypted nahi</strong>—koi bhi client payload read kar sakta hai!</span>
+                  <span class="lang-en">1. Decode the raw JWT payload using any standard Base64 decoder.<br>2. Inspect all key-value claims for sensitive information: passwords, SSNs, credit card numbers, or internal server IPs.<br>3. If any confidential user or infrastructure data is present in plaintext, mark as <strong>FAIL (Information Disclosure)</strong>.</span>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== TAB 6: INTERACTIVE LAB ==================== -->
+        <div class="tab-content" id="tab-lab">
+          <div class="card-panel">
+            <div class="card-title-badge-row">
+              <div class="blue-circle-num">6</div>
+              <h2 class="panel-main-heading">
+                <span class="lang-hi">Live Lab: JWT Security Testing & Exploit Playground</span>
+                <span class="lang-en">Live Lab: JWT Security Testing & Exploit Playground</span>
+              </h2>
+            </div>
+
+            <p class="panel-body-text">
+              <span class="lang-hi">Aap attacker <strong>Kaif (User ID: 1001)</strong> ke roop me logged in hain. Niche quick-preset buttons se target exploit choose karein. Token ke Header aur Payload ko modify karke backend verification engine par test karein:</span>
+              <span class="lang-en">You are authenticated as attacker <strong>Kaif (User ID: 1001)</strong>. Choose an attack preset or modify token fields manually to observe how different verification flaws behave:</span>
+            </p>
+
+            <div class="lab-simulator">
+              <!-- Simulator Status Bar -->
+              <div class="lab-head">
+                <div class="lab-status">
+                  <span class="pulse-dot"></span>
+                  <span style="font-family:var(--font-mono); font-weight:700; letter-spacing:0.5px;">JWT VERIFICATION ENGINE ACTIVE</span>
+                </div>
+                <div style="font-size:0.75rem; color:#94a3b8; font-family:var(--font-mono);">
+                  Target: /api/v1/admin/dashboard
+                </div>
+              </div>
+
+              <!-- Active Session Box -->
+              <div class="auth-token-box">
+                <div><strong>Active User Session:</strong> Kaif (Role: <code>user</code> | User ID: <code>1001</code>)</div>
+                <div style="color:var(--cyan);">Token Type: <code>RFC 7519 JSON Web Token</code></div>
+              </div>
+
+              <!-- Attack Preset Buttons -->
+              <div class="sim-presets-container" style="display:flex; gap:12px; align-items:center; margin-bottom:1.2rem; flex-wrap:wrap;">
+                <span style="font-size:0.8rem; color:#94a3b8; font-weight:600; white-space:nowrap;">Attack Presets:</span>
+                <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; flex:1;">
+                  <button type="button" class="sim-preset-btn active" id="btnPresetValid" onclick="loadJwtPreset('valid')">
+                    <span class="preset-icon">👤</span><span class="preset-label">Valid Token (Kaif - user)</span>
+                  </button>
+                  <button type="button" class="sim-preset-btn" id="btnPresetNone" onclick="loadJwtPreset('none')" style="border-color:rgba(239,68,68,0.4); color:#f87171;">
+                    <span class="preset-icon">⚡</span><span class="preset-label">alg: "none" Exploit</span>
+                  </button>
+                  <button type="button" class="sim-preset-btn" id="btnPresetConfusion" onclick="loadJwtPreset('confusion')" style="border-color:rgba(245,158,11,0.4); color:#fbbf24;">
+                    <span class="preset-icon">🔀</span><span class="preset-label">Algorithm Confusion (RS256 ➔ HS256)</span>
+                  </button>
+                  <button type="button" class="sim-preset-btn" id="btnPresetWeak" onclick="loadJwtPreset('weak')" style="border-color:rgba(239,68,68,0.5); color:#f87171;">
+                    <span class="preset-icon">🔓</span><span class="preset-label">Weak Secret Cracked ("secret123")</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Dynamic Alert Banner -->
+              <div id="jwt-alert-banner" style="display:block; padding:12px 16px; border-radius:var(--radius-sm); margin-bottom:1.2rem; font-size:0.88rem; line-height:1.5; background:rgba(52, 211, 153, 0.1); border:1px solid rgba(52, 211, 153, 0.3); border-left:4px solid #34d399; color:#6ee7b7;">
+                ✅ <strong>Valid Signature:</strong> Token is legitimately signed with server secret. Access restricted to standard user dashboard.
+              </div>
+
+              <!-- Split Console: Forge Editor on Left vs API Response on Right -->
+              <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap:1.2rem;">
+                <!-- Left Pane: Token Forge Editor -->
+                <div style="background:rgba(15,23,42,0.85); border:1px solid rgba(255,255,255,0.08); border-radius:var(--radius-md); padding:1.1rem;">
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <div style="font-size:0.75rem; color:#f43f5e; font-family:var(--font-mono); font-weight:700; display:flex; align-items:center; gap:6px;">
+                      <span style="width:8px; height:8px; border-radius:50%; background:#f43f5e; display:inline-block; box-shadow:0 0 8px rgba(244,63,94,0.8);"></span>
+                      <span>TOKEN FORGE (HEADER + PAYLOAD + SIG)</span>
+                    </div>
+                    <div style="display:flex; gap:6px;">
+                      <button type="button" id="jwtViewModeHighlight" class="lab-mode-tab-btn active" onclick="switchJwtView('highlight')">⚡ Highlighted</button>
+                      <button type="button" id="jwtViewModeEdit" class="lab-mode-tab-btn" onclick="switchJwtView('edit')">✏️ Edit Fields</button>
+                    </div>
+                  </div>
+
+                  <!-- Highlighted View (Active by default) -->
+                  <div id="jwtHighlightBoxWrapper" style="display:block; margin-bottom:12px;">
+                    <div style="font-size:0.72rem; color:#94a3b8; font-family:var(--font-mono); margin-bottom:4px;">1. Header (JSON):</div>
+                    <pre id="jwtHeaderPre" style="width:100%; max-height:85px; background:#070d1a; border:1px solid rgba(244, 63, 94, 0.3); border-radius:4px; font-family:var(--font-mono); font-size:0.8rem; padding:8px; overflow:auto; margin:0 0 10px 0; box-sizing:border-box;"></pre>
+                    <div style="font-size:0.72rem; color:#94a3b8; font-family:var(--font-mono); margin-bottom:4px;">2. Claims / Payload (JSON):</div>
+                    <pre id="jwtPayloadPre" style="width:100%; max-height:120px; background:#070d1a; border:1px solid rgba(192, 132, 252, 0.3); border-radius:4px; font-family:var(--font-mono); font-size:0.8rem; padding:8px; overflow:auto; margin:0 0 10px 0; box-sizing:border-box;"></pre>
+                    <div style="font-size:0.72rem; color:#94a3b8; font-family:var(--font-mono); margin-bottom:4px;">3. Signature:</div>
+                    <div id="jwtSigDisplay" style="width:100%; background:#070d1a; border:1px solid rgba(56, 189, 248, 0.3); border-radius:4px; font-family:var(--font-mono); font-size:0.8rem; padding:6px 10px; color:#38bdf8; box-sizing:border-box; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></div>
+                  </div>
+
+                  <!-- Raw Editable View (Hidden by default) -->
+                  <div id="jwtEditBoxWrapper" style="display:none; margin-bottom:12px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:0.72rem; color:#f43f5e; font-family:var(--font-mono); font-weight:700;">
+                      <span>1. HEADER (JSON)</span>
+                    </div>
+                    <textarea id="labHeaderInput" style="width:100%; height:80px; min-height:60px; background:#070d1a; border:1px solid rgba(244, 63, 94, 0.3); color:#f43f5e; font-family:var(--font-mono); font-size:0.82rem; padding:8px; border-radius:4px; box-sizing:border-box; margin-bottom:8px; resize:vertical;" oninput="syncJwtHighlight()"></textarea>
+
+                    <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:0.72rem; color:#c084fc; font-family:var(--font-mono); font-weight:700;">
+                      <span>2. PAYLOAD / CLAIMS (JSON)</span>
+                    </div>
+                    <textarea id="labPayloadInput" style="width:100%; height:110px; min-height:80px; background:#070d1a; border:1px solid rgba(192, 132, 252, 0.3); color:#c084fc; font-family:var(--font-mono); font-size:0.82rem; padding:8px; border-radius:4px; box-sizing:border-box; margin-bottom:8px; resize:vertical; line-height:1.45;" oninput="syncJwtHighlight()"></textarea>
+
+                    <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:0.72rem; color:#38bdf8; font-family:var(--font-mono); font-weight:700;">
+                      <span>3. RAW SIGNATURE STRING</span>
+                    </div>
+                    <input type="text" id="labSigInput" style="width:100%; height:34px; background:#070d1a; border:1px solid rgba(56, 189, 248, 0.3); color:#38bdf8; font-family:var(--font-mono); font-size:0.82rem; padding:6px 10px; border-radius:4px; box-sizing:border-box;" oninput="syncJwtHighlight()">
+                  </div>
+
+                  <button type="button" class="btn-send" onclick="executeJwtLabTest()" style="width:100%; justify-content:center; padding:10px; font-size:0.9rem;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    Send Forged Token to API (GET /api/v1/admin/dashboard)
+                  </button>
+                </div>
+
+                <!-- Right Pane: API Server Response -->
+                <div style="background:rgba(15,23,42,0.85); border:1px solid rgba(255,255,255,0.08); border-radius:var(--radius-md); padding:1.1rem;">
+                  <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.75rem; color:#34d399; font-family:var(--font-mono); font-weight:700;">
+                    <span>SERVER AUTHENTICATION RESPONSE</span>
+                    <span id="labStatusBadge" style="font-weight:700; color:#34d399;">HTTP/1.1 200 OK</span>
+                  </div>
+                  <div style="font-size:0.78rem; color:#94a3b8; margin-bottom:4px; font-family:var(--font-mono);">Response Body:</div>
+                  <pre id="labResponseBox" style="width:100%; height:200px; background:#070d1a; border:1px solid rgba(255,255,255,0.1); border-radius:4px; color:#f1f5f9; font-family:var(--font-mono); font-size:0.82rem; padding:10px; overflow:auto; margin:0; box-sizing:border-box;"></pre>
+
+                  <!-- Explanation Box -->
+                  <div id="labExplanationBox" style="margin-top:14px; padding:12px 14px; background:rgba(15,23,42,0.9); border:1px solid rgba(56,189,248,0.25); border-left:4px solid #38bdf8; border-radius:var(--radius-sm); font-size:0.84rem; color:#f1f5f9; line-height:1.55;">
+                    Select an attack preset above to simulate how flawed token verification mechanisms allow authentication bypass!
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================== TAB 7: INTERVIEW Q&A ==================== -->
+        <div class="tab-content" id="tab-questions">
+          <div class="card-panel">
+            <div class="card-title-badge-row">
+              <div class="blue-circle-num">7</div>
+              <h2 class="panel-main-heading">
+                <span class="lang-hi">Frequently Asked Questions (FAQ)</span>
+                <span class="lang-en">Frequently Asked Questions (FAQ)</span>
+              </h2>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:1.2rem; margin-top:1.5rem;">
+              <!-- Q1 -->
+              <div class="hw-step-box step-1">
+                <h4>Q1: JWT me RS256 aur HS256 algorithm confusion attack kyu aur kaise kaam karta hai?</h4>
+                <p>
+                  <span class="lang-hi"><strong>Answer:</strong> RS256 ek asymmetric algorithm hai jisme private key token sign karti hai aur public key verify. Lekin HS256 symmetric algorithm hai jisme wahi key signing aur verification dono ke liye use hoti hai. Agar verification function <code>algorithms: ['RS256']</code> restrict nahi karta, to attacker token ko <code>"alg": "HS256"</code> se sign karta hai using the server's public RSA key (jo openly available hoti hai). Backend public key ko HMAC secret ki tarah treat karke signature verify kar leta hai aur attack safal ho jata hai.</span>
+                  <span class="lang-en"><strong>Answer:</strong> RS256 uses asymmetric cryptography (private key signs, public key verifies). HS256 uses symmetric cryptography (same secret signs and verifies). When backend verification libraries accept any algorithm in the token header, an attacker changes <code>"alg"</code> to <code>"HS256"</code> and HMAC-signs the token using the server's publicly accessible RSA public key as the symmetric secret string. The server checks the signature against the public key file and accepts it.</span>
+                </p>
+              </div>
+
+              <!-- Q2 -->
+              <div class="hw-step-box step-2">
+                <h4>Q2: Stateless JWT architecture me immediate logout ya token revocation kaise implement kiya jata hai?</h4>
+                <p>
+                  <span class="lang-hi"><strong>Answer:</strong> Stateless JWTs by default revoke nahi kiye ja sakte jab tak unka <code>exp</code> khatam na ho. Isko solve karne ke 3 best enterprise patterns hain: (1) <strong>Short-lived access tokens (5–15 mins)</strong> with server-managed refresh tokens, (2) <strong>Redis Token Blocklist:</strong> Logout par token <code>jti</code> (JWT ID) ko Redis me <code>exp</code> time tak store karna aur middleware me check karna, (3) <strong>User Token Version:</strong> Database me <code>token_version</code> rakhna aur JWT claim me embed karna; password reset par version increment kar dena.</span>
+                  <span class="lang-en"><strong>Answer:</strong> Pure stateless JWTs cannot be revoked prior to expiration without maintaining state. Recommended approaches: (1) Issue short-lived access tokens (5-15 mins) paired with revocable refresh tokens in a database, (2) <strong>Redis Revocation Denylist:</strong> Cache revoked <code>jti</code> identifiers in Redis with a TTL equal to the token's remaining lifetime, (3) <strong>Token Versioning:</strong> Store a <code>token_version</code> counter on the user database record; incrementing it invalidates all previously issued tokens.</span>
+                </p>
+              </div>
+
+              <!-- Q3 -->
+              <div class="hw-step-box step-3">
+                <h4>Q3: JWS (JSON Web Signature) aur JWE (JSON Web Encryption) me kya difference hai?</h4>
+                <p>
+                  <span class="lang-hi"><strong>Answer:</strong> Standard JWTs <strong>JWS</strong> hote hain—jisme data Base64URL encoded hota hai aur cryptographically signed hota hai (Integrity provide karta hai, Confidentiality nahi; koi bhi payload padh sakta hai). Jabki <strong>JWE</strong> me payload encrypted hota hai (e.g. AES-GCM), jisse token ka content unauthorized parties ke liye completely unreadable hota hai.</span>
+                  <span class="lang-en"><strong>Answer:</strong> A <strong>JWS</strong> provides digital signatures ensuring payload integrity, but claims remain Base64URL encoded and readable in plaintext. A <strong>JWE</strong> encrypts the payload so that only authorized recipients possessing the decryption key can inspect the claims, guaranteeing both confidentiality and integrity.</span>
+                </p>
+              </div>
+
+              <!-- Q4 -->
+              <div class="hw-step-box step-4">
+                <h4>Q4: JWT header injection attacks (jku, jwk, kid) se bachne ka sabse secure tarika kya hai?</h4>
+                <p>
+                  <span class="lang-hi"><strong>Answer:</strong> (1) Client-controlled <code>jku</code> (JWK Set URL) parameters ko completely disable ya strict corporate domain whitelist se match karein, (2) Inline <code>jwk</code> public key injection ko server par deny karein, (3) <code>kid</code> parameter ko direct filesystem path ya raw SQL query me na dalein; safe pre-configured dictionary lookup (e.g. <code>KEYS[kid]</code>) use karein.</span>
+                  <span class="lang-en"><strong>Answer:</strong> (1) Strictly disallow or enforce strict domain whitelisting on <code>jku</code> headers, (2) Reject self-contained <code>jwk</code> public keys supplied by the client, (3) Never concatenate <code>kid</code> directly into filesystem paths (path traversal) or database queries (SQLi); map <code>kid</code> against an immutable in-memory map of known public keys.</span>
+                </p>
+              </div>
+
+              <!-- Q5 -->
+              <div class="hw-step-box step-5">
+                <h4>Q5: Kya client side par JWT ko localStorage me rakhna safe hai ya HttpOnly cookie me?</h4>
+                <p>
+                  <span class="lang-hi"><strong>Answer:</strong> <strong>HttpOnly, Secure, SameSite=Strict/Lax cookies</strong> sabse zyada safe hain kyunki JavaScript <code>document.cookie</code> se token read nahi kar sakti, jisse XSS attacks se token theft prevent ho jata hai. LocalStorage me token store karne par koi bhi injected XSS script token ko extract karke attacker ko bhej sakti hai.</span>
+                  <span class="lang-en"><strong>Answer:</strong> <strong>HttpOnly, Secure, SameSite=Strict cookies</strong> are strongly recommended over LocalStorage. HttpOnly cookies cannot be accessed via JavaScript <code>document.cookie</code>, effectively insulating the token from XSS-driven token exfiltration.</span>
+                </p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Footer -->
+      <footer class="app-footer-custom">
+        <div class="footer-divider-glow"></div>
+        <div class="footer-inner-content">
+          <div class="footer-brand-row">
+            <div class="footer-badge-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                <path d="m9 12 2 2 4-4"/>
+              </svg>
+            </div>
+            <div class="footer-author-text">
+              <span class="footer-credit-label">Designed and Developed by</span>
+              <span class="footer-author-name">Irshad Akaram</span>
+            </div>
+          </div>
+        </div>
+      </footer>
+
+    </main>
+  </div>
+
+  <script src="assets/js/main.js"></script>
+  </script>
+  <script>
+    /* ==========================================================================
+       Interactive JWT Lab Simulation Engine
+       ========================================================================== */
+    const jwtPresets = {
+      valid: {
+        header: { alg: "HS256", typ: "JWT" },
+        payload: { sub: "1001", name: "Kaif", role: "user", iat: 1725501000 },
+        sig: "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk",
+        resp: {
+          status: "HTTP/1.1 200 OK (Standard User)",
+          color: "#34d399",
+          payload: { user_id: 1001, name: "Kaif", role: "user", access_level: "standard_dashboard", auth_status: "VALID_SIGNATURE" },
+          banner: "✅ <strong>Legitimate Token:</strong> Token is verified using the server's private secret. Access granted strictly to Kaif's standard dashboard.",
+          expl: "<strong>✅ Authorized Access:</strong> The signature is mathematically valid. The backend verified the HMAC-SHA256 signature using the server secret. Standard user permissions enforced."
+        }
+      },
+      none: {
+        header: { alg: "none", typ: "JWT" },
+        payload: { sub: "1001", name: "Kaif", role: "admin", iat: 1725501000 },
+        sig: "",
+        resp: {
+          status: "HTTP/1.1 200 OK (🚨 PRIVILEGE ESCALATED)",
+          color: "#ef4444",
+          payload: { user_id: 1001, name: "Kaif", role: "admin", access_level: "super_admin_root", warning: "SIGNATURE_VERIFICATION_SKIPPED" },
+          banner: '🚨 <strong>CRITICAL JWT BYPASS:</strong> The server accepted <code>"alg": "none"</code> with an empty signature! Kaif escalated to full administrator.',
+          expl: '<strong>🚨 Algorithm "none" Attack Succeeded:</strong> The vulnerable verification library saw <code>"alg": "none"</code> in the header and bypassed cryptographic verification entirely, accepting the forged <code>role: "admin"</code> claim!'
+        }
+      },
+      confusion: {
+        header: { alg: "HS256", typ: "JWT" },
+        payload: { sub: "1001", name: "Kaif", role: "admin", iat: 1725501000 },
+        sig: "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk_FORGED_VIA_PUBKEY",
+        resp: {
+          status: "HTTP/1.1 200 OK (🚨 ALGORITHM CONFUSION)",
+          color: "#ef4444",
+          payload: { user_id: 1001, name: "Kaif", role: "admin", verified_with: "SERVER_PUBLIC_KEY_AS_HMAC_SECRET" },
+          banner: '🚨 <strong>ALGORITHM CONFUSION EXPLOIT:</strong> Server treated its public RSA key string as an HMAC symmetric secret. Complete administrative takeover.',
+          expl: '<strong>🚨 Algorithm Confusion Exploit:</strong> The server was configured for asymmetric RS256, but accepted symmetric HS256 from the token header. It verified the HMAC using its publicly exposed RSA public key string as the secret!'
+        }
+      },
+      weak: {
+        header: { alg: "HS256", typ: "JWT" },
+        payload: { sub: "1001", name: "Kaif", role: "admin", iat: 1725501000 },
+        sig: "c2VjcmV0MTIzX2ZvcmdlZF9zaWduYXR1cmVfaGFzaA",
+        resp: {
+          status: "HTTP/1.1 200 OK (🚨 CRACKED SECRET FORGERY)",
+          color: "#ef4444",
+          payload: { user_id: 1001, name: "Kaif", role: "admin", secret_used: "secret123", attack: "OFFLINE_DICTIONARY_CRACK" },
+          banner: '🔓 <strong>OFFLINE BRUTE-FORCE EXPLOIT:</strong> Server HMAC secret (<code>"secret123"</code>) was cracked via rockyou.txt. Kaif forged valid admin signatures.',
+          expl: '<strong>🚨 Weak Secret Cracked:</strong> Low-entropy secret <code>"secret123"</code> was cracked offline in seconds via Hashcat. The attacker signed an authentic-looking administrative token.'
+        }
+      }
+    };
+
+    let activeJwtPreset = 'valid';
+
+    function updateJwtPresetHighlight(selectedKey) {
+      const keys = ['valid', 'none', 'confusion', 'weak'];
+      keys.forEach(k => {
+        const btnId = k === 'valid' ? 'btnPresetValid' :
+                      k === 'none' ? 'btnPresetNone' :
+                      k === 'confusion' ? 'btnPresetConfusion' : 'btnPresetWeak';
+        const btn = document.getElementById(btnId);
+        if (btn) {
+          if (k === selectedKey) {
+            btn.style.background = 'rgba(56, 189, 248, 0.22)';
+            btn.style.borderColor = '#38bdf8';
+            btn.style.boxShadow = '0 0 12px rgba(56, 189, 248, 0.3)';
+            btn.style.color = '#fff';
+          } else {
+            btn.style.background = 'rgba(255, 255, 255, 0.05)';
+            btn.style.boxShadow = 'none';
+            if (k === 'none' || k === 'weak') {
+              btn.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+              btn.style.color = '#f87171';
+            } else if (k === 'confusion') {
+              btn.style.borderColor = 'rgba(245, 158, 11, 0.4)';
+              btn.style.color = '#fbbf24';
+            } else {
+              btn.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+              btn.style.color = '#cbd5e1';
+            }
+          }
+        }
+      });
+    }
+
+    
+    function switchJwtView(mode) {
+      const btnHi = document.getElementById('jwtViewModeHighlight');
+      const btnEdit = document.getElementById('jwtViewModeEdit');
+      const boxHi = document.getElementById('jwtHighlightBoxWrapper');
+      const boxEdit = document.getElementById('jwtEditBoxWrapper');
+      if (mode === 'highlight') {
+        btnHi.classList.add('active');
+        btnEdit.classList.remove('active');
+        boxHi.style.display = 'block';
+        boxEdit.style.display = 'none';
+        syncJwtHighlight();
+      } else {
+        btnEdit.classList.add('active');
+        btnHi.classList.remove('active');
+        boxEdit.style.display = 'block';
+        boxHi.style.display = 'none';
+      }
+    }
+
+    function syncJwtHighlight() {
+      const hVal = document.getElementById('labHeaderInput').value.trim();
+      const pVal = document.getElementById('labPayloadInput').value.trim();
+      const sVal = document.getElementById('labSigInput').value.trim();
+      const hPre = document.getElementById('jwtHeaderPre');
+      const pPre = document.getElementById('jwtPayloadPre');
+      const sBox = document.getElementById('jwtSigDisplay');
+
+      if (hPre) hPre.innerHTML = window.syntaxHighlightJson ? window.syntaxHighlightJson(hVal) : hVal;
+      if (pPre) pPre.innerHTML = window.syntaxHighlightJson ? window.syntaxHighlightJson(pVal) : pVal;
+      if (sBox) sBox.textContent = sVal || '[EMPTY / UNSIGNED]';
+    }
+
+    function loadJwtPreset(presetKey) {
+      activeJwtPreset = presetKey;
+      updateJwtPresetHighlight(presetKey);
+
+      const data = jwtPresets[presetKey];
+      if (!data) return;
+
+      document.getElementById('labHeaderInput').value = JSON.stringify(data.header, null, 2);
+      document.getElementById('labPayloadInput').value = JSON.stringify(data.payload, null, 2);
+      document.getElementById('labSigInput').value = data.sig;
+      syncJwtHighlight();
+      executeJwtLabTest();
+    }
+
+    function executeJwtLabTest() {
+      updateJwtPresetHighlight(activeJwtPreset);
+
+      const statusBadge = document.getElementById('labStatusBadge');
+      const headerVal = document.getElementById('labHeaderInput').value.trim();
+      const payloadVal = document.getElementById('labPayloadInput').value.trim();
+      const sigVal = document.getElementById('labSigInput').value.trim();
+
+      if (statusBadge) {
+        statusBadge.innerHTML = '<span style="color:#fbbf24;">Evaluating JWT Signature...</span>';
+      }
+
+      setTimeout(() => {
+        let headerObj, payloadObj;
+        try {
+          headerObj = JSON.parse(headerVal);
+        } catch (e) {
+          renderLabOutput({
+            status: "HTTP/1.1 400 Bad Request (Malformed Header)",
+            color: "#ef4444",
+            payload: { error: "Bad Request", message: "Failed to parse JWT Header JSON", status_code: 400 },
+            banner: '❌ <strong>Malformed Header:</strong> The header contains invalid JSON. Fix JSON syntax to test verification.',
+            expl: '<strong>❌ Header Parsing Failed:</strong> Server cannot decode header claims because the JSON structure is malformed.'
+          });
+          return;
+        }
+
+        try {
+          payloadObj = JSON.parse(payloadVal);
+        } catch (e) {
+          renderLabOutput({
+            status: "HTTP/1.1 400 Bad Request (Malformed Payload)",
+            color: "#ef4444",
+            payload: { error: "Bad Request", message: "Failed to parse JWT Payload JSON", status_code: 400 },
+            banner: '❌ <strong>Malformed Payload:</strong> The payload contains invalid JSON. Fix JSON syntax to test verification.',
+            expl: '<strong>❌ Payload Parsing Failed:</strong> Server cannot decode payload claims because the JSON structure is malformed.'
+          });
+          return;
+        }
+
+        const alg = (headerObj.alg || "").toLowerCase();
+
+        // 1. None Algorithm Attack Check
+        if (alg === 'none') {
+          if (sigVal === "") {
+            renderLabOutput({
+              status: "HTTP/1.1 200 OK (🚨 PRIVILEGE ESCALATED)",
+              color: "#ef4444",
+              payload: {
+                user_id: payloadObj.sub || 1001,
+                name: payloadObj.name || "Kaif",
+                role: payloadObj.role || "admin",
+                access_level: "super_admin_root",
+                warning: "SIGNATURE_VERIFICATION_SKIPPED"
+              },
+              banner: '🚨 <strong>CRITICAL JWT BYPASS:</strong> The vulnerable server accepted <code>"alg": "none"</code> with an empty signature! Kaif escalated to full administrator.',
+              expl: '<strong>🚨 Algorithm "none" Attack Succeeded:</strong> The vulnerable backend blindly accepted <code>"alg": "none"</code> and bypassed signature verification completely! Privileges in the payload were granted without any cryptographic check.'
+            });
+          } else {
+            renderLabOutput({
+              status: "HTTP/1.1 401 Unauthorized (Invalid Signature for alg: none)",
+              color: "#ef4444",
+              payload: {
+                error: "Unauthorized",
+                message: "Algorithm 'none' tokens must not include a signature",
+                status_code: 401
+              },
+              banner: '❌ <strong>Invalid Signature:</strong> When <code>"alg": "none"</code> is declared, RFC 7519 expects the signature portion to be completely empty.',
+              expl: '<strong>❌ Verification Failed:</strong> Tokens declaring algorithm "none" cannot supply a signature. Strip the signature or set a valid algorithm.'
+            });
+          }
+          return;
+        }
+
+        // 2. Algorithm Confusion Check (RS256 -> HS256)
+        if (activeJwtPreset === 'confusion') {
+          const expectedSig = "rS_to_hS_forged_with_public_key_pem_data";
+          if (sigVal === expectedSig) {
+            renderLabOutput({
+              status: "HTTP/1.1 200 OK (🚨 ALGORITHM CONFUSION BYPASS)",
+              color: "#ef4444",
+              payload: {
+                user_id: payloadObj.sub || 1001,
+                name: payloadObj.name || "Kaif",
+                role: payloadObj.role || "admin",
+                access_level: "super_admin_root",
+                attack_type: "KEY_CONFUSION_RS256_TO_HS256"
+              },
+              banner: '🚨 <strong>KEY CONFUSION SUCCESS:</strong> Server verified the token using its public RSA key as an HMAC secret! Admin privileges granted.',
+              expl: '<strong>🚨 Algorithm Confusion Succeeded:</strong> The server was configured for RS256, but accepted HS256 signed using the server\'s public key as the HMAC secret! Kaif gained full admin rights.'
+            });
+          } else {
+            renderLabOutput({
+              status: "HTTP/1.1 401 Unauthorized (Invalid Signature / Token Tampered)",
+              color: "#ef4444",
+              payload: {
+                error: "Unauthorized",
+                message: "Signature verification failed",
+                status_code: 401,
+                details: {
+                  algorithm: headerObj.alg || "HS256",
+                  signature_check: "FAILED",
+                  reason: "Cryptographic signature does not match expected HMAC computed with public key"
+                }
+              },
+              banner: '❌ <strong>Signature Verification Failed:</strong> The modified signature was rejected! Server recomputed HMAC-SHA256 and detected a mismatch.',
+              expl: '<strong>❌ Tamper Detected:</strong> You modified the signature. The server computed the HMAC hash and found it did not match your modified string. Request rejected with HTTP 401!'
+            });
+          }
+          return;
+        }
+
+        // 3. Weak Secret Check
+        if (activeJwtPreset === 'weak') {
+          const expectedSig = "forged_with_secret123_hashcat_cracked";
+          if (sigVal === expectedSig) {
+            renderLabOutput({
+              status: "HTTP/1.1 200 OK (🚨 WEAK SECRET FORGERY)",
+              color: "#ef4444",
+              payload: {
+                user_id: payloadObj.sub || 1001,
+                name: payloadObj.name || "Kaif",
+                role: payloadObj.role || "admin",
+                access_level: "super_admin_root",
+                attack_type: "OFFLINE_HMAC_CRACK_FORGERY"
+              },
+              banner: '🚨 <strong>FORGERY VERIFIED:</strong> Server validated the signature forged using the cracked secret <code>"secret123"</code>! Full admin access granted.',
+              expl: '<strong>🚨 Weak Secret Exploit Succeeded:</strong> Because the server used a weak dictionary word ("secret123"), the attacker cracked it offline with Hashcat and signed a valid admin token!'
+            });
+          } else {
+            renderLabOutput({
+              status: "HTTP/1.1 401 Unauthorized (Invalid Signature / Token Tampered)",
+              color: "#ef4444",
+              payload: {
+                error: "Unauthorized",
+                message: "Signature verification failed",
+                status_code: 401,
+                details: {
+                  algorithm: headerObj.alg || "HS256",
+                  signature_check: "FAILED",
+                  reason: "Cryptographic signature does not match HMAC with secret123"
+                }
+              },
+              banner: '❌ <strong>Signature Verification Failed:</strong> The modified signature was rejected! Cryptographic hash does not match.',
+              expl: '<strong>❌ Tamper Detected:</strong> You changed the signature. Without the correct hash output, the server rejected the token with HTTP 401.'
+            });
+          }
+          return;
+        }
+
+        // 4. Valid Token & Generic Verification Check
+        const authenticUserSig = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk";
+
+        // Check if user modified the signature
+        if (sigVal !== authenticUserSig) {
+          renderLabOutput({
+            status: "HTTP/1.1 401 Unauthorized (Invalid Signature / Token Tampered)",
+            color: "#ef4444",
+            payload: {
+              error: "Unauthorized",
+              message: "Invalid JWT signature: Verification failed",
+              status_code: 401,
+              details: {
+                algorithm: headerObj.alg || "HS256",
+                signature_check: "FAILED",
+                reason: "Cryptographic signature does not match server recomputed HMAC-SHA256 hash"
+              }
+            },
+            banner: '❌ <strong>Signature Verification Failed:</strong> You modified the signature! The server recomputed HMAC-SHA256 using its hidden secret key and detected a mismatch. Token rejected with HTTP 401.',
+            expl: '<strong>❌ Tamper Detected:</strong> You modified the cryptographic signature string! Because only the server knows the secret signing key, any altered signature fails the HMAC comparison. The server rejected the request!'
+          });
+          return;
+        }
+
+        // Check if user modified the payload (e.g. role: admin) while keeping the original user signature
+        if (payloadObj.role && payloadObj.role.toLowerCase() === 'admin') {
+          renderLabOutput({
+            status: "HTTP/1.1 401 Unauthorized (Payload Tampered / Signature Mismatch)",
+            color: "#ef4444",
+            payload: {
+              error: "Unauthorized",
+              message: "Token integrity violation: Payload modified after signing",
+              status_code: 401,
+              details: {
+                claimed_role: payloadObj.role,
+                signature_check: "FAILED",
+                reason: "Signature belongs to Kaif (user), does not match modified payload"
+              }
+            },
+            banner: '❌ <strong>Payload Tampering Blocked:</strong> You changed the payload to <code>role: "admin"</code>, but the signature was generated for <code>role: "user"</code>! Server rejected with HTTP 401.',
+            expl: '<strong>❌ Tamper-Proofing in Action:</strong> This proves why JWT is secure! You changed the payload claims, but without the server\'s secret key, you could not compute the new valid signature. The server caught the tampering!'
+          });
+          return;
+        }
+
+        // Authentic Kaif user token
+        renderLabOutput({
+          status: "HTTP/1.1 200 OK (Standard User)",
+          color: "#34d399",
+          payload: {
+            user_id: payloadObj.sub || 1001,
+            name: payloadObj.name || "Kaif",
+            role: payloadObj.role || "user",
+            access_level: "standard_dashboard",
+            auth_status: "VALID_SIGNATURE"
+          },
+          banner: '✅ <strong>Valid Signature:</strong> Token is legitimately signed with server secret. Access restricted to standard user dashboard.',
+          expl: '<strong>✅ Authorized Access:</strong> The signature is mathematically valid. The backend verified the HMAC-SHA256 signature using the server secret. Standard user permissions enforced.'
+        });
+
+      }, 150);
+    }
+
+    function renderLabOutput(data) {
+      const statusBadge = document.getElementById('labStatusBadge');
+      const respBox = document.getElementById('labResponseBox');
+      const explBox = document.getElementById('labExplanationBox');
+      const alertBanner = document.getElementById('jwt-alert-banner');
+
+      if (statusBadge) statusBadge.innerHTML = `<span style="color:${data.color};">${data.status}</span>`;
+      if (respBox) respBox.innerHTML = window.syntaxHighlightJson ? window.syntaxHighlightJson(data.payload) : JSON.stringify(data.payload, null, 2);
+      if (explBox) explBox.innerHTML = data.expl;
+
+      if (alertBanner) {
+        if (data.color === '#34d399') {
+          alertBanner.style.background = 'rgba(52, 211, 153, 0.1)';
+          alertBanner.style.border = '1px solid rgba(52, 211, 153, 0.3)';
+          alertBanner.style.borderLeft = '4px solid #34d399';
+          alertBanner.style.color = '#6ee7b7';
+        } else {
+          alertBanner.style.background = 'rgba(239, 68, 68, 0.12)';
+          alertBanner.style.border = '1px solid rgba(239, 68, 68, 0.35)';
+          alertBanner.style.borderLeft = '4px solid #ef4444';
+          alertBanner.style.color = '#fca5a5';
+        }
+        alertBanner.innerHTML = data.banner;
+      }
+    }
+
+    function copyTerm(btn) {
+      const parent = btn.closest('.terminal-box') || btn.closest('.compare-box');
+      if (!parent) return;
+      const pre = parent.querySelector('pre');
+      if (!pre) return;
+      navigator.clipboard.writeText(pre.innerText).then(() => {
+        const orig = btn.innerText;
+        btn.innerText = 'Copied!';
+        btn.style.color = '#34d399';
+        setTimeout(() => {
+          btn.innerText = orig;
+          btn.style.color = '';
+        }, 1800);
+      });
+    }
+
+    /* JWT Security Audit Checklist Logic */
+    function toggleJwtChecklist(item) {
+      const box = item.querySelector('.jwt-check-box');
+      if (!box) return;
+      const isChecked = box.getAttribute('data-checked') === 'true';
+      if (isChecked) {
+        box.setAttribute('data-checked', 'false');
+        box.innerHTML = '';
+        item.classList.remove('is-checked');
+      } else {
+        box.setAttribute('data-checked', 'true');
+        box.innerHTML = '✓';
+        item.classList.add('is-checked');
+      }
+      updateJwtChecklistCounter();
+    }
+
+    function updateJwtChecklistCounter() {
+      const checked = document.querySelectorAll('.checklist-container .jwt-check-box[data-checked="true"]').length;
+      const badge = document.getElementById('jwtChecklistCount');
+      if (badge) badge.innerText = checked;
+    }
+
+    function resetJwtChecklist() {
+      document.querySelectorAll('.checklist-container .checklist-item').forEach(item => {
+        item.classList.remove('is-checked');
+        const box = item.querySelector('.jwt-check-box');
+        if (box) {
+          box.setAttribute('data-checked', 'false');
+          box.innerHTML = '';
+        }
+      });
+      updateJwtChecklistCounter();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadJwtPreset('valid');
+      // resetJwtChecklist();
+    });
+  </script>
+</body>
+</html>

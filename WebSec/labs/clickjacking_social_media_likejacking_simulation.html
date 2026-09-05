@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📱 Security Lab: Social Media Account Takeover ("Likejacking")</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0b0f19;
+    --panel: #111827;
+    --panel-2: #1f2937;
+    --border: #374151;
+    --accent: #f59e0b;
+    --danger: #ef4444;
+    --safe: #10b981;
+    --blue: #3b82f6;
+    --social-blue: #1d9bf0;
+    --purple: #8b5cf6;
+    --text: #f9fafb;
+    --text-muted: #9ca3af;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', system-ui, sans-serif;
+  }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* ── CYBER BACKGROUND ── */
+  .cyber-bg { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+  .cyber-grid {
+    position: absolute; inset: -120px;
+    background-image: 
+      radial-gradient(rgba(255, 255, 255, 0.12) 1.2px, transparent 1.2px),
+      linear-gradient(rgba(245, 158, 11, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(29, 155, 240, 0.03) 1px, transparent 1px);
+    background-size: 32px 32px, 96px 96px, 96px 96px;
+    opacity: 0.85; animation: gridDrift 60s linear infinite;
+  }
+  @keyframes gridDrift { 0% { transform: translate(0, 0); } 100% { transform: translate(96px, 96px); } }
+  .cyber-orb { position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.35; will-change: transform; }
+  .orb-1 { width: 600px; height: 600px; background: radial-gradient(circle, #f59e0b 0%, transparent 70%); top: -100px; left: -100px; animation: floatOrb1 16s ease-in-out infinite alternate; }
+  .orb-2 { width: 650px; height: 650px; background: radial-gradient(circle, #1d9bf0 0%, transparent 70%); bottom: -100px; right: -120px; animation: floatOrb2 20s ease-in-out infinite alternate; }
+  @keyframes floatOrb1 { 0% { transform: translate(0,0); } 100% { transform: translate(-60px, 140px); } }
+  @keyframes floatOrb2 { 0% { transform: translate(0,0); } 100% { transform: translate(-80px, -70px); } }
+
+  .container { max-width: 1380px; margin: 0 auto; padding: 24px 20px 60px; position: relative; z-index: 1; }
+
+  /* ── HEADER ── */
+  .header {
+    display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 16px;
+    padding-bottom: 24px; border-bottom: 1px solid var(--border); margin-bottom: 24px;
+  }
+  .back-link {
+    display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text-muted); font-family: var(--mono); font-size: 13px; text-decoration: none; transition: all 0.2s;
+  }
+  .back-link:hover { color: var(--text); border-color: var(--accent); transform: translateX(-3px); }
+  .header-center { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; }
+  .header-center h1 { font-size: 20px; font-weight: 700; color: var(--text); margin: 0; }
+  .header-badge {
+    display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px;
+    background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.35);
+    border-radius: 20px; font-family: var(--mono); font-size: 11.5px; color: #fcd34d; font-weight: 600;
+  }
+  .btn-reset-lab {
+    display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px;
+    background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text); font-family: var(--mono); font-size: 12.5px; cursor: pointer; transition: all 0.2s;
+  }
+  .btn-reset-lab:hover { border-color: var(--danger); color: var(--danger); }
+  @media (max-width: 960px) { .header { display: flex; flex-direction: column; align-items: center; } }
+
+  /* ── STICKY PIPELINE STREAM BAR ── */
+  .flow-stream-bar {
+    position: -webkit-sticky; position: sticky; top: 0; z-index: 100;
+    background: rgba(11, 15, 25, 0.96); backdrop-filter: blur(20px);
+    border: 1px solid var(--border); border-radius: 10px; padding: 12px 18px; margin-bottom: 24px;
+    display: flex; align-items: center; justify-content: space-between; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+    flex-wrap: wrap; gap: 10px;
+  }
+  .flow-stream-bar::after {
+    content: ''; position: absolute; top: 0; left: -100%; width: 60%; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent), var(--social-blue), transparent);
+    animation: pipelineLaser 3.5s linear infinite;
+  }
+  @keyframes pipelineLaser { 0% { left: -60%; } 100% { left: 140%; } }
+
+  .flow-step-item {
+    display: flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 12px;
+    color: var(--text-muted); padding: 6px 14px; border-radius: 20px;
+    border: 1px solid transparent; background: rgba(255, 255, 255, 0.02); transition: all 0.3s ease;
+  }
+  .flow-step-item.active {
+    color: #fbbf24; font-weight: 600; background: rgba(245, 158, 11, 0.15);
+    border-color: rgba(245, 158, 11, 0.4); box-shadow: 0 0 16px rgba(245, 158, 11, 0.3);
+  }
+  .flow-step-item.attacked {
+    color: #ffffff !important; font-weight: 700 !important;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.45), rgba(185, 28, 28, 0.3)) !important;
+    border: 1px solid #ef4444 !important; box-shadow: 0 0 22px rgba(239, 68, 68, 0.7) !important;
+  }
+  .flow-dot-pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+  .flow-step-item.attacked .flow-dot-pulse { background: #ff2222; }
+  .flow-connector { color: #64748b; font-weight: 700; font-size: 13px; }
+
+  /* ── CONTROL DASHBOARD ── */
+  .lab-controls-card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+    padding: 20px; margin-bottom: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 20px;
+  }
+  @media (max-width: 1080px) { .lab-controls-card { grid-template-columns: 1fr; } }
+
+  .control-group { display: flex; flex-direction: column; gap: 8px; }
+  .control-label {
+    font-family: var(--mono); font-size: 11.5px; font-weight: 700; color: var(--accent);
+    text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px;
+  }
+  .btn-select-group { display: flex; flex-direction: column; gap: 6px; }
+  .ctrl-btn {
+    background: var(--panel-2); border: 1px solid var(--border); color: var(--text-muted);
+    padding: 8px 12px; border-radius: 6px; font-family: var(--mono); font-size: 12px;
+    text-align: left; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: space-between;
+  }
+  .ctrl-btn:hover { color: var(--text); border-color: var(--accent); }
+  .ctrl-btn.active {
+    background: rgba(245, 158, 11, 0.12); border-color: var(--accent); color: #fbbf24; font-weight: 600;
+  }
+
+  /* ── SLIDER BOX ── */
+  .slider-box {
+    background: #080c16; border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;
+  }
+  .slider-header { display: flex; align-items: center; justify-content: space-between; }
+  .slider-val-badge {
+    font-family: var(--mono); font-size: 12px; font-weight: 700;
+    padding: 2px 8px; border-radius: 4px; background: rgba(29, 155, 240, 0.2);
+    color: var(--social-blue); border: 1px solid rgba(29, 155, 240, 0.4);
+  }
+  .opacity-slider {
+    width: 100%; height: 6px; border-radius: 3px; background: #1f2937;
+    outline: none; -webkit-appearance: none; cursor: pointer;
+  }
+  .opacity-slider::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%;
+    background: var(--accent); cursor: pointer; box-shadow: 0 0 10px rgba(245, 158, 11, 0.6);
+  }
+  .slider-presets { display: flex; gap: 6px; margin-top: 4px; }
+  .mini-preset-btn {
+    flex: 1; font-family: var(--mono); font-size: 11px; padding: 4px 6px;
+    background: var(--panel-2); border: 1px solid var(--border); color: var(--text-muted);
+    border-radius: 4px; cursor: pointer; text-align: center; transition: all 0.2s;
+  }
+  .mini-preset-btn:hover { color: var(--text); border-color: var(--accent); }
+
+  /* ── DUAL WINDOW WORKSPACE ── */
+  .sim-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+  @media (max-width: 1024px) { .sim-grid { grid-template-columns: 1fr; } }
+
+  .window {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+    overflow: hidden; box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3); display: flex; flex-direction: column;
+  }
+  .window-header {
+    background: var(--panel-2); padding: 10px 16px; display: flex; align-items: center;
+    justify-content: space-between; border-bottom: 1px solid var(--border);
+  }
+  .window-controls { display: flex; align-items: center; gap: 8px; }
+  .win-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot-red { background: #ef4444; } .dot-yellow { background: #f59e0b; } .dot-green { background: #10b981; }
+  .browser-url-bar {
+    background: #090d16; border: 1px solid var(--border); border-radius: 6px;
+    padding: 4px 12px; font-family: var(--mono); font-size: 11.5px; color: var(--text-muted);
+    display: flex; align-items: center; gap: 6px; flex: 1; max-width: 380px; margin-left: 10px;
+  }
+  .window-body { padding: 20px; flex: 1; display: flex; flex-direction: column; gap: 14px; position: relative; }
+
+  /* ── VICTIM SCREEN: BAIT PLAYER & INVISIBLE OVERLAY ── */
+  .bait-stage-container {
+    background: #000; border: 1px solid #1f2937; border-radius: 10px;
+    position: relative; overflow: hidden; height: 340px;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    user-select: none;
+  }
+  .video-fake-bg {
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.85) 100%),
+      radial-gradient(circle at center, #1e293b 0%, #030712 100%);
+    display: flex; flex-direction: column; justify-content: space-between; padding: 18px;
+    z-index: 1;
+  }
+  .bait-live-badge {
+    align-self: flex-start; background: #ef4444; color: #fff; font-family: var(--mono);
+    font-size: 10.5px; font-weight: 700; padding: 3px 8px; border-radius: 4px;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .live-pulse { width: 6px; height: 6px; border-radius: 50%; background: #fff; animation: dotPulse 1s infinite alternate; }
+  .bait-meta { text-align: center; margin-bottom: 20px; }
+  .bait-meta h3 { font-size: 17px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+  .bait-meta p { font-size: 12.5px; color: #94a3b8; }
+
+  /* The Bait Button */
+  .bait-button-box {
+    position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center;
+  }
+  .bait-btn {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #000; font-family: 'Poppins', sans-serif; font-size: 15px; font-weight: 800;
+    padding: 14px 28px; border-radius: 30px; border: none; cursor: pointer;
+    box-shadow: 0 0 25px rgba(245, 158, 11, 0.45); transition: all 0.2s;
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  .bait-btn:hover { transform: scale(1.04); box-shadow: 0 0 35px rgba(245, 158, 11, 0.7); }
+  .bait-subtext { margin-top: 8px; font-size: 11px; color: #64748b; font-family: var(--mono); }
+
+  /* ── THE INVISIBLE SOCIAL IFRAME OVERLAY ── */
+  .overlay-iframe-wrapper {
+    position: absolute; z-index: 10;
+    width: 260px; height: 70px;
+    display: flex; align-items: center; justify-content: center;
+    transition: opacity 0.15s ease;
+    cursor: pointer;
+  }
+  .fake-social-iframe {
+    width: 100%; height: 100%;
+    background: #15202b; border: 2px dashed #1d9bf0; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center; padding: 8px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.7);
+  }
+  .social-target-btn {
+    background: #1d9bf0; color: #fff; border: none; border-radius: 20px;
+    font-family: var(--sans); font-size: 13px; font-weight: 700;
+    padding: 10px 20px; width: 100%; display: flex; align-items: center;
+    justify-content: center; gap: 8px; cursor: pointer; box-shadow: 0 4px 14px rgba(29, 155, 240, 0.4);
+    pointer-events: none; /* Let click pass through or trigger via wrapper */
+  }
+  .framed-defense-shield {
+    display: none; position: absolute; inset: 0; background: rgba(239, 68, 68, 0.95);
+    border-radius: 12px; flex-direction: column; align-items: center; justify-content: center;
+    padding: 10px; text-align: center; z-index: 20;
+  }
+  .framed-defense-shield.active { display: flex; }
+  .shield-title { font-family: var(--mono); font-size: 12px; font-weight: 700; color: #fff; }
+  .shield-desc { font-size: 10.5px; color: #fee2e2; margin-top: 2px; }
+
+  /* ── RIGHT WINDOW: SOCIAL PLATFORM & VICTIM PROFILE ── */
+  .social-profile-card {
+    background: #15202b; border: 1px solid #273340; border-radius: 10px;
+    padding: 16px; display: flex; align-items: center; gap: 14px;
+  }
+  .avatar {
+    width: 46px; height: 46px; border-radius: 50%; background: linear-gradient(135deg, #1d9bf0, #8b5cf6);
+    display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; color: #fff;
+    flex-shrink: 0; border: 2px solid #fff;
+  }
+  .profile-info { flex: 1; }
+  .profile-name { font-size: 15px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 6px; }
+  .profile-handle { font-family: var(--mono); font-size: 12px; color: #8899a6; }
+  .profile-stat { font-family: var(--mono); font-size: 11.5px; color: #10b981; margin-top: 2px; }
+
+  /* ── SOCIAL FEED / TIMELINE ── */
+  .timeline-box {
+    background: #090d16; border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px; min-height: 190px; display: flex; flex-direction: column; gap: 10px;
+  }
+  .timeline-title {
+    font-family: var(--mono); font-size: 11.5px; color: var(--text-muted);
+    border-bottom: 1px solid #1f2937; padding-bottom: 6px; display: flex; justify-content: space-between;
+  }
+  .feed-post {
+    background: #111827; border: 1px solid #1f2937; border-radius: 8px;
+    padding: 12px; font-size: 13px; animation: slideDown 0.3s ease;
+  }
+  @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+  .post-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .post-author { font-weight: 700; font-size: 12.5px; color: #fff; }
+  .post-time { font-size: 11px; color: #64748b; font-family: var(--mono); }
+  .post-body { font-size: 13px; color: #e2e8f0; line-height: 1.5; }
+  .post-link-card {
+    margin-top: 8px; background: #0f172a; border: 1px solid #334155; border-radius: 6px;
+    padding: 8px 12px; display: flex; gap: 10px; align-items: center;
+  }
+  .post-link-card img { width: 42px; height: 42px; border-radius: 4px; object-fit: cover; }
+  .post-link-text { font-size: 11.5px; }
+  .post-link-title { font-weight: 700; color: #f59e0b; }
+  .post-link-url { color: #38bdf8; font-family: var(--mono); font-size: 10px; }
+
+  /* ── NETWORK CONSOLE ── */
+  .net-console {
+    background: #05070e; border: 1px solid var(--border); border-radius: 8px;
+    padding: 12px; font-family: var(--mono); font-size: 11.5px; color: #38bdf8;
+    height: 110px; overflow-y: auto; line-height: 1.5;
+  }
+
+  /* ── VERDICT ALERT ── */
+  .verdict-banner {
+    border-radius: 10px; padding: 18px 22px; margin-bottom: 24px;
+    display: flex; align-items: flex-start; gap: 16px; border: 1px solid transparent;
+    transition: all 0.3s;
+  }
+  .verdict-banner.vulnerable {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(185, 28, 28, 0.05));
+    border-color: rgba(239, 68, 68, 0.4);
+  }
+  .verdict-banner.protected {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(5, 150, 105, 0.05));
+    border-color: rgba(16, 185, 129, 0.4);
+  }
+  .verdict-icon { font-size: 28px; flex-shrink: 0; margin-top: 2px; }
+  .verdict-content h4 { font-size: 16px; font-weight: 700; margin-bottom: 4px; font-family: var(--mono); }
+  .verdict-banner.vulnerable h4 { color: var(--danger); }
+  .verdict-banner.protected h4 { color: var(--safe); }
+  .verdict-content p { font-size: 13.5px; color: var(--text-muted); line-height: 1.6; }
+
+  /* ── TECHNICAL EXPLANATION GRID ── */
+  .tech-info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 30px; }
+  @media (max-width: 900px) { .tech-info-grid { grid-template-columns: 1fr; } }
+  .info-card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px; font-size: 13px;
+  }
+  .info-card h5 {
+    font-family: var(--mono); font-size: 12.5px; color: var(--accent);
+    margin-bottom: 8px; display: flex; align-items: center; gap: 6px;
+  }
+  .info-card p { color: var(--text-muted); line-height: 1.6; }
+
+  /* ── Modern Footer ── */
+  .modern-footer { padding: 40px 18px 30px; text-align: center; position: relative; z-index: 1; }
+  .footer-badge {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: linear-gradient(145deg, var(--panel-2), var(--panel));
+    padding: 12px 28px; border-radius: 30px; font-family: var(--mono); font-size: 13.5px;
+    color: var(--text-muted); border: 1px solid var(--border);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.25); cursor: default;
+  }
+  .footer-badge:hover { transform: translateY(-3px); box-shadow: 0 12px 30px rgba(245, 158, 11, 0.25); }
+  .dev-name {
+    font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 1.05rem;
+    background: linear-gradient(90deg, #3B82F6, #A855F7, #F43F5E, #F59E0B, #3B82F6);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    background-size: 200% auto; animation: gradient-flow 4s linear infinite;
+  }
+  @keyframes gradient-flow { 0% { background-position: 0% center; } 100% { background-position: 200% center; } }
+</style>
+</head>
+<body>
+
+<div class="cyber-bg" aria-hidden="true">
+  <div class="cyber-orb orb-1"></div>
+  <div class="cyber-orb orb-2"></div>
+  <div class="cyber-grid"></div>
+</div>
+
+<div class="container">
+
+  <!-- ── HEADER ── -->
+  <header class="header">
+    <div class="header-left">
+      <a href="../guides/clickjacking.html" class="back-link">
+        <span>← Back to Clickjacking Guide</span>
+      </a>
+    </div>
+    <div class="header-center">
+      <h1>📱 Security Lab: Social Media Likejacking & Account Takeover</h1>
+      <div class="header-badge">
+        <span>⚡ VAPT LAB #17: UI REDRESSING & SOCIAL WORM CASSCADE</span>
+      </div>
+    </div>
+    <div class="header-right">
+      <button class="btn-reset-lab" onclick="resetLab()">
+        <span>🔄 Reset Simulation</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ── STICKY PIPELINE STREAM BAR ── -->
+  <div class="flow-stream-bar">
+    <div class="flow-step-item active" id="flowStep1">
+      <span class="flow-dot-pulse"></span>
+      <span>1. Victim Visits Bait Site</span>
+    </div>
+    <span class="flow-connector">→</span>
+    <div class="flow-step-item" id="flowStep2">
+      <span class="flow-dot-pulse"></span>
+      <span>2. Invisible Iframe Loaded</span>
+    </div>
+    <span class="flow-connector">→</span>
+    <div class="flow-step-item" id="flowStep3">
+      <span class="flow-dot-pulse"></span>
+      <span>3. Social Button Aligned</span>
+    </div>
+    <span class="flow-connector">→</span>
+    <div class="flow-step-item" id="flowStep4">
+      <span class="flow-dot-pulse"></span>
+      <span>4. Bait Click Intercepted</span>
+    </div>
+    <span class="flow-connector">→</span>
+    <div class="flow-step-item" id="flowStep5">
+      <span class="flow-dot-pulse"></span>
+      <span>5. Social Action Hijacked</span>
+    </div>
+  </div>
+
+  <!-- ── CONTROL DASHBOARD ── -->
+  <div class="lab-controls-card">
+    <!-- Vector Selection -->
+    <div class="control-group">
+      <label class="control-label">🎯 1. Target Hijack Vector</label>
+      <div class="btn-select-group">
+        <button class="ctrl-btn active" id="vec-worm" onclick="setVector('worm')">
+          <span>1. Viral Worm Post (Share to 1,420 Followers)</span>
+          <span>⚡</span>
+        </button>
+        <button class="ctrl-btn" id="vec-follow" onclick="setVector('follow')">
+          <span>2. Stealth Follow & Post Like (@hacker_0day)</span>
+          <span>👥</span>
+        </button>
+        <button class="ctrl-btn" id="vec-oauth" onclick="setVector('oauth')">
+          <span>3. 1-Click OAuth Authorize (Account Takeover)</span>
+          <span>🔑</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Defense Selection -->
+    <div class="control-group">
+      <label class="control-label">🛡️ 2. Platform Framing Defense</label>
+      <div class="btn-select-group">
+        <button class="ctrl-btn active" id="def-none" onclick="setDefense('none')">
+          <span>0. Vulnerable (No Frame Protection)</span>
+          <span style="color:var(--danger)">💀</span>
+        </button>
+        <button class="ctrl-btn" id="def-framebuster" onclick="setDefense('framebuster')">
+          <span>1. JS Framebuster (Bypassed via Sandbox)</span>
+          <span style="color:var(--accent)">⚠️</span>
+        </button>
+        <button class="ctrl-btn" id="def-xfo" onclick="setDefense('xfo')">
+          <span>2. X-Frame-Options: SAMEORIGIN</span>
+          <span style="color:var(--safe)">🛡️</span>
+        </button>
+        <button class="ctrl-btn" id="def-csp" onclick="setDefense('csp')">
+          <span>3. CSP: frame-ancestors 'none'</span>
+          <span style="color:var(--safe)">🛡️</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- X-Ray Opacity Slider -->
+    <div class="control-group">
+      <label class="control-label">👁️ 3. Iframe X-Ray Opacity (Under the Hood)</label>
+      <div class="slider-box">
+        <div class="slider-header">
+          <span style="font-size:12px; color:var(--text-muted); font-family:var(--mono);">Overlay Opacity:</span>
+          <span class="slider-val-badge" id="opacityVal">0% (Invisible to Victim)</span>
+        </div>
+        <input type="range" min="0" max="100" value="0" class="opacity-slider" id="opacitySlider" oninput="updateOpacity(this.value)">
+        <div class="slider-presets">
+          <button class="mini-preset-btn" onclick="setOpacityPreset(0)">0% (Victim View)</button>
+          <button class="mini-preset-btn" onclick="setOpacityPreset(45)">45% (X-Ray Mode)</button>
+          <button class="mini-preset-btn" onclick="setOpacityPreset(100)">100% (Auditor View)</button>
+        </div>
+        <span style="font-size:11px; color:#94a3b8; line-height:1.4;">
+          Drag slider to reveal the hidden social media iframe aligned over the bait play button!
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── DUAL WINDOW SIMULATION WORKSPACE ── -->
+  <div class="sim-grid">
+
+    <!-- LEFT WINDOW: VICTIM VIEW / ATTACKER BAIT PAGE -->
+    <div class="window">
+      <div class="window-header">
+        <div class="window-controls">
+          <span class="win-dot dot-red"></span>
+          <span class="win-dot dot-yellow"></span>
+          <span class="win-dot dot-green"></span>
+        </div>
+        <div class="browser-url-bar">
+          <span>🔒</span>
+          <span>https://gaming-insider-hub.net/gta6-official-gameplay-trailer</span>
+        </div>
+        <span style="font-family:var(--mono); font-size:11px; color:var(--accent); font-weight:600;">[ATTACKER TRAP]</span>
+      </div>
+
+      <div class="window-body">
+        <div class="bait-stage-container" id="baitContainer">
+          <!-- Video Player Fake UI -->
+          <div class="video-fake-bg">
+            <div class="bait-live-badge">
+              <span class="live-pulse"></span>
+              <span>WORLD PREMIERE</span>
+            </div>
+            <div class="bait-meta">
+              <h3>🎮 WORLD EXCLUSIVE: GTA VI Official 4K Gameplay Reveal Trailer</h3>
+              <p>Over 1,240,000 gamers watching live right now. Tap button below to unlock 4K 60FPS stream.</p>
+            </div>
+            <div style="font-size:11px; color:#475569; font-family:var(--mono); text-align:right;">
+              Server ID: CDN-EDGE-GAMING-04
+            </div>
+          </div>
+
+          <!-- The Visible Bait Play Button -->
+          <div class="bait-button-box">
+            <button class="bait-btn" id="baitPlayBtn" onclick="triggerVictimClick(event)">
+              <span>▶ WATCH 4K TRAILER NOW</span>
+            </button>
+            <span class="bait-subtext">Streaming is 100% free • Requires no login</span>
+          </div>
+
+          <!-- THE INVISIBLE/TRANSLUCENT SOCIAL IFRAME OVERLAY -->
+          <div class="overlay-iframe-wrapper" id="overlayIframe" style="opacity: 0;" onclick="triggerVictimClick(event)">
+            <div class="fake-social-iframe">
+              <button class="social-target-btn" id="socialBtn">
+                <span id="socialBtnIcon">🐦</span>
+                <span id="socialBtnText">Like & Share to Timeline</span>
+              </button>
+            </div>
+            <!-- Shield if defended -->
+            <div class="framed-defense-shield" id="defenseShield">
+              <span class="shield-title">🚫 FRAMING BLOCKED</span>
+              <span class="shield-desc" id="shieldReason">X-Frame-Options: SAMEORIGIN rejected</span>
+            </div>
+          </div>
+
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+          <span style="font-family:var(--mono); font-size:12px; color:var(--text-muted);">
+            👉 Click on the <strong style="color:var(--accent)">"▶ WATCH 4K TRAILER NOW"</strong> button to test the attack!
+          </span>
+          <button class="btn-reset-lab" style="border-color:var(--accent); color:var(--accent);" onclick="triggerVictimClick()">
+            <span>⚡ Simulate Mouse Click</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT WINDOW: SOCIAL NETWORK BACKEND & VICTIM ACCOUNT PORTAL -->
+    <div class="window">
+      <div class="window-header">
+        <div class="window-controls">
+          <span class="win-dot dot-red"></span>
+          <span class="win-dot dot-yellow"></span>
+          <span class="win-dot dot-green"></span>
+        </div>
+        <div class="browser-url-bar">
+          <span>🔒</span>
+          <span>https://socialhub.internal/profile/bhavesh_sec</span>
+        </div>
+        <span style="font-family:var(--mono); font-size:11px; color:#1d9bf0; font-weight:600;">[LEGITIMATE SOCIAL APP]</span>
+      </div>
+
+      <div class="window-body">
+        <!-- Victim Logged-In Account Card -->
+        <div class="social-profile-card">
+          <div class="avatar">B</div>
+          <div class="profile-info">
+            <div class="profile-name">
+              <span>Bhavesh Singh</span>
+              <span style="color:#1d9bf0; font-size:13px;">✓</span>
+            </div>
+            <div class="profile-handle">@bhavesh_cyber_sec • 1,420 Followers</div>
+            <div class="profile-stat">● Status: Active Session (Cookie: auth_token=sess_bhavesh_99182a)</div>
+          </div>
+        </div>
+
+        <!-- Social Activity Timeline -->
+        <div class="timeline-box">
+          <div class="timeline-title">
+            <span>RECENT ACCOUNT ACTIVITY & TIMELINE</span>
+            <span id="timelineCounter" style="color:var(--accent);">0 Malicious Posts</span>
+          </div>
+
+          <div id="feedPostsContainer" style="display:flex; flex-direction:column; gap:8px;">
+            <!-- Initial clean post -->
+            <div class="feed-post">
+              <div class="post-header">
+                <span class="post-author">Bhavesh Singh</span>
+                <span class="post-time">2 hours ago</span>
+              </div>
+              <div class="post-body">
+                Just started studying modern Web App Pentesting & OWASP Top 10 vulnerabilities! 🛡️💻
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Network Traffic Sniffer -->
+        <div class="net-console" id="netConsole">
+[SYSTEM READY] Listening for incoming HTTP cross-site frame interactions...
+[SESSION ACTIVE] Victim cookie `session=eyJhbGciOi...` is valid for socialhub.internal.
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── VERDICT BANNER ── -->
+  <div class="verdict-banner vulnerable" id="verdictBox">
+    <div class="verdict-icon" id="verdictIcon">💀</div>
+    <div class="verdict-content">
+      <h4 id="verdictTitle">AWAITING VICTIM INTERACTION</h4>
+      <p id="verdictDesc">
+        In default vulnerable state, the malicious site embeds SocialHub inside a 100% transparent iframe positioned over the play button. When Bhavesh clicks "Watch Trailer", the browser transmits Bhavesh's logged-in session cookies, triggering the social action without his knowledge!
+      </p>
+    </div>
+  </div>
+
+  <!-- ── TECHNICAL EXPLANATION ── -->
+  <div class="tech-info-grid">
+    <div class="info-card">
+      <h5>📱 What is Likejacking?</h5>
+      <p>
+        Likejacking is a malicious Clickjacking technique where social media "Like", "Share", or "OAuth Authorize" buttons are embedded into transparent iframes aligned over irresistible bait (gameplay trailers, exclusive streams, free cash). The click hijacks the victim's authenticated identity.
+      </p>
+    </div>
+    <div class="info-card">
+      <h5>🦠 The Viral Worm Effect</h5>
+      <p>
+        When Bhavesh clicks, his account immediately shares the bait link to all 1,420 of his friends. His friends trust posts coming from Bhavesh's verified profile, click the same link, and get likejacked too — triggering an exponential self-propagating social worm!
+      </p>
+    </div>
+    <div class="info-card">
+      <h5>🛡️ Modern Defenses</h5>
+      <p>
+        Header <code>Content-Security-Policy: frame-ancestors 'none'</code> or <code>'self'</code> reliably prevents all framing. Additionally, setting <code>SameSite=Lax</code> or <code>SameSite=Strict</code> on session cookies ensures credentials are never attached to cross-site iframe requests.
+      </p>
+    </div>
+  </div>
+
+</div>
+
+<footer class="modern-footer">
+  <div class="footer-badge">
+    <span class="footer-text">Designed and developed by <strong class="dev-name">Irshad Akaram</strong></span>
+  </div>
+</footer>
+
+<script>
+let currentVector = 'worm';
+let currentDefense = 'none';
+let currentOpacity = 0;
+let postCount = 0;
+
+function setVector(vec) {
+  currentVector = vec;
+  document.querySelectorAll('[id^="vec-"]').forEach(b => b.classList.remove('active'));
+  document.getElementById('vec-' + vec).classList.add('active');
+
+  const btn = document.getElementById('socialBtn');
+  const icon = document.getElementById('socialBtnIcon');
+  const txt = document.getElementById('socialBtnText');
+
+  if (vec === 'worm') {
+    icon.textContent = '🐦';
+    txt.textContent = 'Like & Share to Timeline';
+  } else if (vec === 'follow') {
+    icon.textContent = '👥';
+    txt.textContent = 'Follow & Like @hacker_0day';
+  } else if (vec === 'oauth') {
+    icon.textContent = '🔑';
+    txt.textContent = 'Authorize EvilApp (Full Access)';
+  }
+  appendConsole(`[CONFIG] Target vector switched to: ${vec.toUpperCase()}`);
+}
+
+function setDefense(def) {
+  currentDefense = def;
+  document.querySelectorAll('[id^="def-"]').forEach(b => b.classList.remove('active'));
+  document.getElementById('def-' + def).classList.add('active');
+
+  const shield = document.getElementById('defenseShield');
+  const shieldReason = document.getElementById('shieldReason');
+
+  if (def === 'none') {
+    shield.classList.remove('active');
+    setVerdict('vulnerable', 'VULNERABLE CONFIGURATION ACTIVE', 'SocialHub serves NO X-Frame-Options or CSP headers. The iframe will execute any click with Bhavesh\'s full authenticated session!');
+    appendConsole(`[DEFENSE] Platform framing protection DISABLED (Vulnerable).`);
+  } else if (def === 'framebuster') {
+    shield.classList.remove('active');
+    setVerdict('vulnerable', 'JS FRAMEBUSTER BYPASS: SANDBOX EVASION', 'Target uses legacy "if (top!=self) top.location=self.location". The attacker simply bypassed it by adding sandbox="allow-scripts allow-forms" to prevent top navigation!');
+    appendConsole(`[DEFENSE] JS Framebuster detected. Attacker neutralized via iframe sandbox restrictions.`);
+  } else if (def === 'xfo') {
+    shield.classList.add('active');
+    shieldReason.textContent = 'X-Frame-Options: SAMEORIGIN denied embedding';
+    setVerdict('protected', 'BLOCKED BY X-FRAME-OPTIONS: SAMEORIGIN', 'Browser refused to frame SocialHub because the response header explicitly forbade cross-origin embedding. Likejacking overlay completely disabled!');
+    appendConsole(`[DEFENSE] HTTP/1.1 200 OK -> Header: X-Frame-Options: SAMEORIGIN. Browser refused to render.`);
+  } else if (def === 'csp') {
+    shield.classList.add('active');
+    shieldReason.textContent = 'CSP frame-ancestors \'none\' rejected cross-site frame';
+    setVerdict('protected', 'BLOCKED BY CSP FRAME-ANCESTORS \'NONE\'', 'Modern W3C Content Security Policy evaluated frame-ancestors directive. Browser halted DOM painting of the iframe inside the attacker\'s host.');
+    appendConsole(`[DEFENSE] Content-Security-Policy: frame-ancestors \'none\' enforced. Iframe context blocked.`);
+  }
+}
+
+function updateOpacity(val) {
+  currentOpacity = val;
+  const overlay = document.getElementById('overlayIframe');
+  const badge = document.getElementById('opacityVal');
+  overlay.style.opacity = (val / 100);
+
+  if (val == 0) {
+    badge.textContent = '0% (Victim View - Invisible)';
+    badge.style.color = '#ef4444';
+  } else if (val < 70) {
+    badge.textContent = `${val}% (X-Ray Mode - Educational)`;
+    badge.style.color = '#f59e0b';
+  } else {
+    badge.textContent = `${val}% (Auditor View - 100% Visible)`;
+    badge.style.color = '#10b981';
+  }
+}
+
+function setOpacityPreset(val) {
+  document.getElementById('opacitySlider').value = val;
+  updateOpacity(val);
+}
+
+function setFlowStep(step) {
+  for (let i = 1; i <= 5; i++) {
+    const el = document.getElementById('flowStep' + i);
+    el.classList.remove('active', 'attacked');
+    if (i <= step) {
+      if (step === 5 && currentDefense === 'none') el.classList.add('attacked');
+      else el.classList.add('active');
+    }
+  }
+}
+
+function appendConsole(msg) {
+  const c = document.getElementById('netConsole');
+  c.innerHTML += `\n[${new Date().toLocaleTimeString()}] ${msg}`;
+  c.scrollTop = c.scrollHeight;
+}
+
+function setVerdict(type, title, desc) {
+  const box = document.getElementById('verdictBox');
+  const icon = document.getElementById('verdictIcon');
+  const t = document.getElementById('verdictTitle');
+  const d = document.getElementById('verdictDesc');
+
+  box.className = `verdict-banner ${type}`;
+  icon.textContent = (type === 'vulnerable') ? '💀' : '🛡️';
+  t.textContent = title;
+  d.textContent = desc;
+}
+
+function triggerVictimClick(e) {
+  if (e) e.stopPropagation();
+
+  setFlowStep(3);
+  appendConsole(`[CLICK INTERCEPT] Mouse pointer clicked coordinates on bait button.`);
+
+  setTimeout(() => {
+    setFlowStep(4);
+    if (currentDefense === 'none' || currentDefense === 'framebuster') {
+      // EXPLOIT SUCCEEDS
+      executeLikejackAction();
+    } else {
+      // DEFENSE BLOCKS
+      appendConsole(`[ATTACK BLOCKED] Click did not penetrate to SocialHub! Frame is disabled by security header.`);
+      setVerdict('protected', 'ATTACK BLOCKED BY BROWSER SECURITY POLICY', 'Bhavesh clicked the bait button, but because the browser enforced X-Frame-Options or CSP frame-ancestors, the invisible layer was never rendered. Zero social actions executed!');
+    }
+  }, 400);
+}
+
+function executeLikejackAction() {
+  setFlowStep(5);
+  postCount++;
+  document.getElementById('timelineCounter').textContent = `${postCount} Malicious Action(s)`;
+
+  const container = document.getElementById('feedPostsContainer');
+  const newPost = document.createElement('div');
+  newPost.className = 'feed-post';
+
+  if (currentVector === 'worm') {
+    newPost.innerHTML = `
+      <div class="post-header">
+        <span class="post-author" style="color:#ef4444">🚨 Bhavesh Singh (AUTO-SHARED VIRAL WORM)</span>
+        <span class="post-time">Just now via Web</span>
+      </div>
+      <div class="post-body">
+        OMG!! Have you guys seen the official GTA VI gameplay trailer yet?? 🎮🔥 Watch the full uncut 4K demo before it gets restricted!
+        <div class="post-link-card">
+          <div style="font-size:24px;">🎮</div>
+          <div class="post-link-text">
+            <div class="post-link-title">GTA VI OFFICIAL 4K GAMEPLAY REVEAL</div>
+            <div class="post-link-url">https://gaming-insider-hub.net/gta6-official-gameplay-trailer</div>
+          </div>
+        </div>
+      </div>
+    `;
+    appendConsole(`[HTTP POST] POST /api/v1/posts/share HTTP/1.1`);
+    appendConsole(`[COOKIE SENT] Cookie: session=sess_bhavesh_99182a (Sent cross-site)`);
+    appendConsole(`[STATUS 200] Worm post published! Broadcasted to 1,420 followers of @bhavesh_cyber_sec.`);
+    setVerdict('vulnerable', '💀 ACCOUNT ACTION HIJACKED: VIRAL WORM PROPAGATED!', 'Bhavesh clicked "Watch Trailer", but his click hit the invisible "Share to Timeline" button. His authenticated session instantly published the phishing link to all 1,420 followers!');
+  } else if (currentVector === 'follow') {
+    newPost.innerHTML = `
+      <div class="post-header">
+        <span class="post-author" style="color:#ef4444">👥 Bhavesh Singh (ACTIVITY HIJACKED)</span>
+        <span class="post-time">Just now</span>
+      </div>
+      <div class="post-body">
+        Bhavesh followed <strong style="color:#38bdf8">@hacker_0day</strong> and liked their pinned post: <em>"Zero-Day Exploit Marketplace 2026"</em>.
+      </div>
+    `;
+    appendConsole(`[HTTP POST] POST /api/v1/users/follow?target=hacker_0day HTTP/1.1`);
+    appendConsole(`[STATUS 200] Stealth follow registered! Attacker inflated engagement using victim reputation.`);
+    setVerdict('vulnerable', '💀 STEALTH LIKEJACKING SUCCESSFUL: FORCED FOLLOW', 'Bhavesh\'s session was abused to follow the attacker\'s account and like malicious posts, artificially boosting reach and poisoning algorithmic feeds!');
+  } else if (currentVector === 'oauth') {
+    newPost.innerHTML = `
+      <div class="post-header">
+        <span class="post-author" style="color:#ef4444">🔑 SECURITY ALERT: OAUTH APP AUTHORIZED</span>
+        <span class="post-time">Just now</span>
+      </div>
+      <div class="post-body">
+        Third-party application <strong style="color:#f59e0b">"Stream4KPlayerApp"</strong> was authorized with scopes: <code>read_messages</code>, <code>post_timeline</code>, <code>account_admin</code>.
+      </div>
+    `;
+    appendConsole(`[HTTP POST] POST /oauth/v2/authorize?client_id=evil_app_404 HTTP/1.1`);
+    appendConsole(`[CRITICAL TOKEN ISSUED] Access token granted to attacker backend! Complete account takeover.`);
+    setVerdict('vulnerable', '💀 COMPLETE ACCOUNT TAKEOVER: OAUTH TOKEN GRANTED', 'Critical Impact! The click hijacked an OAuth consent prompt. The attacker\'s rogue app received permanent API access to read private messages and post on Bhavesh\'s behalf!');
+  }
+
+  container.prepend(newPost);
+}
+
+function resetLab() {
+  postCount = 0;
+  document.getElementById('timelineCounter').textContent = `0 Malicious Posts`;
+  document.getElementById('feedPostsContainer').innerHTML = `
+    <div class="feed-post">
+      <div class="post-header">
+        <span class="post-author">Bhavesh Singh</span>
+        <span class="post-time">2 hours ago</span>
+      </div>
+      <div class="post-body">
+        Just started studying modern Web App Pentesting & OWASP Top 10 vulnerabilities! 🛡️💻
+      </div>
+    </div>
+  `;
+  setVector('worm');
+  setDefense('none');
+  setOpacityPreset(0);
+  setFlowStep(1);
+  document.getElementById('netConsole').innerHTML = `[RESET] Simulation restored to default vulnerable state.\n[SESSION ACTIVE] Victim session valid for SocialHub.`;
+}
+
+// Initialize
+setVector('worm');
+setDefense('none');
+setOpacityPreset(0);
+</script>
+</body>
+</html>

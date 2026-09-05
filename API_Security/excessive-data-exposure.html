@@ -1,0 +1,2574 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Module 06: Excessive Data Exposure - API Security Notes</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Sora:wght@400;500;600;700;800&family=Fira+Code:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+
+  <style>
+    /* ==========================================================================
+       Module 05: Mass Assignment Custom Styling - High Contrast Cyber Theme
+       ========================================================================== */
+    body {
+      background: #040814;
+      color: #f1f5f9;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      overflow-y: visible;
+      font-family: var(--font-sans);
+    }
+
+    /* Master Layout: Sidebar + Main Area */
+    .app-dashboard-layout {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* Left Sidebar */
+    .dashboard-sidebar {
+      width: 280px;
+      background: #070d1c;
+      border-right: 1px solid rgba(255, 255, 255, 0.07);
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      position: sticky;
+      top: 0;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #1e293b transparent;
+    }
+
+    .sidebar-header {
+      padding: 1.5rem 1.4rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .sidebar-brand-title {
+      font-family: var(--font-heading);
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.02em;
+    }
+    .sidebar-brand-title span {
+      color: #38bdf8;
+    }
+
+    .sidebar-section-heading {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #64748b;
+      padding: 0.8rem 1.4rem 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .vuln-nav-list {
+      list-style: none;
+      padding: 0 0.8rem;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin: 0;
+    }
+
+    .vuln-nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      border-radius: var(--radius-pill);
+      color: #f1f5f9;
+      text-decoration: none;
+      font-size: 0.86rem;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .vuln-nav-item:hover {
+      background: rgba(255, 255, 255, 0.04);
+      color: #f1f5f9;
+    }
+
+    .vuln-nav-item.active {
+      background: #1d4ed8;
+      color: #ffffff;
+      font-weight: 700;
+      box-shadow: 0 4px 14px rgba(29, 78, 216, 0.4);
+    }
+
+    .nav-num-badge {
+      font-size: 0.72rem;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 2px 7px;
+      border-radius: var(--radius-pill);
+      color: inherit;
+    }
+
+    .vuln-nav-item.active .nav-num-badge {
+      background: rgba(0, 0, 0, 0.25);
+      color: #fff;
+    }
+
+    /* Main Content Body */
+    .dashboard-main {
+      flex: 1;
+      padding: 1.4rem 2.4rem 0;
+      max-width: 1480px;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* Top Action Bar */
+    .main-top-actionbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      padding-bottom: 12px;
+    }
+
+    /* Header Hero Grid */
+    .hero-top-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 1fr;
+      gap: 1.8rem;
+      margin-bottom: 1.4rem;
+      align-items: center;
+    }
+
+    @media (max-width: 1024px) {
+      .hero-top-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+      }
+    }
+
+    .category-tag-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 0.75rem;
+    }
+
+    .pill-index-tag {
+      font-family: var(--font-mono);
+      background: #0284c7;
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.75rem;
+      padding: 2px 8px;
+      border-radius: var(--radius-pill);
+    }
+
+    .pill-category-name {
+      color: #f1f5f9;
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+
+    .main-vuln-h1 {
+      font-family: var(--font-heading);
+      font-size: 2.35rem;
+      font-weight: 800;
+      line-height: 1.2;
+      color: #ffffff;
+      margin-bottom: 0.6rem;
+      letter-spacing: -0.02em;
+    }
+
+    .main-vuln-h1 span.title-blue {
+      color: #38bdf8;
+    }
+
+    .main-vuln-desc {
+      font-size: 1.05rem;
+      color: #f1f5f9;
+      margin-bottom: 1.2rem;
+      line-height: 1.6;
+    }
+
+    /* Meta Badges */
+    .meta-tags-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 1.2rem;
+    }
+
+    .meta-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 10px;
+      border-radius: var(--radius-pill);
+      font-size: 0.74rem;
+      white-space: nowrap;
+      font-weight: 600;
+    }
+
+    .meta-chip.danger {
+      background: rgba(239, 68, 68, 0.12);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.35);
+    }
+
+    .meta-chip.info {
+      background: rgba(56, 189, 248, 0.12);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+
+    .meta-chip.purple {
+      background: rgba(168, 85, 247, 0.12);
+      color: #c084fc;
+      border: 1px solid rgba(168, 85, 247, 0.3);
+    }
+
+    /* Quote Bubble (Exact match to jwt.html) */
+    .quote-bubble {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      border-radius: var(--radius-md);
+      padding: 0.75rem 1.2rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #bae6fd !important;
+      font-size: 0.88rem;
+      margin-bottom: 1rem;
+    }
+
+    .quote-bubble div,
+    .quote-bubble p,
+    .quote-bubble span {
+      color: #bae6fd !important;
+    }
+
+    .quote-bubble strong {
+      color: #ffffff !important;
+    }
+
+    .quote-icon-box {
+      width: 26px;
+      height: 26px;
+      background: #0284c7;
+      color: #fff;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      font-weight: bold;
+      flex-shrink: 0;
+    }
+
+    /* Hero Glass Graphic (Strictly Fixed Width 530px) */
+    .hero-glass-graphic {
+      background: rgba(7, 14, 30, 0.90);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(56, 189, 248, 0.28);
+      border-radius: var(--radius-lg);
+      padding: 1.15rem 1.3rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 30px rgba(56, 189, 248, 0.1);
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      max-width: 530px;
+      margin-left: auto;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .attacker-graphic-node {
+      text-align: center;
+    }
+
+    .attacker-avatar-circle {
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      background: rgba(239, 68, 68, 0.12);
+      border: 2px solid rgba(239, 68, 68, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      margin: 0 auto 6px;
+      box-shadow: 0 0 16px rgba(239, 68, 68, 0.2);
+    }
+
+    .attacker-label {
+      font-size: 0.84rem;
+      font-weight: 700;
+      color: #fca5a5;
+    }
+
+    .attacker-sub {
+      font-size: 0.72rem;
+      color: #94a3b8;
+      font-family: var(--font-mono);
+    }
+
+    .graphic-center-flow {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      flex: 1;
+      max-width: 170px;
+    }
+
+    .graphic-url-pill {
+      background: #020617;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: var(--radius-sm);
+      padding: 4px 8px;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: #f1f5f9;
+      white-space: nowrap;
+    }
+
+    .graphic-swap-box {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 2px 0;
+    }
+
+    .swap-id-badge {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .swap-id-badge {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: var(--radius-sm);
+    }
+
+    .swap-id-badge.from {
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+
+    .swap-id-badge.to {
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .flow-state-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #ef4444;
+      margin-top: 2px;
+    }
+
+    .target-profile-card,
+    .target-profile-card *,
+    .unauth-note {
+      text-align: left !important;
+      text-justify: none !important;
+    }
+
+    .target-profile-card {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: var(--radius-md);
+      padding: 0.85rem 1rem;
+      min-width: 170px;
+      max-width: 175px;
+      box-sizing: border-box;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .target-profile-card h4 {
+      font-size: 0.92rem;
+      color: #fff;
+      margin: 0;
+      font-weight: 700;
+    }
+
+    .target-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+
+    .target-pill-status {
+      font-size: 0.65rem;
+      font-family: var(--font-mono);
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-weight: 700;
+    }
+
+    .target-pill-status.breach {
+      background: rgba(239, 68, 68, 0.2);
+      color: #fca5a5;
+      border: 1px solid rgba(239, 68, 68, 0.4);
+    }
+
+    .target-pill-status.secure {
+      background: rgba(52, 211, 153, 0.2);
+      color: #6ee7b7;
+      border: 1px solid rgba(52, 211, 153, 0.4);
+    }
+
+    .target-profile-card p {
+      font-size: 0.74rem;
+      color: #e2e8f0;
+      font-family: var(--font-mono);
+      margin: 1px 0 !important;
+      white-space: nowrap;
+      line-height: 1.4 !important;
+    }
+
+    .target-profile-card p code {
+      color: #38bdf8;
+      background: transparent !important;
+      border: none !important;
+      padding: 0 !important;
+    }
+
+    .unauth-note {
+      font-size: 0.68rem;
+      color: #f87171;
+      margin-top: 4px;
+      display: block;
+      font-weight: 600;
+      line-height: 1.25;
+    }
+
+    /* Navigation Tabs */
+    .tabs-underline-nav {
+      display: flex;
+      gap: 1.8rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      margin-bottom: 1.8rem;
+      overflow-x: scroll !important;
+      scrollbar-gutter: stable;
+      scrollbar-width: thin;
+      scrollbar-color: #38bdf8 rgba(255, 255, 255, 0.1);
+      padding-bottom: 8px;
+      -webkit-overflow-scrolling: touch;
+      scroll-behavior: smooth;
+      position: relative;
+    }
+
+    .tabs-underline-nav::-webkit-scrollbar {
+      height: 8px !important;
+      display: block !important;
+      -webkit-appearance: none !important;
+    }
+
+    .tabs-underline-nav::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.08) !important;
+      border-radius: 4px;
+    }
+
+    .tabs-underline-nav::-webkit-scrollbar-thumb {
+      background: #0284c7 !important;
+      border-radius: 4px;
+    }
+
+    .tabs-underline-nav::-webkit-scrollbar-thumb:hover {
+      background: #38bdf8 !important;
+    }
+
+    .tab-underline-btn {
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      color: #cbd5e1 !important;
+      padding: 10px 4px 12px;
+      font-size: 0.95rem;
+      font-family: var(--font-heading);
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      position: relative;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+
+    .tab-underline-btn:hover {
+      color: #f1f5f9 !important;
+      background: transparent !important;
+    }
+
+    .tab-underline-btn.active {
+      color: #38bdf8 !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      font-weight: 700;
+    }
+
+    .tab-underline-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      width: 100%;
+      height: 2.5px;
+      background: #38bdf8;
+      box-shadow: 0 0 10px #38bdf8;
+      border-radius: 2px;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+      animation: fadeInTab 0.25s ease forwards;
+    }
+
+    @keyframes fadeInTab {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Cards Panels */
+    .card-panel {
+      background: rgba(7, 14, 28, 0.90);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(56, 189, 248, 0.18);
+      border-radius: var(--radius-lg);
+      padding: 1.8rem;
+      margin-bottom: 0.5rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .card-title-badge-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 1.4rem;
+    }
+
+    .card-title-badge-row .panel-header-title {
+      margin: 0;
+    }
+
+    .blue-circle-num {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #1d4ed8, #0284c7);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 0.95rem;
+      flex-shrink: 0;
+      box-shadow: 0 0 12px rgba(2, 132, 199, 0.4);
+    }
+
+    .panel-header-title {
+      font-family: var(--font-heading);
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #38bdf8;
+      letter-spacing: -0.01em;
+    }
+
+    .panel-body-text {
+      font-size: 0.96rem;
+      color: #f1f5f9;
+      line-height: 1.75;
+      margin-bottom: 1.2rem;
+    }
+
+    /* Lead Definitions (Exact match to jwt.html & style.css) */
+    .def-lead-card {
+      background: rgba(14, 165, 233, 0.05);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      border-radius: var(--radius-md);
+      padding: 1.2rem 1.6rem;
+      margin-bottom: 1.6rem;
+    }
+
+    .def-lead-title {
+      font-family: var(--font-heading);
+      font-size: 1.12rem;
+      font-weight: 700;
+      margin-bottom: 0.8rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .def-lead-text {
+      font-size: 1.02rem !important;
+      line-height: 1.75 !important;
+      color: #f1f5f9 !important;
+      margin: 0;
+      text-align: justify !important;
+      text-justify: inter-word !important;
+    }
+
+    .def-lead-text span,
+    .def-lead-text p {
+      color: #f1f5f9 !important;
+      font-size: 1.02rem !important;
+      line-height: 1.75 !important;
+      text-align: justify !important;
+      text-justify: inter-word !important;
+    }
+
+    .def-lead-text strong,
+    .def-lead-text b {
+      color: #ffffff !important;
+      font-weight: 700;
+    }
+
+    /* Code Wrap Enforcement */
+    code {
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+
+    /* Attack Scenarios Styling */
+    .scenarios-container {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      margin: 1.2rem 0;
+    }
+
+    .scenario-card {
+      background: #080f20;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .scenario-card:hover {
+      border-color: rgba(56, 189, 248, 0.3);
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+    }
+
+    .scenario-header {
+      padding: 1rem 1.4rem;
+      background: rgba(255, 255, 255, 0.02);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .scenario-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 3px 9px;
+      border-radius: var(--radius-pill);
+      background: rgba(56, 189, 248, 0.12);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.25);
+    }
+
+    .scenario-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #f8fafc;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .scenario-body {
+      padding: 1.25rem 1.4rem;
+    }
+
+    .scenario-desc {
+      color: #f1f5f9 !important;
+      font-size: 0.94rem;
+      line-height: 1.7;
+      margin-bottom: 1.1rem;
+      text-align: justify !important;
+      text-justify: inter-word !important;
+    }
+    .scenario-desc span {
+      color: #f1f5f9 !important;
+    }
+
+    .split-terminal-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.2rem;
+      margin-top: 1rem;
+    }
+
+    @media (max-width: 900px) {
+      .split-terminal-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .terminal-box {
+      background: #060b18;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .terminal-topbar {
+      background: #0a1124;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .term-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 4px;
+    }
+
+    .term-dot.red { background: #ef4444; }
+    .term-dot.yellow { background: #f59e0b; }
+    .term-dot.green { background: #10b981; }
+
+    .term-file-name {
+      font-size: 0.76rem;
+      font-weight: 600;
+      color: #94a3b8;
+      font-family: var(--font-mono);
+      letter-spacing: 0.04em;
+      flex: 1;
+      margin-left: 6px;
+    }
+
+    .term-copy-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #94a3b8;
+      font-size: 0.72rem;
+      font-family: var(--font-mono);
+      padding: 3px 9px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .term-copy-btn:hover {
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      border-color: rgba(56, 189, 248, 0.3);
+    }
+
+    .terminal-box pre,
+    .compare-box pre {
+      margin: 0;
+      padding: 1rem 1.15rem;
+      font-family: var(--font-mono);
+      font-size: 0.83rem;
+      line-height: 1.65;
+      color: #e2e8f0;
+      overflow-x: auto;
+      flex: 1;
+      white-space: pre;
+      word-break: normal;
+      tab-size: 2;
+    }
+
+    .terminal-box pre code,
+    .compare-box pre code {
+      background: transparent !important;
+      border: none !important;
+      padding: 0 !important;
+      font-size: inherit !important;
+      font-family: inherit !important;
+      color: inherit !important;
+      box-shadow: none !important;
+      border-radius: 0 !important;
+      display: block;
+      white-space: pre !important;
+      word-break: normal !important;
+    }
+
+    :not(pre) > code {
+      background: rgba(56, 189, 248, 0.1);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 0.86em;
+      word-break: break-word;
+    }
+
+    /* Code & Terminal Syntax Highlighting */
+    .t-verb { color: #38bdf8; font-weight: 700; }
+    .t-path { color: #f87171; font-weight: 700; }
+    .t-proto { color: #94a3b8; }
+    .t-head { color: #a78bfa; }
+    .t-key { color: #38bdf8; }
+    .t-str { color: #a3e635; }
+    .t-num { color: #f472b6; }
+    .t-status { color: #ef4444; font-weight: 700; }
+    .t-status.green { color: #34d399; }
+    .t-comm { color: #64748b; font-style: italic; }
+    .t-kw { color: #c084fc; font-weight: 700; }
+    .t-fn { color: #38bdf8; font-weight: 600; }
+    .t-cls { color: #facc15; font-weight: 700; }
+    .t-dec { color: #f43f5e; font-weight: 600; }
+    .t-type { color: #34d399; }
+    .t-bool { color: #f472b6; font-weight: 700; }
+    .t-op { color: #94a3b8; }
+
+    .scenario-impact {
+      margin-top: 1rem;
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.82rem;
+      line-height: 1.55;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .scenario-impact.crit {
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px solid rgba(239, 68, 68, 0.25);
+      color: #fca5a5;
+    }
+
+    .scenario-impact.danger {
+      background: rgba(245, 158, 11, 0.08);
+      border: 1px solid rgba(245, 158, 11, 0.25);
+      color: #fde68a;
+    }
+
+    /* Tab 4: Code Prevention */
+    .code-compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.2rem;
+      margin: 1.2rem 0;
+    }
+
+    @media (max-width: 900px) {
+      .code-compare-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .compare-box {
+      background: #060b18;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .compare-box.vulnerable {
+      border-top: 3px solid #ef4444;
+    }
+
+    .compare-box.secure {
+      border-top: 3px solid #10b981;
+    }
+
+    .compare-header {
+      padding: 10px 14px;
+      background: #0a1124;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .compare-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .compare-dot.red { background: #ef4444; }
+    .compare-dot.green { background: #10b981; }
+
+    .compare-title {
+      font-size: 0.84rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      font-family: var(--font-sans);
+    }
+
+/* compare-box pre unified with terminal-box pre */
+
+    .golden-rules-card {
+      background: rgba(14, 165, 233, 0.04);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      border-radius: var(--radius-md);
+      padding: 1.4rem;
+      margin-top: 1.8rem;
+    }
+
+    .golden-rules-title {
+      font-family: var(--font-heading);
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #38bdf8;
+      margin-top: 0;
+      margin-bottom: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Attack Preset Buttons Horizontal Alignment */
+    .sim-preset-btn {
+      display: inline-flex !important;
+      flex-direction: row !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 8px !important;
+      white-space: nowrap !important;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #f1f5f9;
+      padding: 7px 15px;
+      border-radius: var(--radius-pill);
+      font-size: 0.82rem;
+      font-family: var(--font-heading);
+      font-weight: 600;
+      cursor: pointer;
+      line-height: 1;
+      transition: all 0.2s ease;
+    }
+
+    .sim-preset-btn .preset-icon {
+      font-size: 0.95rem;
+      line-height: 1;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+
+    .sim-preset-btn .preset-label {
+      display: inline-block;
+      white-space: nowrap;
+      line-height: 1;
+    }
+
+    .sim-preset-btn:hover {
+      background: rgba(56, 189, 248, 0.15);
+      border-color: #38bdf8;
+      color: #ffffff;
+      transform: translateY(-1px);
+    }
+
+    .sim-preset-btn.active, .sim-preset-btn.active-preset {
+      background: #1d4ed8 !important;
+      border-color: #3b82f6 !important;
+      color: #ffffff !important;
+      box-shadow: 0 0 14px rgba(59, 130, 246, 0.5);
+    }
+
+    /* Light Theme Overrides */
+    html[data-theme="light"] .panel-header-title { color: #0f172a; }
+    html[data-theme="light"] .scenario-card { background: #ffffff; border-color: rgba(0,0,0,0.08); }
+    html[data-theme="light"] .scenario-header { background: #f8fafc; border-color: rgba(0,0,0,0.06); }
+    html[data-theme="light"] .scenario-title { color: #0f172a; }
+    html[data-theme="light"] .scenario-desc { color: #334155; }
+    html[data-theme="light"] .terminal-box { background: #0f172a; border-color: #334155; }
+    html[data-theme="light"] .terminal-topbar { background: #1e293b; border-color: #334155; }
+    html[data-theme="light"] .compare-box { background: #0f172a; }
+    html[data-theme="light"] .compare-header { background: #1e293b; }
+    html[data-theme="light"] .golden-rules-card { background: #f0f9ff; border-color: #bae6fd; }
+    html[data-theme="light"] .golden-rules-title { color: #0284c7; }
+      .lab-mode-tab-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #94a3b8;
+      font-size: 0.72rem;
+      font-family: var(--font-heading);
+      padding: 3px 9px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .lab-mode-tab-btn.active, .lab-mode-tab-btn:hover {
+      background: rgba(56, 189, 248, 0.18);
+      border-color: rgba(56, 189, 248, 0.45);
+      color: #38bdf8;
+    }
+
+      /* How It Works & Pillars Step Box (Standardized from jwt.html) */
+    .hw-step-box {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-md);
+      padding: 1.25rem 1.4rem;
+      transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+      position: relative;
+      border-left: 4px solid #38bdf8;
+    }
+
+    .hw-step-box:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    }
+
+    .hw-step-box h4 {
+      font-family: var(--font-heading);
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin: 0 0 0.5rem 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .hw-step-box p {
+      color: #f1f5f9;
+      font-size: 0.94rem;
+      line-height: 1.7;
+      margin: 0;
+      text-align: justify !important;
+      text-justify: inter-word !important;
+    }
+
+    .hw-step-box code {
+      background: rgba(15, 23, 42, 0.9);
+      color: #38bdf8;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 0.86em;
+      border: 1px solid rgba(56, 189, 248, 0.25);
+    }
+
+    .hw-step-box.step-1 {
+      border-left-color: #10b981;
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(15, 23, 42, 0.6));
+    }
+    .hw-step-box.step-1 h4 { color: #34d399; }
+
+    .hw-step-box.step-2 {
+      border-left-color: #f59e0b;
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(15, 23, 42, 0.6));
+    }
+    .hw-step-box.step-2 h4 { color: #fbbf24; }
+
+    .hw-step-box.step-3 {
+      border-left-color: #0ea5e9;
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.08), rgba(15, 23, 42, 0.6));
+    }
+    .hw-step-box.step-3 h4 { color: #38bdf8; }
+
+    .hw-step-box.step-4 {
+      border-left-color: #ef4444;
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(15, 23, 42, 0.6));
+    }
+    .hw-step-box.step-4 h4 { color: #f87171; }
+
+    .hw-step-box.step-5 {
+      border-left-color: #a855f7;
+      background: linear-gradient(135deg, rgba(168, 85, 247, 0.08), rgba(15, 23, 42, 0.6));
+    }
+    .hw-step-box.step-5 h4 { color: #c084fc; }
+
+    html[data-theme="light"] .hw-step-box {
+      background: #f8fafc;
+      border-color: #f1f5f9;
+      border-left-width: 4px;
+    }
+    html[data-theme="light"] .hw-step-box:hover {
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    }
+    html[data-theme="light"] .hw-step-box.step-1 { border-left: 4px solid #10b981 !important; }
+    html[data-theme="light"] .hw-step-box.step-1 h4 { color: #047857 !important; }
+    html[data-theme="light"] .hw-step-box.step-2 { border-left: 4px solid #f59e0b !important; }
+    html[data-theme="light"] .hw-step-box.step-2 h4 { color: #b45309 !important; }
+    html[data-theme="light"] .hw-step-box.step-3 { border-left: 4px solid #0284c7 !important; }
+    html[data-theme="light"] .hw-step-box.step-3 h4 { color: #0369a1 !important; }
+    html[data-theme="light"] .hw-step-box.step-4 { border-left: 4px solid #ef4444 !important; }
+    html[data-theme="light"] .hw-step-box.step-4 h4 { color: #b91c1c !important; }
+    html[data-theme="light"] .hw-step-box.step-5 { border-left: 4px solid #9333ea !important; }
+    html[data-theme="light"] .hw-step-box.step-5 h4 { color: #7e22ce !important; }
+    html[data-theme="light"] .hw-step-box p { color: #334155 !important; }
+    html[data-theme="light"] .hw-step-box code { background: #e2e8f0; color: #0284c7; border-color: #bae6fd; }
+
+  
+    /* Scope Dark vs Light Mode Typography in mass-assignment.html */
+    html[data-theme="light"] .main-vuln-desc,
+    html[data-theme="light"] .panel-body-text,
+    html[data-theme="light"] .def-lead-text,
+    html[data-theme="light"] .scenario-desc,
+    html[data-theme="light"] .hw-step-box p,
+    html[data-theme="light"] .faq-answer,
+    html[data-theme="light"] .def-lead-text span,
+    html[data-theme="light"] .main-vuln-desc span,
+    html[data-theme="light"] .scenario-desc span,
+    html[data-theme="light"] .panel-body-text span,
+    html[data-theme="light"] .hw-step-box p span,
+    html[data-theme="light"] .faq-answer span {
+      color: #1e293b !important;
+    }
+
+    html[data-theme="light"] strong,
+    html[data-theme="light"] b {
+      color: #0f172a !important;
+      font-weight: 700;
+    }
+    /* Live Lab Explanation Box Theme Overrides */
+    html[data-theme="light"] #sim-explanation-box {
+      background: #f8fafc !important;
+      border-color: #bae6fd !important;
+    }
+    html[data-theme="light"] #sim-explanation-text {
+      color: #1e293b !important;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-dashboard-layout">
+
+    <!-- ====================================================================
+         SIDEBAR NAVIGATION (21 MODULES)
+         ==================================================================== -->
+    <aside class="dashboard-sidebar">
+      <div class="sidebar-header">
+        <div class="brand-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+        <a href=\"index.html\" class=\"sidebar-brand-title\" style=\"text-decoration:none; display:block;\">API <span>Security</span></a>
+      </div>
+
+      <div class="sidebar-section-heading">Foundations</div>
+      <ul class="vuln-nav-list" style="margin-bottom: 0.5rem;">
+        <li><a href="api-intro.html" class="vuln-nav-item"><span class="nav-num-badge">00</span> API Fundamentals</a></li>
+      </ul>
+
+      <div class="sidebar-section-heading">Common Vulnerabilities</div>
+      <ul class="vuln-nav-list">
+        <li><a href="bola.html" class="vuln-nav-item"><span class="nav-num-badge">01</span> BOLA</a></li>
+        <li><a href="bfla.html" class="vuln-nav-item"><span class="nav-num-badge">02</span> BFLA</a></li>
+        <li><a href="idor.html" class="vuln-nav-item"><span class="nav-num-badge">03</span> IDOR</a></li>
+        <li><a href="jwt.html" class="vuln-nav-item"><span class="nav-num-badge">04</span> JWT Vulnerabilities</a></li>
+        <li><a href="mass-assignment.html" class="vuln-nav-item"><span class="nav-num-badge">05</span> Mass Assignment</a></li>
+        <li><a href="excessive-data-exposure.html" class="vuln-nav-item active"><span class="nav-num-badge">06</span> Excessive Data Exposure</a></li>
+        <li><a href="rate-limiting.html" class="vuln-nav-item"><span class="nav-num-badge">07</span> Rate Limiting</a></li>
+        <li><a href="ssrf.html" class="vuln-nav-item"><span class="nav-num-badge">08</span> SSRF</a></li>
+        <li><a href="nosql-injection.html" class="vuln-nav-item"><span class="nav-num-badge">09</span> NoSQL Injection</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">10</span> Command Injection</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">11</span> XXE</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">12</span> GraphQL Security</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">13</span> Business Logic Issues</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">14</span> CORS Misconfiguration</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">15</span> API Key Security</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">16</span> OAuth & OpenID Security</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">17</span> Webhooks Security</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">18</span> Race Conditions</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">19</span> File Upload Vulnerabilities</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">20</span> Deserialization Issues</a></li>
+      </ul>
+    </aside>
+
+    <!-- ====================================================================
+         MAIN CONTENT AREA
+         ==================================================================== -->
+    <main class="dashboard-main">
+
+      <!-- Top Action Bar -->
+      <div class="main-top-actionbar">
+        <div style="font-size: 0.84rem; color: #94a3b8;">
+          <a href="api-intro.html" style="color:#38bdf8; text-decoration:none;">Modules</a> &rsaquo;
+          <span>06 / 20 Excessive Data Exposure</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <!-- Dark / Light Mode Toggle Button -->
+          <button class="theme-toggle-btn" id="themeToggleBtn" title="Switch Theme">
+            <span>☀️</span> <span class="theme-label">Light Mode</span>
+          </button>
+
+          <!-- Dual Language Switcher -->
+          <div class="lang-switch-wrapper">
+            <span id="lbl-hi" class="lang-label active">Hindi</span>
+            <label class="switch">
+              <input type="checkbox" id="langToggle">
+              <span class="slider"></span>
+            </label>
+            <span id="lbl-en" class="lang-label">English</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hero Section -->
+      <section class="hero-top-grid">
+        <div>
+          <div class="category-tag-row">
+            <span class="pill-index-tag">06</span>
+            <span class="pill-category-name">Object Property Level Leakage</span>
+          </div>
+
+          <h1 class="main-vuln-h1">
+            Excessive Data<br>
+            <span class="title-blue">Exposure</span>
+          </h1>
+
+          <p class="main-vuln-desc">
+            <span class="lang-hi">Jab backend API bina kisi response filtering ya DTO serializer ke database model ke saare sensitive columns (jaise Aadhaar, confidential medical notes, real-time GPS coordinates, ya salary) raw JSON packet me return kar deti hai, aur galat tarike se browser/client UI par bharosa karti hai ki wo unwanted data hide kar dega.</span>
+            <span class="lang-en">When a backend API blindly serializes full database objects into JSON responses without field-level whitelisting, mistakenly relying on frontend clients to filter out confidential properties like government IDs, private medical records, precise GPS coordinates, or financial metrics.</span>
+          </p>
+
+          <!-- Meta tags row -->
+          <div class="meta-tags-row">
+            <span class="meta-chip danger">
+              <span class="badge-dot" style="background:#ef4444; width:6px; height:6px; border-radius:50%;"></span> High Privacy & Compliance Risk
+            </span>
+            <span class="meta-chip info">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+              CWE-213 / OWASP API3:2023
+            </span>
+            <span class="meta-chip purple">
+              ★ Broken Object Property Authorization
+            </span>
+          </div>
+
+          <!-- Highlight Insight Quote Bubble -->
+          <div class="quote-bubble">
+            <div class="quote-icon-box">💡</div>
+            <div>
+              <span class="lang-hi"><strong>Core Insight:</strong> "Frontend par hide karna security nahi hoti!" Agar data network wire par travel karke client ke browser tak aa gaya, toh koi bhi attacker DevTools (F12) khol kar HTTP response se confidential PII aur medical records nikal sakta hai.</span>
+              <span class="lang-en"><strong>Core Insight:</strong> "Hiding fields in client UI is never security!" Once sensitive data travels over the network wire to the client, any attacker pressing F12 can view raw JSON payloads and exfiltrate confidential records without writing a single exploit!</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Box (Interactive Hero Widget - Fixed Width 530px) -->
+        <div class="hero-glass-graphic" id="edeHeroWidget">
+          <div class="hero-widget-header">
+            <div class="hero-widget-badge">
+              <span class="pulse-live-dot"></span>
+              <span class="hero-badge-title">Interactive Leak Flow</span>
+            </div>
+            <div class="hero-sim-pills">
+              <button type="button" class="hero-sim-btn" id="btnEdeSafe" title="Show Safe Filtered DTO">
+                <span>🛡️</span> <span>Filtered DTO (Safe)</span>
+              </button>
+              <button type="button" class="hero-sim-btn active exploit" id="btnEdeLeak" title="Show Excessive Exposure Leak">
+                <span>⚠️</span> <span>Raw Entity (Leaking)</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="hero-widget-body">
+            <div class="attacker-graphic-node" id="edeAttackerNode">
+              <div class="attacker-avatar-circle" id="edeAttackerAvatar">🥷</div>
+              <div class="attacker-label" id="edeAttackerLabel">Bhavesh (Attacker)</div>
+              <div class="attacker-sub" id="edeAttackerSub">Inspecting F12 Network Tab</div>
+            </div>
+
+            <div class="graphic-center-flow">
+              <div class="graphic-url-pill" id="edeUrlPill">
+                <span class="m-verb" id="edeVerb" style="color:#ef4444; font-weight:700;">GET</span> <span class="m-path" id="edePath">/api/patients/1042</span>
+              </div>
+              <div class="graphic-swap-box" id="edeSwapBox">
+                <span class="swap-id-badge from" id="edeBadgeFrom">UI: Name & Test</span>
+                <span class="swap-arrow-icon" id="edeSwapArrow" style="color:var(--text-dim); font-size:0.8rem;">➔</span>
+                <span class="swap-id-badge to" id="edeBadgeTo">Raw: Clinical & Aadhaar</span>
+              </div>
+              <div class="flow-beam-track" id="edeBeamTrack">
+                <div class="flow-beam-particle exploit" id="edeBeamParticle"></div>
+              </div>
+              <span class="flow-state-label" id="edeFlowStateText">Uncurated DB Dump</span>
+            </div>
+
+            <div class="target-profile-card exploit" id="edeTargetCard">
+              <div class="target-card-top">
+                <h4 id="edeTargetName">Purvaj (Victim)</h4>
+                <span class="target-pill-status breach" id="edeTargetStatus">PII LEAKED</span>
+              </div>
+              <p id="edeTargetField1">Test: <code>Vitamin D (32 ng/mL)</code></p>
+              <p id="edeTargetField2">Aadhaar: <code style="color:#ef4444;">8921-4309-1120</code></p>
+              <p id="edeTargetField3">Kidney: <code style="color:#ef4444;">Stage 3 Chronic</code></p>
+              <span class="unauth-note" id="edeTargetNote">🚨 Confidential Diagnosis Exposed</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           NAVIGATION TABS (7 TABS)
+           ==================================================================== -->
+      <nav class="tabs-underline-nav" id="mainTabsNav">
+        <button type="button" class="tab-underline-btn active" data-tab="tab-overview">📖 1. Overview</button>
+        <button type="button" class="tab-underline-btn" data-tab="tab-how-it-works">⚙️ 2. How It Works</button>
+        <button type="button" class="tab-underline-btn" data-tab="tab-scenarios">🎯 3. Attack Scenarios</button>
+        <button type="button" class="tab-underline-btn" data-tab="tab-prevention">🛡️ 4. Code Prevention</button>
+        <button type="button" class="tab-underline-btn" data-tab="tab-checklist">📋 5. Review Checklist</button>
+        <button type="button" class="tab-underline-btn" data-tab="tab-lab">⚡ 6. Live Lab</button>
+        <button type="button" class="tab-underline-btn" data-tab="tab-questions">❓ 7. FAQ</button>
+      </nav>
+
+      <!-- ====================================================================
+           TAB 1: OVERVIEW & REAL-WORLD ANALOGY
+           ==================================================================== -->
+      <div class="tab-content active" id="tab-overview">
+        <div class="card-panel">
+          <div class="card-title-badge-row">
+            <div class="blue-circle-num">1</div>
+            <h2 class="panel-header-title">
+              <span class="lang-hi">Excessive Data Exposure Kya Hai? (Technical Overview)</span>
+              <span class="lang-en">What is Excessive Data Exposure? (Technical Overview)</span>
+            </h2>
+          </div>
+
+          <div class="def-lead-card">
+            <div class="def-lead-title" style="color:#38bdf8;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              <span>Definition & Architectural Root Cause</span>
+            </div>
+            <p class="def-lead-text">
+              <span class="lang-hi"><strong>Excessive Data Exposure (OWASP API3)</strong> tab hota hai jab backend API kisi resource ko return karte waqt uske database model ke saare sensitive attributes ko bina kisi filtering ke JSON response me dump kar deti hai. Developer aalsi hokar yeh sochta hai ki: <em>"Client app (React ya Android) sirf wahi do fields render karegi jo screen par dikhani hain, baki fields ko browser ignore kar dega!"</em> Lekin security reality yeh hai ki HTTP response poora ka poora user ke machine par deliver hota hai jise koi bhi attacker inspect kar sakta hai.</span>
+              <span class="lang-en"><strong>Excessive Data Exposure (OWASP API3)</strong> occurs when an API endpoint serializes full internal database models into HTTP responses without filtering. Developers adopt a flawed assumption: <em>"The mobile app or React frontend will only render the two fields it needs and discard the rest!"</em> In reality, the entire unfiltered JSON payload travels across the wire directly into the client machine where any adversary inspecting network packets can view all private properties.</span>
+            </p>
+          </div>
+
+          <!-- Real World Technical Example: Online Pathology Lab Portal -->
+          <div class="hw-step-box step-1" style="margin-top:1.6rem; border-left-color:#38bdf8;">
+            <h4 style="color:#38bdf8; font-size:1.15rem;">
+              <span class="lang-hi">🩺 Real-World Example: Online Pathology Diagnostic Portal</span>
+              <span class="lang-en">🩺 Real-World Example: Online Pathology Diagnostic Portal</span>
+            </h4>
+            <p style="margin-bottom:1rem;">
+              <span class="lang-hi">Maan lijiye user <strong>Purvaj</strong> ek diagnostic lab me apna routine <strong>Vitamin D</strong> blood test karwata hai. Kuch ghanto baad Purvaj diagnostic lab ke web portal (<code>lab-health-portal.com</code>) par jakar apna test report download karta hai.</span>
+              <span class="lang-en">Imagine user <strong>Purvaj</strong> visits an online diagnostic healthcare lab for a routine <strong>Vitamin D</strong> blood test. A few hours later, Purvaj logs into the web portal (<code>lab-health-portal.com</code>) to view his report.</span>
+            </p>
+
+            <div style="background:rgba(7,14,30,0.85); border:1px solid rgba(56,189,248,0.25); border-radius:var(--radius-md); padding:1.2rem; margin-bottom:1rem;">
+              <h5 style="color:#38bdf8; margin-top:0; font-size:0.95rem; margin-bottom:8px;">1. Web Portal UI par Purvaj ko kya dikhta hai (Frontend View):</h5>
+              <div style="display:flex; gap:20px; font-family:var(--font-mono); font-size:0.86rem; color:#34d399; background:#040914; padding:10px 14px; border-radius:4px; border:1px solid rgba(52,211,153,0.3);">
+                <div>Test Name: <strong>Vitamin D (25-OH)</strong></div>
+                <div>Result: <strong>32 ng/mL</strong></div>
+                <div>Status: <span style="background:rgba(52,211,153,0.2); padding:2px 6px; border-radius:3px;">NORMAL</span></div>
+              </div>
+            </div>
+
+            <div style="background:rgba(7,14,30,0.85); border:1px solid rgba(239,68,68,0.3); border-radius:var(--radius-md); padding:1.2rem;">
+              <h5 style="color:#f87171; margin-top:0; font-size:0.95rem; margin-bottom:8px;">2. Lekin Backend API Network Wire par kya bhejti hai (Raw JSON Packet):</h5>
+              <p style="font-size:0.88rem; margin-bottom:10px;">
+                <span class="lang-hi">Backend developer ne lazy SQL query likhi thi: <code>SELECT * FROM patients JOIN medical_history ...</code> aur bina kisi DTO ke seedha response me <code>res.json(patient)</code> bhej diya:</span>
+                <span class="lang-en">The backend developer executed a lazy query: <code>SELECT * FROM patients JOIN medical_history ...</code> and directly returned <code>res.json(patient)</code> without any DTO whitelisting:</span>
+              </p>
+              <pre style="background:#020617; border:1px solid rgba(239,68,68,0.35); padding:12px; border-radius:4px; font-size:0.82rem; font-family:var(--font-mono); color:#fca5a5; overflow-x:auto; margin:0;"><span class="t-op">{</span>
+  <span class="t-key">"patient_id"</span><span class="t-op">:</span> <span class="t-num">1042</span><span class="t-op">,</span>
+  <span class="t-key">"patient_name"</span><span class="t-op">:</span> <span class="t-str">"Purvaj Joshi"</span><span class="t-op">,</span>
+  <span class="t-key">"test_name"</span><span class="t-op">:</span> <span class="t-str">"Vitamin D (25-OH)"</span><span class="t-op">,</span>
+  <span class="t-key">"result_value"</span><span class="t-op">:</span> <span class="t-str">"32 ng/mL"</span><span class="t-op">,</span>
+  <span class="t-comm">// 🚨 CRITICAL EXCESSIVE DATA EXPOSURE LEAKED OVER HTTP:</span>
+  <span class="t-key" style="color:#ef4444; font-weight:700;">"national_aadhaar_ssn"</span><span class="t-op">:</span> <span class="t-str" style="color:#ef4444;">"8921-4309-1120"</span><span class="t-op">,</span>
+  <span class="t-key" style="color:#ef4444; font-weight:700;">"private_mobile"</span><span class="t-op">:</span> <span class="t-str" style="color:#ef4444;">"+91-9823456789"</span><span class="t-op">,</span>
+  <span class="t-key" style="color:#ef4444; font-weight:700;">"home_gps_coords"</span><span class="t-op">:</span> <span class="t-str" style="color:#ef4444;">"19.0760° N, 72.8777° E"</span><span class="t-op">,</span>
+  <span class="t-key" style="color:#ef4444; font-weight:700;">"chronic_kidney_screening"</span><span class="t-op">:</span> <span class="t-op">{</span>
+    <span class="t-key" style="color:#ef4444;">"gfr_rate"</span><span class="t-op">:</span> <span class="t-num" style="color:#ef4444;">42</span><span class="t-op">,</span>
+    <span class="t-key" style="color:#ef4444;">"stage"</span><span class="t-op">:</span> <span class="t-str" style="color:#ef4444;">"STAGE_3_CHRONIC"</span>
+  <span class="t-op">}</span><span class="t-op">,</span>
+  <span class="t-key" style="color:#ef4444; font-weight:700;">"psychiatric_notes"</span><span class="t-op">:</span> <span class="t-str" style="color:#ef4444;">"Patient undergoing counseling for major depressive episodes."</span>
+<span class="t-op">}</span></pre>
+            </div>
+
+            <div style="margin-top:1rem; padding:10px 14px; background:rgba(239,68,68,0.1); border-left:3px solid #ef4444; border-radius:4px; font-size:0.88rem; color:#fca5a5;">
+              <span class="lang-hi"><strong>Attacker Bhavesh ka Move:</strong> Bhavesh ko kisi SQL Injection ya privilege bypass exploit ki zaroorat nahi padi! Usne sirf browser me <code>F12 &rarr; Network Tab</code> open kiya, raw JSON response dekha, aur Purvaj ka confidential Chronic Kidney Disease (Stage 3) diagnosis, Aadhaar number, aur psychiatric counseling notes bina kisi rok-tok ke copy kar liye!</span>
+              <span class="lang-en"><strong>Attacker Bhavesh's Attack:</strong> Bhavesh required zero exploits or SQL injection! He merely pressed <code>F12 &rarr; Network Tab</code>, inspected the raw JSON HTTP packet, and immediately exfiltrated Purvaj's sensitive Chronic Kidney Disease report, government ID, and psychiatric counseling history without obstruction!</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           TAB 2: HOW IT WORKS (4 CORE PILLARS)
+           ==================================================================== -->
+      <div class="tab-content" id="tab-how-it-works">
+        <div class="card-panel">
+          <div class="card-title-badge-row">
+            <div class="blue-circle-num">2</div>
+            <h2 class="panel-header-title">
+              <span class="lang-hi">Excessive Data Exposure Ke 4 Pillars</span>
+              <span class="lang-en">The 4 Core Pillars of Excessive Data Exposure</span>
+            </h2>
+          </div>
+
+          <p class="panel-body-text">
+            <span class="lang-hi">Excessive Data Exposure koi complex memory corruption bug nahi hai, balki modern web architecture me frontend aur backend ke beech galat assumptions ka natija hai. Niche diye gaye 4 pillars samjhate hain ki yeh vulnerability kaise create hoti hai:</span>
+            <span class="lang-en">Excessive Data Exposure is not a memory bug, but rather an architectural defect caused by flawed security assumptions between client and server. The following 4 pillars explain how this flaw occurs:</span>
+          </p>
+
+          <div style="display:flex; flex-direction:column; gap:1.3rem;">
+            <!-- Pillar 1 -->
+            <div class="hw-step-box step-1">
+              <h4>
+                <span>Pillar 1: Blind ORM Entity Serialization (Generic Select All)</span>
+              </h4>
+              <p>
+                <span class="lang-hi">Modern ORMs (jaise Prisma, Hibernate, Django ORM, Sequelize) me developers aksar single-line code likhte hain: <code>const user = await prisma.user.findUnique({ where: { id } }); return res.json(user);</code>. Yeh single line database ke har column ko serialize karke client ko bhej deti hai, jisme password hashes, internal status flags, security tokens, aur private keys tak shamil ho sakte hain.</span>
+                <span class="lang-en">In modern ORMs (Prisma, Hibernate, Django, Sequelize), developers frequently write single-line shortcuts like: <code>const user = await prisma.user.findUnique({ where: { id } }); return res.json(user);</code>. This single line dumps every database column into HTTP responses, including password hashes, internal role flags, reset tokens, and sensitive private keys.</span>
+              </p>
+            </div>
+
+            <!-- Pillar 2 -->
+            <div class="hw-step-box step-2">
+              <h4>
+                <span>Pillar 2: The Dangerous "Client-Side Rendering" Security Myth</span>
+              </h4>
+              <p>
+                <span class="lang-hi">Bohat se developers yeh galat dharana bana lete hain ki agar user interface (React, Vue, iOS Swift, Android Kotlin) me sirf <code>user.name</code> aur <code>user.avatar</code> render kiya gaya hai, toh baaki data safe hai. Attacker browser UI se bound nahi hota; wo directly Burp Suite, cURL, ya DevTools se raw HTTP packets inspect karta hai. Data jo network wire par send ho gaya, wo already compromise ho chuka hai.</span>
+                <span class="lang-en">Many frontend and backend teams mistakenly assume that if the UI (React, Vue, iOS, Android) only displays <code>user.name</code> and <code>user.avatar</code>, the remaining properties are hidden and secure. Attackers are never restricted by browser UI; they inspect raw HTTP traffic via cURL, Postman, or Burp Suite. Any data transmitted over the wire is already fully compromised.</span>
+              </p>
+            </div>
+
+            <!-- Pillar 3 -->
+            <div class="hw-step-box step-3">
+              <h4>
+                <span>Pillar 3: Sensitive PII, Financial & Business Intelligence Leakage</span>
+              </h4>
+              <p>
+                <span class="lang-hi">Data exposure sirf passwords tak simit nahi hota. Isme Personally Identifiable Information (PII) jaise Aadhaar/SSN, private mobile numbers, GPS location coordinates, credit card tokens, internal employee salaries, profit margins, aur discount codes tak leak hote hain, jo GDPR, HIPAA, aur DPDP compliance ke tahat heavy penalties lagwate hain.</span>
+                <span class="lang-en">Exposure extends far beyond password hashes. It exposes Personally Identifiable Information (PII) such as national IDs, phone numbers, exact GPS location, credit card tokens, salary records, internal profit margins, and private promo codes, triggering massive regulatory fines under GDPR, HIPAA, and privacy regulations.</span>
+              </p>
+            </div>
+
+            <!-- Pillar 4 -->
+            <div class="hw-step-box step-4">
+              <h4>
+                <span>Pillar 4: Lack of Explicit Response DTOs & Schema Whitelisting</span>
+              </h4>
+              <p>
+                <span class="lang-hi">Jab tak backend codebase me har API endpoint ke liye ek dedicated <strong>Data Transfer Object (DTO)</strong> ya output serializer define nahi hota jo explicitly declare kare ki <em>"Is response me sirf ye 3 safe fields jayenge"</em>, tab tak database me naya sensitive column add hote hi wo automatically bina kisi warning ke public API par expose ho jata hai.</span>
+                <span class="lang-en">Unless backend endpoints enforce explicit <strong>Data Transfer Objects (DTOs)</strong> or response serializers that strictly declare <em>"Only these 3 public fields may leave the server"</em>, every newly added database column will automatically leak over public APIs without any warning or developer awareness.</span>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           TAB 3: ATTACK SCENARIOS
+           ==================================================================== -->
+      <div class="tab-content" id="tab-scenarios">
+        <div class="card-panel">
+          <div class="card-title-badge-row">
+            <div class="blue-circle-num">3</div>
+            <h2 class="panel-header-title">
+              <span class="lang-hi">Real-World Attack Scenarios & Code Comparisons</span>
+              <span class="lang-en">Real-World Attack Scenarios & Code Comparisons</span>
+            </h2>
+          </div>
+
+          <div class="scenarios-container">
+            <!-- Scenario 1: Ride-Sharing Cab Booking GPS Leak -->
+            <div class="scenario-card">
+              <div class="scenario-header">
+                <div class="scenario-title">
+                  <span>🚗 Scenario 1: Ride-Sharing App Exposing Exact Live GPS & Residential Gate Code</span>
+                </div>
+                <div class="scenario-badge">High Severity / Physical Stalking</div>
+              </div>
+              <div class="scenario-body">
+                <p class="scenario-desc">
+                  <span class="lang-hi">Ek popular cab booking aur ride-sharing application (QuickCab) me user <strong>Bhavesh</strong> nearby carpool ya ride status inspect karta hai. UI par sirf rider <strong>Purvaj</strong> ka first name aur rough status (<em>"Cab Arriving in 4 mins"</em>) dikhana chahiye tha. Lekin backend API ne Purvaj ka raw database record dump kar diya jisme exact live GPS coordinates, residential address, private phone number, aur building gate passcode expose ho gaye:</span>
+                  <span class="lang-en">In a popular cab-booking and ride-sharing app (QuickCab), user <strong>Bhavesh</strong> inspects ride telemetry. The frontend UI was intended to only display rider <strong>Purvaj's</strong> first name and arrival estimation (<em>"Cab Arriving in 4 mins"</em>). However, the API serialized the raw database record, exposing Purvaj's real-time GPS coordinates, residential address, personal mobile, and building security gate passcode:</span>
+                </p>
+
+                <div class="split-terminal-grid">
+                  <div class="terminal-box">
+                    <div class="terminal-topbar">
+                      <span class="term-dot red"></span><span class="term-dot yellow"></span><span class="term-dot green"></span>
+                      <span class="term-file-name">Vulnerable API Response (Dumping Entire Model)</span>
+                      <button type="button" class="term-copy-btn" onclick="copyTerm(this)">Copy</button>
+                    </div>
+                    <pre><code><span class="t-proto">HTTP/1.1</span> <span class="t-status">200 OK</span>
+<span class="t-head">Content-Type:</span> <span class="t-str">application/json</span>
+
+<span class="t-op">{</span>
+  <span class="t-key">"ride_id"</span><span class="t-op">:</span> <span class="t-num">9042</span><span class="t-op">,</span>
+  <span class="t-key">"rider_name"</span><span class="t-op">:</span> <span class="t-str">"Purvaj"</span><span class="t-op">,</span>
+  <span class="t-key">"status"</span><span class="t-op">:</span> <span class="t-str">"DRIVER_EN_ROUTE"</span><span class="t-op">,</span>
+  <span class="t-key">"estimated_arrival"</span><span class="t-op">:</span> <span class="t-str">"4 mins"</span><span class="t-op">,</span>
+  <span class="t-comm">// 🚨 VULNERABLE: Exact physical location & security gate code leaked!</span>
+  <span class="t-key" style="color:#ef4444; font-weight:700;">"exact_latitude"</span><span class="t-op">:</span> <span class="t-num" style="color:#ef4444;">19.076092</span><span class="t-op">,</span>
+  <span class="t-key" style="color:#ef4444; font-weight:700;">"exact_longitude"</span><span class="t-op">:</span> <span class="t-num" style="color:#ef4444;">72.877714</span><span class="t-op">,</span>
+  <span class="t-key" style="color:#ef4444; font-weight:700;">"pickup_address"</span><span class="t-op">:</span> <span class="t-str" style="color:#ef4444;">"Flat 402, Sunrise Towers, Bandra West, Mumbai"</span><span class="t-op">,</span>
+  <span class="t-key" style="color:#ef4444; font-weight:700;">"private_phone"</span><span class="t-op">:</span> <span class="t-str" style="color:#ef4444;">"+91-9811223344"</span><span class="t-op">,</span>
+  <span class="t-key" style="color:#ef4444; font-weight:700;">"building_gate_passcode"</span><span class="t-op">:</span> <span class="t-str" style="color:#ef4444;">"#4092"</span><span class="t-op">,</span>
+  <span class="t-key" style="color:#ef4444; font-weight:700;">"emergency_contact"</span><span class="t-op">:</span> <span class="t-str" style="color:#ef4444;">"+91-9820011223 (Father)"</span>
+<span class="t-op">}</span></code></pre>
+                  </div>
+
+                  <div class="terminal-box">
+                    <div class="terminal-topbar">
+                      <span class="term-dot green"></span><span class="term-dot yellow"></span><span class="term-dot green"></span>
+                      <span class="term-file-name">Secure Filtered Response (Public DTO Only)</span>
+                      <button type="button" class="term-copy-btn" onclick="copyTerm(this)">Copy</button>
+                    </div>
+                    <pre><code><span class="t-proto">HTTP/1.1</span> <span class="t-status green">200 OK</span>
+<span class="t-head">Content-Type:</span> <span class="t-str">application/json</span>
+
+<span class="t-op">{</span>
+  <span class="t-key">"ride_id"</span><span class="t-op">:</span> <span class="t-num">9042</span><span class="t-op">,</span>
+  <span class="t-key">"rider_name"</span><span class="t-op">:</span> <span class="t-str">"Purvaj"</span><span class="t-op">,</span>
+  <span class="t-key">"status"</span><span class="t-op">:</span> <span class="t-str">"DRIVER_EN_ROUTE"</span><span class="t-op">,</span>
+  <span class="t-comm">// ✅ SAFE: Only approximate arrival time without physical tracking data</span>
+  <span class="t-key">"estimated_arrival"</span><span class="t-op">:</span> <span class="t-str">"4 mins"</span>
+<span class="t-op">}</span></code></pre>
+                  </div>
+                </div>
+
+                <div class="scenario-impact crit">
+                  <span>🚨 <strong>Physical Security Impact:</strong> Attacker Bhavesh can mathematically pinpoint Purvaj's exact physical coordinates in real time, stalk his daily commute, discover his home apartment address, and access his residential building using the leaked security gate passcode.</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Scenario 2: Employee Directory Leaking Salaries -->
+            <div class="scenario-card">
+              <div class="scenario-header">
+                <div class="scenario-title">
+                  <span>💼 Scenario 2: Corporate Employee Roster Leaking Base Salaries & SSN</span>
+                </div>
+                <div class="scenario-badge">Critical Financial & PII Leak</div>
+              </div>
+              <div class="scenario-body">
+                <p class="scenario-desc">
+                  <span class="lang-hi">Ek company ke internal portal me coworker search feature tha (<code>GET /api/v1/employees/search?query=Purvaj</code>). UI me sirf coworker ka Name, Department, aur Email dikhaya gaya tha. Lekin endpoint ne full SQL employee record return kar diya jisme compensation aur performance ratings expose ho gaye:</span>
+                  <span class="lang-en">An enterprise intranet provided an employee lookup tool (<code>GET /api/v1/employees/search?query=Purvaj</code>). The frontend UI only rendered the person's name, team, and corporate email. However, the API returned the entire raw database record exposing private compensation and appraisal data:</span>
+                </p>
+
+                <div class="split-terminal-grid">
+                  <div class="terminal-box">
+                    <div class="terminal-topbar">
+                      <span class="term-dot red"></span><span class="term-dot yellow"></span><span class="term-dot green"></span>
+                      <span class="term-file-name">Vulnerable Raw SQL Record Dump</span>
+                      <button type="button" class="term-copy-btn" onclick="copyTerm(this)">Copy</button>
+                    </div>
+                    <pre><code><span class="t-op">{</span>
+  <span class="t-key">"employee_id"</span><span class="t-op">:</span> <span class="t-num">5011</span><span class="t-op">,</span>
+  <span class="t-key">"full_name"</span><span class="t-op">:</span> <span class="t-str">"Purvaj Deshmukh"</span><span class="t-op">,</span>
+  <span class="t-key">"department"</span><span class="t-op">:</span> <span class="t-str">"Security Engineering"</span><span class="t-op">,</span>
+  <span class="t-comm">// 🚨 SENSITIVE COMPENSATION & PII LEAKED:</span>
+  <span class="t-key" style="color:#ef4444; font-weight:700;">"base_salary_inr"</span><span class="t-op">:</span> <span class="t-num" style="color:#ef4444;">2850000</span><span class="t-op">,</span>
+  <span class="t-key" style="color:#ef4444; font-weight:700;">"bonus_stock_units"</span><span class="t-op">:</span> <span class="t-num" style="color:#ef4444;">1200</span><span class="t-op">,</span>
+  <span class="t-key" style="color:#ef4444; font-weight:700;">"performance_rating"</span><span class="t-op">:</span> <span class="t-str" style="color:#ef4444;">"Needs Improvement"</span><span class="t-op">,</span>
+  <span class="t-key" style="color:#ef4444; font-weight:700;">"pan_tax_id"</span><span class="t-op">:</span> <span class="t-str" style="color:#ef4444;">"ABCDE1234F"</span>
+<span class="t-op">}</span></code></pre>
+                  </div>
+
+                  <div class="terminal-box">
+                    <div class="terminal-topbar">
+                      <span class="term-dot green"></span><span class="term-dot yellow"></span><span class="term-dot green"></span>
+                      <span class="term-file-name">Secure Corporate Directory DTO</span>
+                      <button type="button" class="term-copy-btn" onclick="copyTerm(this)">Copy</button>
+                    </div>
+                    <pre><code><span class="t-op">{</span>
+  <span class="t-key">"employee_id"</span><span class="t-op">:</span> <span class="t-num">5011</span><span class="t-op">,</span>
+  <span class="t-key">"full_name"</span><span class="t-op">:</span> <span class="t-str">"Purvaj Deshmukh"</span><span class="t-op">,</span>
+  <span class="t-key">"department"</span><span class="t-op">:</span> <span class="t-str">"Security Engineering"</span><span class="t-op">,</span>
+  <span class="t-key">"email"</span><span class="t-op">:</span> <span class="t-str">"purvaj@corp.internal"</span><span class="t-op">,</span>
+  <span class="t-key">"office_location"</span><span class="t-op">:</span> <span class="t-str">"Bangalore - 4th Floor"</span>
+<span class="t-op">}</span></code></pre>
+                  </div>
+                </div>
+
+                <div class="scenario-impact danger">
+                  <span>⚠️ <strong>Security Impact:</strong> Internal employees like Bhavesh can scrape the entire company roster, inspect all peer salaries, and blackmail coworkers or orchestrate targeted social engineering attacks.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           TAB 4: CODE PREVENTION & ARCHITECTURAL PATTERNS
+           ==================================================================== -->
+      <div class="tab-content" id="tab-prevention">
+        <div class="card-panel">
+          <div class="card-title-badge-row">
+            <div class="blue-circle-num">4</div>
+            <h2 class="panel-header-title">
+              <span class="lang-hi">Code Prevention: DTOs, Serializers & Projection Patterns</span>
+              <span class="lang-en">Code Prevention: DTOs, Serializers & Projection Patterns</span>
+            </h2>
+          </div>
+
+          <p class="panel-body-text">
+            <span class="lang-hi">Excessive Data Exposure se bachne ka ek hi infallible rule hai: <strong>Hamesha Output Whitelisting (Response DTOs) use karein!</strong> Kabhi bhi raw database ORM entities ko HTTP response me serialize na karein. Niche standard modern frameworks me safe patterns dekhein:</span>
+            <span class="lang-en">The primary defense against Excessive Data Exposure is strict <strong>Output Whitelisting (Response DTOs)</strong>. Never directly serialize raw ORM database entities into HTTP responses. Review the secure implementation patterns below:</span>
+          </p>
+
+          <!-- Node.js Prisma Comparison -->
+          <div class="code-compare-grid">
+            <div class="compare-box vulnerable">
+              <div class="compare-header">
+                <span class="compare-dot red"></span>
+                <span class="compare-title">❌ Vulnerable (Node.js / Express + Prisma ORM)</span>
+              </div>
+              <pre><code><span class="t-comm">// VULNERABLE: Dumps every column in patients table!</span>
+app.<span class="t-fn">get</span>(<span class="t-str">'/api/patients/:id'</span>, <span class="t-kw">async</span> (req, res) => {
+  <span class="t-kw">const</span> patient = <span class="t-kw">await</span> prisma.patient.<span class="t-fn">findUnique</span>({
+    <span class="t-key">where</span>: { <span class="t-key">id</span>: Number(req.params.id) },
+    <span class="t-key">include</span>: { <span class="t-key">medicalHistory</span>: <span class="t-bool">true</span> }
+  });
+
+  <span class="t-comm">// 🚨 Leaks chronic conditions, SSN, psychiatric notes!</span>
+  <span class="t-kw">return</span> res.<span class="t-fn">json</span>(patient);
+});</code></pre>
+            </div>
+
+            <div class="compare-box secure">
+              <div class="compare-header">
+                <span class="compare-dot green"></span>
+                <span class="compare-title">✅ Secure (Explicit Field Selection / DTO Projection)</span>
+              </div>
+              <pre><code><span class="t-comm">// SECURE: Strict field selection at database level!</span>
+app.<span class="t-fn">get</span>(<span class="t-str">'/api/patients/:id'</span>, <span class="t-kw">async</span> (req, res) => {
+  <span class="t-kw">const</span> patient = <span class="t-kw">await</span> prisma.patient.<span class="t-fn">findUnique</span>({
+    <span class="t-key">where</span>: { <span class="t-key">id</span>: Number(req.params.id) },
+    <span class="t-key">select</span>: {
+      <span class="t-key">id</span>: <span class="t-bool">true</span>,
+      <span class="t-key">patientName</span>: <span class="t-bool">true</span>,
+      <span class="t-key">testName</span>: <span class="t-bool">true</span>,
+      <span class="t-key">resultValue</span>: <span class="t-bool">true</span>
+      <span class="t-comm">// Sensitive medical history & Aadhaar excluded!</span>
+    }
+  });
+
+  <span class="t-kw">return</span> res.<span class="t-fn">json</span>(patient);
+});</code></pre>
+            </div>
+          </div>
+
+          <!-- Python FastAPI Pydantic Comparison -->
+          <div class="code-compare-grid" style="margin-top:1.4rem;">
+            <div class="compare-box vulnerable">
+              <div class="compare-header">
+                <span class="compare-dot red"></span>
+                <span class="compare-title">❌ Vulnerable (Python / FastAPI Without Response Model)</span>
+              </div>
+              <pre><code><span class="t-comm"># VULNERABLE: Returns full SQLModel/SQLAlchemy model</span>
+<span class="t-dec">@app.get</span>(<span class="t-str">"/users/{user_id}"</span>)
+<span class="t-kw">def</span> <span class="t-fn">get_user</span>(user_id: <span class="t-type">int</span>, db: Session = Depends(get_db)):
+    user = db.<span class="t-fn">query</span>(UserModel).<span class="t-fn">filter_by</span>(id=user_id).<span class="t-fn">first</span>()
+    <span class="t-comm"># 🚨 Blindly dumps password_hash, SSN, salary!</span>
+    <span class="t-kw">return</span> user</code></pre>
+            </div>
+
+            <div class="compare-box secure">
+              <div class="compare-header">
+                <span class="compare-dot green"></span>
+                <span class="compare-title">✅ Secure (FastAPI Strict Pydantic response_model)</span>
+              </div>
+              <pre><code><span class="t-kw">class</span> <span class="t-cls">UserPublicDTO</span>(BaseModel):
+    id: <span class="t-type">int</span>
+    display_name: <span class="t-type">str</span>
+    avatar_url: <span class="t-type">str</span>
+
+<span class="t-comm"># SECURE: FastAPI guarantees ONLY fields in DTO leave server!</span>
+<span class="t-dec">@app.get</span>(<span class="t-str">"/users/{user_id}"</span>, response_model=UserPublicDTO)
+<span class="t-kw">def</span> <span class="t-fn">get_user</span>(user_id: <span class="t-type">int</span>, db: Session = Depends(get_db)):
+    <span class="t-kw">return</span> db.<span class="t-fn">query</span>(UserModel).<span class="t-fn">filter_by</span>(id=user_id).<span class="t-fn">first</span>()</code></pre>
+            </div>
+          </div>
+
+          <!-- Golden Rules -->
+          <div class="golden-rules-card">
+            <h4 class="golden-rules-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <span>Golden Architectural Rules Against Excessive Data Exposure</span>
+            </h4>
+            <ul style="margin:0; padding-left:1.4rem; font-size:0.92rem; color:#f1f5f9; line-height:1.75;">
+              <li><strong>Never Rely on Client Filtering:</strong> Frontend components (React/Vue/Android) render whatever they want, but network traffic is always readable in plaintext by clients.</li>
+              <li><strong>Enforce DTOs for Every Endpoint:</strong> Create a dedicated output DTO (Data Transfer Object) for every public and internal endpoint.</li>
+              <li><strong>Use Database Query Projections:</strong> Use SQL <code>SELECT col1, col2</code> or Prisma <code>select: { id: true, name: true }</code> instead of <code>SELECT *</code>. This prevents leaks AND dramatically cuts database RAM and network bandwidth usage!</li>
+              <li><strong>Automated Schema Linters:</strong> Integrate tools like Spectral or OpenAPI linters to detect when endpoints return uncurated database schemas.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           TAB 5: TESTING CHECKLIST (100% COMMON DESIGN, MATCHES MODULE 05)
+           ==================================================================== -->
+      <div class="tab-content" id="tab-checklist">
+        <div class="card-panel">
+          <div class="card-title-badge-row">
+            <div class="blue-circle-num">5</div>
+            <h2 class="panel-header-title">
+              <span class="lang-hi">Excessive Data Exposure Audit Checklist (Pentester Playbook)</span>
+              <span class="lang-en">Excessive Data Exposure Audit Checklist (Pentester Playbook)</span>
+            </h2>
+          </div>
+
+          <p class="panel-body-text">
+            <span class="lang-hi">Apne APIs par Excessive Data Exposure vulnerability test karne ke liye ye 5-point audit checklist follow karein:</span>
+            <span class="lang-en">Follow this comprehensive 5-point pentester verification playbook to discover Excessive Data Exposure flaws:</span>
+          </p>
+
+          <div class="checklist-meta-header">
+            <div class="checklist-guide-msg">
+              <span class="lang-hi">Har test case ko inspect karein aur <strong>Pass (Secure)</strong> ya <strong>Fail (Vulnerable)</strong> mark karein:</span>
+              <span class="lang-en">Audit each test case and mark as <strong>Pass (Secure)</strong> or <strong>Fail (Vulnerable)</strong>:</span>
+            </div>
+            <div class="checklist-counter-badge">
+              <span id="checklist-progress-counter">0 of 5 Checks Audited (0 Passed | 0 Vulnerable)</span>
+            </div>
+          </div>
+
+          <div class="checklist-container">
+            <!-- Item 1 -->
+            <div class="checklist-item" id="check-item-1" onclick="handleCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">1</span>
+              </div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">1. Dedicated Response DTOs & Schemas Defined</span>
+                  <span class="lang-en">1. Dedicated Response DTOs & Schemas Defined</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Har API endpoint par ek explicit output model/schema (jaise Pydantic schema, Jackson View, ya TypeScript DTO) laga hai jo sirf authorized public fields allow karta hai.</span>
+                  <span class="lang-en">Verify that every API endpoint enforces a dedicated output DTO or response schema whitelist.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test (Testing Steps):</div>
+                  <span class="lang-hi">1. API route definitions inspect karein: check karein kya <code>response_model=UserPublicDTO</code> ya <code>@JsonView(Views.Public.class)</code> declared hai.<br>2. Raw database models ko seedha HTTP response me return karne wale controllers ko identify karein.<br>3. Agar DTO missing hai toh database ke naye columns automatic leak ho jayenge.</span>
+                  <span class="lang-en">1. Review backend route definitions for declared response schemas (e.g. <code>response_model=UserResponseDTO</code>).<br>2. Confirm that ORM entities are never returned directly via <code>res.json(entity)</code>.<br>3. Flag any endpoint serializing raw database models as <strong>Vulnerable</strong>.</span>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Item 2 -->
+            <div class="checklist-item" id="check-item-2" onclick="handleCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">2</span>
+              </div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">2. Zero "SELECT *" or Blind ORM Serialization</span>
+                  <span class="lang-en">2. Zero "SELECT *" or Blind ORM Serialization</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">ORM queries me explicit column projection (<code>select</code> clause) use ho raha hai aur koi bhi controller seedha <code>res.json(dbModel)</code> return nahi kar raha hai.</span>
+                  <span class="lang-en">Ensure database queries utilize selective column projections rather than full-table wildcard queries.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test (Testing Steps):</div>
+                  <span class="lang-hi">1. Database query logs ya backend code me inspect karein: check karein kya queries <code>SELECT * FROM users</code> execute karti hain.<br>2. Prisma/TypeORM/Sequelize queries me explicit <code>select: { id: true, name: true }</code> clause verify karein.<br>3. Server-side heap memory aur egress bandwidth reduction verify karein.</span>
+                  <span class="lang-en">1. Audit database query logs and ORM invocations: identify <code>SELECT *</code> patterns.<br>2. Ensure query builders enforce explicit column selection: <code>prisma.user.findUnique({ select: { id: true, name: true } })</code>.<br>3. Verify that unrequested sensitive attributes are excluded at the database tier.</span>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Item 3 -->
+            <div class="checklist-item" id="check-item-3" onclick="handleCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">3</span>
+              </div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">3. Sensitive PII & Telemetry Fields Stripped</span>
+                  <span class="lang-en">3. Sensitive PII & Telemetry Fields Stripped</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Aadhaar/SSN, passwords, internal token secrets, exact GPS telemetry, aur salary metrics public profiles ya shared rosters se 100% stripped hain.</span>
+                  <span class="lang-en">Validate that sensitive PII, biometric tokens, high-precision GPS coordinates, and financial metrics are stripped from public responses.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test (Testing Steps):</div>
+                  <span class="lang-hi">1. Public endpoints (e.g. <code>GET /api/v1/drivers/location</code> ya <code>GET /api/v1/patients/1</code>) call karein.<br>2. Burp Suite me raw HTTP response body inspect karein: check karein kya <code>ssn</code>, <code>password_hash</code>, <code>exact_lat</code>, <code>salary</code> fields leak ho rahe hain.<br>3. Agar sensitive data JSON me maujood hai (bhale hi frontend UI use hide karta ho), toh ye <strong>CRITICAL FAIL</strong> hai!</span>
+                  <span class="lang-en">1. Send requests to public endpoints (e.g. driver tracking, employee directory, patient records).<br>2. Inspect raw HTTP JSON responses in Burp Suite for sensitive PII: <code>ssn</code>, <code>hashed_password</code>, <code>raw_gps_telemetry</code>, <code>bonus</code>.<br>3. If sensitive keys exist in the payload (regardless of UI visibility), mark as <strong>CRITICAL FAIL</strong>.</span>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Item 4 -->
+            <div class="checklist-item" id="check-item-4" onclick="handleCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">4</span>
+              </div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">4. Verified in Browser DevTools Network Tab</span>
+                  <span class="lang-en">4. Verified in Browser DevTools Network Tab</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">QA/Security testing me raw HTTP response inspect karke verify kiya gaya hai ki payload me sirf wahi keys aati hain jo screen par visually rendered hain.</span>
+                  <span class="lang-en">Audit client application network traffic in Browser DevTools to uncover hidden API response properties not rendered in the UI.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test (Testing Steps):</div>
+                  <span class="lang-hi">1. Browser me DevTools open karein (F12) > <strong>Network</strong> tab select karein > Fetch/XHR filter lagayein.<br>2. Page browse karein aur API responses ke <strong>Response</strong> preview tab ko inspect karein.<br>3. Screen par dikhne wale text ko JSON se compare karein: Agar JSON me 30 fields hain lekin UI sirf 3 dikha raha hai, toh baki 27 fields client-side filtering se expose ho rahe hain!</span>
+                  <span class="lang-en">1. Open Browser DevTools (F12) > <strong>Network</strong> tab, filtering for Fetch/XHR traffic.<br>2. Inspect the raw JSON payload in the Response subtab for each transaction.<br>3. Compare the UI display with the underlying JSON: if the UI displays 3 fields while the JSON contains 30, client-side filtering is actively exposing hidden data.</span>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Item 5 -->
+            <div class="checklist-item" id="check-item-5" onclick="handleCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">5</span>
+              </div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">5. Automated CI/CD Schema Contract Tests</span>
+                  <span class="lang-en">5. Automated CI/CD Schema Contract Tests</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Automated integration test suites me assertion laga hai ki agar database me naya column add ho, toh response payload ka snapshot change na ho.</span>
+                  <span class="lang-en">Incorporate automated schema contract and snapshot tests in CI/CD pipelines to prevent regression data leakage.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test (Testing Steps):</div>
+                  <span class="lang-hi">1. Test suite me snapshot testing (Jest/Pytest) configure karein: <code>expect(response.body).toMatchSnapshot()</code>.<br>2. Database schema me dummy column (<code>emergency_contact</code>) add karke CI build trigger karein.<br>3. Verify karein ki test suite build fail karta hai agar naya column bina DTO whitelist ke response me leak hone lage.</span>
+                  <span class="lang-en">1. Configure API contract snapshot tests in CI/CD test suites (e.g. Jest snapshot testing, Pact contracts).<br>2. Simulate adding a new column (<code>internal_notes</code>) to the database schema.<br>3. Ensure the automated pipeline fails if the new field automatically appears in public endpoint payloads without explicit DTO inclusion.</span>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           TAB 6: INTERACTIVE LAB SIMULATOR
+           ==================================================================== -->
+      <div class="tab-content" id="tab-lab">
+        <div class="card-panel">
+          <div class="card-title-badge-row">
+            <div class="blue-circle-num">6</div>
+            <h2 class="panel-header-title">
+              <span class="lang-hi">Live Lab: Excessive Data Exposure Simulator</span>
+              <span class="lang-en">Live Lab: Excessive Data Exposure Simulator</span>
+            </h2>
+          </div>
+
+          <p class="panel-body-text">
+            <span class="lang-hi">Aap attacker <strong>Bhavesh</strong> ke roop me authenticated hain jo target user <strong>Purvaj</strong> ke resources fetch kar raha hai. Niche presets select karein aur dekhein ki backend ORM bina response serializer ke kaise confidential medical records, live GPS telemetry, aur salaries expose karta hai:</span>
+            <span class="lang-en">You are simulating attacker <strong>Bhavesh</strong> fetching resources belonging to user <strong>Purvaj</strong>. Click presets to inspect how uncurated ORM responses leak confidential medical records, high-precision GPS telemetry, and private salaries:</span>
+          </p>
+
+          <div class="lab-simulator">
+            <!-- Simulator Header Status -->
+            <div class="lab-head">
+              <div class="lab-status">
+                <span class="pulse-dot"></span>
+                <span style="font-family:var(--font-mono); font-weight:700; letter-spacing:0.5px;">API SERVICE & NETWORK INSPECTOR: LIVE</span>
+              </div>
+              <div style="font-size:0.75rem; color:#94a3b8; font-family:var(--font-mono);" id="labEndpointDisplay">
+                Endpoint: GET /api/v1/patients/1042/report
+              </div>
+            </div>
+
+            <!-- Active User Session Bar -->
+            <div class="auth-token-box">
+              <div><strong>Active Session:</strong> Bhavesh (Attacker | Inspecting F12 Network Tab)</div>
+              <div style="color:var(--cyan);">Target User: <code>Purvaj (ID: 1042)</code></div>
+            </div>
+
+            <!-- Preset Buttons -->
+            <div style="display:flex; gap:12px; align-items:center; margin-bottom:1.2rem; flex-wrap:wrap;">
+              <span style="font-size:0.8rem; color:#94a3b8; font-weight:600; white-space:nowrap;">Test Presets:</span>
+              <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; flex:1;">
+                <button type="button" class="sim-preset-btn active" id="btnPresetMedical" onclick="loadEdePreset('medical')">
+                  <span class="preset-icon">🩺</span><span class="preset-label">Pathology Report (Medical Leak)</span>
+                </button>
+                <button type="button" class="sim-preset-btn" id="btnPresetRide" onclick="loadEdePreset('ride')">
+                  <span class="preset-icon">🚗</span><span class="preset-label">Ride-Sharing (Exact GPS & Gate Code)</span>
+                </button>
+                <button type="button" class="sim-preset-btn" id="btnPresetSalary" onclick="loadEdePreset('salary')">
+                  <span class="preset-icon">💼</span><span class="preset-label">Employee Directory (Salary Leak)</span>
+                </button>
+                <button type="button" class="sim-preset-btn" id="btnPresetSecure" onclick="loadEdePreset('secure')" style="border-color:rgba(52,211,153,0.5); color:#6ee7b7;">
+                  <span class="preset-icon">🛡️</span><span class="preset-label">Secure Mode (Filtered DTO)</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Dynamic Alert Banner -->
+            <div id="ede-alert-banner" style="display:block; padding:12px 16px; border-radius:var(--radius-sm); margin-bottom:1.2rem; font-size:0.88rem; line-height:1.5; background:rgba(239, 68, 68, 0.12); border:1px solid rgba(239, 68, 68, 0.35); border-left:4px solid #ef4444; color:#fca5a5;">
+              🚨 <strong>CRITICAL DATA EXPOSURE:</strong> Unfiltered database dump leaked confidential psychiatric notes, chronic kidney disease status, and national Aadhaar ID!
+            </div>
+
+            <!-- Split Console: Request on Left vs Response on Right -->
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap:1.2rem;">
+              <!-- Left Console: Interactive HTTP Request with Colorful JSON -->
+              <div style="background:rgba(15,23,42,0.85); border:1px solid rgba(255,255,255,0.08); border-radius:var(--radius-md); padding:1.1rem; display:flex; flex-direction:column;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                  <div style="font-size:0.75rem; color:#38bdf8; font-family:var(--font-mono); font-weight:700; display:flex; align-items:center; gap:6px;">
+                    <span style="width:8px; height:8px; border-radius:50%; background:#38bdf8; display:inline-block; box-shadow:0 0 8px rgba(56,189,248,0.8);"></span>
+                    <span id="labReqTitle">CLIENT HTTP REQUEST (F12 NETWORK INSPECTOR)</span>
+                  </div>
+                  <div style="display:flex; gap:6px;">
+                    <button type="button" id="tabReqViewHighlight" class="lab-mode-tab-btn active" onclick="switchEdeReqView('highlight')">⚡ Highlighted</button>
+                    <button type="button" id="tabReqViewEdit" class="lab-mode-tab-btn" onclick="switchEdeReqView('edit')">✏️ Edit Headers</button>
+                  </div>
+                </div>
+
+                <!-- Highlighted View (Generous Height for Readability) -->
+                <pre id="labRequestBox" style="width:100%; min-height:260px; max-height:440px; height:280px; background:#070d1a; border:1px solid rgba(56, 189, 248, 0.25); border-radius:4px; font-family:var(--font-mono); font-size:0.82rem; padding:12px; overflow:auto; margin:0 0 14px 0; box-sizing:border-box; line-height:1.5; color:#f1f5f9;"></pre>
+
+                <!-- Raw Editable View -->
+                <textarea id="labJsonInput" style="display:none; width:100%; min-height:260px; max-height:440px; height:280px; background:#070d1a; border:1px solid rgba(56, 189, 248, 0.35); color:#38bdf8; font-family:var(--font-mono); font-size:0.84rem; padding:12px; border-radius:4px; box-sizing:border-box; margin-bottom:14px; resize:vertical; line-height:1.5;" oninput="syncEdeReqHighlight()"></textarea>
+
+                <button type="button" class="btn-send" onclick="executeEdeLabTest()" style="width:100%; justify-content:center; padding:10px; font-size:0.9rem; margin-top:auto;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                  Send GET Request (Fetch Server Response)
+                </button>
+              </div>
+
+              <!-- Right Console: Backend Response with Colorful JSON -->
+              <div style="background:rgba(15,23,42,0.85); border:1px solid rgba(255,255,255,0.08); border-radius:var(--radius-md); padding:1.1rem; display:flex; flex-direction:column;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                  <div style="font-size:0.75rem; color:#34d399; font-family:var(--font-mono); font-weight:700; display:flex; align-items:center; gap:6px;">
+                    <span style="width:8px; height:8px; border-radius:50%; background:#34d399; display:inline-block; box-shadow:0 0 8px rgba(52,211,153,0.8);"></span>
+                    <span>RAW SERVER HTTP RESPONSE PAYLOAD</span>
+                  </div>
+                  <span id="labStatusBadge" style="font-weight:700; color:#ef4444; font-family:var(--font-mono); font-size:0.75rem;">HTTP/1.1 200 OK (LEAKED)</span>
+                </div>
+
+                <pre id="labResponseBox" style="width:100%; min-height:260px; max-height:440px; height:280px; background:#070d1a; border:1px solid rgba(52, 211, 153, 0.25); border-radius:4px; color:#f1f5f9; font-family:var(--font-mono); font-size:0.82rem; padding:12px; overflow:auto; margin:0; box-sizing:border-box; line-height:1.5;"></pre>
+
+                <!-- Status Note Box Inside Console (Bilingual) -->
+                <div id="labExplanationBox" style="margin-top:14px; padding:10px 12px; background:rgba(15,23,42,0.9); border:1px solid rgba(56,189,248,0.25); border-left:4px solid #38bdf8; border-radius:var(--radius-sm); font-size:0.82rem; color:#f1f5f9; line-height:1.5;">
+                  <span class="lang-hi">Upar diye gaye presets select karke test karein ki uncurated entity serialization se data kaise leak hota hai!</span>
+                  <span class="lang-en">Select a test preset above to observe how raw entity serialization leaks confidential attributes over HTTP!</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Dedicated Architectural Explanation Section (Prominent Full-Width Card) -->
+            <div id="sim-explanation-box" style="margin-top:1.4rem; background:rgba(15,23,42,0.92); border:1px solid rgba(56,189,248,0.28); border-left:4px solid #38bdf8; border-radius:var(--radius-sm); padding:16px 20px; box-shadow:0 4px 20px rgba(0,0,0,0.4);">
+              <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+                <span style="font-size:1.25rem;">💡</span>
+                <span style="font-size:1rem; font-weight:700; color:#38bdf8; font-family:var(--font-heading);">
+                  <span class="lang-hi">Live Lab Architectural Explanation:</span>
+                  <span class="lang-en">Live Lab Architectural Explanation:</span>
+                </span>
+              </div>
+              <div id="sim-explanation-text" style="font-size:0.92rem; color:#f1f5f9; line-height:1.7;">
+                <!-- Dynamically rendered with .lang-hi and .lang-en spans -->
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           TAB 7: FREQUENTLY ASKED QUESTIONS (100% MATCHES JWT THEME)
+           ==================================================================== -->
+      <div class="tab-content" id="tab-questions">
+        <div class="card-panel">
+          <div class="card-title-badge-row">
+            <div class="blue-circle-num">7</div>
+            <h2 class="panel-header-title">
+              <span class="lang-hi">Frequently Asked Questions (FAQ)</span>
+              <span class="lang-en">Frequently Asked Questions (FAQ)</span>
+            </h2>
+          </div>
+
+          <p class="panel-body-text">
+            <span class="lang-hi">Top security interviews aur certifications (OSCP, CEH, API Pentesting) me puche jane wale Excessive Data Exposure ke core questions:</span>
+            <span class="lang-en">Critical interview and certification questions covering Excessive Data Exposure:</span>
+          </p>
+
+          <div class="faq-grid" style="display:flex; flex-direction:column; gap:1.2rem; margin-top:1.5rem;">
+            <!-- FAQ 1 -->
+            <div class="hw-step-box step-1">
+              <h4>
+                <span class="lang-hi">Q1: Excessive Data Exposure aur Mass Assignment me kya difference hai?</span>
+                <span class="lang-en">Q1: What is the difference between Excessive Data Exposure and Mass Assignment?</span>
+              </h4>
+              <p>
+                <span class="lang-hi"><strong>Answer:</strong> <strong>Mass Assignment (Inbound / Input Vulnerability):</strong> Attacker client se server ko extra unwanted parameters (jaise <code>role: "admin"</code>) bhejta hai aur server bina filter kiye unhe database me save kar leta hai.<br><br><strong>Excessive Data Exposure (Outbound / Output Vulnerability):</strong> Server database se client ko extra sensitive parameters (jaise password hashes, medical history, Aadhaar/SSN) return kar deta hai, yeh soch kar ki client UI unhe hide kar dega.</span>
+                <span class="lang-en"><strong>Answer:</strong> <strong>Mass Assignment (Inbound / Input):</strong> The attacker supplies surplus properties into the request, which the server blindly binds into internal database records.<br><br><strong>Excessive Data Exposure (Outbound / Output):</strong> The server dumps internal object properties into HTTP responses, mistakenly relying on the client UI to discard them.</span>
+              </p>
+            </div>
+
+            <!-- FAQ 2 -->
+            <div class="hw-step-box step-2">
+              <h4>
+                <span class="lang-hi">Q2: Kya GraphQL use karne se Excessive Data Exposure 100% solve ho jata hai?</span>
+                <span class="lang-en">Q2: Does adopting GraphQL completely eliminate Excessive Data Exposure?</span>
+              </h4>
+              <p>
+                <span class="lang-hi"><strong>Answer:</strong> <strong>Nahi!</strong> GraphQL client ko specific fields select karne ki azaadi deta hai (jaise <code>{ user { name, email } }</code>), lekin agar backend schema me sensitive fields (jaise <code>ssn</code> ya <code>salary</code>) exposed hain aur unpar strict authorization checks nahi lage hain, toh attacker query me <code>{ user { name, ssn, salary } }</code> likhkar poora sensitive data extract kar sakta hai! GraphQL schema level par field-level authorization zaroori hoti hai.</span>
+                <span class="lang-en"><strong>Answer:</strong> <strong>No!</strong> GraphQL allows clients to request specific properties (e.g. <code>{ user { name, email } }</code>), but if sensitive attributes exist in the GraphQL schema without field-level resolvers, an attacker can query <code>{ user { name, ssn, salary } }</code> to extract all confidential records! Strict field-level authorization is still required.</span>
+              </p>
+            </div>
+
+            <!-- FAQ 3 -->
+            <div class="hw-step-box step-3">
+              <h4>
+                <span class="lang-hi">Q3: Kya mobile apps me ProGuard / Code Obfuscation se data exposure rukta hai?</span>
+                <span class="lang-en">Q3: Does mobile app obfuscation or ProGuard protect against data exposure?</span>
+              </h4>
+              <p>
+                <span class="lang-hi"><strong>Answer:</strong> <strong>Bilkul nahi!</strong> Code obfuscation sirf APK/IPA ke decompilation ko thoda mushkil banata hai. Attacker mobile device par MITM proxy (jaise Burp Suite ya Charles Proxy) aur SSL Pinning bypass (Frida) set karke network packets ko seedha intercept kar leta hai. Data wire par aate hi leak ho jata hai.</span>
+                <span class="lang-en"><strong>Answer:</strong> <strong>Absolutely not!</strong> Obfuscation only hardens client binary reverse-engineering. Attackers configure an HTTP proxy (Burp Suite, Charles) with SSL pinning bypass (Frida) to intercept wire traffic. Once data leaves the server wire, it is immediately exposed.</span>
+              </p>
+            </div>
+
+            <!-- FAQ 4 -->
+            <div class="hw-step-box step-4">
+              <h4>
+                <span class="lang-hi">Q4: Kya Blacklisting (sensitive keys ko delete karna) recommended hai?</span>
+                <span class="lang-en">Q4: Is blacklisting unwanted properties a viable mitigation strategy?</span>
+              </h4>
+              <p>
+                <span class="lang-hi"><strong>Answer:</strong> <strong>Nahi, Blacklisting dangerous aur fragile hoti hai!</strong> Agar aap <code>delete user.password</code> ya <code>delete user.ssn</code> karte hain, toh kal koi naya developer database me <code>cardiac_risk</code> ya <code>pin_code</code> add karega aur wo blacklist me nahi hoga, isliye leak ho jayega! Industry standard hamesha <strong>Whitelisting (Allowlist)</strong> hai.</span>
+                <span class="lang-en"><strong>Answer:</strong> <strong>No, blacklisting is dangerous and fragile!</strong> If you write <code>delete user.password</code>, tomorrow another developer adds a new column <code>medical_risk</code> which is omitted from the blacklist and silently leaks. Industry standards strictly mandate <strong>Allowlisting (Whitelisting)</strong> via response DTOs.</span>
+              </p>
+            </div>
+
+            <!-- FAQ 5 -->
+            <div class="hw-step-box step-5">
+              <h4>
+                <span class="lang-hi">Q5: Response DTOs use karne se performance par kya asar padta hai?</span>
+                <span class="lang-en">Q5: What is the performance impact of implementing Response DTOs?</span>
+              </h4>
+              <p>
+                <span class="lang-hi"><strong>Answer:</strong> <strong>Performance 3x se 10x improve hoti hai!</strong> Database se sirf 3-4 columns fetch karne aur chhota JSON response generate karne se database I/O, server RAM, network egress bandwidth, aur client parsing time sabhi dramatic roop se kam ho jate hain.</span>
+                <span class="lang-en"><strong>Answer:</strong> <strong>Performance improves significantly (3x to 10x)!</strong> Fetching only needed columns reduces database disk I/O, server memory footprint, network egress costs, and client mobile deserialization latency.</span>
+              </p>
+            </div>
+
+            <!-- FAQ 6 -->
+            <div class="hw-step-box step-1">
+              <h4>
+                <span class="lang-hi">Q6: Automated security testing me Excessive Data Exposure kaise detect hota hai?</span>
+                <span class="lang-en">Q6: How do automated security scanners detect Excessive Data Exposure?</span>
+              </h4>
+              <p>
+                <span class="lang-hi"><strong>Answer:</strong> DAST tools (Burp Suite, OWASP ZAP) aur specialized API scanners HTTP responses ko scan karke regex patterns se match karte hain (jaise credit card numbers, email formats, private keys, passwords, JWT tokens). SAST tools code scan karke check karte hain ki kya controller ORM entity ko direct return kar raha hai bina DTO mapping ke.</span>
+                <span class="lang-en"><strong>Answer:</strong> DAST tools (Burp Suite, OWASP ZAP) inspect responses against known regex signatures (credit card patterns, SSNs, JWT tokens, private keys). SAST tools examine source code to verify controllers never return ORM entity instances without explicit DTO projection.</span>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           GLOBAL FOOTER (STANDARDIZED)
+           ==================================================================== -->
+      <footer class="app-footer-custom">
+        <div class="footer-divider-glow"></div>
+        <div class="footer-inner-content">
+          <div class="footer-brand-row">
+            <div class="footer-badge-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                <path d="m9 12 2 2 4-4"/>
+              </svg>
+            </div>
+            <div class="footer-author-text">
+              <span class="footer-credit-label">Designed and Developed by</span>
+              <span class="footer-author-name">Irshad Akaram</span>
+            </div>
+          </div>
+        </div>
+      </footer>
+
+    </main>
+  </div>
+
+  <!-- Scripts -->
+  <script src="assets/js/main.js"></script>
+  <script>
+    /* ==========================================================================
+       Module 06: Excessive Data Exposure Interactive Logic
+       Characters: Bhavesh (Attacker) & Purvaj (Victim)
+       ========================================================================== */
+
+    // Tab Navigation
+    document.querySelectorAll('.tab-underline-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetTab = btn.getAttribute('data-tab');
+        document.querySelectorAll('.tab-underline-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        const activeContent = document.getElementById(targetTab);
+        if (activeContent) activeContent.classList.add('active');
+      });
+    });
+
+    // Hero Widget Toggle
+    const btnEdeSafe = document.getElementById('btnEdeSafe');
+    const btnEdeLeak = document.getElementById('btnEdeLeak');
+    const edeTargetField1 = document.getElementById('edeTargetField1');
+    const edeTargetField2 = document.getElementById('edeTargetField2');
+    const edeTargetField3 = document.getElementById('edeTargetField3');
+    const edeTargetNote = document.getElementById('edeTargetNote');
+    const edeTargetStatus = document.getElementById('edeTargetStatus');
+    const edeBadgeTo = document.getElementById('edeBadgeTo');
+    const edeFlowStateText = document.getElementById('edeFlowStateText');
+    const edeVerb = document.getElementById('edeVerb');
+    const edeBeamParticle = document.getElementById('edeBeamParticle');
+
+    function setEdeHeroMode(mode) {
+      if (mode === 'safe') {
+        btnEdeSafe.classList.add('active');
+        btnEdeLeak.classList.remove('active', 'exploit');
+        edeTargetField1.innerHTML = 'Test: <code>Vitamin D (32 ng/mL)</code>';
+        edeTargetField2.innerHTML = 'Status: <code style="color:#34d399;">Normal</code>';
+        edeTargetField3.innerHTML = 'DTO: <code>Filtered Safe</code>';
+        edeTargetNote.innerHTML = '✅ Only Safe Public Properties Sent';
+        edeTargetNote.style.color = '#34d399';
+        edeTargetStatus.className = 'target-pill-status secure';
+        edeTargetStatus.innerText = 'SECURE DTO';
+        edeBadgeTo.className = 'swap-id-badge from';
+        edeBadgeTo.innerText = 'Response: Safe DTO';
+        edeFlowStateText.innerText = 'Filtered DTO Serializer';
+        edeFlowStateText.style.color = '#34d399';
+        edeVerb.style.color = '#38bdf8';
+        if (edeBeamParticle) edeBeamParticle.className = 'flow-beam-particle';
+      } else {
+        btnEdeLeak.classList.add('active', 'exploit');
+        btnEdeSafe.classList.remove('active');
+        edeTargetField1.innerHTML = 'Test: <code>Vitamin D (32 ng/mL)</code>';
+        edeTargetField2.innerHTML = 'Aadhaar: <code style="color:#ef4444;">8921-4309-1120</code>';
+        edeTargetField3.innerHTML = 'Kidney: <code style="color:#ef4444;">Stage 3 Chronic</code>';
+        edeTargetNote.innerHTML = '🚨 Confidential Diagnosis Exposed';
+        edeTargetNote.style.color = '#ef4444';
+        edeTargetStatus.className = 'target-pill-status breach';
+        edeTargetStatus.innerText = 'PII LEAKED';
+        edeBadgeTo.className = 'swap-id-badge to';
+        edeBadgeTo.innerText = 'Raw: Clinical & Aadhaar';
+        edeFlowStateText.innerText = 'Uncurated DB Dump';
+        edeFlowStateText.style.color = '#ef4444';
+        edeVerb.style.color = '#ef4444';
+        if (edeBeamParticle) edeBeamParticle.className = 'flow-beam-particle exploit';
+      }
+    }
+
+    if (btnEdeSafe) btnEdeSafe.addEventListener('click', () => setEdeHeroMode('safe'));
+    if (btnEdeLeak) btnEdeLeak.addEventListener('click', () => setEdeHeroMode('leak'));
+
+    // Copy Term Code helper
+    function copyTerm(btn) {
+      const parent = btn.closest('.terminal-box') || btn.closest('.compare-box');
+      if (!parent) return;
+      const pre = parent.querySelector('pre');
+      if (!pre) return;
+      navigator.clipboard.writeText(pre.innerText).then(() => {
+        const orig = btn.innerText;
+        btn.innerText = 'Copied!';
+        btn.style.color = '#34d399';
+        setTimeout(() => {
+          btn.innerText = orig;
+          btn.style.color = '';
+        }, 1800);
+      });
+    }
+
+    // ==========================================
+    // Interactive Lab Simulator Logic
+    // ==========================================
+    let activeEdePreset = 'medical';
+
+    const edePresets = {
+      medical: {
+        endpoint: "GET /api/v1/patients/1042/report",
+        request: {
+          method: "GET",
+          path: "/api/v1/patients/1042/report",
+          headers: {
+            "Host": "api.carepath-diagnostics.internal",
+            "Authorization": "Bearer eyJhbGciOi...[Bhavesh_Session_9921]",
+            "Accept": "application/json"
+          }
+        },
+        response: {
+          patient_id: 1042,
+          patient_name: "Purvaj Joshi",
+          test_name: "Vitamin D (25-OH)",
+          result_value: "32 ng/mL",
+          status: "NORMAL",
+          national_aadhaar_ssn: "8921-4309-1120",
+          private_mobile: "+91-9823456789",
+          home_gps_coords: "19.0760° N, 72.8777° E",
+          chronic_kidney_screening: {
+            gfr_rate: 42,
+            stage: "STAGE_3_CHRONIC"
+          },
+          psychiatric_notes: "Patient undergoing counseling for major depressive episodes."
+        },
+        statusText: "HTTP/1.1 200 OK (🚨 PII & MEDICAL RECORD LEAKED)",
+        isLeak: true,
+        banner: "🚨 <strong>CRITICAL DATA EXPOSURE:</strong> Unfiltered database dump leaked confidential psychiatric notes, chronic kidney disease stage, and national Aadhaar ID!",
+        shortHi: "Backend ne SELECT * FROM patients WHERE id = 1042 chala kar poora database record HTTP me serialize kar diya jisse confidential medical notes aur Aadhaar leak ho gaye.",
+        shortEn: "The backend executed SELECT * FROM patients WHERE id = 1042 and serialized the raw DB model. Private clinical notes and Aadhaar traveled over the wire in plaintext.",
+        kyaHuaHi: "Backend developer ne socha ki frontend portal sirf <code>test_name</code> aur <code>result_value</code> display karega, isliye usne database se direct <code>res.json(patient)</code> bhej diya. Lekin attacker <strong>Bhavesh</strong> ne browser me <strong>F12 DevTools Network Tab</strong> khola aur Purvaj ki confidential <strong>Chronic Kidney Disease (Stage 3)</strong> diagnosis, Aadhaar number, aur psychiatric depression counseling notes copy kar liye! Client-side UI par data hide karna koi security nahi hoti.",
+        kyaHuaEn: "The developer assumed the React/Vue frontend would simply ignore unwanted columns. However, attacker <strong>Bhavesh</strong> pressed <strong>F12 &rarr; Network Tab</strong>, inspected the raw JSON HTTP packet, and exfiltrated Purvaj's sensitive Chronic Kidney Disease report, government Aadhaar ID, and psychiatric counseling history. Hiding properties in client UI is never security.",
+        fixHi: "API endpoint par ek strict <code>PatientReportPublicDTO</code> enforce karein jo database query level par sirf <code>patient_id</code>, <code>patient_name</code>, <code>test_name</code>, aur <code>result_value</code> select kare (jaise Prisma <code>select</code> ya SQL column projection). Kabhi bhi raw ORM entity ko direct JSON me return na karein.",
+        fixEn: "The API must implement a strict <code>PatientReportPublicDTO</code> that explicitly selects only <code>patient_id</code>, <code>patient_name</code>, <code>test_name</code>, and <code>result_value</code> at the database query level (e.g. Prisma <code>select</code> or SQL column projection). Never pass raw ORM entities directly into HTTP responses."
+      },
+      ride: {
+        endpoint: "GET /api/v1/rides/9042/status",
+        request: {
+          method: "GET",
+          path: "/api/v1/rides/9042/status",
+          headers: {
+            "Host": "api.quickcab-app.com",
+            "Authorization": "Bearer eyJhbGciOi...[Bhavesh_Driver_Session_9921]",
+            "User-Agent": "QuickCab-Android/5.1.0"
+          }
+        },
+        response: {
+          ride_id: 9042,
+          rider_name: "Purvaj",
+          status: "DRIVER_EN_ROUTE",
+          estimated_arrival: "4 mins",
+          exact_latitude: 19.076092,
+          exact_longitude: 72.877714,
+          pickup_address: "Flat 402, Sunrise Towers, Bandra West, Mumbai",
+          private_phone: "+91-9811223344",
+          building_gate_passcode: "#4092",
+          emergency_contact: "+91-9820011223 (Father)"
+        },
+        statusText: "HTTP/1.1 200 OK (🚨 PHYSICAL STALKING LEAK)",
+        isLeak: true,
+        banner: "🚨 <strong>PHYSICAL PRIVACY VIOLATION:</strong> Exact GPS coordinates (19.076092, 72.877714), residential address, and building gate passcode (#4092) exposed over API!",
+        shortHi: "QuickCab API ne raw rider database model serialize kar diya. Exact live GPS, apartment address, aur building security gate code expose ho gaye.",
+        shortEn: "QuickCab API passed raw rider DB record. Exact live GPS coordinates, home address, and building security gate passcode exposed to Bhavesh.",
+        kyaHuaHi: "QuickCab app me user <strong>Bhavesh</strong> ne ride status check kiya. UI par sirf <em>'Cab Arriving in 4 mins'</em> dikhana tha, lekin backend ne Purvaj ka raw user record dump kar diya jisme Purvaj ka exact home GPS location, building security gate passcode (<code>#4092</code>), aur private phone number expose ho gaye! Bhavesh physically Purvaj ko track aur stalk kar sakta hai.",
+        kyaHuaEn: "In QuickCab, the mobile interface only rendered arrival time. However, the backend passed the full raw user entity containing exact real-time GPS telemetry, apartment street address, personal phone number, and residential gate code (<code>#4092</code>), exposing Purvaj to physical stalking.",
+        fixHi: "Ride tracking endpoints par <code>RidePublicStatusDTO</code> use karein jo sirf <code>ride_id</code>, <code>status</code>, aur rounded estimation return kare. Exact coordinates aur building gate codes server side par hi filter ho jane chahiye.",
+        fixEn: "Ride tracking endpoints must strictly project a <code>RidePublicStatusDTO</code> returning only <code>ride_id</code>, <code>status</code>, and rounded estimation. Exact latitude/longitude, building security passcodes, and personal phone numbers must be stripped on the server side."
+      },
+      salary: {
+        endpoint: "GET /api/v1/employees/5011",
+        request: {
+          method: "GET",
+          path: "/api/v1/employees/5011",
+          headers: {
+            "Host": "intranet.enterprise-corp.internal",
+            "Authorization": "Bearer eyJhbGciOi...[Bhavesh_Emp_704]",
+            "Accept": "application/json"
+          }
+        },
+        response: {
+          employee_id: 5011,
+          full_name: "Purvaj Deshmukh",
+          department: "Security Engineering",
+          corporate_email: "purvaj@corp.internal",
+          base_salary_inr: 2850000,
+          bonus_stock_units: 1200,
+          performance_rating: "Needs Improvement",
+          pan_tax_id: "ABCDE1234F",
+          bank_account_num: "501004928192"
+        },
+        statusText: "HTTP/1.1 200 OK (🚨 SALARY & FINANCIAL LEAK)",
+        isLeak: true,
+        banner: "🚨 <strong>COMPENSATION & PII LEAKED:</strong> Base salary (₹28,50,000), stock grants, performance review, and bank account exposed to coworker!",
+        shortHi: "Employee search endpoint ne bina column projection ke Employee.findByPk() return kiya jisse coworker Purvaj ki confidential salary aur appraisal ratings expose ho gayi.",
+        shortEn: "Employee lookup called Employee.findByPk(5011) without field filtering. Attacker coworker Bhavesh can view peer salaries and appraisals.",
+        kyaHuaHi: "Company ke coworker search portal me employee <strong>Bhavesh</strong> ne peer <strong>Purvaj</strong> ka profile dekha. Frontend UI par sirf Name, Department, aur Email dikhana tha. Lekin backend ne SQL table ka poora record bhej diya jisse Purvaj ki salary (₹28,50,000), internal appraisal rating ('Needs Improvement'), aur bank account number leak ho gaya!",
+        kyaHuaEn: "The corporate directory UI only displays coworker contact details. But the backend queried the entire database table without DTO projection, allowing peer coworker Bhavesh to view Purvaj's confidential compensation (₹28,50,000), appraisal reviews, and personal bank account number.",
+        fixHi: "Ek dedicated <code>CorporateDirectoryDTO</code> enforce karein jo sirf public corporate data (name, team, email, office location) permit kare. Financial aur appraisal data par role-based HR authorization check lagayein.",
+        fixEn: "Apply a <code>CorporateDirectoryDTO</code> that permits only public corporate attributes (name, team, email, office desk). Financial ledgers, compensation details, and appraisal ratings must require role-based HR authorization."
+      },
+      secure: {
+        endpoint: "GET /api/v1/patients/1042/report (Secure DTO)",
+        request: {
+          method: "GET",
+          path: "/api/v1/patients/1042/report",
+          headers: {
+            "Host": "api.carepath-diagnostics.internal",
+            "Authorization": "Bearer eyJhbGciOi...[Bhavesh_Session_9921]",
+            "Accept": "application/json"
+          }
+        },
+        response: {
+          patient_id: 1042,
+          patient_name: "Purvaj Joshi",
+          test_name: "Vitamin D (25-OH)",
+          result_value: "32 ng/mL",
+          status: "NORMAL"
+        },
+        statusText: "HTTP/1.1 200 OK (✅ Filtered Response DTO)",
+        isLeak: false,
+        banner: "✅ <strong>SECURE RESPONSE DTO:</strong> Response contains strictly whitelisted fields required by the user interface. Zero confidential PII exposed!",
+        shortHi: "Secure DTO serialization lagayi gayi hai. Sirf authorized diagnostic fields send hote hain; confidential clinical data database me surakshit rehta hai.",
+        shortEn: "Secure DTO serialization applied. Only authorized diagnostic fields are sent; confidential clinical data remains guarded in database.",
+        kyaHuaHi: "Is secure mode me backend controller ne <code>PatientReportDTO</code> use kiya. Database query me sirf <code>patient_id</code>, <code>patient_name</code>, <code>test_name</code>, aur <code>result_value</code> select kiye gaye. Bhavesh agar F12 DevTools se raw HTTP response bhi dekhega, toh use koi confidential medical history ya Aadhaar number nahi milega.",
+        kyaHuaEn: "In secure mode, the backend enforces a <code>PatientReportDTO</code>. Only <code>patient_id</code>, <code>patient_name</code>, <code>test_name</code>, and <code>result_value</code> are fetched and transmitted. Even if Bhavesh inspects DevTools F12, confidential clinical notes and government IDs never leave the server.",
+        fixHi: "Output Whitelisting best practice hai. Agar bhavishya me database table me naye columns (jaise <code>cardiac_risk</code> ya <code>ssn</code>) add bhi kiye jayenge, tab bhi wo is public response me kabhi leak nahi honge.",
+        fixEn: "Output Whitelisting is enforced. Even if future developers add new sensitive columns (e.g. <code>cardiac_risk</code> or <code>ssn</code>) to the database table, they will NEVER automatically leak into this response because the DTO contract strictly whitelists permitted fields."
+      }
+    };
+
+    // Syntax Highlighter for Live Lab JSON
+    function highlightEdeJson(json) {
+      if (typeof json !== 'string') {
+        json = JSON.stringify(json, null, 2);
+      }
+      json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      return json.replace(/("(\u[a-zA-Z0-9]{4}|\[^u]|[^\"])*"(\s*:)?| (true|false|null) |-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?|[{}\[\],])/g, function (match) {
+        if (/^"/.test(match)) {
+          if (/:$/.test(match)) {
+            const keyText = match.slice(0, -1);
+            let color = '#38bdf8';
+            if (/aadhaar|ssn|kidney|cardiac|psychiatric|exact_|pickup|gate|passcode|salary|bonus|performance|pan_|bank|emergency/i.test(keyText)) {
+              color = '#ef4444';
+            }
+            return '<span class="t-key" style="color:' + color + '; font-weight:600;">' + keyText + '</span><span class="t-op">:</span>';
+          } else {
+            let style = 'color:#a3e635;';
+            if (/Depression|Needs Improvement|STAGE_3|#4092/i.test(match)) {
+              style = 'color:#ef4444; font-weight:700; background:rgba(239,68,68,0.15); padding:1px 4px; border-radius:3px;';
+            } else if (/NORMAL|DRIVER_EN_ROUTE/i.test(match)) {
+              style = 'color:#34d399; font-weight:700;';
+            }
+            return '<span class="t-str" style="' + style + '">' + match + '</span>';
+          }
+        } else if (/true|false/.test(match)) {
+          return '<span class="t-bool" style="color:#c084fc;">' + match + '</span>';
+        } else if (/null/.test(match)) {
+          return '<span style="color:#ef4444; font-weight:700;">' + match + '</span>';
+        } else if (/[{}\[\],]/.test(match)) {
+          return '<span class="t-op" style="color:#94a3b8;">' + match + '</span>';
+        }
+        const numVal = parseFloat(match);
+        const numStyle = (numVal > 10000) ? 'color:#fbbf24; font-weight:700; background:rgba(245,158,11,0.15); padding:1px 4px; border-radius:3px;' : 'color:#f472b6;';
+        return '<span class="t-num" style="' + numStyle + '">' + match + '</span>';
+      });
+    }
+
+    function renderHighlightedEdeRequest(reqObj) {
+      const reqBox = document.getElementById('labRequestBox');
+      if (!reqBox) return;
+      const verb = '<span class="t-verb">' + reqObj.method + '</span>';
+      const path = '<span class="t-path">' + reqObj.path + '</span>';
+      const proto = '<span class="t-proto">HTTP/1.1</span>';
+      let headersStr = '';
+      for (const [k, v] of Object.entries(reqObj.headers)) {
+        headersStr += '<span class="t-head">' + k + ':</span> <span class="t-str">' + v + '</span>\n';
+      }
+      reqBox.innerHTML = verb + ' ' + path + ' ' + proto + '\n' + headersStr;
+    }
+
+    function syncEdeReqHighlight() {
+      const raw = document.getElementById('labJsonInput').value.trim();
+      try {
+        const parsed = JSON.parse(raw);
+        renderHighlightedEdeRequest(parsed);
+      } catch (e) {
+        const reqBox = document.getElementById('labRequestBox');
+        if (reqBox) {
+          reqBox.innerHTML = '<span style="color:#ef4444;">// Syntax Error in Headers:\n' + e.message + '</span>\n\n<span style="color:#94a3b8;">' + raw.replace(/</g, '&lt;') + '</span>';
+        }
+      }
+    }
+
+    function switchEdeReqView(mode) {
+      const reqBox = document.getElementById('labRequestBox');
+      const txtInput = document.getElementById('labJsonInput');
+      const btnH = document.getElementById('tabReqViewHighlight');
+      const btnE = document.getElementById('tabReqViewEdit');
+
+      if (mode === 'edit') {
+        if (reqBox) reqBox.style.display = 'none';
+        if (txtInput) txtInput.style.display = 'block';
+        if (btnH) btnH.classList.remove('active');
+        if (btnE) btnE.classList.add('active');
+        if (txtInput) txtInput.focus();
+      } else {
+        syncEdeReqHighlight();
+        if (txtInput) txtInput.style.display = 'none';
+        if (reqBox) reqBox.style.display = 'block';
+        if (btnE) btnE.classList.remove('active');
+        if (btnH) btnH.classList.add('active');
+      }
+    }
+
+    function loadEdePreset(presetKey) {
+      activeEdePreset = presetKey;
+      document.querySelectorAll('.sim-preset-btn').forEach(b => b.classList.remove('active', 'active-preset'));
+      const activeBtn = document.getElementById({
+        medical: 'btnPresetMedical',
+        ride: 'btnPresetRide',
+        salary: 'btnPresetSalary',
+        secure: 'btnPresetSecure'
+      }[presetKey]);
+      if (activeBtn) activeBtn.classList.add('active');
+
+      const data = edePresets[presetKey];
+      if (data) {
+        document.getElementById('labEndpointDisplay').innerText = "Endpoint: " + data.endpoint;
+        document.getElementById('labJsonInput').value = JSON.stringify(data.request, null, 2);
+        renderHighlightedEdeRequest(data.request);
+      }
+      executeEdeLabTest();
+    }
+
+    function executeEdeLabTest() {
+      const statusBadge = document.getElementById('labStatusBadge');
+      const respBox = document.getElementById('labResponseBox');
+      const miniExplBox = document.getElementById('labExplanationBox');
+      const simExplText = document.getElementById('sim-explanation-text');
+      const alertBanner = document.getElementById('ede-alert-banner');
+      const data = edePresets[activeEdePreset];
+
+      if (statusBadge) {
+        statusBadge.innerHTML = '<span style="color:#fbbf24;">Executing Database Query...</span>';
+      }
+
+      setTimeout(() => {
+        if (!data) return;
+        if (data.isLeak) {
+          if (statusBadge) statusBadge.innerHTML = '<span style="color:#ef4444;">' + data.statusText + '</span>';
+          if (alertBanner) {
+            alertBanner.style.background = 'rgba(239, 68, 68, 0.12)';
+            alertBanner.style.border = '1px solid rgba(239, 68, 68, 0.35)';
+            alertBanner.style.borderLeft = '4px solid #ef4444';
+            alertBanner.style.color = '#fca5a5';
+            alertBanner.innerHTML = data.banner;
+          }
+        } else {
+          if (statusBadge) statusBadge.innerHTML = '<span style="color:#34d399;">' + data.statusText + '</span>';
+          if (alertBanner) {
+            alertBanner.style.background = 'rgba(52, 211, 153, 0.1)';
+            alertBanner.style.border = '1px solid rgba(52, 211, 153, 0.3)';
+            alertBanner.style.borderLeft = '4px solid #34d399';
+            alertBanner.style.color = '#6ee7b7';
+            alertBanner.innerHTML = data.banner;
+          }
+        }
+
+        if (miniExplBox) {
+          miniExplBox.innerHTML = `
+            <span class="lang-hi"><strong>💡 Root Cause:</strong> ${data.shortHi}</span>
+            <span class="lang-en"><strong>💡 Root Cause:</strong> ${data.shortEn}</span>
+          `;
+        }
+
+        if (simExplText) {
+          simExplText.innerHTML = `
+            <div class="lang-hi">
+              <div style="margin-bottom:8px;"><strong style="color:#ef4444;">🚨 Kya Galat Hua (Hindi):</strong> ${data.kyaHuaHi}</div>
+              <div><strong style="color:#38bdf8;">🛡️ Secure Architectural Fix (Hindi):</strong> ${data.fixHi}</div>
+            </div>
+            <div class="lang-en">
+              <div style="margin-bottom:8px;"><strong style="color:#ef4444;">🚨 What Went Wrong (English):</strong> ${data.kyaHuaEn}</div>
+              <div><strong style="color:#38bdf8;">🛡️ Secure Architectural Fix (English):</strong> ${data.fixEn}</div>
+            </div>
+          `;
+        }
+
+        if (respBox) {
+          respBox.innerHTML = highlightEdeJson(data.response);
+        }
+      }, 150);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadEdePreset('medical');
+    });
+  </script>
+</body>
+</html>

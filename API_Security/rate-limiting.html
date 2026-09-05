@@ -1,0 +1,3238 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Module 07: Rate Limiting & Resource Consumption - API Security Notes</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Sora:wght@400;500;600;700;800&family=Fira+Code:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+
+  <style>
+    /* ==========================================================================
+       Module 05: Mass Assignment Custom Styling - High Contrast Cyber Theme
+       ========================================================================== */
+    body {
+      background: #040814;
+      color: #f1f5f9;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      overflow-y: visible;
+      font-family: var(--font-sans);
+    }
+
+    /* Master Layout: Sidebar + Main Area */
+    .app-dashboard-layout {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* Left Sidebar */
+    .dashboard-sidebar {
+      width: 280px;
+      background: #070d1c;
+      border-right: 1px solid rgba(255, 255, 255, 0.07);
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      position: sticky;
+      top: 0;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #1e293b transparent;
+    }
+
+    .sidebar-header {
+      padding: 1.5rem 1.4rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .sidebar-brand-title {
+      font-family: var(--font-heading);
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.02em;
+    }
+    .sidebar-brand-title span {
+      color: #38bdf8;
+    }
+
+    .sidebar-section-heading {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #64748b;
+      padding: 0.8rem 1.4rem 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .vuln-nav-list {
+      list-style: none;
+      padding: 0 0.8rem;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin: 0;
+    }
+
+    .vuln-nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      border-radius: var(--radius-pill);
+      color: #f1f5f9;
+      text-decoration: none;
+      font-size: 0.86rem;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .vuln-nav-item:hover {
+      background: rgba(255, 255, 255, 0.04);
+      color: #f1f5f9;
+    }
+
+    .vuln-nav-item.active {
+      background: #1d4ed8;
+      color: #ffffff;
+      font-weight: 700;
+      box-shadow: 0 4px 14px rgba(29, 78, 216, 0.4);
+    }
+
+    .nav-num-badge {
+      font-size: 0.72rem;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 2px 7px;
+      border-radius: var(--radius-pill);
+      color: inherit;
+    }
+
+    .vuln-nav-item.active .nav-num-badge {
+      background: rgba(0, 0, 0, 0.25);
+      color: #fff;
+    }
+
+    /* Main Content Body */
+    .dashboard-main {
+      flex: 1;
+      padding: 1.4rem 2.4rem 0;
+      max-width: 1480px;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* Top Action Bar */
+    .main-top-actionbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      padding-bottom: 12px;
+    }
+
+    /* Header Hero Grid */
+    .hero-top-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 1fr;
+      gap: 1.8rem;
+      margin-bottom: 1.4rem;
+      align-items: center;
+    }
+
+    @media (max-width: 1024px) {
+      .hero-top-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+      }
+    }
+
+    .category-tag-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 0.75rem;
+    }
+
+    .pill-index-tag {
+      font-family: var(--font-mono);
+      background: #0284c7;
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.75rem;
+      padding: 2px 8px;
+      border-radius: var(--radius-pill);
+    }
+
+    .pill-category-name {
+      color: #f1f5f9;
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+
+    .main-vuln-h1 {
+      font-family: var(--font-heading);
+      font-size: 2.35rem;
+      font-weight: 800;
+      line-height: 1.2;
+      color: #ffffff;
+      margin-bottom: 0.6rem;
+      letter-spacing: -0.02em;
+    }
+
+    .main-vuln-h1 span.title-blue {
+      color: #38bdf8;
+    }
+
+    .main-vuln-desc {
+      font-size: 1.05rem;
+      color: #f1f5f9;
+      margin-bottom: 1.2rem;
+      line-height: 1.6;
+    }
+
+    /* Meta Badges */
+    .meta-tags-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 1.2rem;
+    }
+
+    .meta-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 10px;
+      border-radius: var(--radius-pill);
+      font-size: 0.74rem;
+      white-space: nowrap;
+      font-weight: 600;
+    }
+
+    .meta-chip.danger {
+      background: rgba(239, 68, 68, 0.12);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.35);
+    }
+
+    .meta-chip.info {
+      background: rgba(56, 189, 248, 0.12);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+
+    .meta-chip.purple {
+      background: rgba(168, 85, 247, 0.12);
+      color: #c084fc;
+      border: 1px solid rgba(168, 85, 247, 0.3);
+    }
+
+    /* Quote Bubble (Exact match to jwt.html) */
+    .quote-bubble {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      border-radius: var(--radius-md);
+      padding: 0.75rem 1.2rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #bae6fd !important;
+      font-size: 0.88rem;
+      margin-bottom: 1rem;
+    }
+
+    .quote-bubble div,
+    .quote-bubble p,
+    .quote-bubble span {
+      color: #bae6fd !important;
+    }
+
+    .quote-bubble strong {
+      color: #ffffff !important;
+    }
+
+    .quote-icon-box {
+      width: 26px;
+      height: 26px;
+      background: #0284c7;
+      color: #fff;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      font-weight: bold;
+      flex-shrink: 0;
+    }
+
+    /* Hero Glass Graphic (Strictly Fixed Width 530px) */
+    .hero-glass-graphic {
+      background: rgba(7, 14, 30, 0.90);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(56, 189, 248, 0.28);
+      border-radius: var(--radius-lg);
+      padding: 1.15rem 1.3rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 30px rgba(56, 189, 248, 0.1);
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      max-width: 530px;
+      margin-left: auto;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .attacker-graphic-node {
+      text-align: center;
+    }
+
+    .attacker-avatar-circle {
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      background: rgba(239, 68, 68, 0.12);
+      border: 2px solid rgba(239, 68, 68, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      margin: 0 auto 6px;
+      box-shadow: 0 0 16px rgba(239, 68, 68, 0.2);
+    }
+
+    .attacker-label {
+      font-size: 0.84rem;
+      font-weight: 700;
+      color: #fca5a5;
+    }
+
+    .attacker-sub {
+      font-size: 0.72rem;
+      color: #94a3b8;
+      font-family: var(--font-mono);
+    }
+
+    .graphic-center-flow {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      flex: 1;
+      max-width: 170px;
+    }
+
+    .graphic-url-pill {
+      background: #020617;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: var(--radius-sm);
+      padding: 4px 8px;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: #f1f5f9;
+      white-space: nowrap;
+    }
+
+    .graphic-swap-box {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 2px 0;
+    }
+
+    .swap-id-badge {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .swap-id-badge {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: var(--radius-sm);
+    }
+
+    .swap-id-badge.from {
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+
+    .swap-id-badge.to {
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .flow-state-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #ef4444;
+      margin-top: 2px;
+    }
+
+    .target-profile-card,
+    .target-profile-card *,
+    .unauth-note {
+      text-align: left !important;
+      text-justify: none !important;
+    }
+
+    .target-profile-card {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: var(--radius-md);
+      padding: 0.85rem 1rem;
+      min-width: 170px;
+      max-width: 175px;
+      box-sizing: border-box;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .target-profile-card h4 {
+      font-size: 0.92rem;
+      color: #fff;
+      margin: 0;
+      font-weight: 700;
+    }
+
+    .target-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+
+    .target-pill-status {
+      font-size: 0.65rem;
+      font-family: var(--font-mono);
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-weight: 700;
+    }
+
+    .target-pill-status.breach {
+      background: rgba(239, 68, 68, 0.2);
+      color: #fca5a5;
+      border: 1px solid rgba(239, 68, 68, 0.4);
+    }
+
+    .target-pill-status.secure {
+      background: rgba(52, 211, 153, 0.2);
+      color: #6ee7b7;
+      border: 1px solid rgba(52, 211, 153, 0.4);
+    }
+
+    .target-profile-card p {
+      font-size: 0.74rem;
+      color: #e2e8f0;
+      font-family: var(--font-mono);
+      margin: 1px 0 !important;
+      white-space: nowrap;
+      line-height: 1.4 !important;
+    }
+
+    .target-profile-card p code {
+      color: #38bdf8;
+      background: transparent !important;
+      border: none !important;
+      padding: 0 !important;
+    }
+
+    .unauth-note {
+      font-size: 0.68rem;
+      color: #f87171;
+      margin-top: 4px;
+      display: block;
+      font-weight: 600;
+      line-height: 1.25;
+    }
+
+    /* Navigation Tabs */
+    .tabs-underline-nav {
+      display: flex;
+      gap: 1.8rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      margin-bottom: 1.8rem;
+      overflow-x: scroll !important;
+      scrollbar-gutter: stable;
+      scrollbar-width: thin;
+      scrollbar-color: #38bdf8 rgba(255, 255, 255, 0.1);
+      padding-bottom: 8px;
+      -webkit-overflow-scrolling: touch;
+      scroll-behavior: smooth;
+      position: relative;
+    }
+
+    .tabs-underline-nav::-webkit-scrollbar {
+      height: 8px !important;
+      display: block !important;
+      -webkit-appearance: none !important;
+    }
+
+    .tabs-underline-nav::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.08) !important;
+      border-radius: 4px;
+    }
+
+    .tabs-underline-nav::-webkit-scrollbar-thumb {
+      background: #0284c7 !important;
+      border-radius: 4px;
+    }
+
+    .tabs-underline-nav::-webkit-scrollbar-thumb:hover {
+      background: #38bdf8 !important;
+    }
+
+    .tab-underline-btn {
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      color: #cbd5e1 !important;
+      padding: 10px 4px 12px;
+      font-size: 0.95rem;
+      font-family: var(--font-heading);
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      position: relative;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+
+    .tab-underline-btn:hover {
+      color: #f1f5f9 !important;
+      background: transparent !important;
+    }
+
+    .tab-underline-btn.active {
+      color: #38bdf8 !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      font-weight: 700;
+    }
+
+    .tab-underline-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      width: 100%;
+      height: 2.5px;
+      background: #38bdf8;
+      box-shadow: 0 0 10px #38bdf8;
+      border-radius: 2px;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+      animation: fadeInTab 0.25s ease forwards;
+    }
+
+    @keyframes fadeInTab {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Cards Panels */
+    .card-panel {
+      background: rgba(7, 14, 28, 0.90);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(56, 189, 248, 0.18);
+      border-radius: var(--radius-lg);
+      padding: 1.8rem;
+      margin-bottom: 0.5rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .card-title-badge-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 1.4rem;
+    }
+
+    .card-title-badge-row .panel-header-title {
+      margin: 0;
+    }
+
+    .blue-circle-num {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #1d4ed8, #0284c7);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 0.95rem;
+      flex-shrink: 0;
+      box-shadow: 0 0 12px rgba(2, 132, 199, 0.4);
+    }
+
+    .panel-header-title {
+      font-family: var(--font-heading);
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #38bdf8;
+      letter-spacing: -0.01em;
+    }
+
+    .panel-body-text {
+      font-size: 0.96rem;
+      color: #f1f5f9;
+      line-height: 1.75;
+      margin-bottom: 1.2rem;
+    }
+
+    /* Lead Definitions (Exact match to jwt.html & style.css) */
+    .def-lead-card {
+      background: rgba(14, 165, 233, 0.05);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      border-radius: var(--radius-md);
+      padding: 1.2rem 1.6rem;
+      margin-bottom: 1.6rem;
+    }
+
+    .def-lead-title {
+      font-family: var(--font-heading);
+      font-size: 1.12rem;
+      font-weight: 700;
+      margin-bottom: 0.8rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .def-lead-text {
+      font-size: 1.02rem !important;
+      line-height: 1.75 !important;
+      color: #f1f5f9 !important;
+      margin: 0;
+      text-align: justify !important;
+      text-justify: inter-word !important;
+    }
+
+    .def-lead-text span,
+    .def-lead-text p {
+      color: #f1f5f9 !important;
+      font-size: 1.02rem !important;
+      line-height: 1.75 !important;
+      text-align: justify !important;
+      text-justify: inter-word !important;
+    }
+
+    .def-lead-text strong,
+    .def-lead-text b {
+      color: #ffffff !important;
+      font-weight: 700;
+    }
+
+    /* Code Wrap Enforcement */
+    code {
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+
+    /* Attack Scenarios Styling */
+    .scenarios-container {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      margin: 1.2rem 0;
+    }
+
+    .scenario-card {
+      background: #080f20;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .scenario-card:hover {
+      border-color: rgba(56, 189, 248, 0.3);
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+    }
+
+    .scenario-header {
+      padding: 1rem 1.4rem;
+      background: rgba(255, 255, 255, 0.02);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .scenario-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 3px 9px;
+      border-radius: var(--radius-pill);
+      background: rgba(56, 189, 248, 0.12);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.25);
+    }
+
+    .scenario-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #f8fafc;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .scenario-body {
+      padding: 1.25rem 1.4rem;
+    }
+
+    .scenario-desc {
+      color: #f1f5f9 !important;
+      font-size: 0.94rem;
+      line-height: 1.7;
+      margin-bottom: 1.1rem;
+      text-align: justify !important;
+      text-justify: inter-word !important;
+    }
+    .scenario-desc span {
+      color: #f1f5f9 !important;
+    }
+
+    .split-terminal-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.2rem;
+      margin-top: 1rem;
+    }
+
+    @media (max-width: 900px) {
+      .split-terminal-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .terminal-box {
+      background: #060b18;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .terminal-topbar {
+      background: #0a1124;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .term-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 4px;
+    }
+
+    .term-dot.red { background: #ef4444; }
+    .term-dot.yellow { background: #f59e0b; }
+    .term-dot.green { background: #10b981; }
+
+    .term-file-name {
+      font-size: 0.76rem;
+      font-weight: 600;
+      color: #94a3b8;
+      font-family: var(--font-mono);
+      letter-spacing: 0.04em;
+      flex: 1;
+      margin-left: 6px;
+    }
+
+    .term-copy-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #94a3b8;
+      font-size: 0.72rem;
+      font-family: var(--font-mono);
+      padding: 3px 9px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .term-copy-btn:hover {
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      border-color: rgba(56, 189, 248, 0.3);
+    }
+
+    .terminal-box pre,
+    .compare-box pre {
+      margin: 0;
+      padding: 1rem 1.15rem;
+      font-family: var(--font-mono);
+      font-size: 0.83rem;
+      line-height: 1.65;
+      color: #e2e8f0;
+      overflow-x: auto;
+      flex: 1;
+      white-space: pre;
+      word-break: normal;
+      tab-size: 2;
+    }
+
+    .terminal-box pre code,
+    .compare-box pre code {
+      background: transparent !important;
+      border: none !important;
+      padding: 0 !important;
+      font-size: inherit !important;
+      font-family: inherit !important;
+      color: inherit !important;
+      box-shadow: none !important;
+      border-radius: 0 !important;
+      display: block;
+      white-space: pre !important;
+      word-break: normal !important;
+    }
+
+    :not(pre) > code {
+      background: rgba(56, 189, 248, 0.1);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 0.86em;
+      word-break: break-word;
+    }
+
+    /* Code & Terminal Syntax Highlighting */
+    .t-verb { color: #38bdf8; font-weight: 700; }
+    .t-path { color: #f87171; font-weight: 700; }
+    .t-proto { color: #94a3b8; }
+    .t-head { color: #a78bfa; }
+    .t-key { color: #38bdf8; }
+    .t-str { color: #a3e635; }
+    .t-num { color: #f472b6; }
+    .t-status { color: #ef4444; font-weight: 700; }
+    .t-status.green { color: #34d399; }
+    .t-comm { color: #64748b; font-style: italic; }
+    .t-kw { color: #c084fc; font-weight: 700; }
+    .t-fn { color: #38bdf8; font-weight: 600; }
+    .t-cls { color: #facc15; font-weight: 700; }
+    .t-dec { color: #f43f5e; font-weight: 600; }
+    .t-type { color: #34d399; }
+    .t-bool { color: #f472b6; font-weight: 700; }
+    .t-op { color: #94a3b8; }
+
+    .scenario-impact {
+      margin-top: 1rem;
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.82rem;
+      line-height: 1.55;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .scenario-impact.crit {
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px solid rgba(239, 68, 68, 0.25);
+      color: #fca5a5;
+    }
+
+    .scenario-impact.danger {
+      background: rgba(245, 158, 11, 0.08);
+      border: 1px solid rgba(245, 158, 11, 0.25);
+      color: #fde68a;
+    }
+
+    /* Tab 4: Code Prevention */
+    .code-compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.2rem;
+      margin: 1.2rem 0;
+    }
+
+    @media (max-width: 900px) {
+      .code-compare-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .compare-box {
+      background: #060b18;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .compare-box.vulnerable {
+      border-top: 3px solid #ef4444;
+    }
+
+    .compare-box.secure {
+      border-top: 3px solid #10b981;
+    }
+
+    .compare-header {
+      padding: 10px 14px;
+      background: #0a1124;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .compare-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .compare-dot.red { background: #ef4444; }
+    .compare-dot.green { background: #10b981; }
+
+    .compare-title {
+      font-size: 0.84rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      font-family: var(--font-sans);
+    }
+
+/* compare-box pre unified with terminal-box pre */
+
+    .golden-rules-card {
+      background: rgba(14, 165, 233, 0.04);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      border-radius: var(--radius-md);
+      padding: 1.4rem;
+      margin-top: 1.8rem;
+    }
+
+    .golden-rules-title {
+      font-family: var(--font-heading);
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #38bdf8;
+      margin-top: 0;
+      margin-bottom: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Attack Preset Buttons Horizontal Alignment */
+    .sim-preset-btn {
+      display: inline-flex !important;
+      flex-direction: row !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 8px !important;
+      white-space: nowrap !important;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #f1f5f9;
+      padding: 7px 15px;
+      border-radius: var(--radius-pill);
+      font-size: 0.82rem;
+      font-family: var(--font-heading);
+      font-weight: 600;
+      cursor: pointer;
+      line-height: 1;
+      transition: all 0.2s ease;
+    }
+
+    .sim-preset-btn .preset-icon {
+      font-size: 0.95rem;
+      line-height: 1;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+
+    .sim-preset-btn .preset-label {
+      display: inline-block;
+      white-space: nowrap;
+      line-height: 1;
+    }
+
+    .sim-preset-btn:hover {
+      background: rgba(56, 189, 248, 0.15);
+      border-color: #38bdf8;
+      color: #ffffff;
+      transform: translateY(-1px);
+    }
+
+    .sim-preset-btn.active, .sim-preset-btn.active-preset {
+      background: #1d4ed8 !important;
+      border-color: #3b82f6 !important;
+      color: #ffffff !important;
+      box-shadow: 0 0 14px rgba(59, 130, 246, 0.5);
+    }
+
+    /* Light Theme Overrides */
+    html[data-theme="light"] .panel-header-title { color: #0f172a; }
+    html[data-theme="light"] .scenario-card { background: #ffffff; border-color: rgba(0,0,0,0.08); }
+    html[data-theme="light"] .scenario-header { background: #f8fafc; border-color: rgba(0,0,0,0.06); }
+    html[data-theme="light"] .scenario-title { color: #0f172a; }
+    html[data-theme="light"] .scenario-desc { color: #334155; }
+    html[data-theme="light"] .terminal-box { background: #0f172a; border-color: #334155; }
+    html[data-theme="light"] .terminal-topbar { background: #1e293b; border-color: #334155; }
+    html[data-theme="light"] .compare-box { background: #0f172a; }
+    html[data-theme="light"] .compare-header { background: #1e293b; }
+    html[data-theme="light"] .golden-rules-card { background: #f0f9ff; border-color: #bae6fd; }
+    html[data-theme="light"] .golden-rules-title { color: #0284c7; }
+      .lab-mode-tab-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #94a3b8;
+      font-size: 0.72rem;
+      font-family: var(--font-heading);
+      padding: 3px 9px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .lab-mode-tab-btn.active, .lab-mode-tab-btn:hover {
+      background: rgba(56, 189, 248, 0.18);
+      border-color: rgba(56, 189, 248, 0.45);
+      color: #38bdf8;
+    }
+
+      /* How It Works & Pillars Step Box (Standardized from jwt.html) */
+    .hw-step-box {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-md);
+      padding: 1.25rem 1.4rem;
+      transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+      position: relative;
+      border-left: 4px solid #38bdf8;
+    }
+
+    .hw-step-box:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    }
+
+    .hw-step-box h4 {
+      font-family: var(--font-heading);
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin: 0 0 0.5rem 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .hw-step-box p {
+      color: #f1f5f9;
+      font-size: 0.94rem;
+      line-height: 1.7;
+      margin: 0;
+      text-align: justify !important;
+      text-justify: inter-word !important;
+    }
+
+    .hw-step-box code {
+      background: rgba(15, 23, 42, 0.9);
+      color: #38bdf8;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 0.86em;
+      border: 1px solid rgba(56, 189, 248, 0.25);
+    }
+
+    .hw-step-box.step-1 {
+      border-left-color: #10b981;
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(15, 23, 42, 0.6));
+    }
+    .hw-step-box.step-1 h4 { color: #34d399; }
+
+    .hw-step-box.step-2 {
+      border-left-color: #f59e0b;
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(15, 23, 42, 0.6));
+    }
+    .hw-step-box.step-2 h4 { color: #fbbf24; }
+
+    .hw-step-box.step-3 {
+      border-left-color: #0ea5e9;
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.08), rgba(15, 23, 42, 0.6));
+    }
+    .hw-step-box.step-3 h4 { color: #38bdf8; }
+
+    .hw-step-box.step-4 {
+      border-left-color: #ef4444;
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(15, 23, 42, 0.6));
+    }
+    .hw-step-box.step-4 h4 { color: #f87171; }
+
+    .hw-step-box.step-5 {
+      border-left-color: #a855f7;
+      background: linear-gradient(135deg, rgba(168, 85, 247, 0.08), rgba(15, 23, 42, 0.6));
+    }
+    .hw-step-box.step-5 h4 { color: #c084fc; }
+
+    html[data-theme="light"] .hw-step-box {
+      background: #f8fafc;
+      border-color: #f1f5f9;
+      border-left-width: 4px;
+    }
+    html[data-theme="light"] .hw-step-box:hover {
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    }
+    html[data-theme="light"] .hw-step-box.step-1 { border-left: 4px solid #10b981 !important; }
+    html[data-theme="light"] .hw-step-box.step-1 h4 { color: #047857 !important; }
+    html[data-theme="light"] .hw-step-box.step-2 { border-left: 4px solid #f59e0b !important; }
+    html[data-theme="light"] .hw-step-box.step-2 h4 { color: #b45309 !important; }
+    html[data-theme="light"] .hw-step-box.step-3 { border-left: 4px solid #0284c7 !important; }
+    html[data-theme="light"] .hw-step-box.step-3 h4 { color: #0369a1 !important; }
+    html[data-theme="light"] .hw-step-box.step-4 { border-left: 4px solid #ef4444 !important; }
+    html[data-theme="light"] .hw-step-box.step-4 h4 { color: #b91c1c !important; }
+    html[data-theme="light"] .hw-step-box.step-5 { border-left: 4px solid #9333ea !important; }
+    html[data-theme="light"] .hw-step-box.step-5 h4 { color: #7e22ce !important; }
+    html[data-theme="light"] .hw-step-box p { color: #334155 !important; }
+    html[data-theme="light"] .hw-step-box code { background: #e2e8f0; color: #0284c7; border-color: #bae6fd; }
+
+  
+    /* Scope Dark vs Light Mode Typography in mass-assignment.html */
+    html[data-theme="light"] .main-vuln-desc,
+    html[data-theme="light"] .panel-body-text,
+    html[data-theme="light"] .def-lead-text,
+    html[data-theme="light"] .scenario-desc,
+    html[data-theme="light"] .hw-step-box p,
+    html[data-theme="light"] .faq-answer,
+    html[data-theme="light"] .def-lead-text span,
+    html[data-theme="light"] .main-vuln-desc span,
+    html[data-theme="light"] .scenario-desc span,
+    html[data-theme="light"] .panel-body-text span,
+    html[data-theme="light"] .hw-step-box p span,
+    html[data-theme="light"] .faq-answer span {
+      color: #1e293b !important;
+    }
+
+    html[data-theme="light"] strong,
+    html[data-theme="light"] b {
+      color: #0f172a !important;
+      font-weight: 700;
+    }
+    
+    /* ==========================================================================
+       Checklist Interactive Pass / Fail Theme
+       ========================================================================== */
+    .checklist-item {
+      position: relative;
+      transition: all 0.25s ease;
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      padding: 1rem 1.2rem;
+      border-radius: var(--radius-md);
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      margin-bottom: 1rem;
+    }
+    .checklist-item:hover {
+      border-color: rgba(56, 189, 248, 0.35);
+      background: rgba(15, 23, 42, 0.75);
+    }
+    .checklist-item.item-passed {
+      border-color: rgba(16, 185, 129, 0.6) !important;
+      background: rgba(16, 185, 129, 0.07) !important;
+    }
+    .checklist-item.item-failed {
+      border-color: rgba(239, 68, 68, 0.6) !important;
+      background: rgba(239, 68, 68, 0.07) !important;
+    }
+    .checklist-item.item-passed .check-box-circle {
+      background: #10b981 !important;
+      border-color: #10b981 !important;
+      color: #ffffff !important;
+    }
+    .checklist-item.item-failed .check-box-circle {
+      background: #ef4444 !important;
+      border-color: #ef4444 !important;
+      color: #ffffff !important;
+    }
+    .check-box-circle {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 3px;
+      font-weight: 700;
+      color: transparent;
+      transition: all 0.2s;
+    }
+    .check-content {
+      flex: 1;
+    }
+    .check-content h5 {
+      margin: 0 0 6px 0;
+      font-size: 1.02rem;
+      color: #38bdf8;
+    }
+    .check-actions-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .check-status-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(15, 23, 42, 0.8);
+      color: #94a3b8;
+      transition: all 0.2s ease;
+    }
+    .check-status-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #f1f5f9;
+    }
+    .check-status-btn.pass-btn.active {
+      background: rgba(16, 185, 129, 0.25) !important;
+      border-color: #10b981 !important;
+      color: #34d399 !important;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+    }
+    .check-status-btn.fail-btn.active {
+      background: rgba(239, 68, 68, 0.25) !important;
+      border-color: #ef4444 !important;
+      color: #f87171 !important;
+      box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+    }
+
+    /* Rate Limiting Specific Extras */
+    .bucket-gauge-container {
+      background: #050b18;
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 15px;
+    }
+    .bucket-bar-bg {
+      background: rgba(255, 255, 255, 0.1);
+      height: 12px;
+      border-radius: 6px;
+      overflow: hidden;
+      margin-top: 6px;
+    }
+    .bucket-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #10b981, #38bdf8);
+      width: 100%;
+      transition: width 0.3s ease, background-color 0.3s ease;
+    }
+    .bucket-bar-fill.depleted {
+      background: #ef4444;
+    }
+    .check-how-to-box {
+      margin-top: 10px;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px dashed rgba(56, 189, 248, 0.3);
+      border-radius: 6px;
+      padding: 10px 14px;
+      font-size: 0.86rem;
+      color: #cbd5e1;
+      line-height: 1.6;
+    }
+    .check-how-to-title {
+      color: #38bdf8;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 4px;
+      font-size: 0.88rem;
+    }
+    html[data-theme="light"] #sim-explanation-box {
+      background: #f8fafc !important;
+      border-color: #bae6fd !important;
+    }
+    html[data-theme="light"] #sim-explanation-text {
+      color: #1e293b !important;
+    }
+
+    /* Code Language Switcher Buttons (Tab 4) */
+    .code-lang-pills-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 1.4rem;
+      flex-wrap: wrap;
+    }
+
+    .code-lang-btn {
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 8px !important;
+      padding: 8px 18px !important;
+      background: rgba(255, 255, 255, 0.05) !important;
+      border: 1px solid rgba(255, 255, 255, 0.15) !important;
+      color: #cbd5e1 !important;
+      border-radius: var(--radius-pill, 9999px) !important;
+      font-family: var(--font-heading, inherit) !important;
+      font-size: 0.86rem !important;
+      font-weight: 600 !important;
+      cursor: pointer !important;
+      line-height: 1 !important;
+      transition: all 0.2s ease !important;
+      outline: none !important;
+      text-decoration: none !important;
+    }
+
+    .code-lang-btn:hover {
+      background: rgba(56, 189, 248, 0.15) !important;
+      border-color: #38bdf8 !important;
+      color: #ffffff !important;
+      transform: translateY(-1px) !important;
+    }
+
+    .code-lang-btn.active {
+      background: linear-gradient(135deg, #0284c7, #2563eb) !important;
+      border-color: #38bdf8 !important;
+      color: #ffffff !important;
+      box-shadow: 0 0 14px rgba(56, 189, 248, 0.4) !important;
+    }
+
+    html[data-theme="light"] .code-lang-btn {
+      background: #f1f5f9 !important;
+      border-color: #cbd5e1 !important;
+      color: #334155 !important;
+    }
+    html[data-theme="light"] .code-lang-btn.active {
+      background: #0284c7 !important;
+      border-color: #0284c7 !important;
+      color: #ffffff !important;
+    }
+
+    /* Layer 7 Deep-Dive Typography & Color Enforcement */
+    .l7-deepdive-body {
+      font-size: 0.96rem;
+      line-height: 1.75;
+      color: #cbd5e1;
+      margin-bottom: 1rem;
+    }
+
+    .l7-deepdive-body span.lang-hi,
+    .l7-deepdive-body span.lang-en {
+      color: #cbd5e1;
+      font-size: 0.96rem;
+      line-height: 1.75;
+    }
+
+    .l7-subheading {
+      color: #38bdf8 !important;
+      font-size: 1.06rem !important;
+      font-weight: 700 !important;
+      margin: 18px 0 8px 0 !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 8px !important;
+      letter-spacing: 0.2px !important;
+    }
+
+    .l7-subheading span,
+    .l7-subheading strong {
+      color: #38bdf8 !important;
+    }
+
+    .l7-bullet-title {
+      color: #38bdf8 !important;
+      font-weight: 700 !important;
+      font-size: 0.96rem !important;
+    }
+
+    .l7-deepdive-body strong.l7-bullet-title,
+    .l7-deepdive-body span.l7-bullet-title {
+      color: #38bdf8 !important;
+    }
+
+    .l7-deepdive-body strong:not(.l7-bullet-title) {
+      color: #ffffff;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-dashboard-layout">
+
+    <!-- ====================================================================
+         SIDEBAR NAVIGATION (21 MODULES)
+         ==================================================================== -->
+    <aside class="dashboard-sidebar">
+      <div class="sidebar-header">
+        <div class="brand-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+        <a href=\"index.html\" class=\"sidebar-brand-title\" style=\"text-decoration:none; display:block;\">API <span>Security</span></a>
+      </div>
+
+      <div class="sidebar-section-heading">Foundations</div>
+      <ul class="vuln-nav-list" style="margin-bottom: 0.5rem;">
+        <li><a href="api-intro.html" class="vuln-nav-item"><span class="nav-num-badge">00</span> API Fundamentals</a></li>
+      </ul>
+
+      <div class="sidebar-section-heading">Common Vulnerabilities</div>
+      <ul class="vuln-nav-list">
+        <li><a href="bola.html" class="vuln-nav-item"><span class="nav-num-badge">01</span> BOLA</a></li>
+        <li><a href="bfla.html" class="vuln-nav-item"><span class="nav-num-badge">02</span> BFLA</a></li>
+        <li><a href="idor.html" class="vuln-nav-item"><span class="nav-num-badge">03</span> IDOR</a></li>
+        <li><a href="jwt.html" class="vuln-nav-item"><span class="nav-num-badge">04</span> JWT Vulnerabilities</a></li>
+        <li><a href="mass-assignment.html" class="vuln-nav-item"><span class="nav-num-badge">05</span> Mass Assignment</a></li>
+        <li><a href="excessive-data-exposure.html" class="vuln-nav-item"><span class="nav-num-badge">06</span> Excessive Data Exposure</a></li>
+        <li><a href="rate-limiting.html" class="vuln-nav-item active"><span class="nav-num-badge">07</span> Rate Limiting</a></li>
+        <li><a href="ssrf.html" class="vuln-nav-item"><span class="nav-num-badge">08</span> SSRF</a></li>
+        <li><a href="nosql-injection.html" class="vuln-nav-item"><span class="nav-num-badge">09</span> NoSQL Injection</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">10</span> Command Injection</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">11</span> XXE</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">12</span> GraphQL Security</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">13</span> Business Logic Issues</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">14</span> CORS Misconfiguration</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">15</span> API Key Security</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">16</span> OAuth & OpenID Security</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">17</span> Webhooks Security</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">18</span> Race Conditions</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">19</span> File Upload Vulnerabilities</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">20</span> Deserialization Issues</a></li>
+      </ul>
+    </aside>
+
+    <!-- ====================================================================
+         MAIN CONTENT AREA
+         ==================================================================== -->
+    <main class="dashboard-main">
+
+      <!-- Top Action Bar -->
+      <div class="main-top-actionbar">
+        <div style="font-size: 0.84rem; color: #94a3b8;">
+          <a href="api-intro.html" style="color:#38bdf8; text-decoration:none;">Modules</a> &rsaquo;
+          <span>07 / 20 Rate Limiting & Resource Consumption</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <!-- Dark / Light Mode Toggle Button -->
+          <button class="theme-toggle-btn" id="themeToggleBtn" title="Switch Theme">
+            <span>☀️</span> <span class="theme-label">Light Mode</span>
+          </button>
+
+          <!-- Dual Language Switcher -->
+          <div class="lang-switch-wrapper">
+            <span id="lbl-hi" class="lang-label active">Hindi</span>
+            <label class="switch">
+              <input type="checkbox" id="langToggle">
+              <span class="slider"></span>
+            </label>
+            <span id="lbl-en" class="lang-label">English</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hero Section -->
+      <section class="hero-top-grid">
+        <div>
+          <div class="category-tag-row">
+            <span class="pill-index-tag">07</span>
+            <span class="pill-category-name">Unrestricted Resource Consumption</span>
+          </div>
+
+          <h1 class="main-vuln-h1">
+            Rate Limiting &<br>
+            <span class="title-blue">Resource Consumption</span>
+          </h1>
+
+          <p class="main-vuln-desc">
+            <span class="lang-hi">API endpoints par frequency, query pagination aur compute resources ka limit na lagane se attackers brute force attacks, database memory exhaustion, expensive computational DoS aur costly third-party API wallet draining execute kar sakte hain.</span>
+            <span class="lang-en">Lack of execution budgeting, request frequency controls, and pagination bounds enables automated credential brute-forcing, PostgreSQL memory starvation (OOM DoS), and catastrophic third-party SMS/compute wallet exhaustion.</span>
+          </p>
+
+          <!-- Meta tags row -->
+          <div class="meta-tags-row">
+            <span class="meta-chip danger">
+              <span class="badge-dot" style="background:#ef4444; width:6px; height:6px; border-radius:50%;"></span> High Denial of Service & Financial Risk
+            </span>
+            <span class="meta-chip info">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+              CWE-770 / OWASP API4:2023
+            </span>
+            <span class="meta-chip purple">
+              ★ Unrestricted Resource Consumption
+            </span>
+          </div>
+
+          <!-- Highlight Insight Quote Bubble -->
+          <div class="quote-bubble">
+            <div class="quote-icon-box">💡</div>
+            <div>
+              <span class="lang-hi"><strong>Core Insight:</strong> "Har compute cycle aur har network request ki ek cost hoti hai!" Agar aapka API server kisi client ko 1 second me 5,000 requests bhejne ya 1 million SQL rows fetch karne ki ijazat deta hai, toh attacker bina kisi complex zero-day ke aapki poori application ko down kar sakta hai.</span>
+              <span class="lang-en"><strong>Core Insight:</strong> "Every compute cycle and network packet costs real money and memory!" If your API permits clients to fire 5,000 requests per second or pull 1,000,000 DB records in a single query, an attacker can crash your entire cluster without needing any zero-day exploit!</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Box (Interactive Hero Widget - Fixed Width 530px) -->
+        <div class="hero-glass-graphic" id="rlHeroWidget">
+          <div class="hero-widget-header">
+            <div class="hero-widget-badge">
+              <span class="pulse-live-dot"></span>
+              <span class="hero-badge-title">Interactive Rate Flow</span>
+            </div>
+            <div class="hero-sim-pills">
+              <button type="button" class="hero-sim-btn" id="btnRlSafe" title="Show Token Bucket Protection">
+                <span>🛡️</span> <span>Token Bucket (Safe)</span>
+              </button>
+              <button type="button" class="hero-sim-btn active exploit" id="btnRlLeak" title="Show Unthrottled Resource Attack">
+                <span>⚠️</span> <span>Unrestricted (Flooded)</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="hero-widget-body">
+            <div class="attacker-graphic-node" id="rlAttackerNode">
+              <div class="attacker-avatar-circle" id="rlAttackerAvatar">🥷</div>
+              <div class="attacker-label" id="rlAttackerLabel">Shabaj (Attacker)</div>
+              <div class="attacker-sub" id="rlAttackerSub">Bursting 100 req/sec</div>
+            </div>
+
+            <div class="graphic-center-flow">
+              <div class="graphic-url-pill" id="rlUrlPill">
+                <span class="m-verb" id="rlVerb" style="color:#ef4444; font-weight:700;">POST</span> <span class="m-path" id="rlPath">/api/v1/auth/verify-otp</span>
+              </div>
+              <div class="graphic-swap-box" id="rlSwapBox">
+                <span class="swap-id-badge from" id="rlBadgeFrom">Burst: 100 reqs</span>
+                <span class="swap-arrow-icon" id="rlSwapArrow" style="color:var(--text-dim); font-size:0.8rem;">➔</span>
+                <span class="swap-id-badge to" id="rlBadgeTo">Server: Choked</span>
+              </div>
+              <div class="flow-beam-track" id="rlBeamTrack">
+                <div class="flow-beam-particle exploit" id="rlBeamParticle"></div>
+              </div>
+              <span class="flow-state-label" id="rlFlowStateText" style="color:#ef4444;">Unthrottled Flood</span>
+            </div>
+
+            <div class="target-profile-card exploit" id="rlTargetCard">
+              <div class="target-card-top">
+                <h4 id="rlTargetName">Asif (Victim App)</h4>
+                <span class="target-pill-status breach" id="rlTargetStatus">DOS CRASH</span>
+              </div>
+              <p id="rlTargetField1">CPU Usage: <code style="color:#ef4444;">99.8% (Spike)</code></p>
+              <p id="rlTargetField2">DB Pool: <code style="color:#ef4444;">Exhausted (0 Free)</code></p>
+              <p id="rlTargetField3">Status: <code style="color:#ef4444;">504 Gateway Timeout</code></p>
+              <span class="unauth-note" id="rlTargetNote">🚨 Server Choked & OTP Cracked</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           NAVIGATION TABS (7 TABS)
+           ==================================================================== -->
+      <nav class="tabs-underline-nav" id="mainTabsNav">
+        <button type="button" class="tab-underline-btn active" data-tab="tab-overview">📖 1. Overview</button>
+        <button type="button" class="tab-underline-btn" data-tab="tab-pillars">🏛️ 2. Four Pillars</button>
+        <button type="button" class="tab-underline-btn" data-tab="tab-scenarios">🎯 3. Scenarios & Attacks</button>
+        <button type="button" class="tab-underline-btn" data-tab="tab-code">💻 4. Code & Fix</button>
+        <button type="button" class="tab-underline-btn" data-tab="tab-checklist">📋 5. Review Checklist</button>
+        <button type="button" class="tab-underline-btn" data-tab="tab-lab">⚡ 6. Live Lab</button>
+        <button type="button" class="tab-underline-btn" data-tab="tab-questions">❓ 7. FAQ</button>
+      </nav>
+
+<!-- ====================================================================
+           TAB 1: OVERVIEW
+           ==================================================================== -->
+      <div class="tab-content active" id="tab-overview">
+        <div class="card-panel">
+          <div class="card-title-badge-row">
+            <div class="blue-circle-num">1</div>
+            <h2 class="panel-header-title">
+              <span class="lang-hi">Rate Limiting & Resource Consumption Kya Hai? (Core Fundamentals)</span>
+              <span class="lang-en">What is Rate Limiting & Unrestricted Resource Consumption? (Core Fundamentals)</span>
+            </h2>
+          </div>
+
+          <div class="def-lead-card">
+            <div class="def-lead-title">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              <span>Definition & Architectural Root Cause (OWASP API4:2023)</span>
+            </div>
+            <p class="def-lead-text">
+              <span class="lang-hi"><strong>Unrestricted Resource Consumption (OWASP API4:2023)</strong> tab samne aata hai jab backend API endpoints client se aane wali requests par kisi bhi tarah ki rate limits, query volume caps, memory quotas ya execution timeouts impose nahi karte. Jab server ek client ko infinite requests bhejane, unlimited database rows ek sath query karne, ya expensive background tasks (jaise PDF exports ya heavy cryptography) trigger karne ki ijazat deta hai, toh attacker poor enterprise infrastructure ko choke kar sakta hai aur sensitive authentication endpoints par brute force attacks execute kar sakta hai.</span>
+              <span class="lang-en"><strong>Unrestricted Resource Consumption (OWASP API4:2023)</strong> occurs when API endpoints satisfy client requests without enforcing limits on compute resources, execution time, memory allocation, database records, network egress, or invocation frequency. Without strict ceilings, attackers automate credential brute-forcing, exhaust relational database connections via unbounded pagination, and cause denial of service (DoS) or catastrophic financial cloud bills.</span>
+            </p>
+          </div>
+
+          <!-- Section B: Real-World Analogy (Bank Cashier Counter) -->
+          <div class="def-lead-card" style="margin-top:1.6rem; border-left:4px solid #38bdf8;">
+            <div class="def-lead-title">
+              <span>🏦</span>
+              <span class="lang-hi">Real-Life Example: Bank Cashier Counter vs. Automated Machine</span>
+              <span class="lang-en">Real-Life Example: Bank Cashier Counter vs. Automated Machine (Real-World Analogy)</span>
+            </div>
+            <p class="def-lead-text" style="margin-bottom:1rem;">
+              <span class="lang-hi">Maan lijiye ek bank branch me ek cashier counter hai. Aam log (jaise customer <strong>Asif</strong>) aate hain aur ek bar me 1 ya 2 transactions karte hain. Cashier aram se sabhi ko serve karta hai. Lekin sochiye ek din <strong>Shabaj</strong> ek robotic auto-stamp machine lekar counter par baith jata hai aur cashier se har second 500 alag-alag passbooks print karne ki demand karta hai!<br><br>
+              Cashier thak kar behosh ho jata hai, bank ka computer system overheat ho jata hai, aur line me khada Asif apna check bhi deposit nahi kar pata! <strong>Rate Limiting</strong> bank ke gate par laga wo security guard hai jo kehta hai: <em>"Aap 1 minute me sirf 5 transactions kar sakte hain, uske baad 30 second line se bahar intezaar karein!"</em></span>
+              <span class="lang-en">Imagine a busy retail bank branch with a single cashier. Legitimate customer <strong>Asif</strong> visits to deposit one check and leaves. The cashier operates smoothly. Now imagine an adversary named <strong>Shabaj</strong> rolls in an automated machine that rapidly fires 500 passbook printing requests every second directly at the cashier!<br><br>
+              The cashier collapses from exhaustion, the thermal printer runs out of paper and jams, and Asif cannot even deposit his check! <strong>API Rate Limiting</strong> is the security guard at the counter who enforces: <em>"You may execute up to 5 transactions per minute. Beyond that, you must wait 30 seconds before your next attempt!"</em></span>
+            </p>
+          </div>
+
+          <!-- Section C: Multi-Layer Resource Exhaustion (Why it is NEVER just Layer 7) -->
+          <h3 style="font-size:1.18rem; color:#38bdf8; margin:2.2rem 0 0.8rem; font-weight:700;">
+            <span class="lang-hi">🌐 Resource Consumption Sirf Layer 7 Par Hi Kyu Nahi Hota? (All 5 Exhaustion Vectors)</span>
+            <span class="lang-en">🌐 Why Resource Consumption Is Never Just Layer 7 (The 5 Full-Stack Exhaustion Vectors)</span>
+          </h3>
+          <p style="font-size:0.92rem; color:#cbd5e1; line-height:1.65; margin-bottom:1.2rem;">
+            <span class="lang-hi">Bohot se developers galat sochte hain ki rate limiting sirf Layer 7 HTTP flood rokne ke liye hoti hai. Asal me modern API me <strong>5 alag-alag layers</strong> par resources exhaust hote hain:</span>
+            <span class="lang-en">A common misconception is that API rate limiting only defends against Layer 7 HTTP request floods. In real-world enterprise architectures, resource starvation strikes across <strong>5 distinct layers</strong>:</span>
+          </p>
+
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:1.2rem;">
+            <!-- Vector 1: Application Logic Layer -->
+            <div style="background:rgba(15,23,42,0.7); border:1px solid rgba(255,255,255,0.08); border-left:4px solid #38bdf8; border-radius:var(--radius-md); padding:1.2rem;">
+              <h4 style="color:#38bdf8; font-size:0.98rem; margin:0 0 6px 0;">1. 🎯 Application & Auth Velocity Layer</h4>
+              <p style="font-size:0.86rem; color:#f1f5f9; line-height:1.6; margin:0;">
+                <span class="lang-hi">Shabaj OTP verification ya login endpoints par rapid automated brute force run karta hai. Bina per-IP aur per-account rate limit ke Asif ka account hijack ho jata hai.</span>
+                <span class="lang-en">Adversary Shabaj runs automated credential stuffing and 4-digit OTP brute-force scripts, hijacking Asif's account when velocity limits are missing.</span>
+              </p>
+            </div>
+
+            <!-- Vector 2: Database & Connection Pool Layer -->
+            <div style="background:rgba(15,23,42,0.7); border:1px solid rgba(255,255,255,0.08); border-left:4px solid #ef4444; border-radius:var(--radius-md); padding:1.2rem;">
+              <h4 style="color:#ef4444; font-size:0.98rem; margin:0 0 6px 0;">2. 🗄️ Database & Connection Pool Layer</h4>
+              <p style="font-size:0.86rem; color:#f1f5f9; line-height:1.6; margin:0;">
+                <span class="lang-hi">Attacker <code>?limit=1000000</code> query bhejta hai. Database server GBs of RAM allocate karta hai, disk I/O 100% choke ho jata hai, aur saare DB connections starve ho jate hain!</span>
+                <span class="lang-en">Unbounded pagination (<code>?limit=1000000</code>) forces PostgreSQL to load millions of rows into RAM, triggering Out-Of-Memory (OOM) and exhausting DB connection pools.</span>
+              </p>
+            </div>
+
+            <!-- Vector 3: CPU & Algorithmic Complexity Layer -->
+            <div style="background:rgba(15,23,42,0.7); border:1px solid rgba(255,255,255,0.08); border-left:4px solid #f59e0b; border-radius:var(--radius-md); padding:1.2rem;">
+              <h4 style="color:#f59e0b; font-size:0.98rem; margin:0 0 6px 0;">3. ⚙️ CPU & Algorithmic Complexity (ReDoS)</h4>
+              <p style="font-size:0.86rem; color:#f1f5f9; line-height:1.6; margin:0;">
+                <span class="lang-hi">Evil regex payload (ReDoS), deep JSON nesting, ya PDF/Zip compression tasks server ke CPU core ko 100% max out kar dete hain, jisse normal users freeze ho jate hain.</span>
+                <span class="lang-en">Catastrophic regular expression backtracking (ReDoS), deeply nested JSON/GraphQL trees, or heavy image resizing locks Node.js/Python event loops at 100% CPU.</span>
+              </p>
+            </div>
+
+            <!-- Vector 4: Memory & Buffer Layer -->
+            <div style="background:rgba(15,23,42,0.7); border:1px solid rgba(255,255,255,0.08); border-left:4px solid #a855f7; border-radius:var(--radius-md); padding:1.2rem;">
+              <h4 style="color:#a855f7; font-size:0.98rem; margin:0 0 6px 0;">4. 🧠 Memory & Multi-Megabyte Buffer Layer</h4>
+              <p style="font-size:0.86rem; color:#f1f5f9; line-height:1.6; margin:0;">
+                <span class="lang-hi">Client 50MB ka raw JSON payload upload karta hai jise server memory buffer me parse karta hai. 20 concurrent requests server process ko OOM crash kar sakti hain!</span>
+                <span class="lang-en">Sending unconstrained 50MB HTTP payloads forces backend parsers to buffer enormous JSON trees in heap memory, triggering Node.js heap limit crashes.</span>
+              </p>
+            </div>
+
+            <!-- Vector 5: Financial Wallet Layer -->
+            <div style="background:rgba(15,23,42,0.7); border:1px solid rgba(255,255,255,0.08); border-left:4px solid #10b981; border-radius:var(--radius-md); padding:1.2rem;">
+              <h4 style="color:#10b981; font-size:0.98rem; margin:0 0 6px 0;">5. 💸 Third-Party API & Cloud Wallet Drain</h4>
+              <p style="font-size:0.86rem; color:#f1f5f9; line-height:1.6; margin:0;">
+                <span class="lang-hi">Har bar jab Shabaj <code>/send-sms</code> trigger karta hai, Twilio Asif ki company se ₹0.50 charge karta hai. 1 lakh requests me ₹50,000 ka financial loss bina server down kiye ho jata hai!</span>
+                <span class="lang-en">Automating calls to downstream third-party APIs (Twilio SMS, SendGrid, OpenAI GPT-4) burns prepaid cloud credits, causing severe financial wallet drainage.</span>
+              </p>
+            </div>
+          </div>
+
+          <!-- Section C: OSI Layer 7 Deep-Dive: Kya Hota Hai Aur Kaise Resource Consumption Hota Hai? -->
+          <div class="def-lead-card" style="margin-top:2rem; border-left:4px solid #38bdf8; background:rgba(56, 189, 248, 0.05); border-color:rgba(56, 189, 248, 0.25);">
+            <div class="def-lead-title" style="color:#38bdf8;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+              <span class="lang-hi">OSI Layer 7 (Application Layer) Kya Hota Hai Aur Ispe Resource Consumption Kaise Hota Hai?</span>
+              <span class="lang-en">What is OSI Layer 7 (Application Layer) & How Does Resource Consumption Occur?</span>
+            </div>
+            <div class="l7-deepdive-body">
+              <div class="lang-hi">
+                <div class="l7-subheading">
+                  <span>🔹</span> <span>1. Layer 7 (Application Layer) Kya Hai?</span>
+                </div>
+                OSI Model me 7 layers hoti hain. Layer 3 (Network - IP) aur Layer 4 (Transport - TCP/UDP) sirf raw packets ko source se destination tak deliver karte hain—unhe packet ke andar ke content (JSON, passwords, SQL query) se koi matlab nahi hota.<br>
+                <strong>Layer 7 (Application Layer)</strong> wo topmost layer hai jahan aapka <strong>API Code, Business Logic, HTTP/HTTPS Endpoints, JSON Payloads, Authentication Tokens, aur Database Queries</strong> execute hoti hain! Jab client <code>POST /api/v1/auth/verify-otp</code> ya <code>GET /orders?limit=1000000</code> bhejta hai, toh ye pure Layer 7 communication hai.<br><br>
+
+                <div class="l7-subheading">
+                  <span>⚡</span> <span>2. Layer 7 Par Resource Consumption KAISE Hota Hai? (Attacker Ka Asymmetric Mechanism):</span>
+                </div>
+                Layer 3/4 DDoS attacks me attacker ko 10 Gbps ka heavy internet traffic bhejna padta hai jise Cloudflare ya AWS Shield edge par hi block kar dete hain. Lekin <strong>Layer 7 Resource Consumption ek "Asymmetric Attack" hai jisme attacker ko bohot kam bandwidth lagti hai</strong>:<br><br>
+                • <strong class="l7-bullet-title" style="color:#38bdf8 !important;">Asymmetric Cost Imbalance:</strong> Shabaj sirf 1 KB ki choti si HTTP request bhejta hai (<code>GET /orders?limit=1000000</code>). Attacker ka lagbhag 0 bandwidth kharch hua, lekin backend par Asif ke server ne <strong>500 MB RAM allocate ki</strong>, disk se <strong>10 lakh SQL rows load kiye</strong>, aur <strong>Node.js event loop ko freeze</strong> kar diya!<br><br>
+                • <strong class="l7-bullet-title" style="color:#38bdf8 !important;">JSON Parsing & Heap Memory Bloat:</strong> Server ko raw HTTP string ko backend objects me deserialize karna padta hai. Agar 20 concurrent requests heavy JSON bodies ke sath aati hain, toh RAM 10x multiply ho jati hai aur Linux OS ka <strong>OOM (Out-of-Memory) Killer</strong> server ko kill kar deta hai.<br><br>
+                • <strong class="l7-bullet-title" style="color:#38bdf8 !important;">Database Connection Pool Starvation:</strong> Web server ke paas database se baat karne ke liye limited connections hote hain (jaise 20 connections pool me). Agar Shabaj 20 slow, heavy Layer 7 queries bhej deta hai, toh DB pool choke ho jata hai aur Asif jaise legitimate users ko <code>504 Gateway Timeout</code> milta hai!<br><br>
+                • <strong class="l7-bullet-title" style="color:#38bdf8 !important;">Cryptographic CPU Spikes:</strong> Passwords aur OTPs verify karne me bcrypt ya Argon2 hashing CPU-intensive hoti hai. 100 requests aate hi CPU 100% choke ho jata hai.<br><br>
+                • <strong class="l7-bullet-title" style="color:#38bdf8 !important;">Downstream Paid Services:</strong> Har <code>/send-sms</code> request par Twilio paise deduct karta hai. Attacker bina server crash kiye company ka cloud wallet khali kar deta hai.
+              </div>
+              <div class="lang-en">
+                <div class="l7-subheading">
+                  <span>🔹</span> <span>1. What is OSI Layer 7 (Application Layer)?</span>
+                </div>
+                In the OSI networking model, Layer 3 (IP) and Layer 4 (TCP/UDP) transport raw packets without understanding what is inside. <strong>Layer 7 (Application Layer)</strong> is the top layer where <strong>API code, REST routes, JSON payloads, authentication tokens, cookies, and database transactions</strong> run.<br><br>
+
+                <div class="l7-subheading">
+                  <span>⚡</span> <span>2. How Does Resource Consumption Occur at Layer 7? (Under-The-Hood Mechanism):</span>
+                </div>
+                Volumetric Layer 3/4 network floods require massive botnets that CDNs easily drop. In contrast, <strong>Layer 7 Resource Consumption is an Asymmetric Attack</strong> requiring minimal attacker bandwidth:<br><br>
+                • <strong class="l7-bullet-title" style="color:#38bdf8 !important;">Asymmetric Cost Imbalance:</strong> Attacker Shabaj fires a tiny 1 KB request (<code>GET /orders?limit=1000000</code>). Shabaj spends near-zero bandwidth, but Asif's backend must <strong>allocate 500 MB RAM</strong>, <strong>scan 1,000,000 PostgreSQL rows</strong>, and <strong>serialize massive JSON strings</strong>, locking CPU threads!<br><br>
+                • <strong class="l7-bullet-title" style="color:#38bdf8 !important;">JSON Parsing & Heap Memory Bloat:</strong> Parsing incoming HTTP payloads expands memory by 5x-10x in Node.js/Python heap, triggering Linux <strong>OOM (Out-of-Memory) Killer</strong> crashes.<br><br>
+                • <strong class="l7-bullet-title" style="color:#38bdf8 !important;">Database Connection Pool Starvation:</strong> Limited pool connections (e.g. 20) are monopolized by heavy queries, forcing valid users into <code>504 Gateway Timeout</code>.<br><br>
+                • <strong class="l7-bullet-title" style="color:#38bdf8 !important;">Cryptographic CPU Spikes:</strong> Argon2/bcrypt password hashing maxes out CPU cores at 100%.<br><br>
+                • <strong class="l7-bullet-title" style="color:#38bdf8 !important;">Downstream Paid Services:</strong> Repeated calls to Twilio/SendGrid burn cloud budgets rapidly.
+              </div>
+            </div>
+
+            <!-- Comparison Table: Layer 3/4 vs Layer 7 -->
+            <div style="overflow-x:auto; margin-top:1.2rem;">
+              <table style="width:100%; border-collapse:collapse; font-size:0.86rem; color:#f1f5f9;">
+                <thead>
+                  <tr style="background:rgba(255,255,255,0.06); border-bottom:1px solid rgba(255,255,255,0.12);">
+                    <th style="padding:10px 14px; text-align:left; color:#38bdf8;">Dimension</th>
+                    <th style="padding:10px 14px; text-align:left; color:#f59e0b;">Layer 3 / 4 Network DDoS</th>
+                    <th style="padding:10px 14px; text-align:left; color:#ef4444;">Layer 7 API Resource Consumption</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                    <td style="padding:10px 14px; font-weight:600; color:#38bdf8;">Target Resource</td>
+                    <td style="padding:10px 14px;">Network bandwidth, router queues, TCP state tables</td>
+                    <td style="padding:10px 14px; font-weight:600; color:#ef4444;">Server CPU, RAM (Heap), DB Connection Pool, 3rd-party Wallet</td>
+                  </tr>
+                  <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                    <td style="padding:10px 14px; font-weight:600; color:#38bdf8;">Traffic Shape</td>
+                    <td style="padding:10px 14px;">Gigabits/sec of raw packet flood (SYN, UDP)</td>
+                    <td style="padding:10px 14px;">Small volume of legitimate-looking HTTP REST requests</td>
+                  </tr>
+                  <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                    <td style="padding:10px 14px; font-weight:600; color:#38bdf8;">Detection Difficulty</td>
+                    <td style="padding:10px 14px;">Easy (Anomalous volumetric spikes detected by CDNs)</td>
+                    <td style="padding:10px 14px; color:#ef4444;">Hard (Bypasses WAF/CDNs without API-level velocity controls)</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:10px 14px; font-weight:600; color:#38bdf8;">Effective Defense</td>
+                    <td style="padding:10px 14px;">Anycast routing, Cloudflare, AWS Shield, SYN cookies</td>
+                    <td style="padding:10px 14px; color:#10b981;">Token Bucket / Redis Sliding Window, Query Bounds, Concurrency Limits</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           TAB 2: FOUR PILLARS
+           ==================================================================== -->
+      <div class="tab-content" id="tab-pillars">
+        <div class="card-panel">
+          <div class="card-title-badge-row">
+            <div class="blue-circle-num">2</div>
+            <h2 class="panel-header-title">
+              <span class="lang-hi">Rate Limiting & Resource Protection Ke 4 Pillars</span>
+              <span class="lang-en">The 4 Pillars of Rate Limiting & Resource Protection</span>
+            </h2>
+          </div>
+
+          <p class="panel-body-text">
+            <span class="lang-hi">Kisi bhi production API ko automated attacks aur resource exhaustion se bachane ke liye in 4 architectural pillars ka palan karna mandatory hai:</span>
+            <span class="lang-en">Production architectures must implement these 4 non-negotiable architectural pillars to defend against automated abuse and server resource starvation:</span>
+          </p>
+
+          <div style="display:flex; flex-direction:column; gap:1.3rem; margin-top:1.5rem;">
+            <!-- Pillar 1 -->
+            <div class="hw-step-box step-1">
+              <h4>
+                <span class="lang-hi">Pillar 1: Multi-Dimensional Client Identification (Beyond Just IP)</span>
+                <span class="lang-en">Pillar 1: Multi-Dimensional Client Identification (Beyond Just IP)</span>
+              </h4>
+              <p>
+                <span class="lang-hi">Sirf IP address par rate limiting lagana sabse badi galti hoti hai! (1) <strong>CGNAT & Office Wi-Fi:</strong> Ek hi corporate office ke 5,000 legitimate users ka public IP same hota hai; ek user block hone par sab block ho jayenge! (2) <strong>Rotating Proxies:</strong> Attacker Tor ya proxy pools se har request alag IP se bhejta hai. Solution: <strong>Composite Keys</strong> use karein: <code>IP + JWT Subject (user_id) + API Key + Device Fingerprint</code>. Authenticated endpoints par primary rate limiting user ID par honi chahiye.</span>
+                <span class="lang-en">Relying solely on client IP addresses is deeply flawed. (1) <strong>CGNAT & Corporate Proxies:</strong> Thousands of legitimate enterprise users share a single public IP; throttling one throttles all. (2) <strong>Rotating Proxies:</strong> Attackers cycle thousands of residential IPs via botnets. Enforce <strong>Composite Rate Limit Keys</strong> combining <code>IP + JWT Subject ID + API Key Token + Browser Fingerprint</code> to ensure accurate isolation.</span>
+              </p>
+            </div>
+
+            <!-- Pillar 2 -->
+            <div class="hw-step-box step-2">
+              <h4>
+                <span class="lang-hi">Pillar 2: Throttling Algorithms (Token Bucket & Sliding Window)</span>
+                <span class="lang-en">Pillar 2: Throttling Algorithms (Token Bucket & Sliding Window)</span>
+              </h4>
+              <p>
+                <span class="lang-hi"><strong>Fixed Window Counter</strong> me boundary spike vulnerability hoti hai (minute ke aakhri second 60 requests aur agle minute ke pehle second 60 requests bhej kar 2 second me 120 requests execute ho jati hain). Enterprise systems me <strong>Token Bucket</strong> (bursts ko gracefully absorb karta hai) ya <strong>Sliding Window Counter</strong> (Redis ZSET ya rolling window) use karna chahiye jo smooth continuous traffic policing provide karta hai.</span>
+                <span class="lang-en">The <strong>Fixed Window Counter</strong> suffers from reset-boundary bursts (transmitting 60 requests at 00:59 and 60 requests at 01:01 yields 120 requests in 2 seconds). Enterprise architectures enforce the <strong>Token Bucket</strong> algorithm (allowing temporary legitimate bursts) or <strong>Sliding Window Counter</strong> (utilizing Redis sorted sets) to ensure continuous, mathematically sound request shaping.</span>
+              </p>
+            </div>
+
+            <!-- Pillar 3 -->
+            <div class="hw-step-box step-3">
+              <h4>
+                <span class="lang-hi">Pillar 3: Fail-Safe Query Pagination & Resource Ceilings</span>
+                <span class="lang-en">Pillar 3: Fail-Safe Query Pagination & Resource Ceilings</span>
+              </h4>
+              <p>
+                <span class="lang-hi">Developer ko client par kabhi bharosa nahi karna chahiye ki wo sensible pagination limit bhejega. Server code me strict upper cap enforce karein: <code>const safeLimit = Math.min(Math.max(parseInt(req.query.limit) || 20, 1), 50);</code>. Sath hi database query timeouts (e.g. Postgres <code>SET statement_timeout = '3000'</code>) aur HTTP request body size limits (<code>express.json({ limit: '100kb' })</code>) lagayein.</span>
+                <span class="lang-en">Never trust client-supplied pagination parameters. Always enforce hard server-side ceilings: <code>const safeLimit = Math.min(Math.max(parseInt(req.query.limit) || 20, 1), 50);</code>. Additionally, configure database statement timeouts (e.g., PostgreSQL <code>statement_timeout = 3000ms</code>) and enforce strict payload body limits (<code>express.json({ limit: '100kb' })</code>).</span>
+              </p>
+            </div>
+
+            <!-- Pillar 4 -->
+            <div class="hw-step-box step-4">
+              <h4>
+                <span class="lang-hi">Pillar 4: Standard RFC 6585 HTTP 429 & Retry-After Contract</span>
+                <span class="lang-en">Pillar 4: Standard RFC 6585 HTTP 429 & Retry-After Contract</span>
+              </h4>
+              <p>
+                <span class="lang-hi">Jab client threshold exceed karta hai, backend ko hamesha standard <code>HTTP/1.1 429 Too Many Requests</code> status code return karna chahiye sath me RFC 6585 headers: <code>Retry-After: 30</code> (kitne seconds wait karna hai), <code>X-RateLimit-Limit: 100</code>, <code>X-RateLimit-Remaining: 0</code>, aur <code>X-RateLimit-Reset</code> timestamp. Isse legitimate frontend clients exponential backoff handle kar sakte hain.</span>
+                <span class="lang-en">When clients breach thresholds, APIs must respond with <code>HTTP/1.1 429 Too Many Requests</code> accompanied by standard RFC 6585 telemetry headers: <code>Retry-After: 30</code> (seconds until clearance), <code>X-RateLimit-Limit: 100</code>, <code>X-RateLimit-Remaining: 0</code>, and <code>X-RateLimit-Reset</code>. This contract enables well-behaved frontend applications to implement clean exponential backoff.</span>
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           TAB 3: ATTACK SCENARIOS & DEEP DIVE
+           ==================================================================== -->
+      <div class="tab-content" id="tab-scenarios">
+        <div class="card-panel">
+          <div class="card-title-badge-row">
+            <div class="blue-circle-num">3</div>
+            <h2 class="panel-header-title">
+              <span class="lang-hi">Attack Scenarios & Exploit Workflows (Shabaj vs. Asif)</span>
+              <span class="lang-en">Attack Scenarios & Exploit Workflows (Shabaj vs. Asif)</span>
+            </h2>
+          </div>
+
+          <p class="panel-body-text">
+            <span class="lang-hi">Real-world production environments me bina rate limiting ke attackers kaise accounts hijack karte hain aur servers crash karte hain:</span>
+            <span class="lang-en">Examine three real-world exploit pipelines demonstrating how adversaries exploit unthrottled endpoints to hijack accounts and cripple backend services:</span>
+          </p>
+
+          <!-- Scenario 1: OTP Brute Force -->
+          <div class="def-lead-card" style="margin-top:1.5rem; border-left:4px solid #ef4444;">
+            <div class="def-lead-title" style="color:#f87171;">
+              <span>🚨</span>
+              <span class="lang-hi">Scenario 1: 4-Digit SMS OTP Brute-Force & Account Takeover</span>
+              <span class="lang-en">Scenario 1: 4-Digit SMS OTP Brute-Force & Account Takeover</span>
+            </div>
+            <p class="def-lead-text" style="margin-bottom:1rem;">
+              <span class="lang-hi">Fintech application me user <strong>Asif</strong> apna password reset karta hai. Server Asif ke phone par ek 4-digit numeric OTP bhejta hai (0000 se 9999 = total sirf 10,000 possibilities). Attacker <strong>Shabaj</strong> password reset verification endpoint (<code>POST /api/v1/auth/verify-otp</code>) ko intercept karta hai. Backend par attempt limit check nahi laga hai. Shabaj Burp Suite Turbo Intruder se 10,000 HTTP requests sirf 6 seconds me blast kar deta hai! Request number <code>4921</code> par <code>200 OK</code> mil jata hai aur Shabaj Asif ke account ka naya password set karke poora account hijack kar leta hai!</span>
+              <span class="lang-en">In a fintech banking app, victim <strong>Asif</strong> triggers a password reset. The server transmits a 4-digit SMS OTP (0000 to 9999 = precisely 10,000 total permutations). Attacker <strong>Shabaj</strong> captures the verification endpoint (<code>POST /api/v1/auth/verify-otp</code>). Because the endpoint lacks rate limiting, Shabaj scripts 10,000 concurrent HTTP requests in 6 seconds. Request <code>#4921</code> hits the correct code, returns <code>200 OK</code>, and enables Shabaj to reset Asif's credentials and take over his funds.</span>
+            </p>
+            <div style="background:#070e1e; border:1px solid rgba(239,68,68,0.3); border-radius:6px; padding:10px 14px; font-family:var(--font-mono); font-size:0.84rem; color:#f87171;">
+              TURBO INTRUDER SCRIPT: 10,000 attempts executed in 5.8s | 9,999x 401 Unauthorized | 1x 200 OK (OTP Cracked: 4921)
+            </div>
+          </div>
+
+          <!-- Scenario 2: Unbounded Pagination OOM DoS -->
+          <div class="def-lead-card" style="margin-top:1.5rem; border-left:4px solid #f59e0b;">
+            <div class="def-lead-title" style="color:#fbbf24;">
+              <span>💥</span>
+              <span class="lang-hi">Scenario 2: Unbounded Database Pagination & Out-of-Memory (OOM) Crash</span>
+              <span class="lang-en">Scenario 2: Unbounded Database Pagination & Out-of-Memory (OOM) Crash</span>
+            </div>
+            <p class="def-lead-text" style="margin-bottom:1rem;">
+              <span class="lang-hi">Customer support portal me endpoint hai: <code>GET /api/v1/orders?page=1&limit=20</code>. Developer ne code likha: <code>Order.findAll({ limit: req.query.limit })</code>. Attacker <strong>Shabaj</strong> parameter tamper karke bhejta hai: <code>GET /api/v1/orders?limit=5000000</code>. PostgreSQL database 50 lakh rows disk se RAM me load karta hai, Node.js server ka V8 garbage collector choke ho jata hai, aur server <code>JavaScript heap out of memory</code> error ke sath crash ho jata hai! Legitimate user <strong>Asif</strong> ko 502 Bad Gateway milta hai.</span>
+              <span class="lang-en">A retail portal exposes <code>GET /api/v1/orders?page=1&limit=20</code>. The backend controller binds: <code>Order.findAll({ limit: req.query.limit })</code>. Adversary <strong>Shabaj</strong> alters the parameter to <code>limit=5000000</code>. PostgreSQL loads 5 million rows into memory, exhausting the Node.js V8 heap limit. The node process crashes instantly with Out-Of-Memory (OOM), throwing 502 Bad Gateway errors to legitimate customer <strong>Asif</strong>.</span>
+            </p>
+            <div style="background:#070e1e; border:1px solid rgba(245,158,11,0.3); border-radius:6px; padding:10px 14px; font-family:var(--font-mono); font-size:0.84rem; color:#fbbf24;">
+              NODE LOG: Fatal error in JavaScript heap out of memory (2048 MB exceeded) | Server Process 8901 Died (SIGABRT)
+            </div>
+          </div>
+
+          <!-- Scenario 3: Third-Party SMS Wallet Draining -->
+          <div class="def-lead-card" style="margin-top:1.5rem; border-left:4px solid #a855f7;">
+            <div class="def-lead-title" style="color:#c084fc;">
+              <span>💸</span>
+              <span class="lang-hi">Scenario 3: Third-Party SMS/Twilio Cost Inflation Attack (Financial DoS)</span>
+              <span class="lang-en">Scenario 3: Third-Party SMS/Twilio Cost Inflation Attack (Financial DoS)</span>
+            </div>
+            <p class="def-lead-text" style="margin-bottom:1rem;">
+              <span class="lang-hi">Registration page par phone number daal kar OTP generate hota hai: <code>POST /api/v1/auth/send-otp</code>. Har SMS ka company ko vendor (Twilio/Gupshup) ko ₹0.25 ($0.03) pay karna padta hai. Attacker <strong>Shabaj</strong> ek simple python multithreaded script se 2 ghante me 1,00,000 SMS requests bhej deta hai. Company ka Twilio pre-paid balance (₹25,000 / $350) 1 ghante me zero ho jata hai! Jab Asif real login karne aata hai, toh Twilio <em>"Insufficient Funds"</em> error phenkta hai aur koi bhi user login nahi kar pata.</span>
+              <span class="lang-en">The registration endpoint triggers SMS dispatch: <code>POST /api/v1/auth/send-otp</code>. Each SMS costs $0.03 via upstream aggregators (Twilio). Attacker <strong>Shabaj</strong> initiates a multi-threaded script generating 100,000 OTP requests within 2 hours. The enterprise prepaid SMS balance is entirely drained. When authentic user <strong>Asif</strong> attempts to log in, upstream gateways return <em>"Insufficient Wallet Balance"</em>, resulting in widespread business interruption.</span>
+            </p>
+            <div style="background:#070e1e; border:1px solid rgba(168,85,247,0.3); border-radius:6px; padding:10px 14px; font-family:var(--font-mono); font-size:0.84rem; color:#c084fc;">
+              TWILIO API LOG: 402 Payment Required: Account balance depleted ($0.00 remaining) | 84,200 SMS Undelivered
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+            <!-- ====================================================================
+           TAB 4: CODE & FIX (VULNERABLE VS. SECURE IMPLEMENTATIONS)
+           ==================================================================== -->
+      <div class="tab-content" id="tab-code">
+        <div class="card-panel">
+          <div class="card-title-badge-row">
+            <div class="blue-circle-num">4</div>
+            <h2 class="panel-header-title">
+              <span class="lang-hi">Vulnerable vs. Secure Code Implementations (Framework Patterns)</span>
+              <span class="lang-en">Vulnerable vs. Secure Code Implementations (Framework Patterns)</span>
+            </h2>
+          </div>
+
+          <p class="panel-body-text">
+            <span class="lang-hi">Resource Consumption vulnerabilities ko fix karne ke liye sirf IP blocking kaafi nahi hoti. Backend code level par <strong>Sliding Window Rate Limiting</strong>, <strong>Strict Pagination Clamping</strong>, aur <strong>Reverse Proxy API Gateway Throttling</strong> lagana zaroori hai:</span>
+            <span class="lang-en">Mitigating Resource Consumption requires defense-in-depth: <strong>Distributed Sliding Window Rate Limiting (Redis)</strong>, <strong>Hard Upper Bounds on DB Pagination</strong>, and <strong>Reverse Proxy Rate Limiting</strong>. Review color-coded patterns below:</span>
+          </p>
+
+          <!-- Language Selector Pills -->
+          <div class="code-lang-pills-row" style="display:flex; gap:10px; margin-bottom:1.4rem; flex-wrap:wrap;">
+            <button type="button" class="code-lang-btn active" onclick="switchCodeLang(this, 'code-node')">Node.js (Express + Redis)</button>
+            <button type="button" class="code-lang-btn" onclick="switchCodeLang(this, 'code-python')">Python (FastAPI + SlowAPI)</button>
+            <button type="button" class="code-lang-btn" onclick="switchCodeLang(this, 'code-nginx')">Nginx (API Gateway)</button>
+          </div>
+
+          <!-- Section A: Node.js Express -->
+          <div class="code-lang-section" id="code-node">
+            <div class="code-compare-grid">
+              <div class="compare-box vulnerable">
+                <div class="compare-header">
+                  <span class="compare-dot red"></span>
+                  <span class="compare-title">❌ Vulnerable (Node.js / Express + Unbounded DB Query)</span>
+                  <button type="button" class="term-copy-btn" onclick="copyTerm(this)" style="margin-left:auto;">Copy</button>
+                </div>
+                <pre><code><span class="t-comm">// 🚨 VULNERABLE: No velocity limits & unbounded SQL pagination!</span>
+<span class="t-kw">const</span> express = <span class="t-fn">require</span>(<span class="t-str">'express'</span>);
+<span class="t-kw">const</span> app = <span class="t-fn">express</span>();
+
+<span class="t-comm">// Endpoint 1: Shabaj can fire 10,000 OTP guesses without any restriction!</span>
+app.<span class="t-fn">post</span>(<span class="t-str">'/api/v1/auth/verify-otp'</span>, <span class="t-kw">async</span> (req, res) => {
+  <span class="t-kw">const</span> { phone, otp } = req.body;
+  <span class="t-kw">const</span> isValid = <span class="t-kw">await</span> db.<span class="t-fn">checkOtp</span>(phone, otp);
+  <span class="t-kw">if</span> (!isValid) {
+    <span class="t-kw">return</span> res.<span class="t-fn">status</span>(<span class="t-num">401</span>).<span class="t-fn">json</span>({ <span class="t-key">error</span>: <span class="t-str">'Invalid OTP'</span> });
+  }
+  <span class="t-kw">return</span> res.<span class="t-fn">json</span>({ <span class="t-key">status</span>: <span class="t-str">'AUTHENTICATED'</span> });
+});
+
+<span class="t-comm">// Endpoint 2: If limit=1000000, DB loads millions of rows into heap memory (OOM Crash)!</span>
+app.<span class="t-fn">get</span>(<span class="t-str">'/api/v1/orders'</span>, <span class="t-kw">async</span> (req, res) => {
+  <span class="t-kw">const</span> userLimit = <span class="t-fn">parseInt</span>(req.query.limit) || <span class="t-num">10</span>;
+  <span class="t-kw">const</span> orders = <span class="t-kw">await</span> db.Order.<span class="t-fn">findAll</span>({ <span class="t-key">limit</span>: userLimit });
+  <span class="t-kw">return</span> res.<span class="t-fn">json</span>({ <span class="t-key">count</span>: orders.length, <span class="t-key">data</span>: orders });
+});</code></pre>
+              </div>
+
+              <div class="compare-box secure">
+                <div class="compare-header">
+                  <span class="compare-dot green"></span>
+                  <span class="compare-title">✅ Secure (Redis Sliding Window Rate Limiter + Safe Pagination)</span>
+                  <button type="button" class="term-copy-btn" onclick="copyTerm(this)" style="margin-left:auto;">Copy</button>
+                </div>
+                <pre><code><span class="t-comm">// ✅ SECURE: Distributed Redis Rate Limiting + Clamped Pagination Bounds</span>
+<span class="t-kw">const</span> rateLimit = <span class="t-fn">require</span>(<span class="t-str">'express-rate-limit'</span>);
+<span class="t-kw">const</span> RedisStore = <span class="t-fn">require</span>(<span class="t-str">'rate-limit-redis'</span>);
+<span class="t-kw">const</span> redisClient = <span class="t-fn">require</span>(<span class="t-str">'./redis'</span>);
+
+<span class="t-comm">// Defense: Max 5 attempts per 60 seconds per IP / Phone</span>
+<span class="t-kw">const</span> otpLimiter = <span class="t-fn">rateLimit</span>({
+  <span class="t-key">windowMs</span>: <span class="t-num">60</span> * <span class="t-num">1000</span>,
+  <span class="t-key">max</span>: <span class="t-num">5</span>,
+  <span class="t-key">standardHeaders</span>: <span class="t-bool">true</span>, <span class="t-comm">// Return RateLimit-* RFC headers</span>
+  <span class="t-key">legacyHeaders</span>: <span class="t-bool">false</span>,
+  <span class="t-key">store</span>: <span class="t-kw">new</span> <span class="t-cls">RedisStore</span>({ <span class="t-key">sendCommand</span>: (...args) => redisClient.<span class="t-fn">call</span>(...args) }),
+  <span class="t-key">handler</span>: (req, res) => {
+    res.<span class="t-fn">setHeader</span>(<span class="t-str">'Retry-After'</span>, <span class="t-num">30</span>);
+    <span class="t-kw">return</span> res.<span class="t-fn">status</span>(<span class="t-num">429</span>).<span class="t-fn">json</span>({
+      <span class="t-key">error</span>: <span class="t-str">'Too Many Requests'</span>,
+      <span class="t-key">retry_after_seconds</span>: <span class="t-num">30</span>
+    });
+  }
+});
+
+app.<span class="t-fn">post</span>(<span class="t-str">'/api/v1/auth/verify-otp'</span>, otpLimiter, <span class="t-kw">async</span> (req, res) => {
+  <span class="t-kw">const</span> { phone, otp } = req.body;
+  <span class="t-kw">const</span> isValid = <span class="t-kw">await</span> db.<span class="t-fn">checkOtp</span>(phone, otp);
+  <span class="t-kw">if</span> (!isValid) <span class="t-kw">return</span> res.<span class="t-fn">status</span>(<span class="t-num">401</span>).<span class="t-fn">json</span>({ <span class="t-key">error</span>: <span class="t-str">'Invalid OTP'</span> });
+  <span class="t-kw">return</span> res.<span class="t-fn">json</span>({ <span class="t-key">status</span>: <span class="t-str">'AUTHENTICATED'</span> });
+});
+
+<span class="t-comm">// Defense: Enforce strict hard ceiling of 50 records maximum!</span>
+app.<span class="t-fn">get</span>(<span class="t-str">'/api/v1/orders'</span>, <span class="t-kw">async</span> (req, res) => {
+  <span class="t-kw">const</span> rawLimit = <span class="t-fn">parseInt</span>(req.query.limit) || <span class="t-num">10</span>;
+  <span class="t-kw">const</span> safeLimit = Math.<span class="t-fn">min</span>(Math.<span class="t-fn">max</span>(rawLimit, <span class="t-num">1</span>), <span class="t-num">50</span>);
+  <span class="t-kw">const</span> safeOffset = (<span class="t-fn">parseInt</span>(req.query.page) - <span class="t-num">1</span> || <span class="t-num">0</span>) * safeLimit;
+
+  <span class="t-kw">const</span> orders = <span class="t-kw">await</span> db.Order.<span class="t-fn">findAll</span>({ <span class="t-key">limit</span>: safeLimit, <span class="t-key">offset</span>: safeOffset });
+  <span class="t-kw">return</span> res.<span class="t-fn">json</span>({ <span class="t-key">count</span>: orders.length, <span class="t-key">limit</span>: safeLimit, <span class="t-key">data</span>: orders });
+});</code></pre>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section B: Python FastAPI -->
+          <div class="code-lang-section" id="code-python" style="display:none;">
+            <div class="code-compare-grid">
+              <div class="compare-box vulnerable">
+                <div class="compare-header">
+                  <span class="compare-dot red"></span>
+                  <span class="compare-title">❌ Vulnerable FastAPI (Zero Throttling)</span>
+                  <button type="button" class="term-copy-btn" onclick="copyTerm(this)" style="margin-left:auto;">Copy</button>
+                </div>
+                <pre><code><span class="t-comm"># 🚨 VULNERABLE: Unthrottled FastAPI route permits parallel brute force</span>
+<span class="t-kw">from</span> fastapi <span class="t-kw">import</span> FastAPI, HTTPException
+app = <span class="t-fn">FastAPI</span>()
+
+<span class="t-comm"># Shabaj's Turbo Intruder script fires 1,000 req/s to guess Asif's 4-digit OTP</span>
+<span class="t-dec">@app.post</span>(<span class="t-str">"/api/v1/auth/verify-otp"</span>)
+<span class="t-kw">async def</span> <span class="t-fn">verify_otp</span>(phone: <span class="t-type">str</span>, otp: <span class="t-type">str</span>):
+    valid = <span class="t-fn">check_db_otp</span>(phone, otp)
+    <span class="t-kw">if not</span> valid:
+        <span class="t-kw">raise</span> <span class="t-cls">HTTPException</span>(<span class="t-key">status_code</span>=<span class="t-num">401</span>, <span class="t-key">detail</span>=<span class="t-str">"Invalid OTP"</span>)
+    <span class="t-kw">return</span> {<span class="t-key">"status"</span>: <span class="t-str">"SUCCESS"</span>}</code></pre>
+              </div>
+
+              <div class="compare-box secure">
+                <div class="compare-header">
+                  <span class="compare-dot green"></span>
+                  <span class="compare-title">✅ Secure FastAPI (SlowAPI + Rate Limit Decorator)</span>
+                  <button type="button" class="term-copy-btn" onclick="copyTerm(this)" style="margin-left:auto;">Copy</button>
+                </div>
+                <pre><code><span class="t-comm"># ✅ SECURE: SlowAPI Redis token bucket rate limiter</span>
+<span class="t-kw">from</span> fastapi <span class="t-kw">import</span> FastAPI, Request, HTTPException
+<span class="t-kw">from</span> slowapi <span class="t-kw">import</span> Limiter
+<span class="t-kw">from</span> slowapi.util <span class="t-kw">import</span> get_remote_address
+
+limiter = <span class="t-cls">Limiter</span>(<span class="t-key">key_func</span>=get_remote_address, <span class="t-key">default_limits</span>=[<span class="t-str">"100/minute"</span>])
+app = <span class="t-fn">FastAPI</span>()
+app.state.limiter = limiter
+
+<span class="t-comm"># Strict velocity ceiling: 5 requests per minute per IP</span>
+<span class="t-dec">@app.post</span>(<span class="t-str">"/api/v1/auth/verify-otp"</span>)
+<span class="t-dec">@limiter.limit</span>(<span class="t-str">"5/minute"</span>)
+<span class="t-kw">async def</span> <span class="t-fn">verify_otp</span>(request: <span class="t-cls">Request</span>, phone: <span class="t-type">str</span>, otp: <span class="t-type">str</span>):
+    valid = <span class="t-fn">check_db_otp</span>(phone, otp)
+    <span class="t-kw">if not</span> valid:
+        <span class="t-kw">raise</span> <span class="t-cls">HTTPException</span>(<span class="t-key">status_code</span>=<span class="t-num">401</span>, <span class="t-key">detail</span>=<span class="t-str">"Invalid OTP"</span>)
+    <span class="t-kw">return</span> {<span class="t-key">"status"</span>: <span class="t-str">"SUCCESS"</span>}</code></pre>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section C: Nginx Gateway -->
+          <div class="code-lang-section" id="code-nginx" style="display:none;">
+            <div class="code-compare-grid">
+              <div class="compare-box vulnerable">
+                <div class="compare-header">
+                  <span class="compare-dot red"></span>
+                  <span class="compare-title">❌ Vulnerable Nginx (Direct Reverse Proxy Pass)</span>
+                  <button type="button" class="term-copy-btn" onclick="copyTerm(this)" style="margin-left:auto;">Copy</button>
+                </div>
+                <pre><code><span class="t-comm"># 🚨 INSECURE: Unbounded pass-through to internal backend upstream</span>
+<span class="t-kw">server</span> {
+    <span class="t-kw">listen</span> <span class="t-num">80</span>;
+    <span class="t-kw">server_name</span> <span class="t-str">api.enterprise.com</span>;
+
+    <span class="t-kw">location</span> /api/ {
+        <span class="t-comm"># Attacker floods 10,000 req/s directly hitting backend Node/Python apps!</span>
+        <span class="t-fn">proxy_pass</span> <span class="t-str">http://internal_backend_upstream</span>;
+    }
+}</code></pre>
+              </div>
+
+              <div class="compare-box secure">
+                <div class="compare-header">
+                  <span class="compare-dot green"></span>
+                  <span class="compare-title">✅ Secure Nginx Gateway (limit_req_zone & Burst Damping)</span>
+                  <button type="button" class="term-copy-btn" onclick="copyTerm(this)" style="margin-left:auto;">Copy</button>
+                </div>
+                <pre><code><span class="t-comm"># ✅ SECURE: 10MB shared memory zone tracking binary IP addresses</span>
+<span class="t-fn">limit_req_zone</span> $binary_remote_addr <span class="t-key">zone</span>=api_general:<span class="t-num">10m</span> <span class="t-key">rate</span>=<span class="t-num">10r/s</span>;
+<span class="t-fn">limit_req_zone</span> $binary_remote_addr <span class="t-key">zone</span>=auth_strict:<span class="t-num">10m</span> <span class="t-key">rate</span>=<span class="t-num">2r/m</span>;
+
+<span class="t-kw">server</span> {
+    <span class="t-kw">listen</span> <span class="t-num">443</span> ssl;
+    <span class="t-kw">server_name</span> <span class="t-str">api.enterprise.com</span>;
+
+    <span class="t-comm"># Sensitive Login & OTP Routes strictly throttled to 2 per minute</span>
+    <span class="t-kw">location</span> /api/v1/auth/ {
+        <span class="t-fn">limit_req</span> <span class="t-key">zone</span>=auth_strict <span class="t-key">burst</span>=<span class="t-num">3</span> nodelay;
+        <span class="t-fn">limit_req_status</span> <span class="t-num">429</span>;
+        <span class="t-fn">proxy_pass</span> <span class="t-str">http://internal_backend_upstream</span>;
+    }
+
+    <span class="t-comm"># General API endpoints allow 10r/s with short burst smoothing</span>
+    <span class="t-kw">location</span> /api/ {
+        <span class="t-fn">limit_req</span> <span class="t-key">zone</span>=api_general <span class="t-key">burst</span>=<span class="t-num">20</span> nodelay;
+        <span class="t-fn">limit_req_status</span> <span class="t-num">429</span>;
+        <span class="t-fn">proxy_pass</span> <span class="t-str">http://internal_backend_upstream</span>;
+    }
+}</code></pre>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+                  <!-- ====================================================================
+           TAB 5: PENTESTING CHECKLIST (WITH INTERACTIVE PASS / FAIL BUTTONS)
+           ==================================================================== -->
+      <div class="tab-content" id="tab-checklist">
+        <div class="card-panel">
+          <div class="card-title-badge-row">
+            <div class="blue-circle-num">5</div>
+            <h2 class="panel-header-title">
+              <span class="lang-hi">Hands-On API Rate Limiting Pentesting Checklist</span>
+              <span class="lang-en">Hands-On API Rate Limiting Pentesting Checklist</span>
+            </h2>
+          </div>
+
+          <div class="checklist-meta-header">
+            <div class="checklist-guide-msg">
+              <span class="lang-hi">Har test case ko inspect karein aur <strong>Pass (Secure)</strong> ya <strong>Fail (Vulnerable)</strong> mark karein:</span>
+              <span class="lang-en">Audit each test case and mark as <strong>Pass (Secure)</strong> or <strong>Fail (Vulnerable)</strong>:</span>
+            </div>
+            <div class="checklist-counter-badge">
+              <span id="checklist-progress-counter">0 of 7 Checks Audited (0 Passed | 0 Vulnerable)</span>
+            </div>
+          </div>
+
+          <div class="checklist-container">
+            <!-- Item 1 -->
+            <div class="checklist-item" id="check-item-1" onclick="handleCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">1</span>
+              </div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">1. Authentication & OTP Verification Rate Limit Audit</span>
+                  <span class="lang-en">1. Authentication & OTP Verification Rate Limit Audit</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Check karein ki kya login, password reset, aur OTP verification endpoints brute force attacks se protected hain.</span>
+                  <span class="lang-en">Verify that authentication, password recovery, and OTP verification endpoints enforce strict velocity throttling.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test (Testing Steps):</div>
+                  <span class="lang-hi">1. Burp Suite me OTP verification request (<code>/api/v1/auth/verify-otp</code>) capture karein.<br>2. Request ko <strong>Intruder</strong> me bhejein aur OTP parameter par payload position lagayein (Numbers 0000-9999).<br>3. 50 requests rapid sequence me trigger karein. Agar server sabhi par HTTP 200/401 deta hai aur <strong>HTTP 429</strong> nahi throw karta, toh ye <strong>CRITICAL FAIL</strong> hai!</span>
+                  <span class="lang-en">1. Intercept the OTP submission request in Burp Suite.<br>2. Send to <strong>Intruder</strong>, mark the OTP field, and load a numeric payload list (0000-9999).<br>3. Fire 50 requests. If the API returns repeated 200/401 responses without ever returning <strong>HTTP 429 Too Many Requests</strong>, mark as <strong>CRITICAL FAIL</strong>.</span>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Item 2 -->
+            <div class="checklist-item" id="check-item-2" onclick="handleCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">2</span>
+              </div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">2. IP Spoofing Header Tampering (X-Forwarded-For Bypass)</span>
+                  <span class="lang-en">2. IP Spoofing Header Tampering (X-Forwarded-For Bypass)</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Verify karein ki kya client HTTP headers tamper karke rate limit counters ko reset kar sakta hai.</span>
+                  <span class="lang-en">Verify whether spoofed client headers can trick the rate limiter into treating requests as coming from fresh IPs.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test (Testing Steps):</div>
+                  <span class="lang-hi">1. Jab endpoint HTTP 429 throw kare, tab request headers me ye add karein:<br><code>X-Forwarded-For: 127.0.0.1</code> ya <code>Client-IP: 198.51.100.$RANDOM$</code><br>2. Agar header change karte hi limit reset ho jati hai aur request allow ho jati hai, toh rate limiter proxy IP trust misconfiguration se vulnerable hai!</span>
+                  <span class="lang-en">1. Upon receiving an HTTP 429, inject client identity headers:<br><code>X-Forwarded-For: 1.1.1.1</code> or <code>X-Real-IP: 10.0.0.X</code>.<br>2. If the rate limiter resets and permits further requests, the proxy blindly trusts client-supplied headers instead of socket remote addresses.</span>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Item 3 -->
+            <div class="checklist-item" id="check-item-3" onclick="handleCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">3</span>
+              </div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">3. API URL Path Variation & Casing Manipulation</span>
+                  <span class="lang-en">3. API URL Path Variation & Casing Manipulation</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Check karein ki kya path me slight casing ya trailing slash change karne se rate limiter bypass hota hai.</span>
+                  <span class="lang-en">Check if subtle URL path mutations bypass reverse proxy pattern matching rules.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test (Testing Steps):</div>
+                  <span class="lang-hi">1. Agar <code>/api/v1/auth/login</code> rate limited hai, toh test karein:<br>• <code>/API/V1/AUTH/LOGIN</code> (Casing manipulation)<br>• <code>/api/v1/auth/login/</code> (Trailing slash)<br>• <code>/api/v1/auth/login?v=2</code> ya <code>/api/v1/./auth/login</code> (Path traversal normalization)<br>2. Agar application backend in routes ko execute karti hai bina rate limit counter badhaye, toh regex path rule bypass ho gaya!</span>
+                  <span class="lang-en">1. When <code>/api/v1/auth/login</code> is throttled, attempt mutations:<br>• <code>/API/V1/AUTH/LOGIN</code> (Uppercase)<br>• <code>/api/v1/auth/login/</code> (Trailing slash)<br>• <code>/api/v1/./auth/login</code> or <code>/api/v1/auth/login%20</code><br>2. If any mutant path executes the handler without decrementing the bucket, the WAF/proxy matcher is flawed.</span>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Item 4 -->
+            <div class="checklist-item" id="check-item-4" onclick="handleCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">4</span>
+              </div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">4. HTTP Method Spoofing & Verb Tampering</span>
+                  <span class="lang-en">4. HTTP Method Spoofing & Verb Tampering</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Verify karein ki kya rate limiter rules sirf POST method par apply hote hain jabki GET/PUT/PATCH unthrottled hain.</span>
+                  <span class="lang-en">Verify that throttling applies consistently across all HTTP verbs, including method override headers.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test (Testing Steps):</div>
+                  <span class="lang-hi">1. POST request ko change karke <code>PUT</code> ya <code>GET</code> try karein.<br>2. Method override headers bhejein: <code>X-HTTP-Method-Override: POST</code> ke sath <code>GET</code> request.<br>3. Check karein ki kya backend action perform ho gaya lekin rate limiter ne usko block nahi kiya.</span>
+                  <span class="lang-en">1. Substitute the rate-limited POST method with <code>PUT</code> or <code>PATCH</code>.<br>2. Supply override headers: <code>X-HTTP-Method-Override: POST</code> on a GET request.<br>3. Verify whether the backend processes the mutation while bypassing the method-specific rate limiter.</span>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Item 5 -->
+            <div class="checklist-item" id="check-item-5" onclick="handleCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">5</span>
+              </div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">5. Unbounded Pagination & High-Cost Record Extraction</span>
+                  <span class="lang-en">5. Unbounded Pagination & High-Cost Record Extraction</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Audit karein ki kya list endpoints (orders, users, logs) <code>limit</code> query parameter par hard ceiling lagate hain.</span>
+                  <span class="lang-en">Audit whether list endpoints enforce an unbreakable upper bound on <code>limit</code> and <code>pageSize</code> parameters.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test (Testing Steps):</div>
+                  <span class="lang-hi">1. Endpoint par query lagayein: <code>GET /api/v1/orders?limit=9999999</code> ya <code>pageSize=1000000</code>.<br>2. Response time aur response size monitor karein (Burp Suite Logger).<br>3. Agar server lakhon records return karta hai aur 10-15 seconds lagata hai, toh 5 concurrent requests bhej kar dekhein ki kya server OOM crash ho jata hai!</span>
+                  <span class="lang-en">1. Send requests with astronomical limits: <code>GET /api/v1/orders?limit=1000000</code> or <code>pageSize=999999</code>.<br>2. Observe response duration and payload size in Burp Suite Logger.<br>3. If the server serializes millions of records or memory spikes dramatically, unbounded query consumption is confirmed.</span>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Item 6 -->
+            <div class="checklist-item" id="check-item-6" onclick="handleCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">6</span>
+              </div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">6. Third-Party Webhook & Expensive Outgoing API Exhaustion</span>
+                  <span class="lang-en">6. Third-Party Webhook & Expensive Outgoing API Exhaustion</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Check karein ki kya unauthenticated endpoints costly downstream APIs (SMS, email, PDF generator) trigger karte hain.</span>
+                  <span class="lang-en">Verify that unauthenticated or low-privilege endpoints cannot trigger costly third-party downstream APIs without strict budgets.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test (Testing Steps):</div>
+                  <span class="lang-hi">1. Endpoint dhoondein jo SMS bhejta ho: <code>POST /api/v1/notify/send-sms</code> ya <code>/resend-code</code>.<br>2. Repeater me 100 requests automate karein. Check karein ki kya phone par 100 SMS deliver ho gaye bina kisi CAPTCHA ya cooldown timer ke.<br>3. Har SMS ki cost hoti hai; unthrottled trigger hone par attacker victim company ka cloud wallet zero kar sakta hai!</span>
+                  <span class="lang-en">1. Identify endpoints that initiate paid external actions: <code>POST /api/v1/notify/send-sms</code> or <code>/export/pdf</code>.<br>2. Fire 100 requests in rapid succession. Check if all 100 SMS messages dispatch without CAPTCHA or progressive delays.<br>3. If unthrottled, an adversary can exhaust the organization's downstream API quota and burn thousands in cloud billing.</span>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Item 7 -->
+            <div class="checklist-item" id="check-item-7" onclick="handleCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">7</span>
+              </div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">7. Single-Packet Parallel Burst (Race Condition Bypass)</span>
+                  <span class="lang-en">7. Single-Packet Parallel Burst (Race Condition Bypass)</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Test karein ki kya rate limiter concurrency check ko simultaneous parallel requests se bypass kiya ja sakta hai.</span>
+                  <span class="lang-en">Test whether rate limiter counters can be bypassed by firing parallel requests via HTTP/2 single-packet bursts.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test (Testing Steps):</div>
+                  <span class="lang-hi">1. Burp Suite Repeater me request ko <code>Send group in parallel (last-byte sync)</code> option me dalein.<br>2. 30 requests ko ek hi packet me sync karke server par simultaneously deliver karein.<br>3. Agar server in-memory non-atomic counter use karta hai (read-modify-write without Redis locks), toh race condition ki wajah se sabhi 30 requests allow ho sakti hain! Secure architecture atomic increment (Redis <code>INCR</code>) use karti hai.</span>
+                  <span class="lang-en">1. In Burp Suite Repeater, group 30 requests and select <code>Send group in parallel (last-byte sync)</code>.<br>2. Deliver all requests simultaneously within a single TCP packet.<br>3. If the backend counter is non-atomic, all 30 may slip through before the counter updates. Secure systems enforce atomic distributed Redis transactions (<code>INCR</code>).</span>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+            <!-- ====================================================================
+           TAB 6: LIVE LAB (SIMULATION CONSOLE - 100% MODULE 06 THEME)
+           ==================================================================== -->
+      <div class="tab-content" id="tab-lab">
+        <div class="card-panel">
+          <div class="card-title-badge-row">
+            <div class="blue-circle-num">6</div>
+            <h2 class="panel-header-title">
+              <span class="lang-hi">⚡ 6. Live Lab: Interactive Rate Limiting & Resource Protection Sandbox</span>
+              <span class="lang-en">⚡ 6. Live Lab: Interactive Rate Limiting & Resource Protection Sandbox</span>
+            </h2>
+          </div>
+
+          <p class="panel-body-text">
+            <span class="lang-hi">Attacker <strong>Shabaj</strong> bank OTP verification, unbounded pagination aur SMS flooding ko simulate karta hai. Test karein ki <em>Vulnerable Mode (Zero Limits)</em> vs <em>Secure Mode (Token Bucket Limiter)</em> me server kaise behave karta hai:</span>
+            <span class="lang-en">Simulate adversary <strong>Shabaj</strong> executing OTP brute-forcing, unbounded SQL pagination, and SMS wallet exhaustion against <strong>Asif's</strong> backend. Observe the behavioral shift between unthrottled execution and resilient Token Bucket rate limiting:</span>
+          </p>
+
+          <div class="lab-simulator">
+            <!-- Simulator Header Status -->
+            <div class="lab-head">
+              <div class="lab-status">
+                <span class="pulse-dot"></span>
+                <span style="font-family:var(--font-mono); font-weight:700; letter-spacing:0.5px;">API GATEWAY & RATE LIMIT CONTROLLER: ACTIVE</span>
+              </div>
+              <div style="font-size:0.75rem; color:#94a3b8; font-family:var(--font-mono);" id="labEndpointDisplay">
+                Endpoint: POST /api/v1/auth/verify-otp
+              </div>
+            </div>
+
+            <!-- Active User Session Bar -->
+            <div class="auth-token-box">
+              <div><strong>Active Session:</strong> Shabaj (Attacker | Simulating Automated Tools)</div>
+              <div style="color:var(--cyan);">Target Protected Backend: <code>Asif's Banking API Gateway</code></div>
+            </div>
+
+            <!-- Preset Buttons -->
+            <div style="display:flex; gap:12px; align-items:center; margin-bottom:1.2rem; flex-wrap:wrap;">
+              <span style="font-size:0.8rem; color:#94a3b8; font-weight:600; white-space:nowrap;">Test Scenarios:</span>
+              <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; flex:1;">
+                <button type="button" class="sim-preset-btn active" id="btnPresetOtp" onclick="loadRlPreset('otp')">
+                  <span class="preset-icon">🔐</span><span class="preset-label">SMS OTP Brute Force (/verify-otp)</span>
+                </button>
+                <button type="button" class="sim-preset-btn" id="btnPresetPagination" onclick="loadRlPreset('pagination')">
+                  <span class="preset-icon">📄</span><span class="preset-label">Unbounded SQL Pagination (?limit=1000000)</span>
+                </button>
+                <button type="button" class="sim-preset-btn" id="btnPresetSms" onclick="loadRlPreset('sms')">
+                  <span class="preset-icon">📱</span><span class="preset-label">Twilio SMS Wallet Drain (/send-sms)</span>
+                </button>
+                <button type="button" class="sim-preset-btn" id="btnPresetReset" onclick="resetTokenBucket()" style="border-color:rgba(52,211,153,0.5); color:#6ee7b7;">
+                  <span class="preset-icon">🔄</span><span class="preset-label">Reset Token Bucket (5 Fresh Tokens)</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Dynamic Alert Banner -->
+            <div id="rl-alert-banner" style="display:block; padding:12px 16px; border-radius:var(--radius-sm); margin-bottom:1.2rem; font-size:0.88rem; line-height:1.5; background:rgba(56, 189, 248, 0.1); border:1px solid rgba(56, 189, 248, 0.3); border-left:4px solid #38bdf8; color:#7dd3fc;">
+              💡 <strong>SCENARIO READY:</strong> Shabaj is targeting Asif's 4-digit SMS OTP verification endpoint without rate limits! Click "Fire 10x Attack Burst" to test.
+            </div>
+
+            <!-- Split Console: Request on Left vs Response on Right -->
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap:1.2rem;">
+              <!-- Left Console: Interactive HTTP Request with Token Gauge -->
+              <div style="background:rgba(15,23,42,0.85); border:1px solid rgba(255,255,255,0.08); border-radius:var(--radius-md); padding:1.1rem; display:flex; flex-direction:column;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                  <div style="font-size:0.75rem; color:#38bdf8; font-family:var(--font-mono); font-weight:700; display:flex; align-items:center; gap:6px;">
+                    <span style="width:8px; height:8px; border-radius:50%; background:#38bdf8; display:inline-block; box-shadow:0 0 8px rgba(56,189,248,0.8);"></span>
+                    <span>ATTACK DISPATCHER (BURP / TURBO INTRUDER)</span>
+                  </div>
+                  <div style="font-size:0.72rem; color:#94a3b8; font-family:var(--font-mono);">
+                    Shabaj IP: 198.51.100.42
+                  </div>
+                </div>
+
+                <!-- Request Box -->
+                <pre id="labRequestBox" style="width:100%; min-height:150px; max-height:220px; height:160px; background:#070d1a; border:1px solid rgba(56, 189, 248, 0.25); border-radius:4px; font-family:var(--font-mono); font-size:0.82rem; padding:12px; overflow:auto; margin:0 0 12px 0; box-sizing:border-box; line-height:1.5; color:#f1f5f9;"></pre>
+
+                <!-- Token Bucket Gauge Display -->
+                <div class="bucket-gauge-container" style="margin-bottom:12px;">
+                  <div style="display:flex; justify-content:space-between; font-size:0.82rem; font-family:var(--font-mono);">
+                    <span style="color:#94a3b8;">Token Bucket Balance:</span>
+                    <span style="color:#38bdf8; font-weight:700;" id="tokenCountDisplay">5 / 5 Tokens</span>
+                  </div>
+                  <div class="bucket-bar-bg">
+                    <div class="bucket-bar-fill" id="tokenBarFill" style="width:100%;"></div>
+                  </div>
+                  <div style="font-size:0.75rem; color:#64748b; margin-top:6px; display:flex; justify-content:space-between;">
+                    <span>Replenish Rate: +1 token / 3s</span>
+                    <span id="rateLimitStatusText" style="color:#10b981; font-weight:600;">STATUS: NORMAL</span>
+                  </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div style="display:flex; gap:8px; margin-top:auto;">
+                  <button type="button" class="btn-send" onclick="sendSingleRequest()" style="flex:1; justify-content:center; padding:10px; font-size:0.86rem;">
+                    ⚡ Send 1 Request
+                  </button>
+                  <button type="button" class="btn-send" onclick="fireAttackBurst()" style="flex:1.3; justify-content:center; padding:10px; font-size:0.86rem; background:linear-gradient(135deg, #dc2626, #991b1b); border-color:#ef4444;">
+                    🚀 Fire 10x Attack Burst
+                  </button>
+                </div>
+              </div>
+
+              <!-- Right Console: Backend Response with RFC 6585 Headers -->
+              <div style="background:rgba(15,23,42,0.85); border:1px solid rgba(255,255,255,0.08); border-radius:var(--radius-md); padding:1.1rem; display:flex; flex-direction:column;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                  <div style="font-size:0.75rem; color:#34d399; font-family:var(--font-mono); font-weight:700; display:flex; align-items:center; gap:6px;">
+                    <span style="width:8px; height:8px; border-radius:50%; background:#34d399; display:inline-block; box-shadow:0 0 8px rgba(52,211,153,0.8);"></span>
+                    <span>SERVER HTTP RESPONSE & RFC 6585 HEADERS</span>
+                  </div>
+                  <span id="labStatusBadge" style="font-weight:700; color:#38bdf8; font-family:var(--font-mono); font-size:0.75rem;">AWAITING ATTACK</span>
+                </div>
+
+                <pre id="labResponseBox" style="width:100%; min-height:240px; max-height:360px; height:260px; background:#070d1a; border:1px solid rgba(52, 211, 153, 0.25); border-radius:4px; color:#f1f5f9; font-family:var(--font-mono); font-size:0.82rem; padding:12px; overflow:auto; margin:0; box-sizing:border-box; line-height:1.5;"></pre>
+
+                <!-- Status Note Box Inside Console (Bilingual) -->
+                <div id="labExplanationBox" style="margin-top:12px; padding:10px 12px; background:rgba(15,23,42,0.9); border:1px solid rgba(56,189,248,0.25); border-left:4px solid #38bdf8; border-radius:var(--radius-sm); font-size:0.82rem; color:#f1f5f9; line-height:1.5;">
+                  <span class="lang-hi">Upar diye gaye presets select karke test karein ki Token Bucket rate limiter attacks ko kaise neutralize karta hai!</span>
+                  <span class="lang-en">Select a test scenario above to observe how Token Bucket rate limiting throttles automated abuse!</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Dedicated Architectural Explanation Section (Prominent Full-Width Card) -->
+            <div id="sim-explanation-box" style="margin-top:1.4rem; background:rgba(15,23,42,0.92); border:1px solid rgba(56,189,248,0.28); border-left:4px solid #38bdf8; border-radius:var(--radius-sm); padding:16px 20px; box-shadow:0 4px 20px rgba(0,0,0,0.4);">
+              <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+                <span style="font-size:1.25rem;">💡</span>
+                <span style="font-size:1rem; font-weight:700; color:#38bdf8; font-family:var(--font-heading);">
+                  <span class="lang-hi">Live Lab Architectural Explanation:</span>
+                  <span class="lang-en">Live Lab Architectural Explanation:</span>
+                </span>
+              </div>
+              <div id="sim-explanation-text" style="font-size:0.92rem; color:#f1f5f9; line-height:1.7;">
+                <!-- Dynamically rendered with .lang-hi and .lang-en spans -->
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           TAB 7: FREQUENTLY ASKED QUESTIONS (100% MATCHES JWT THEME)
+           ==================================================================== -->
+      <div class="tab-content" id="tab-questions">
+        <div class="card-panel">
+          <div class="card-title-badge-row">
+            <div class="blue-circle-num">7</div>
+            <h2 class="panel-header-title">
+              <span class="lang-hi">Frequently Asked Questions (FAQ)</span>
+              <span class="lang-en">Frequently Asked Questions (FAQ)</span>
+            </h2>
+          </div>
+
+          <p class="panel-body-text">
+            <span class="lang-hi">Top security interviews aur certifications (OSCP, CEH, API Pentesting) me puche jane wale Rate Limiting ke core questions:</span>
+            <span class="lang-en">Critical interview and certification questions covering API Rate Limiting & Resource Consumption:</span>
+          </p>
+
+          <div class="faq-grid" style="display:flex; flex-direction:column; gap:1.2rem; margin-top:1.5rem;">
+            <!-- FAQ 1 -->
+            <div class="hw-step-box step-1">
+              <h4>
+                <span class="lang-hi">Q1: IP-based rate limiting alone kyu fail hoti hai aur iska secure alternative kya hai?</span>
+                <span class="lang-en">Q1: Why does IP-based rate limiting alone fail, and what is the secure alternative?</span>
+              </h4>
+              <p>
+                <span class="lang-hi"><strong>Answer:</strong> IP-based rate limiting ke do sabse bade flaws hain: (1) <strong>Collateral Damage (False Positives):</strong> CGNAT (Carrier-Grade NAT) aur corporate enterprise Wi-Fi networks me hazaron legitimate users ka ek hi public IP hota hai. Ek user ke brute force karne par pure office ke 2,000 employees block ho jate hain. (2) <strong>Easy Attacker Bypass:</strong> Attacker residential proxy networks ya cloud VPS botnets se har request naye IP se bhejta hai. Secure alternative hai <strong>Composite Key Rate Limiting</strong>: Authenticated routes par <code>JWT Subject (User ID)</code> par limit lagayein, public routes par <code>IP + Device Fingerprint + User-Agent Hash</code> combine karein.</span>
+                <span class="lang-en"><strong>Answer:</strong> Standalone IP throttling suffers from two fatal vulnerabilities: (1) <strong>Collateral Damage:</strong> Thousands of enterprise users behind CGNAT or corporate gateways share a single egress IP; throttling by IP locks out valid coworkers. (2) <strong>Trivial Bypass:</strong> Attackers rotate residential IP proxy pools on every HTTP dispatch. The industry standard is <strong>Composite Key Throttling</strong>: throttling by <code>JWT Subject (user_id)</code> on authenticated routes and combining <code>IP + Device Fingerprint</code> on unauthenticated endpoints.</span>
+              </p>
+            </div>
+
+            <!-- FAQ 2 -->
+            <div class="hw-step-box step-2">
+              <h4>
+                <span class="lang-hi">Q2: Token Bucket aur Sliding Window Counter algorithm me kya farq hai?</span>
+                <span class="lang-en">Q2: What is the difference between Token Bucket and Sliding Window algorithms?</span>
+              </h4>
+              <p>
+                <span class="lang-hi"><strong>Answer:</strong> <strong>Token Bucket:</strong> Ek bucket me fixed rate par tokens girte rehte hain (jaise 1 token / second, max capacity 10). Client achanak 5 requests bhejta hai toh wo execute ho jati hain (allows legitimate traffic bursts). <strong>Sliding Window Counter:</strong> Pichle continuous 60 seconds ka moving window track karta hai (Fixed Window ki tarah boundary reset spike allow nahi karta). Agar aapko occasional bursts permit karne hain toh Token Bucket best hai; agar strictly hard continuous frequency limit lagani hai toh Sliding Window best hai.</span>
+                <span class="lang-en"><strong>Answer:</strong> <strong>Token Bucket:</strong> A bucket continuously accumulates tokens at a sustained rate with a defined capacity ceiling. Clients may burst multiple requests instantaneously provided tokens exist. <strong>Sliding Window Counter:</strong> Computes the rolling request count over the trailing 60 seconds, eliminating boundary reset spikes. Token Bucket is superior for handling bursty traffic gracefully; Sliding Window Counter is preferred for strict continuous policing.</span>
+              </p>
+            </div>
+
+            <!-- FAQ 3 -->
+            <div class="hw-step-box step-3">
+              <h4>
+                <span class="lang-hi">Q3: GraphQL APIs me traditional request-count rate limiting kyu bekar ho jati hai?</span>
+                <span class="lang-en">Q3: Why does traditional request-count rate limiting fail against GraphQL APIs?</span>
+              </h4>
+              <p>
+                <span class="lang-hi"><strong>Answer:</strong> REST API me har endpoint ka resource cost lagbhag predictable hota hai. Lekin GraphQL me client sirf <strong>1 single HTTP POST request</strong> bhej kar deeply nested circular query likh sakta hai (jaise: <code>author { books { author { books { author ... } } } }</code>) jo backend database par lakho joins execute karke server crash kar deta hai! Isliye GraphQL me request count rate limiting nahi, balki <strong>Query Complexity Cost Analysis</strong> (har field ko complexity score dena aur max cost limit e.g. 500 points enforce karna) mandatory hoti hai.</span>
+                <span class="lang-en"><strong>Answer:</strong> In REST, individual requests carry predictable compute costs. In GraphQL, an adversary submits a <strong>single HTTP POST request</strong> containing a malicious nested circular query (e.g., <code>author { books { author { books ... } } }</code>) triggering thousands of relational SQL joins that crash the database! GraphQL requires <strong>Query Complexity Cost Analysis</strong> and depth limiters rather than simple HTTP request counters.</span>
+              </p>
+            </div>
+
+            <!-- FAQ 4 -->
+            <div class="hw-step-box step-4">
+              <h4>
+                <span class="lang-hi">Q4: Distributed multi-server microservices architecture me rate limits kaise sync hoti hain?</span>
+                <span class="lang-en">Q4: How are rate limits synchronized across multi-server microservices architectures?</span>
+              </h4>
+              <p>
+                <span class="lang-hi"><strong>Answer:</strong> Local memory (Node.js in-process memory) rate limiting distributed architecture me fail ho jati hai kyunki agar aapke 10 server instances hain, toh attacker round-robin load balancer se har server par alag-alag requests bhej kar 10x limit execute kar lega. Iska standard solution hai <strong>Centralized In-Memory Datastore (Redis)</strong>. Sabhi instances Redis ke atomic operations (<code>INCR</code>, <code>EXPIRE</code>) ya Redis Lua scripts use karte hain jisse race conditions ke bina global rate limit strictly maintain rehti hai.</span>
+                <span class="lang-en"><strong>Answer:</strong> Local in-memory counters fail in distributed clusters because round-robin load balancers distribute traffic across instances, allowing attackers to multiply allowable requests by the node count. Microservice systems rely on a <strong>Centralized Redis Cache</strong> utilizing atomic operations (<code>INCR</code>, <code>EXPIRE</code>) or Lua scripts to enforce a unified global threshold with sub-millisecond latency.</span>
+              </p>
+            </div>
+
+            <!-- FAQ 5 -->
+            <div class="hw-step-box step-5">
+              <h4>
+                <span class="lang-hi">Q5: Kya Slowloris ya Slow HTTP Read attacks rate limiting ko bypass kar sakte hain?</span>
+                <span class="lang-en">Q5: Can Slowloris or Slow HTTP Read attacks bypass standard API rate limiters?</span>
+              </h4>
+              <p>
+                <span class="lang-hi"><strong>Answer:</strong> <strong>Haan!</strong> Slowloris attacks me attacker bohot kam requests bhejta hai (say 1 request per 30 seconds), isliye rate limiter threshold kabhi trigger hi nahi hota. Lekin attacker HTTP header ya body ke bytes bohot dheere-dheere (1 byte har 10 second) bhejta hai, jisse server ke thread pools aur connection sockets ghanto tak busy rehte hain aur naye users connect nahi kar pate. Isko rokne ke liye Nginx/Reverse Proxy level par strict <code>client_body_timeout</code> aur <code>client_header_timeout</code> lagana zaroori hai.</span>
+                <span class="lang-en"><strong>Answer:</strong> <strong>Yes!</strong> Slowloris attacks send low-frequency requests that never breach volumetric thresholds. However, they transmit bytes extremely slowly (1 byte every 10 seconds), tying up server socket connections indefinitely and starving thread pools. Defenses require configuring strict read timeouts (e.g., Nginx <code>client_body_timeout 10s</code> and <code>client_header_timeout 10s</code>) at the reverse proxy layer.</span>
+              </p>
+            </div>
+
+            <!-- FAQ 6 -->
+            <div class="hw-step-box step-1">
+              <h4>
+                <span class="lang-hi">Q6: Frontend / Mobile client side par HTTP 429 errors ko handle karne ka best practice kya hai?</span>
+                <span class="lang-en">Q6: What is the architectural best practice for client-side handling of HTTP 429 responses?</span>
+              </h4>
+              <p>
+                <span class="lang-hi"><strong>Answer:</strong> Client application ko kabhi bhi turant loop me retry nahi karna chahiye (isse server aur zyada choke hota hai). Industry standard pattern hai: <strong>Exponential Backoff with Full Jitter</strong>. Server ke <code>Retry-After</code> header ko read karein (e.g. 30 seconds). Agar header missing ho, toh retry delay ko exponentially double karein (1s, 2s, 4s, 8s) sath me randomized jitter add karein (<code>delay = Math.random() * (2 ** attempt)</code>) taaki hazaron clients ek sath ek hi second server par dobara attack na karein.</span>
+                <span class="lang-en"><strong>Answer:</strong> Client applications must never retry immediately in tight loops. Implement <strong>Exponential Backoff with Full Jitter</strong>. Inspect the server's <code>Retry-After</code> response header. If absent, double the delay exponentially across retries (1s, 2s, 4s, 8s) randomized with jitter (<code>delay = Math.random() * (2 ** attempt)</code>) to prevent thundering herd spikes when the rate limit window resets.</span>
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Footer -->
+
+      <!-- ====================================================================
+           FOOTER
+           ==================================================================== -->
+      <footer class="dashboard-footer">
+        <div class="footer-divider-glow"></div>
+        <div class="footer-inner-content">
+          <div class="footer-brand-row">
+            <div class="footer-badge-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                <path d="m9 12 2 2 4-4"/>
+              </svg>
+            </div>
+            <div class="footer-author-text">
+              <span class="footer-credit-label">Designed and Developed by</span>
+              <span class="footer-author-name">Irshad Akaram</span>
+            </div>
+          </div>
+        </div>
+      </footer>
+
+    </main>
+  </div>
+
+      <!-- Scripts -->
+  <script src="assets/js/main.js"></script>
+  <script>
+    /* ==========================================================================
+       Module 07: Rate Limiting & Resource Consumption Interactive Logic
+       Characters: Shabaj (Attacker) & Asif (Victim / Application Owner)
+       ========================================================================== */
+
+    // Tab Navigation
+    document.querySelectorAll('.tab-underline-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-underline-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        const targetTab = btn.getAttribute('data-tab');
+        const activeContent = document.getElementById(targetTab);
+        if (activeContent) activeContent.classList.add('active');
+      });
+    });
+
+    // Hero Widget Interactive Toggle
+    const btnRlSafe = document.getElementById('btnRlSafe');
+    const btnRlLeak = document.getElementById('btnRlLeak');
+    const rlTargetField1 = document.getElementById('rlTargetField1');
+    const rlTargetField2 = document.getElementById('rlTargetField2');
+    const rlTargetField3 = document.getElementById('rlTargetField3');
+    const rlTargetNote = document.getElementById('rlTargetNote');
+    const rlTargetStatus = document.getElementById('rlTargetStatus');
+    const rlBadgeTo = document.getElementById('rlBadgeTo');
+    const rlFlowStateText = document.getElementById('rlFlowStateText');
+    const rlVerb = document.getElementById('rlVerb');
+    const rlBeamParticle = document.getElementById('rlBeamParticle');
+
+    function setRlHeroMode(mode) {
+      if (mode === 'safe') {
+        if (btnRlSafe) btnRlSafe.classList.add('active');
+        if (btnRlLeak) btnRlLeak.classList.remove('active', 'exploit');
+        if (rlTargetField1) rlTargetField1.innerHTML = 'CPU Usage: <code style="color:#34d399;">12.4% (Normal)</code>';
+        if (rlTargetField2) rlTargetField2.innerHTML = 'Rate Limiter: <code style="color:#34d399;">429 Too Many Req</code>';
+        if (rlTargetField3) rlTargetField3.innerHTML = 'Status: <code style="color:#34d399;">Protected (Token Bucket)</code>';
+        if (rlTargetNote) {
+          rlTargetNote.innerHTML = '✅ Shabaj Blocked with Retry-After: 30';
+          rlTargetNote.style.color = '#34d399';
+        }
+        if (rlTargetStatus) {
+          rlTargetStatus.className = 'target-pill-status secure';
+          rlTargetStatus.innerText = 'THROTTLED';
+        }
+        if (rlBadgeTo) {
+          rlBadgeTo.className = 'swap-id-badge from';
+          rlBadgeTo.innerText = 'HTTP 429 Limited';
+        }
+        if (rlFlowStateText) {
+          rlFlowStateText.innerText = 'Token Bucket Enforced';
+          rlFlowStateText.style.color = '#34d399';
+        }
+        if (rlVerb) rlVerb.style.color = '#38bdf8';
+        if (rlBeamParticle) rlBeamParticle.className = 'flow-beam-particle';
+      } else {
+        if (btnRlLeak) btnRlLeak.classList.add('active', 'exploit');
+        if (btnRlSafe) btnRlSafe.classList.remove('active');
+        if (rlTargetField1) rlTargetField1.innerHTML = 'CPU Usage: <code style="color:#ef4444;">99.8% (Spike)</code>';
+        if (rlTargetField2) rlTargetField2.innerHTML = 'DB Pool: <code style="color:#ef4444;">Exhausted (0 Free)</code>';
+        if (rlTargetField3) rlTargetField3.innerHTML = 'Status: <code style="color:#ef4444;">504 Gateway Timeout</code>';
+        if (rlTargetNote) {
+          rlTargetNote.innerHTML = '🚨 Server Choked & OTP Cracked';
+          rlTargetNote.style.color = '#ef4444';
+        }
+        if (rlTargetStatus) {
+          rlTargetStatus.className = 'target-pill-status breach';
+          rlTargetStatus.innerText = 'DOS CRASH';
+        }
+        if (rlBadgeTo) {
+          rlBadgeTo.className = 'swap-id-badge to';
+          rlBadgeTo.innerText = 'Server: Choked';
+        }
+        if (rlFlowStateText) {
+          rlFlowStateText.innerText = 'Unthrottled Flood';
+          rlFlowStateText.style.color = '#ef4444';
+        }
+        if (rlVerb) rlVerb.style.color = '#ef4444';
+        if (rlBeamParticle) rlBeamParticle.className = 'flow-beam-particle exploit';
+      }
+    }
+
+    if (btnRlSafe) btnRlSafe.addEventListener('click', () => setRlHeroMode('safe'));
+    if (btnRlLeak) btnRlLeak.addEventListener('click', () => setRlHeroMode('leak'));
+
+    // Code Language Switcher
+    function switchCodeLang(btn, targetId) {
+      document.querySelectorAll('.code-lang-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.code-lang-section').forEach(s => s.style.display = 'none');
+      btn.classList.add('active');
+      const target = document.getElementById(targetId);
+      if (target) target.style.display = 'block';
+    }
+
+    // Copy Term Code helper
+    function copyTerm(btn) {
+      const parent = btn.closest('.terminal-box') || btn.closest('.compare-box');
+      if (!parent) return;
+      const pre = parent.querySelector('pre');
+      if (!pre) return;
+      navigator.clipboard.writeText(pre.innerText).then(() => {
+        const orig = btn.innerText;
+        btn.innerText = 'Copied!';
+        setTimeout(() => { btn.innerText = orig; }, 1500);
+      });
+    }
+
+    /* ==========================================================================
+       Checklist Interactive Pass (Check) & Fail (Cross) Handler
+       ========================================================================== */
+    window.setChecklistStatus = function(event, btn, status) {
+      if (event) event.stopPropagation();
+      const item = btn.closest('.checklist-item');
+      if (!item) return;
+      const itemId = item.id;
+      const passBtn = item.querySelector('.pass-btn');
+      const failBtn = item.querySelector('.fail-btn');
+      const circleIcon = item.querySelector('.check-mark-icon');
+
+      const isCurrent = (status === 'pass' && item.classList.contains('item-passed')) ||
+                        (status === 'fail' && item.classList.contains('item-failed'));
+
+      if (isCurrent) {
+        // Toggle off
+        item.classList.remove('item-passed', 'item-failed');
+        if (passBtn) passBtn.classList.remove('active');
+        if (failBtn) failBtn.classList.remove('active');
+        const itemNum = itemId.replace('check-item-', '');
+        if (circleIcon) circleIcon.innerText = itemNum;
+      } else {
+        if (status === 'pass') {
+          item.classList.add('item-passed');
+          item.classList.remove('item-failed');
+          if (passBtn) passBtn.classList.add('active');
+          if (failBtn) failBtn.classList.remove('active');
+          if (circleIcon) circleIcon.innerText = '✓';
+        } else {
+          item.classList.add('item-failed');
+          item.classList.remove('item-passed');
+          if (failBtn) failBtn.classList.add('active');
+          if (passBtn) passBtn.classList.remove('active');
+          if (circleIcon) circleIcon.innerText = '✕';
+        }
+      }
+
+      updateChecklistCounter();
+    };
+
+    window.toggleCheckCircle = function(event, el) {
+      if (event) event.stopPropagation();
+      const item = el.closest('.checklist-item');
+      if (!item) return;
+      if (item.classList.contains('item-passed')) {
+        setChecklistStatus(null, item.querySelector('.fail-btn'), 'fail');
+      } else if (item.classList.contains('item-failed')) {
+        setChecklistStatus(null, item.querySelector('.fail-btn'), 'fail');
+      } else {
+        setChecklistStatus(null, item.querySelector('.pass-btn'), 'pass');
+      }
+    };
+
+    window.handleCheckItemClick = function(event, item) {
+      if (event.target.closest('.check-actions-bar') || event.target.closest('code') || event.target.closest('.check-how-to-box')) {
+        return;
+      }
+      toggleCheckCircle(event, item);
+    };
+
+    function updateChecklistCounter() {
+      const total = 7;
+      let passCount = 0;
+      let failCount = 0;
+      for (let i = 1; i <= total; i++) {
+        const item = document.getElementById('check-item-' + i);
+        if (item) {
+          if (item.classList.contains('item-passed')) passCount++;
+          if (item.classList.contains('item-failed')) failCount++;
+        }
+      }
+      const evaluated = passCount + failCount;
+      const counterEl = document.getElementById('checklist-progress-counter');
+      if (counterEl) {
+        counterEl.innerHTML = `${evaluated} of ${total} Checks Audited (<span style="color:#10b981;">✓ ${passCount} Passed</span> | <span style="color:#ef4444;">✕ ${failCount} Vulnerable</span>)`;
+      }
+    }
+
+    /* ==========================================================================
+       Live Lab Simulator Logic (Token Bucket Engine)
+       ========================================================================== */
+    const rlPresets = {
+      otp: {
+        title: "SMS OTP Brute Force (/api/v1/auth/verify-otp)",
+        endpoint: "POST /api/v1/auth/verify-otp",
+        req: `POST /api/v1/auth/verify-otp HTTP/1.1
+Host: api.enterprise-fintech.internal
+Content-Type: application/json
+User-Agent: BurpSuite-TurboIntruder/2.4
+X-Forwarded-For: 198.51.100.42
+
+{
+  "phone": "+91-9820011223",
+  "otp": "4921"
+}`,
+        alert: "🚨 <strong>SCENARIO READY:</strong> Shabaj is targeting Asif's 4-digit SMS OTP verification endpoint without rate limits! Click 'Fire 10x Attack Burst' to test.",
+        shortHi: "Authentication endpoints par brute force velocity throttling test ho rahi hai.",
+        shortEn: "Testing authentication brute-force velocity controls against rapid OTP guessing.",
+        kyaHuaHi: "Shabaj ne automated script se 4-digit OTP par 10 rapid guesses bhej diye. Token Bucket ne shuru ke 5 requests process kiye, aur bucket khali hote hi remaining requests ko <strong>HTTP 429 Too Many Requests</strong> with <code>Retry-After: 30</code> dekar drop kar diya. Isse Asif ka account hijack hone se bach gaya!",
+        kyaHuaEn: "Shabaj fired 10 automated guesses at the 4-digit OTP. The Token Bucket allowed the first 5 bursts, and as soon as tokens depleted, it immediately dropped subsequent requests with <strong>HTTP 429 Too Many Requests</strong> and <code>Retry-After: 30</code>, preventing account takeover.",
+        fixHi: "OTP endpoints par Redis-backed Sliding Window rate limit (max 5 req / 60 sec per phone) aur 3 failed attempts ke baad exponential backoff enforce karein.",
+        fixEn: "Implement Redis distributed rate limiting (max 5 attempts / minute per account) coupled with progressive delays and CAPTCHA escalation."
+      },
+      pagination: {
+        title: "Unbounded SQL Pagination (?limit=1000000)",
+        endpoint: "GET /api/v1/orders?limit=1000000",
+        req: `GET /api/v1/orders?limit=1000000&page=1 HTTP/1.1
+Host: api.enterprise-fintech.internal
+Accept: application/json
+Authorization: Bearer eyJhbGciOi...
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)`,
+        alert: "⚠️ <strong>RESOURCE CONSUMPTION ATTACK:</strong> Shabaj requested 1,000,000 order records in a single SQL query! This threatens database OOM crashes.",
+        shortHi: "Unbounded query parameters se database memory exhaustion (OOM) attack test ho raha hai.",
+        shortEn: "Testing unbounded database query extraction and server memory starvation.",
+        kyaHuaHi: "Shabaj ne 10 lakh rows fetch karne ki koshish ki. Safe architecture me backend ne query limit ko clamp karke <code>limit=50</code> kar diya aur response time 18ms me complete kar diya. Agar limit unbounded hoti, toh PostgreSQL memory pool crash ho jata!",
+        kyaHuaEn: "Shabaj attempted to pull 1,000,000 records. The secure DTO layer clamped the query bounds to <code>limit=50</code>, returning in 18ms. Without pagination clamps, Node.js and PostgreSQL would suffer Out-Of-Memory (OOM) crashes.",
+        fixHi: "Backend ORM queries par strict upper ceiling (Math.min(limit, 50)) lagayein aur offset pagination ke bajaye Keyset/Cursor pagination use karein.",
+        fixEn: "Enforce strict ceiling caps (Math.min(requestedLimit, 50)) and migrate to Keyset/Cursor pagination for high-volume datasets."
+      },
+      sms: {
+        title: "Twilio SMS Wallet Drain (/api/v1/notify/send-sms)",
+        endpoint: "POST /api/v1/notify/send-sms",
+        req: `POST /api/v1/notify/send-sms HTTP/1.1
+Host: api.enterprise-fintech.internal
+Content-Type: application/json
+User-Agent: python-requests/2.28.1
+
+{
+  "phone": "+91-9988776655",
+  "message": "Verify your banking security alert"
+}`,
+        alert: "💸 <strong>FINANCIAL WALLET DRAIN RISK:</strong> Every SMS costs ₹0.50 via Twilio. Shabaj can burn thousands in cloud billing if unthrottled!",
+        shortHi: "Third-party outgoing microservices par wallet drainage attack test ho raha hai.",
+        shortEn: "Testing financial wallet exhaustion on third-party transactional messaging APIs.",
+        kyaHuaHi: "Shabaj ne rapid SMS sending trigger kiya. Reverse proxy ne detect kiya ki 1 minute ke andar 5 se zyada outgoing SMS trigger huye hain aur rate limiter ne request ko 429 dekar terminate kar diya. Isse company ka ₹50,000 cloud wallet loss ruk gaya!",
+        kyaHuaEn: "Shabaj initiated a flurry of outbound SMS dispatches. The rate limiter identified velocity abuse, returning HTTP 429 before invoking the Twilio SDK, preventing financial wallet depletion.",
+        fixHi: "Outgoing third-party service calls ko per-IP aur per-phone strict daily caps (max 3 SMS per day per phone) aur Cloudflare Turnstile CAPTCHA se protect karein.",
+        fixEn: "Shield outbound messaging endpoints behind strict daily quotas (3 SMS / day per number) and bot detection challenges."
+      }
+    };
+
+    let activeRlPreset = 'otp';
+    let rlTokens = 5;
+    const rlMaxTokens = 5;
+
+    /* ==========================================================================
+       Live Lab HTTP Request & Response Syntax Highlighters
+       ========================================================================== */
+    function escapeHtml(str) {
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function highlightJsonSyntax(jsonStr) {
+      const escaped = escapeHtml(jsonStr);
+      return escaped.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?|[{}\[\],])/g, function(match) {
+        if (/^"/.test(match)) {
+          if (/:$/.test(match)) {
+            const k = match.slice(0, -1);
+            let col = '#38bdf8';
+            if (/error|retry_after/i.test(k)) col = '#ef4444';
+            return `<span style="color:${col}; font-weight:600;">${k}</span>:`;
+          } else {
+            let col = '#a3e635';
+            if (/Too Many Requests|exceeded|throttled/i.test(match)) col = '#ef4444; font-weight:700;';
+            else if (/success|processed/i.test(match)) col = '#34d399; font-weight:600;';
+            return `<span style="color:${col};">${match}</span>`;
+          }
+        } else if (/true|false/.test(match)) {
+          const col = match.trim() === 'true' ? '#34d399' : '#ef4444';
+          return `<span style="color:${col}; font-weight:700;">${match}</span>`;
+        } else if (/null/.test(match)) {
+          return `<span style="color:#94a3b8; font-weight:700;">${match}</span>`;
+        } else if (/[{}\[\],]/.test(match)) {
+          return `<span style="color:#64748b;">${match}</span>`;
+        }
+        return `<span style="color:#fbbf24; font-weight:700;">${match}</span>`;
+      });
+    }
+
+    function highlightHttpRequest(rawText) {
+      if (!rawText) return '';
+      const lines = rawText.split('\n');
+      let result = [];
+      let inBody = false;
+      let bodyLines = [];
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        if (inBody) {
+          bodyLines.push(line);
+          continue;
+        }
+        if (line.trim() === '') {
+          inBody = true;
+          continue;
+        }
+
+        if (i === 0) {
+          const parts = line.split(' ');
+          if (parts.length >= 2) {
+            const verbColor = parts[0] === 'GET' ? '#38bdf8' : '#f43f5e';
+            const method = `<span style="color:${verbColor}; font-weight:700;">${escapeHtml(parts[0])}</span>`;
+            const path = `<span style="color:#fbbf24; font-weight:600;">${escapeHtml(parts[1])}</span>`;
+            const proto = parts[2] ? `<span style="color:#94a3b8;">${escapeHtml(parts[2])}</span>` : '';
+            result.push(`${method} ${path} ${proto}`);
+          } else {
+            result.push(escapeHtml(line));
+          }
+        } else {
+          const colonIdx = line.indexOf(':');
+          if (colonIdx !== -1) {
+            const hName = line.substring(0, colonIdx);
+            const hVal = line.substring(colonIdx + 1);
+            let hNameColor = '#7dd3fc';
+            let hValColor = '#f1f5f9';
+            if (/X-Forwarded-For|User-Agent/i.test(hName)) {
+              hValColor = '#f59e0b';
+            } else if (/Authorization/i.test(hName)) {
+              hValColor = '#c084fc';
+            }
+            result.push(`<span style="color:${hNameColor}; font-weight:600;">${escapeHtml(hName)}:</span><span style="color:${hValColor};">${escapeHtml(hVal)}</span>`);
+          } else {
+            result.push(escapeHtml(line));
+          }
+        }
+      }
+
+      let output = result.join('\n');
+      if (bodyLines.length > 0) {
+        output += '\n\n' + highlightJsonSyntax(bodyLines.join('\n'));
+      }
+      return output;
+    }
+
+    function highlightHttpResponse(rawText) {
+      if (!rawText) return '';
+      const lines = rawText.split('\n');
+      let result = [];
+      let inBody = false;
+      let bodyLines = [];
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        if (inBody) {
+          bodyLines.push(line);
+          continue;
+        }
+        if (line.trim() === '') {
+          inBody = true;
+          continue;
+        }
+
+        if (i === 0) {
+          if (line.includes('429')) {
+            result.push(`<span style="color:#94a3b8;">HTTP/1.1</span> <span style="color:#ef4444; font-weight:700; background:rgba(239,68,68,0.18); padding:1px 6px; border-radius:3px;">429 Too Many Requests</span>`);
+          } else if (line.includes('200')) {
+            result.push(`<span style="color:#94a3b8;">HTTP/1.1</span> <span style="color:#10b981; font-weight:700; background:rgba(16,185,129,0.18); padding:1px 6px; border-radius:3px;">200 OK</span>`);
+          } else {
+            result.push(escapeHtml(line));
+          }
+        } else {
+          const colonIdx = line.indexOf(':');
+          if (colonIdx !== -1) {
+            const hName = line.substring(0, colonIdx);
+            const hVal = line.substring(colonIdx + 1);
+            let hNameColor = '#94a3b8';
+            let hValColor = '#e2e8f0';
+
+            if (/Retry-After/i.test(hName)) {
+              hNameColor = '#ef4444';
+              hValColor = '#f87171; font-weight:700;';
+            } else if (/RateLimit-Remaining/i.test(hName)) {
+              hNameColor = '#38bdf8';
+              hValColor = (hVal.trim() === '0') ? '#ef4444; font-weight:700;' : '#34d399; font-weight:700;';
+            } else if (/RateLimit-/i.test(hName)) {
+              hNameColor = '#38bdf8';
+              hValColor = '#38bdf8; font-weight:600;';
+            } else if (/X-RateLimit-Violation/i.test(hName)) {
+              hNameColor = '#f59e0b';
+              hValColor = '#fbbf24; font-weight:600;';
+            }
+            result.push(`<span style="color:${hNameColor}; font-weight:600;">${escapeHtml(hName)}:</span> <span style="color:${hValColor}">${escapeHtml(hVal.trim())}</span>`);
+          } else {
+            result.push(escapeHtml(line));
+          }
+        }
+      }
+
+      let output = result.join('\n');
+      if (bodyLines.length > 0) {
+        output += '\n\n' + highlightJsonSyntax(bodyLines.join('\n'));
+      }
+      return output;
+    }
+
+    function loadRlPreset(presetKey) {
+      activeRlPreset = presetKey;
+      const data = rlPresets[presetKey];
+      if (!data) return;
+
+      document.querySelectorAll('.sim-preset-btn').forEach(b => b.classList.remove('active'));
+      const activeBtn = document.getElementById('btnPreset' + presetKey.charAt(0).toUpperCase() + presetKey.slice(1));
+      if (activeBtn) activeBtn.classList.add('active');
+
+      const endpointDisplay = document.getElementById('labEndpointDisplay');
+      const alertBanner = document.getElementById('rl-alert-banner');
+      const reqBox = document.getElementById('labRequestBox');
+      const respBox = document.getElementById('labResponseBox');
+      const statusBadge = document.getElementById('labStatusBadge');
+
+      if (endpointDisplay) endpointDisplay.innerText = "Endpoint: " + data.endpoint;
+      if (alertBanner) {
+        alertBanner.innerHTML = data.alert;
+        alertBanner.style.background = "rgba(56, 189, 248, 0.1)";
+        alertBanner.style.borderColor = "rgba(56, 189, 248, 0.3)";
+        alertBanner.style.borderLeft = "4px solid #38bdf8";
+        alertBanner.style.color = "#7dd3fc";
+      }
+      if (reqBox) reqBox.innerHTML = highlightHttpRequest(data.req);
+      if (respBox) respBox.innerHTML = '<span style="color:#64748b;">// Click "Send 1 Request" or "Fire 10x Attack Burst" to trigger server interaction.</span>';
+      if (statusBadge) statusBadge.innerHTML = '<span style="color:#38bdf8;">AWAITING ATTACK</span>';
+
+      updateSimExplanation(data.shortHi, data.shortEn, data.kyaHuaHi, data.kyaHuaEn, data.fixHi, data.fixEn);
+    }
+
+    function updateSimExplanation(shortHi, shortEn, kyaHuaHi, kyaHuaEn, fixHi, fixEn) {
+      const miniBox = document.getElementById('labExplanationBox');
+      const simText = document.getElementById('sim-explanation-text');
+
+      if (miniBox) {
+        miniBox.innerHTML = `
+          <span class="lang-hi"><strong>💡 Focus:</strong> ${shortHi}</span>
+          <span class="lang-en"><strong>💡 Focus:</strong> ${shortEn}</span>
+        `;
+      }
+
+      if (simText) {
+        simText.innerHTML = `
+          <div class="lang-hi">
+            <div style="margin-bottom:8px;"><strong style="color:#ef4444;">🚨 Attack Simulation Result (Hindi):</strong> ${kyaHuaHi}</div>
+            <div><strong style="color:#38bdf8;">🛡️ Secure Architectural Fix (Hindi):</strong> ${fixHi}</div>
+          </div>
+          <div class="lang-en">
+            <div style="margin-bottom:8px;"><strong style="color:#ef4444;">🚨 Attack Simulation Result (English):</strong> ${kyaHuaEn}</div>
+            <div><strong style="color:#38bdf8;">🛡️ Secure Architectural Fix (English):</strong> ${fixEn}</div>
+          </div>
+        `;
+      }
+    }
+
+    // Token Refill Interval
+    setInterval(() => {
+      if (rlTokens < rlMaxTokens) {
+        rlTokens++;
+        updateTokenUI();
+      }
+    }, 3000);
+
+    function updateTokenUI() {
+      const countEl = document.getElementById('tokenCountDisplay');
+      const barEl = document.getElementById('tokenBarFill');
+      const statusText = document.getElementById('rateLimitStatusText');
+
+      if (countEl) countEl.innerText = `${rlTokens} / ${rlMaxTokens} Tokens`;
+      if (barEl) {
+        const pct = (rlTokens / rlMaxTokens) * 100;
+        barEl.style.width = pct + '%';
+        if (rlTokens === 0) {
+          barEl.classList.add('depleted');
+          if (statusText) {
+            statusText.innerText = "STATUS: DEPLETED (THROTTLED)";
+            statusText.style.color = "#ef4444";
+          }
+        } else {
+          barEl.classList.remove('depleted');
+          if (statusText) {
+            statusText.innerText = "STATUS: NORMAL";
+            statusText.style.color = "#10b981";
+          }
+        }
+      }
+    }
+
+    function sendSingleRequest() {
+      executeRlRequest(1);
+    }
+
+    function fireAttackBurst() {
+      executeRlRequest(10);
+    }
+
+    function executeRlRequest(burstCount) {
+      const data = rlPresets[activeRlPreset];
+      const respBox = document.getElementById('labResponseBox');
+      const statusBadge = document.getElementById('labStatusBadge');
+      const alertBanner = document.getElementById('rl-alert-banner');
+
+      let allowed = 0;
+      let blocked = 0;
+
+      for (let i = 0; i < burstCount; i++) {
+        if (rlTokens > 0) {
+          rlTokens--;
+          allowed++;
+        } else {
+          blocked++;
+        }
+      }
+      updateTokenUI();
+
+      if (blocked > 0) {
+        if (statusBadge) statusBadge.innerHTML = '<span style="color:#ef4444;">HTTP/1.1 429 Too Many Requests</span>';
+        if (alertBanner) {
+          alertBanner.style.background = "rgba(239, 68, 68, 0.15)";
+          alertBanner.style.borderColor = "rgba(239, 68, 68, 0.4)";
+          alertBanner.style.borderLeft = "4px solid #ef4444";
+          alertBanner.style.color = "#fca5a5";
+          alertBanner.innerHTML = `🚨 <strong>RATE LIMIT ENFORCED:</strong> Shabaj sent ${burstCount} requests. ${allowed} allowed, ${blocked} dropped with HTTP 429 and Retry-After: 30!`;
+        }
+        if (respBox) {
+          const rawResp = `HTTP/1.1 429 Too Many Requests
+Content-Type: application/json
+RateLimit-Limit: 5
+RateLimit-Remaining: 0
+RateLimit-Reset: 3
+Retry-After: 30
+X-RateLimit-Violation: Excessive burst detected from Shabaj's IP (198.51.100.42)
+Connection: keep-alive
+
+{
+  "success": false,
+  "error": "Too Many Requests",
+  "message": "Rate limit quota exceeded. Shabaj fired ${burstCount} requests. ${allowed} allowed, ${blocked} throttled.",
+  "retry_after_seconds": 30,
+  "target_endpoint": "${data.endpoint}"
+}`;
+          respBox.innerHTML = highlightHttpResponse(rawResp);
+        }
+      } else {
+        if (statusBadge) statusBadge.innerHTML = '<span style="color:#10b981;">HTTP/1.1 200 OK (Processed)</span>';
+        if (alertBanner) {
+          alertBanner.style.background = "rgba(16, 185, 129, 0.12)";
+          alertBanner.style.borderColor = "rgba(16, 185, 129, 0.35)";
+          alertBanner.style.borderLeft = "4px solid #10b981";
+          alertBanner.style.color = "#6ee7b7";
+          alertBanner.innerHTML = `✅ <strong>REQUEST ALLOWED:</strong> 1 token consumed from bucket. ${rlTokens} tokens remaining for Shabaj.`;
+        }
+        if (respBox) {
+          const rawResp = `HTTP/1.1 200 OK
+Content-Type: application/json
+RateLimit-Limit: 5
+RateLimit-Remaining: ${rlTokens}
+RateLimit-Reset: 3
+Connection: keep-alive
+
+{
+  "success": true,
+  "endpoint": "${data.endpoint}",
+  "message": "Request successfully processed. 1 token consumed.",
+  "tokens_left_in_bucket": ${rlTokens}
+}`;
+          respBox.innerHTML = highlightHttpResponse(rawResp);
+        }
+      }
+    }
+
+    function resetTokenBucket() {
+      rlTokens = rlMaxTokens;
+      updateTokenUI();
+      const respBox = document.getElementById('labResponseBox');
+      const statusBadge = document.getElementById('labStatusBadge');
+      const alertBanner = document.getElementById('rl-alert-banner');
+
+      if (statusBadge) statusBadge.innerHTML = '<span style="color:#38bdf8;">BUCKET RESET (READY)</span>';
+      if (alertBanner) {
+        alertBanner.style.background = "rgba(56, 189, 248, 0.1)";
+        alertBanner.style.borderColor = "rgba(56, 189, 248, 0.3)";
+        alertBanner.style.borderLeft = "4px solid #38bdf8";
+        alertBanner.style.color = "#7dd3fc";
+        alertBanner.innerHTML = `🔄 <strong>TOKEN BUCKET RESET:</strong> Bucket refilled to 5 fresh tokens. Ready for next simulation.`;
+      }
+      if (respBox) {
+        respBox.innerHTML = `<span style="color:#34d399;">// Bucket has been reset to 5 tokens.</span>\n<span style="color:#64748b;">// Click "Send 1 Request" or "Fire 10x Attack Burst" to test.</span>`;
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      updateChecklistCounter();
+      loadRlPreset('otp');
+      updateTokenUI();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,2660 @@
+<!DOCTYPE html>
+<html lang="hi" data-theme="dark" data-lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>00 API Fundamentals & Architecture | Beginner Friendly Guide</title>
+  
+  <!-- Premium Typography: Sora (Headings) + IBM Plex Sans (Body/Paragraphs) + Fira Code (Monospace) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Sora:wght@400;500;600;700;800&family=Fira+Code:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="assets/css/style.css">
+  <style>
+    /* ==========================================================================
+       Design 4 Custom CSS - Enhanced Sidebar Dashboard & Theme System
+       ========================================================================== */
+    body {
+      background: #040814;
+      color: #e2e8f0;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      font-family: var(--font-sans);
+    }
+
+    /* Master Layout: Sidebar + Main Area */
+    .app-dashboard-layout {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* Left Sidebar */
+    .dashboard-sidebar {
+      width: 280px;
+      background: #070d1c;
+      border-right: 1px solid rgba(255, 255, 255, 0.07);
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      position: sticky;
+      top: 0;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #1e293b transparent;
+    }
+
+    .sidebar-header {
+      padding: 1.5rem 1.4rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .sidebar-brand-title {
+      font-family: var(--font-heading);
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.02em;
+    }
+    .sidebar-brand-title span {
+      color: #38bdf8;
+    }
+
+    .sidebar-section-heading {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #64748b;
+      padding: 0.8rem 1.4rem 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .vuln-nav-list {
+      list-style: none;
+      padding: 0 0.8rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin: 0;
+    }
+
+    .vuln-nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      border-radius: var(--radius-pill);
+      color: #94a3b8;
+      text-decoration: none;
+      font-size: 0.86rem;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .vuln-nav-item:hover {
+      background: rgba(255, 255, 255, 0.04);
+      color: #f1f5f9;
+    }
+
+    .vuln-nav-item.active {
+      background: #1d4ed8;
+      color: #ffffff;
+      font-weight: 700;
+      box-shadow: 0 4px 14px rgba(29, 78, 216, 0.4);
+    }
+
+    .nav-num-badge {
+      font-size: 0.72rem;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 2px 7px;
+      border-radius: var(--radius-pill);
+      color: inherit;
+    }
+
+    .vuln-nav-item.active .nav-num-badge {
+      background: rgba(0, 0, 0, 0.25);
+      color: #fff;
+    }
+
+    /* Main Content Body */
+    .dashboard-main {
+      flex: 1;
+      padding: 2rem 2.8rem 0;
+      max-width: 1480px;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* Top Action Bar */
+    .main-top-actionbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      padding-bottom: 12px;
+    }
+
+    /* Header Hero Grid */
+    .hero-top-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 1fr;
+      gap: 2rem;
+      align-items: center;
+      margin-bottom: 2.2rem;
+    }
+
+    @media (max-width: 1100px) {
+      .hero-top-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .category-tag-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 0.8rem;
+    }
+
+    .pill-index-tag {
+      background: #1e3a8a;
+      color: #60a5fa;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      padding: 2px 8px;
+      border-radius: var(--radius-pill);
+    }
+
+    .pill-category-name {
+      color: #cbd5e1;
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+
+    .main-vuln-h1 {
+      font-family: var(--font-heading);
+      font-size: 2.35rem;
+      font-weight: 800;
+      line-height: 1.2;
+      color: #ffffff;
+      margin-bottom: 0.6rem;
+      letter-spacing: -0.02em;
+    }
+
+    .main-vuln-h1 span.title-blue {
+      color: #38bdf8;
+    }
+
+    .main-vuln-desc {
+      font-size: 1.05rem;
+      color: #f1f5f9;
+      margin-bottom: 1.2rem;
+      line-height: 1.6;
+    }
+
+    /* Meta Badges */
+    .meta-tags-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 1.4rem;
+    }
+
+    .meta-tag-pill {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 0.75rem;
+      font-family: var(--font-mono);
+      padding: 4px 10px;
+      border-radius: var(--radius-pill);
+      color: #cbd5e1;
+    }
+
+    .meta-tag-pill.accent {
+      background: rgba(56, 189, 248, 0.12);
+      border-color: rgba(56, 189, 248, 0.28);
+      color: #38bdf8;
+    }
+
+    /* Lead quote bubble */
+    .quote-bubble {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      border-radius: var(--radius-md);
+      padding: 0.75rem 1.2rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #bae6fd;
+      font-size: 0.88rem;
+    }
+
+    .quote-icon-box {
+      width: 26px;
+      height: 26px;
+      background: #0284c7;
+      color: #fff;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      font-weight: bold;
+      flex-shrink: 0;
+    }
+
+    /* Hero Glass Graphic */
+    .hero-glass-graphic {
+      background: #070e1e;
+      border: 1px solid rgba(56, 189, 248, 0.22);
+      border-radius: var(--radius-lg);
+      padding: 1.4rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 35px rgba(56, 189, 248, 0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 1.2rem;
+    }
+
+    .arch-diagram-flow {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .arch-node {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: var(--radius-md);
+      padding: 0.8rem 1rem;
+      text-align: center;
+      flex: 1;
+    }
+
+    .arch-node-title {
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: #f1f5f9;
+      margin-bottom: 4px;
+    }
+
+    .arch-node-sub {
+      font-size: 0.72rem;
+      color: #94a3b8;
+      font-family: var(--font-mono);
+    }
+
+    .arch-arrow {
+      color: #38bdf8;
+      font-weight: 800;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+
+    /* Navigation Tabs */
+    .tabs-underline-nav {
+      display: flex;
+      gap: 1.8rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      margin-bottom: 1.8rem;
+      overflow-x: scroll !important;
+      scrollbar-gutter: stable;
+      scrollbar-width: thin;
+      scrollbar-color: #38bdf8 rgba(255, 255, 255, 0.1);
+      padding-bottom: 8px;
+      -webkit-overflow-scrolling: touch;
+      scroll-behavior: smooth;
+      position: relative;
+    }
+
+    .tabs-underline-nav::-webkit-scrollbar {
+      height: 8px !important;
+      display: block !important;
+      -webkit-appearance: none !important;
+    }
+
+    .tabs-underline-nav::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.08) !important;
+      border-radius: 4px;
+    }
+
+    .tabs-underline-nav::-webkit-scrollbar-thumb {
+      background: #0284c7 !important;
+      border-radius: 4px;
+    }
+
+    .tabs-underline-nav::-webkit-scrollbar-thumb:hover {
+      background: #38bdf8 !important;
+    }
+
+    html[data-theme="light"] .tabs-underline-nav {
+      scrollbar-color: #0284c7 #e2e8f0;
+      border-bottom-color: rgba(0, 0, 0, 0.08);
+    }
+
+    html[data-theme="light"] .tabs-underline-nav::-webkit-scrollbar {
+      height: 8px !important;
+      display: block !important;
+      -webkit-appearance: none !important;
+    }
+
+    html[data-theme="light"] .tabs-underline-nav::-webkit-scrollbar-track {
+      background: #e2e8f0 !important;
+      border-radius: 4px;
+      border: 1px solid #cbd5e1 !important;
+    }
+
+    html[data-theme="light"] .tabs-underline-nav::-webkit-scrollbar-thumb {
+      background: #0284c7 !important;
+      border-radius: 4px;
+    }
+
+    html[data-theme="light"] .tabs-underline-nav::-webkit-scrollbar-thumb:hover {
+      background: #0369a1 !important;
+    }
+
+    .tab-underline-btn {
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      color: #cbd5e1 !important;
+      padding: 10px 4px 12px;
+      font-size: 0.95rem;
+      font-family: var(--font-heading);
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      position: relative;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+
+    .tab-underline-btn:hover {
+      color: #f1f5f9 !important;
+      background: transparent !important;
+    }
+
+    .tab-underline-btn.active {
+      color: #38bdf8 !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      font-weight: 700;
+    }
+
+    .tab-underline-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      width: 100%;
+      height: 2.5px;
+      background: #38bdf8;
+      box-shadow: 0 0 10px #38bdf8;
+      border-radius: 2px;
+    }
+
+    /* Cards Panels */
+    .card-panel {
+      background: rgba(7, 14, 28, 0.90);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(56, 189, 248, 0.18);
+      border-radius: var(--radius-lg);
+      padding: 1.8rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .panel-header-title {
+      font-family: var(--font-heading);
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .panel-body-text {
+      color: #f1f5f9;
+      font-size: 0.95rem;
+      line-height: 1.7;
+      text-align: justify;
+      margin-bottom: 1.2rem;
+    }
+
+    /* Beginner Friendly Spotlight Cards */
+    .beginner-spotlight {
+      background: rgba(56, 189, 248, 0.07);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-left: 4px solid #38bdf8;
+      border-radius: var(--radius-md);
+      padding: 1.2rem 1.5rem;
+      margin: 1.2rem 0 1.6rem;
+    }
+
+    .beginner-spotlight h4 {
+      margin: 0 0 0.5rem;
+      color: #38bdf8;
+      font-family: var(--font-heading);
+      font-size: 1.05rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .beginner-spotlight p {
+      margin: 0;
+      color: #cbd5e1;
+      font-size: 0.92rem;
+      line-height: 1.65;
+    }
+
+    /* Stepper */
+    .technical-stepper-box {
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      background: rgba(15, 23, 42, 0.45);
+      margin: 1.5rem 0;
+    }
+
+    .step-block {
+      display: flex;
+      gap: 1.2rem;
+      padding: 1.2rem;
+      background: rgba(7, 14, 28, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: var(--radius-md);
+      margin-bottom: 1rem;
+      transition: border-color 0.2s;
+    }
+
+    .step-block:hover {
+      border-color: rgba(56, 189, 248, 0.35);
+    }
+
+    .step-num-badge {
+      width: 32px;
+      height: 32px;
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      flex-shrink: 0;
+    }
+
+    .step-body-content {
+      flex: 1;
+    }
+
+    .step-body-content h5 {
+      font-family: var(--font-heading);
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin: 0 0 0.4rem;
+    }
+
+    .step-body-content p {
+      color: #f1f5f9;
+      font-size: 0.92rem;
+      line-height: 1.65;
+      margin: 0 0 0.6rem;
+      text-align: justify;
+    }
+
+    /* Comparison Table */
+    .data-table-wrap {
+      overflow-x: auto;
+      margin: 1.2rem 0;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-md);
+    }
+
+    .styled-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.88rem;
+    }
+
+    .styled-table th {
+      background: #0f172a;
+      color: #38bdf8;
+      font-family: var(--font-heading);
+      font-weight: 700;
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      white-space: nowrap;
+    }
+
+    .styled-table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      color: #cbd5e1;
+      vertical-align: top;
+    }
+
+    .styled-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .styled-table tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    /* Method Badges */
+    .method-badge {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      display: inline-block;
+    }
+    .method-get { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .method-post { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
+    .method-put { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .method-patch { background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); }
+    .method-delete { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+    .method-options { background: rgba(148, 163, 184, 0.15); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.3); }
+
+    /* Code Container High-Contrast Fix */
+    .code-container,
+    .code-text,
+    pre {
+      color: #e2e8f0 !important;
+      font-family: var(--font-mono);
+    }
+
+    /* FAQ Card */
+    .faq-card {
+      background: #070e1c;
+      border: 1px solid rgba(56, 189, 248, 0.16);
+      border-radius: var(--radius-md);
+      padding: 1.4rem;
+      margin-bottom: 1.2rem;
+    }
+
+    .faq-question {
+      font-family: var(--font-heading);
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      margin-bottom: 0.6rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .faq-answer {
+      color: #94a3b8;
+      font-size: 0.92rem;
+      line-height: 1.7;
+      text-align: justify;
+      padding-left: 1.8rem;
+    }
+
+    /* HTTP Console Styling */
+    .http-console-box {
+      background: #070d1a;
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+    }
+
+    .http-console-toolbar {
+      background: #0f172a;
+      padding: 1rem 1.4rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .http-input-group {
+      display: flex;
+      flex: 1;
+      min-width: 320px;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      background: #070e1e;
+    }
+
+    .http-method-select {
+      background: #1e293b;
+      color: #38bdf8;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      border: none;
+      padding: 8px 12px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .http-url-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      padding: 8px 14px;
+      color: #f1f5f9;
+      font-family: var(--font-mono);
+      font-size: 0.88rem;
+      outline: none;
+    }
+
+    .btn-send-req {
+      background: #0284c7;
+      color: #ffffff;
+      border: none;
+      padding: 8px 20px;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-heading);
+      font-weight: 700;
+      font-size: 0.88rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .btn-send-req:hover {
+      background: #0369a1;
+      box-shadow: 0 0 14px rgba(56, 189, 248, 0.4);
+    }
+
+    .preset-chip-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding: 0.8rem 1.4rem;
+      background: rgba(15, 23, 42, 0.4);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      align-items: center;
+    }
+
+    .preset-label {
+      font-size: 0.76rem;
+      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+      font-family: var(--font-mono);
+    }
+
+    .preset-chip {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      color: #cbd5e1;
+      padding: 4px 10px;
+      border-radius: var(--radius-pill);
+      font-size: 0.78rem;
+      font-family: var(--font-mono);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .preset-chip:hover {
+      background: rgba(56, 189, 248, 0.15);
+      border-color: rgba(56, 189, 248, 0.4);
+      color: #38bdf8;
+    }
+
+    .http-console-body {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1px;
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    @media (max-width: 900px) {
+      .http-console-body {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .console-pane {
+      background: #070d1c;
+      padding: 1.2rem;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .console-pane-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.8rem;
+      padding-bottom: 6px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .console-pane-title {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-family: var(--font-mono);
+    }
+
+    .req-body-textarea {
+      background: #040814;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-sm);
+      color: #e2e8f0;
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      padding: 10px;
+      resize: vertical;
+      min-height: 140px;
+      outline: none;
+    }
+
+    /* Telemetry Bar */
+    .telemetry-bar {
+      padding: 0.8rem 1.4rem;
+      background: #0a1124;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      font-family: var(--font-mono);
+      color: #94a3b8;
+    }
+
+    /* Architecture Bottom Meta Flow */
+    .arch-footer-meta {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px dashed rgba(255, 255, 255, 0.1);
+      border-radius: var(--radius-sm);
+      padding: 0.6rem 0.8rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+    }
+    .arch-footer-meta .meta-label { color: #94a3b8; }
+    .arch-footer-meta .meta-val-req { color: #34d399; }
+    .arch-footer-meta .meta-val-res { color: #fbbf24; }
+
+    /* Core Components Cards */
+    .core-part-card {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      transition: all 0.2s ease;
+    }
+    .core-part-card .core-part-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+      display: block;
+      margin-bottom: 4px;
+    }
+    .core-part-card p {
+      font-size: 0.85rem;
+      color: #94a3b8;
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    /* Status Summary Boxes */
+    .status-summary-box {
+      border-radius: var(--radius-md);
+      padding: 1rem;
+    }
+    .status-summary-box.box-2xx {
+      background: rgba(16, 185, 129, 0.08);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+    }
+    .status-summary-box.box-4xx {
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px solid rgba(239, 68, 68, 0.25);
+    }
+    .status-summary-box.box-5xx {
+      background: rgba(245, 158, 11, 0.08);
+      border: 1px solid rgba(245, 158, 11, 0.25);
+    }
+    .status-summary-box h5 {
+      margin: 0 0 0.4rem;
+      font-family: var(--font-heading);
+    }
+    .status-summary-box.box-2xx h5 { color: #34d399; }
+    .status-summary-box.box-4xx h5 { color: #f87171; }
+    .status-summary-box.box-5xx h5 { color: #fbbf24; }
+    .status-summary-box p {
+      font-size: 0.85rem;
+      color: #cbd5e1;
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    /* Auth Compare Cards */
+    .auth-compare-card {
+      border-radius: var(--radius-md);
+      padding: 1.2rem;
+    }
+    .auth-compare-card.authn {
+      background: rgba(56, 189, 248, 0.06);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+    }
+    .auth-compare-card.authz {
+      background: rgba(16, 185, 129, 0.06);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+    }
+    .auth-compare-card h4 {
+      margin: 0 0 0.6rem;
+      font-family: var(--font-heading);
+    }
+    .auth-compare-card.authn h4 { color: #38bdf8; }
+    .auth-compare-card.authz h4 { color: #34d399; }
+    .auth-compare-card p {
+      color: #cbd5e1;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      margin: 0;
+    }
+
+    /* JWT Sample Box */
+    .jwt-sample-box {
+      margin: 1.2rem 0;
+      background: #070e1c;
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+    .jwt-sample-header {
+      background: #0f172a;
+      padding: 10px 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .jwt-sample-title {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #38bdf8;
+    }
+    .jwt-sample-footer {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      padding: 8px 14px;
+      background: rgba(15, 23, 42, 0.6);
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 0.75rem;
+      font-family: var(--font-mono);
+    }
+
+    /* JWT 3-Part Cards */
+    .jwt-part-card {
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+    }
+    .jwt-part-card.jwt-header {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    .jwt-part-card.jwt-payload {
+      background: rgba(168, 85, 247, 0.1);
+      border: 1px solid rgba(168, 85, 247, 0.3);
+    }
+    .jwt-part-card.jwt-sig {
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+    .jwt-part-card .jwt-part-title {
+      font-weight: 700;
+      display: block;
+      margin-bottom: 6px;
+    }
+    .jwt-part-card.jwt-header .jwt-part-title { color: #f87171; }
+    .jwt-part-card.jwt-payload .jwt-part-title { color: #c084fc; }
+    .jwt-part-card.jwt-sig .jwt-part-title { color: #38bdf8; }
+    .jwt-part-card p {
+      color: #cbd5e1;
+      font-family: var(--font-sans);
+      font-size: 0.85rem;
+      margin: 0 0 8px;
+    }
+
+    /* HTTP Explanation Box */
+    .http-explanation-box {
+      background: rgba(15, 23, 42, 0.85);
+      border-top: 1px solid rgba(56, 189, 248, 0.22);
+      padding: 1.1rem 1.4rem;
+    }
+    .http-explanation-box .explanation-title {
+      font-weight: 700;
+      color: #38bdf8;
+      font-family: var(--font-heading);
+      font-size: 0.9rem;
+    }
+    .http-explanation-box p {
+      margin: 0;
+      color: #cbd5e1;
+      font-size: 0.88rem;
+      line-height: 1.65;
+    }
+
+    /* ==========================================================================
+       Complete Light Theme Palette Overrides
+       ========================================================================== */
+    html[data-theme="light"] body {
+      background: #f8fafc !important;
+      color: #0f172a !important;
+    }
+
+    html[data-theme="light"] .dashboard-sidebar {
+      background: #ffffff !important;
+      border-right-color: rgba(0, 0, 0, 0.09) !important;
+    }
+
+    html[data-theme="light"] .sidebar-brand-title {
+      color: #0f172a !important;
+    }
+
+    html[data-theme="light"] .sidebar-section-heading {
+      color: #64748b !important;
+    }
+
+    html[data-theme="light"] .vuln-nav-item {
+      color: #475569 !important;
+    }
+
+    html[data-theme="light"] .vuln-nav-item:hover {
+      background: #f1f5f9 !important;
+      color: #0f172a !important;
+    }
+
+    html[data-theme="light"] .vuln-nav-item.active {
+      background: #0284c7 !important;
+      color: #ffffff !important;
+    }
+
+    html[data-theme="light"] .main-top-actionbar {
+      border-bottom-color: rgba(0, 0, 0, 0.08) !important;
+    }
+
+    html[data-theme="light"] .main-top-actionbar div span {
+      color: #475569 !important;
+    }
+
+    html[data-theme="light"] .pill-category-name {
+      color: #475569 !important;
+    }
+
+    html[data-theme="light"] .main-vuln-h1 {
+      color: #0f172a !important;
+    }
+
+    html[data-theme="light"] .main-vuln-desc {
+      color: #1e293b !important;
+    }
+
+    html[data-theme="light"] .meta-tag-pill {
+      background: #f1f5f9 !important;
+      border-color: #cbd5e1 !important;
+      color: #1e293b !important;
+      font-weight: 600 !important;
+    }
+
+    html[data-theme="light"] .meta-tag-pill.accent {
+      background: rgba(2, 132, 199, 0.12) !important;
+      border-color: rgba(2, 132, 199, 0.3) !important;
+      color: #0284c7 !important;
+    }
+
+    html[data-theme="light"] .tab-underline-btn {
+      color: #64748b !important;
+    }
+
+    html[data-theme="light"] .tab-underline-btn:hover {
+      color: #0f172a !important;
+    }
+
+    html[data-theme="light"] .tab-underline-btn.active {
+      color: #0284c7 !important;
+      background: transparent !important;
+    }
+
+    html[data-theme="light"] .tab-underline-btn.active::after {
+      background: #0284c7;
+      box-shadow: 0 0 8px rgba(2, 132, 199, 0.4);
+    }
+
+    html[data-theme="light"] .card-panel {
+      background: #ffffff !important;
+      border-color: rgba(0, 0, 0, 0.08) !important;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05) !important;
+    }
+
+    html[data-theme="light"] .panel-header-title {
+      color: #0f172a !important;
+    }
+
+    html[data-theme="light"] .panel-body-text {
+      color: #334155 !important;
+    }
+
+    html[data-theme="light"] .beginner-spotlight {
+      background: #f0f9ff !important;
+      border-color: #bae6fd !important;
+      border-left-color: #0284c7 !important;
+    }
+
+    html[data-theme="light"] .beginner-spotlight h4 {
+      color: #0369a1 !important;
+    }
+
+    html[data-theme="light"] .beginner-spotlight p {
+      color: #1e293b !important;
+    }
+
+    html[data-theme="light"] .quote-bubble {
+      background: #f0fdf4 !important;
+      border-color: #bbf7d0 !important;
+      color: #166534 !important;
+    }
+
+    html[data-theme="light"] .quote-bubble div,
+    html[data-theme="light"] .quote-bubble strong,
+    html[data-theme="light"] .quote-bubble span {
+      color: #14532d !important;
+    }
+
+    html[data-theme="light"] .quote-icon-box {
+      background: #16a34a !important;
+    }
+
+    html[data-theme="light"] .hero-glass-graphic {
+      background: #ffffff !important;
+      border-color: rgba(0, 0, 0, 0.08) !important;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05) !important;
+    }
+
+    html[data-theme="light"] .hero-glass-graphic > div:first-child {
+      color: #0284c7 !important;
+    }
+
+    html[data-theme="light"] .hero-glass-graphic > div:first-child span:last-child {
+      background: #e0f2fe !important;
+      border-color: #bae6fd !important;
+      color: #0369a1 !important;
+    }
+
+    html[data-theme="light"] .arch-node {
+      background: #f8fafc !important;
+      border-color: #cbd5e1 !important;
+    }
+
+    html[data-theme="light"] .arch-node[style*="#38bdf8"] {
+      border-color: #0284c7 !important;
+      background: #f0f9ff !important;
+    }
+
+    html[data-theme="light"] .arch-node .arch-node-title {
+      color: #0f172a !important;
+    }
+
+    html[data-theme="light"] .arch-node .arch-node-title[style*="#38bdf8"] {
+      color: #0284c7 !important;
+    }
+
+    html[data-theme="light"] .arch-node-sub {
+      color: #475569 !important;
+    }
+
+    html[data-theme="light"] .arch-arrow {
+      color: #0284c7 !important;
+    }
+
+    html[data-theme="light"] .step-block {
+      background: #f8fafc !important;
+      border-color: rgba(0, 0, 0, 0.08) !important;
+    }
+
+    html[data-theme="light"] .step-body-content h5 {
+      color: #0f172a !important;
+    }
+
+    html[data-theme="light"] .step-body-content p {
+      color: #334155 !important;
+    }
+
+    html[data-theme="light"] .data-table-wrap {
+      border-color: rgba(0, 0, 0, 0.1) !important;
+    }
+
+    html[data-theme="light"] .styled-table th {
+      background: #f1f5f9 !important;
+      color: #0369a1 !important;
+      border-bottom-color: rgba(0, 0, 0, 0.1) !important;
+    }
+
+    html[data-theme="light"] .styled-table td {
+      border-bottom-color: rgba(0, 0, 0, 0.06) !important;
+      color: #334155 !important;
+    }
+
+    html[data-theme="light"] .faq-card {
+      background: #ffffff !important;
+      border-color: rgba(0, 0, 0, 0.08) !important;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03) !important;
+    }
+
+    html[data-theme="light"] .faq-question {
+      color: #0f172a !important;
+    }
+
+    html[data-theme="light"] .faq-answer {
+      color: #334155 !important;
+    }
+
+    html[data-theme="light"] .http-console-box {
+      background: #ffffff !important;
+      border-color: rgba(0, 0, 0, 0.12) !important;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06) !important;
+    }
+
+    html[data-theme="light"] .http-console-toolbar {
+      background: #f8fafc !important;
+      border-bottom-color: rgba(0, 0, 0, 0.08) !important;
+    }
+
+    html[data-theme="light"] .preset-chip-row {
+      background: #f1f5f9 !important;
+      border-bottom-color: rgba(0, 0, 0, 0.08) !important;
+    }
+
+    html[data-theme="light"] .preset-chip {
+      background: #e2e8f0 !important;
+      border-color: #cbd5e1 !important;
+      color: #1e293b !important;
+    }
+
+    html[data-theme="light"] .http-input-group {
+      background: #ffffff !important;
+      border-color: #cbd5e1 !important;
+    }
+
+    html[data-theme="light"] .http-method-select {
+      background: #f1f5f9 !important;
+      color: #0369a1 !important;
+      border-right: 1px solid #cbd5e1 !important;
+    }
+
+    html[data-theme="light"] .http-url-input {
+      color: #0f172a !important;
+    }
+
+    html[data-theme="light"] .telemetry-bar {
+      background: #f8fafc !important;
+      border-top-color: rgba(0, 0, 0, 0.08) !important;
+      color: #475569 !important;
+    }
+
+    html[data-theme="light"] .blue-circle-num {
+      background: #e0f2fe !important;
+      border-color: #0284c7 !important;
+      color: #0284c7 !important;
+    }
+
+    html[data-theme="light"] .def-lead-card {
+      background: #f0f9ff !important;
+      border-color: #bae6fd !important;
+      border-left-color: #0284c7 !important;
+    }
+
+    html[data-theme="light"] .def-lead-text {
+      color: #0f172a !important;
+    }
+
+    html[data-theme="light"] .def-pillar-mini {
+      background: #ffffff !important;
+      border-color: #cbd5e1 !important;
+    }
+
+    html[data-theme="light"] .def-pillar-desc {
+      color: #334155 !important;
+    }
+
+    html[data-theme="light"] .def-chip {
+      background: #f1f5f9 !important;
+      border-color: #cbd5e1 !important;
+      color: #334155 !important;
+    }
+
+    html[data-theme="light"] .def-chip.accent {
+      background: rgba(2, 132, 199, 0.12) !important;
+      border-color: rgba(2, 132, 199, 0.3) !important;
+      color: #0284c7 !important;
+    }
+
+    html[data-theme="light"] .arch-footer-meta {
+      background: #f1f5f9 !important;
+      border-color: #cbd5e1 !important;
+    }
+    html[data-theme="light"] .arch-footer-meta .meta-label {
+      color: #64748b !important;
+    }
+    html[data-theme="light"] .arch-footer-meta .meta-val-req {
+      color: #059669 !important;
+    }
+    html[data-theme="light"] .arch-footer-meta .meta-val-res {
+      color: #d97706 !important;
+    }
+
+    html[data-theme="light"] .core-part-card {
+      background: #ffffff !important;
+      border-color: #cbd5e1 !important;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+    html[data-theme="light"] .core-part-card p {
+      color: #334155 !important;
+    }
+    html[data-theme="light"] .core-part-card code {
+      color: #0284c7 !important;
+      background: #f1f5f9 !important;
+    }
+
+    html[data-theme="light"] .status-summary-box {
+      background: #ffffff !important;
+      border-color: #cbd5e1 !important;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+    html[data-theme="light"] .status-summary-box p {
+      color: #1e293b !important;
+    }
+    html[data-theme="light"] .status-summary-box strong {
+      color: #0f172a !important;
+    }
+    html[data-theme="light"] .status-summary-box.box-2xx h5 {
+      color: #059669 !important;
+    }
+    html[data-theme="light"] .status-summary-box.box-4xx h5 {
+      color: #dc2626 !important;
+    }
+    html[data-theme="light"] .status-summary-box.box-5xx h5 {
+      color: #d97706 !important;
+    }
+
+    html[data-theme="light"] .auth-compare-card {
+      background: #ffffff !important;
+      border-color: #cbd5e1 !important;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+    html[data-theme="light"] .auth-compare-card p {
+      color: #1e293b !important;
+    }
+    html[data-theme="light"] .auth-compare-card strong {
+      color: #0f172a !important;
+    }
+    html[data-theme="light"] .auth-compare-card.authn h4 {
+      color: #0284c7 !important;
+    }
+    html[data-theme="light"] .auth-compare-card.authz h4 {
+      color: #059669 !important;
+    }
+
+    html[data-theme="light"] .jwt-sample-box {
+      background: #ffffff !important;
+      border-color: #cbd5e1 !important;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+    }
+    html[data-theme="light"] .jwt-sample-header {
+      background: #f8fafc !important;
+      border-bottom-color: #e2e8f0 !important;
+    }
+    html[data-theme="light"] .jwt-sample-header span {
+      color: #64748b !important;
+    }
+    html[data-theme="light"] .jwt-sample-header .jwt-sample-title,
+    html[data-theme="light"] .jwt-sample-header .jwt-sample-title span {
+      color: #0284c7 !important;
+    }
+    html[data-theme="light"] .jwt-sample-footer {
+      background: #f1f5f9 !important;
+      border-top-color: #e2e8f0 !important;
+    }
+
+    html[data-theme="light"] .jwt-part-card {
+      background: #ffffff !important;
+      border-color: #cbd5e1 !important;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+    html[data-theme="light"] .jwt-part-card p {
+      color: #1e293b !important;
+    }
+    html[data-theme="light"] .jwt-part-card.jwt-header .jwt-part-title {
+      color: #dc2626 !important;
+    }
+    html[data-theme="light"] .jwt-part-card.jwt-payload .jwt-part-title {
+      color: #7c3aed !important;
+    }
+    html[data-theme="light"] .jwt-part-card.jwt-sig .jwt-part-title {
+      color: #0284c7 !important;
+    }
+
+    html[data-theme="light"] .technical-stepper-box {
+      background: #f8fafc !important;
+      border-color: #cbd5e1 !important;
+    }
+    html[data-theme="light"] .step-num-badge {
+      background: #e0f2fe !important;
+      color: #0284c7 !important;
+      border-color: #bae6fd !important;
+    }
+
+    html[data-theme="light"] .http-explanation-box,
+    html[data-theme="light"] #httpExplanationBox {
+      background: #f0f9ff !important;
+      border-top-color: #bae6fd !important;
+    }
+    html[data-theme="light"] #httpExplanationText,
+    html[data-theme="light"] .http-explanation-box p {
+      color: #1e293b !important;
+    }
+    html[data-theme="light"] #httpExplanationText strong,
+    html[data-theme="light"] .http-explanation-box strong {
+      color: #0369a1 !important;
+    }
+    html[data-theme="light"] .explanation-title {
+      color: #0284c7 !important;
+    }
+
+    html[data-theme="light"] .styled-table td strong {
+      color: #0284c7 !important;
+    }
+    html[data-theme="light"] .styled-table td span {
+      color: #64748b !important;
+    }
+    html[data-theme="light"] .styled-table td code {
+      color: #0369a1 !important;
+      background: #f1f5f9 !important;
+    }
+
+    /* Terminal and Code blocks always stay dark for readability */
+    .code-container,
+    .code-text,
+    pre {
+      color: #e2e8f0 !important;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-dashboard-layout">
+    
+    <!-- ========================================================================
+         LEFT SIDEBAR: Foundations & Common Vulnerabilities
+         ======================================================================== -->
+    <aside class="dashboard-sidebar">
+      <div class="sidebar-header">
+        <div class="brand-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+        <a href=\"index.html\" class=\"sidebar-brand-title\" style=\"text-decoration:none; display:block;\">API <span>Security</span></a>
+      </div>
+
+      <div class="sidebar-section-heading">Foundations</div>
+      <ul class="vuln-nav-list" style="margin-bottom: 0.5rem;">
+        <li><a href="api-intro.html" class="vuln-nav-item active"><span class="nav-num-badge">00</span> API Fundamentals</a></li>
+      </ul>
+
+      <div class="sidebar-section-heading">Common Vulnerabilities</div>
+      <ul class="vuln-nav-list">
+        <li><a href="bola.html" class="vuln-nav-item"><span class="nav-num-badge">01</span> BOLA</a></li>
+        <li><a href="bfla.html" class="vuln-nav-item"><span class="nav-num-badge">02</span> BFLA</a></li>
+        <li><a href="idor.html" class="vuln-nav-item"><span class="nav-num-badge">03</span> IDOR</a></li>
+        <li><a href="jwt.html" class="vuln-nav-item"><span class="nav-num-badge">04</span> JWT Vulnerabilities</a></li>
+        <li><a href="mass-assignment.html" class="vuln-nav-item"><span class="nav-num-badge">05</span> Mass Assignment</a></li>
+        <li><a href="excessive-data-exposure.html" class="vuln-nav-item"><span class="nav-num-badge">06</span> Excessive Data Exposure</a></li>
+        <li><a href="rate-limiting.html" class="vuln-nav-item"><span class="nav-num-badge">07</span> Rate Limiting</a></li>
+        <li><a href="ssrf.html" class="vuln-nav-item"><span class="nav-num-badge">08</span> SSRF</a></li>
+        <li><a href="nosql-injection.html" class="vuln-nav-item"><span class="nav-num-badge">09</span> NoSQL Injection</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">10</span> Command Injection</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">11</span> XXE</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">12</span> GraphQL Security</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">13</span> Business Logic Issues</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">14</span> CORS Misconfiguration</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">15</span> API Key Security</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">16</span> OAuth & OpenID Security</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">17</span> Webhooks Security</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">18</span> Race Conditions</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">19</span> File Upload Vulnerabilities</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">20</span> Deserialization Issues</a></li>
+      </ul>
+    </aside>
+
+    <!-- ========================================================================
+         MAIN DASHBOARD BODY
+         ======================================================================== -->
+    <main class="dashboard-main">
+      
+      <!-- Top Action Bar -->
+      <div class="main-top-actionbar">
+        <div style="font-size:0.86rem; color:var(--text-dim); display:flex; align-items:center; gap:6px;">
+          <span>Modules</span> <span>›</span> <span>Foundations</span> <span>›</span> <span style="color:var(--cyan); font-weight:600;">00 API Fundamentals (Beginner to Pro)</span>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:12px;">
+          <!-- Dark / Light Mode Toggle Button -->
+          <button class="theme-toggle-btn" id="themeToggleBtn" title="Switch Theme">
+            <span>☀️</span> <span class="theme-label">Light Mode</span>
+          </button>
+
+          <!-- Dual Language Switcher -->
+          <div class="lang-switch-wrapper">
+            <span id="lbl-hi" class="lang-label active">Hindi</span>
+            <label class="switch">
+              <input type="checkbox" id="langToggle">
+              <span class="slider"></span>
+            </label>
+            <span id="lbl-en" class="lang-label">English</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hero Header Section -->
+      <div class="hero-top-grid">
+        <div>
+          <div class="category-tag-row">
+            <span class="pill-index-tag">MODULE 00</span>
+            <span class="pill-category-name">FOUNDATIONS & ARCHITECTURE</span>
+          </div>
+
+          <h1 class="main-vuln-h1">
+            <span class="lang-hi">What is an API? <span class="title-blue">Beginner's Guide</span></span>
+            <span class="lang-en">What is an API? <span class="title-blue">Beginner's Guide</span></span>
+          </h1>
+
+          <p class="main-vuln-desc">
+            <span class="lang-hi">API ka matlab hota hai <strong>Application Programming Interface</strong>. Yeh do alag applications ya softwares ke beech ka digital messenger ya bridge hota hai, jo internet ke zariye safe tareeqe se data share karne me madad karta hai.</span>
+            <span class="lang-en">API stands for <strong>Application Programming Interface</strong>. It serves as a secure digital bridge between two applications, allowing them to communicate and exchange data across the internet seamlessly.</span>
+          </p>
+
+          <div class="meta-tags-row">
+            <span class="meta-tag-pill accent">Beginner Friendly</span>
+            <span class="meta-tag-pill">Client ⇄ Server Communication</span>
+            <span class="meta-tag-pill">JSON Data Format</span>
+            <span class="meta-tag-pill">HTTP Methods & Status Codes</span>
+            <span class="meta-tag-pill">Foundation for API Security</span>
+          </div>
+
+          <div class="quote-bubble">
+            <div class="quote-icon-box">💡</div>
+            <div>
+              <span class="lang-hi"><strong>Seedhe Shabdon Me:</strong> Phone app (Frontend) aur Cloud Server (Backend) aapas me baat karne ke liye jo language aur rules use karte hain, use hi API kehte hain!</span>
+              <span class="lang-en"><strong>In Simple Words:</strong> The rules and language that your mobile app (Frontend) and company cloud servers (Backend) use to talk to each other is what we call an API!</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Architectural Visual Diagram Graphic -->
+        <div class="hero-glass-graphic">
+          <div style="font-size:0.78rem; font-family:var(--font-mono); color:#38bdf8; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; display:flex; justify-content:space-between; align-items:center;">
+            <span>Real-World Data Flow</span>
+            <span style="background:rgba(56,189,248,0.15); padding:2px 8px; border-radius:4px; border:1px solid rgba(56,189,248,0.3);">Internet HTTP(S)</span>
+          </div>
+
+          <div class="arch-diagram-flow">
+            <div class="arch-node">
+              <div class="arch-node-title">📱 Mobile App</div>
+              <div class="arch-node-sub">User clicks button</div>
+            </div>
+            <div class="arch-arrow">➔</div>
+            <div class="arch-node" style="border-color:#38bdf8;">
+              <div class="arch-node-title" style="color:#38bdf8;">🌐 API Bridge</div>
+              <div class="arch-node-sub">GET /api/weather</div>
+            </div>
+            <div class="arch-arrow">➔</div>
+            <div class="arch-node">
+              <div class="arch-node-title">☁️ Cloud Server</div>
+              <div class="arch-node-sub">Returns JSON data</div>
+            </div>
+          </div>
+
+          <div class="arch-footer-meta">
+            <span class="meta-label">Request:</span>
+            <span class="meta-val-req">GET city=Delhi</span>
+            <span class="meta-label">Response:</span>
+            <span class="meta-val-res">{"temp": "31°C"}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs (Underline Style matching Design 4) -->
+      <nav class="tabs-underline-nav">
+        <button class="tab-underline-btn active" data-tab="tab-overview">
+          <span>📖</span>
+          <span class="lang-hi">1. What is an API?</span>
+          <span class="lang-en">1. What is an API?</span>
+        </button>
+        <button class="tab-underline-btn" data-tab="tab-pipeline">
+          <span>⚙️</span>
+          <span class="lang-hi">2. How APIs Work (HTTP & JSON)</span>
+          <span class="lang-en">2. How APIs Work (HTTP & JSON)</span>
+        </button>
+        <button class="tab-underline-btn" data-tab="tab-protocols">
+          <span>🔄</span>
+          <span class="lang-hi">3. Types: REST, GraphQL, Webhooks</span>
+          <span class="lang-en">3. Types: REST, GraphQL, Webhooks</span>
+        </button>
+        <button class="tab-underline-btn" data-tab="tab-auth">
+          <span>🔐</span>
+          <span class="lang-hi">4. API Authentication & Tokens</span>
+          <span class="lang-en">4. API Authentication & Tokens</span>
+        </button>
+        <button class="tab-underline-btn" data-tab="tab-attack">
+          <span>🎯</span>
+          <span class="lang-hi">5. Why Hackers Target APIs</span>
+          <span class="lang-en">5. Why Hackers Target APIs</span>
+        </button>
+        <button class="tab-underline-btn" data-tab="tab-lab">
+          <span>⚡</span>
+          <span class="lang-hi">6. Live Lab</span>
+          <span class="lang-en">6. Live Lab</span>
+        </button>
+        <button class="tab-underline-btn" data-tab="tab-faq">
+          <span>🤔</span>
+          <span class="lang-hi">7. Beginner FAQs</span>
+          <span class="lang-en">7. Beginner FAQs</span>
+        </button>
+      </nav>
+
+      <!-- ========================================================================
+           TAB 1: WHAT IS AN API? (EASY TO UNDERSTAND)
+           ======================================================================== -->
+      <div id="tab-overview" class="tab-content active">
+        <div class="card-panel">
+          
+          <!-- Tab Section Header with Number Badge -->
+          <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 1.4rem;">
+            <div class="blue-circle-num" style="width: 38px; height: 38px; background: rgba(56, 189, 248, 0.15); border: 1.5px solid #0284c7; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #38bdf8; font-family: var(--font-mono); font-size: 1.1rem; flex-shrink: 0;">01</div>
+            <div>
+              <h2 class="panel-header-title" style="margin: 0;">
+                <span class="lang-hi">What is an API? (Technical Definition)</span>
+                <span class="lang-en">What is an API? (Technical Definition)</span>
+              </h2>
+              <p style="font-size:0.86rem; color:#94a3b8; margin:0;">
+                <span class="lang-hi">Application Programming Interface — Client aur Server ke beech ka secure communication bridge</span>
+                <span class="lang-en">Application Programming Interface — The secure communication bridge between client and server</span>
+              </p>
+            </div>
+          </div>
+
+          <!-- Structured Lead Definition Box -->
+          <div class="def-lead-card" style="margin-bottom: 2rem;">
+            <div class="def-meta-chips">
+              <span class="def-chip accent">Architecture: Client ⇄ Server</span>
+              <span class="def-chip">Protocols: HTTP(S) / REST / JSON</span>
+              <span class="def-chip">Role: Abstraction & Security Layer</span>
+            </div>
+
+            <p class="def-lead-text" style="margin-bottom: 1.2rem;">
+              <span class="lang-hi">
+                <strong>Application Programming Interface (API)</strong> do alag-alag softwares (jaise aapka <strong>Mobile App</strong> aur company ka <strong>Cloud Server</strong>) ke beech safe communication ka ek <strong>digital bridge aur rules ka set</strong> hota hai.<br><br>
+                Company apna internal source code ya raw database kabhi direct kisi user ko nahi deti. Iski jagah, server ek <strong>API Endpoint</strong> (jaise <code>/users/profile</code>) provide karta hai, jisse client app internet ke zariye request bhejti hai aur server database se verified data nikal kar structured <strong>JSON format</strong> me return karta hai.
+              </span>
+              <span class="lang-en">
+                An <strong>Application Programming Interface (API)</strong> is a secure digital bridge and standardized communication contract between two software applications (such as a <strong>Mobile App</strong> and a <strong>Cloud Server</strong>).<br><br>
+                Instead of granting direct access to internal source code or raw database tables, servers expose defined <strong>API Endpoints</strong> (such as <code>/users/profile</code>). This enables client applications to transmit requests securely over the internet and receive structured <strong>JSON responses</strong>.
+              </span>
+            </p>
+
+            <!-- 3 Core Technical Pillars Mini Grid -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; margin-top: 1rem; border-top: 1px solid rgba(56, 189, 248, 0.15); padding-top: 1rem;">
+              <div class="def-pillar-mini" style="background: rgba(15, 23, 42, 0.45); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: var(--radius-sm); padding: 10px 12px;">
+                <div style="font-weight: 700; font-size: 0.85rem; color: #38bdf8; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                  <span>🔌</span>
+                  <span class="lang-hi">1. Connection Bridge</span>
+                  <span class="lang-en">1. Connection Bridge</span>
+                </div>
+                <div class="def-pillar-desc" style="font-size: 0.84rem; color: #e2e8f0; line-height: 1.55;">
+                  <span class="lang-hi">Frontend UI aur Backend Server ke beech safe communication link establish karta hai.</span>
+                  <span class="lang-en">Establishes a decoupled communication link between frontend UI and backend services.</span>
+                </div>
+              </div>
+
+              <div class="def-pillar-mini" style="background: rgba(15, 23, 42, 0.45); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: var(--radius-sm); padding: 10px 12px;">
+                <div style="font-weight: 700; font-size: 0.85rem; color: #34d399; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                  <span>📨</span>
+                  <span class="lang-hi">2. Structured Data Messenger</span>
+                  <span class="lang-en">2. Structured Data Messenger</span>
+                </div>
+                <div class="def-pillar-desc" style="font-size: 0.84rem; color: #e2e8f0; line-height: 1.55;">
+                  <span class="lang-hi">Client se HTTP Request le jata hai aur server se clean JSON data wapas app tak lata hai.</span>
+                  <span class="lang-en">Dispatches HTTP requests and delivers structured JSON payloads back to the client.</span>
+                </div>
+              </div>
+
+              <div class="def-pillar-mini" style="background: rgba(15, 23, 42, 0.45); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: var(--radius-sm); padding: 10px 12px;">
+                <div style="font-weight: 700; font-size: 0.85rem; color: #fbbf24; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                  <span>🛡️</span>
+                  <span class="lang-hi">3. Security Boundary</span>
+                  <span class="lang-en">3. Security Boundary</span>
+                </div>
+                <div class="def-pillar-desc" style="font-size: 0.84rem; color: #e2e8f0; line-height: 1.55;">
+                  <span class="lang-hi">Internal database ko direct access se bachata hai; sirf verified endpoints expose karta hai.</span>
+                  <span class="lang-en">Prevents direct access to internal database tables by enforcing controlled API routes.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel-header-title" style="margin-top: 1.8rem;">
+            <span>🚀</span>
+            <span class="lang-hi">Understanding APIs with Real-World Tech Examples</span>
+            <span class="lang-en">Understanding APIs with Real-World Tech Examples</span>
+          </div>
+
+          <p class="panel-body-text">
+            <span class="lang-hi">Imagine kijiye aap apne phone par apps use kar rahe hain. Har app ke peeche ek API continuously background me kaam kar rahi hoti hai:</span>
+            <span class="lang-en">Consider the apps you use every single day on your smartphone. Behind every screen and tap, an API is continuously working behind the scenes:</span>
+          </p>
+
+          <!-- 3 Everyday Tech Scenarios -->
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:1.2rem; margin:1.2rem 0;">
+            
+            <div class="step-block" style="margin-bottom:0;">
+              <div class="step-num-badge">🌦️</div>
+              <div class="step-body-content">
+                <h5>
+                  <span class="lang-hi">Phone Weather App</span>
+                  <span class="lang-en">Phone Weather App</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Aapke phone ke andar koi thermometer nahi hota jo Mumbai ya London ka live temperature measure kare. Phone app ek <strong>Weather API</strong> ko call karta hai, aur Weather Server live data return karta hai jo aapki screen par display hota hai.</span>
+                  <span class="lang-en">Your phone hardware does not contain physical temperature sensors for distant cities. The app sends an HTTP request to a <strong>Weather API</strong>, which returns real-time meteorological data to render on your screen.</span>
+                </p>
+              </div>
+            </div>
+
+            <div class="step-block" style="margin-bottom:0;">
+              <div class="step-num-badge">🗺️</div>
+              <div class="step-body-content">
+                <h5>
+                  <span class="lang-hi">Google Maps inside Uber / Zomato</span>
+                  <span class="lang-en">Google Maps inside Uber / Zomato</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Uber aur Zomato ne poori duniya ka map khud se nahi banaya! Unhone <strong>Google Maps API</strong> integrate kiya hai. Jab aap ride ya food track karte hain, app Google ke API se live map coordinates mangti hai.</span>
+                  <span class="lang-en">Ridesharing and delivery apps do not build mapping satellites from scratch. They embed the <strong>Google Maps API</strong> to stream live routing, satellite tiles, and traffic data directly into their applications.</span>
+                </p>
+              </div>
+            </div>
+
+            <div class="step-block" style="margin-bottom:0;">
+              <div class="step-num-badge">💳</div>
+              <div class="step-body-content">
+                <h5>
+                  <span class="lang-hi">UPI & "Pay with Google Pay"</span>
+                  <span class="lang-en">UPI & "Pay with Google Pay"</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Jab aap shopping website par Google Pay ya UPI se pay karte hain, shopping website ko aapka bank password nahi pata hota. Website bank ki <strong>Payment API</strong> ko request bhejti hai ki "Payment verify karo", aur bank API se "Success" signal bhejta hai.</span>
+                  <span class="lang-en">When purchasing items online via UPI or Apple Pay, merchant websites never see your bank credentials. The merchant interacts with the bank's secure <strong>Payment API</strong> to verify funds and finalize transactions.</span>
+                </p>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Why do we need APIs? -->
+          <div class="beginner-spotlight">
+            <h4>
+              <span>❓</span>
+              <span class="lang-hi">Hamein API ki zaroorat kyun padti hai? Phone me hi sab kyu nahi rakh sakte?</span>
+              <span class="lang-en">Why do we need APIs? Why not store everything inside the phone app?</span>
+            </h4>
+            <p>
+              <span class="lang-hi"><strong>1. Phone Storage:</strong> Instagram par billions photos aur videos hain. Agar saari photos aapke phone me store hongi, toh phone storage 1 second me full ho jayegi!<br>
+              <strong>2. Security:</strong> Agar database aapke phone ke andar hoga, toh koi bhi hacker phone khol kar dusre users ke passwords ya bank details chura lega.<br>
+              <strong>3. Real-Time Sync:</strong> Agar movie theatre me kisi ne seat book ki, toh sabhi users ko turant pata chalna chahiye ki wo seat booked hai. Yeh central cloud database aur API ke bina possible nahi hai.</span>
+              <span class="lang-en"><strong>1. Storage Constraints:</strong> Platforms host petabytes of user data. Storing full catalogs locally on a mobile device is physically impossible.<br>
+              <strong>2. Security Boundaries:</strong> Embedding database credentials inside mobile apps would expose all company records to reverse engineering.<br>
+              <strong>3. Real-Time State:</strong> Live seat availability in a cinema or flight booking requires an authoritative central server to prevent double-booking.</span>
+            </p>
+          </div>
+
+          <!-- The 4 Core Parts of an API -->
+          <div class="panel-header-title" style="margin-top:1.8rem;">
+            <span>🧱</span>
+            <span class="lang-hi">Har API ke 4 Basic Components (Building Blocks)</span>
+            <span class="lang-en">The 4 Fundamental Components of Every API</span>
+          </div>
+
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap:1rem; margin-top:1rem;">
+            <div class="core-part-card">
+              <span class="core-part-title" style="color:#38bdf8;">1. Endpoint (URL)</span>
+              <p>
+                <span class="lang-hi">Server par kaunse address par jana hai (jaise domain/path): <code>https://api.example.com/users</code></span>
+                <span class="lang-en">The target network location on the web: <code>https://api.example.com/users</code></span>
+              </p>
+            </div>
+
+            <div class="core-part-card">
+              <span class="core-part-title" style="color:#34d399;">2. HTTP Method (Action)</span>
+              <p>
+                <span class="lang-hi">Aap kya karna chahte hain? Data mangna (<code>GET</code>) ya naya data save karna (<code>POST</code>).</span>
+                <span class="lang-en">The desired action verb: fetching data (<code>GET</code>) or creating a resource (<code>POST</code>).</span>
+              </p>
+            </div>
+
+            <div class="core-part-card">
+              <span class="core-part-title" style="color:#fbbf24;">3. Headers (Identity Card)</span>
+              <p>
+                <span class="lang-hi">Request ke sath metadata, jaise aapka login token: <code>Authorization: Bearer &lt;token&gt;</code>.</span>
+                <span class="lang-en">Contextual metadata sent alongside the request, such as authentication tokens.</span>
+              </p>
+            </div>
+
+            <div class="core-part-card">
+              <span class="core-part-title" style="color:#c084fc;">4. Body & Response (JSON)</span>
+              <p>
+                <span class="lang-hi">Jo actual message ya data bheja aur received kiya jata hai structured text format me.</span>
+                <span class="lang-en">The actual data payload transmitted to and from the server in JSON format.</span>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================================================
+           TAB 2: HOW APIS WORK (HTTP & JSON)
+           ======================================================================== -->
+      <div id="tab-pipeline" class="tab-content">
+        <div class="card-panel">
+          <div class="panel-header-title">
+            <span>⚙️</span>
+            <span class="lang-hi">API Request Kaise Kaam Karti Hai? (Step-by-Step)</span>
+            <span class="lang-en">How an API Request Actually Works (Step-by-Step)</span>
+          </div>
+
+          <p class="panel-body-text">
+            <span class="lang-hi">Jab aap mobile screen par kisi button par tap karte hain (e.g. "Check My Profile"), background me 4 simple steps execute hote hain:</span>
+            <span class="lang-en">When you tap a button on a user interface (e.g. "View My Profile"), four straightforward network stages occur behind the scenes:</span>
+          </p>
+
+          <div class="technical-stepper-box">
+            <div class="step-block">
+              <div class="step-num-badge">1</div>
+              <div class="step-body-content">
+                <h5>
+                  <span class="lang-hi">Step 1: Phone App Constructs the Request</span>
+                  <span class="lang-en">Step 1: Phone App Constructs the Request</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">App ek HTTP packet banati hai jisme URL hota hai (e.g. <code>https://api.mybank.com/v1/profile</code>) aur sath me aapka Login Token attach karti hai taaki server ko pata chale ki aap kaun hain.</span>
+                  <span class="lang-en">The client framework packages a structured HTTP request targeting an endpoint URL with your cryptographic authentication token in the headers.</span>
+                </p>
+              </div>
+            </div>
+
+            <div class="step-block">
+              <div class="step-num-badge">2</div>
+              <div class="step-body-content">
+                <h5>
+                  <span class="lang-hi">Step 2: Request Travels over the Internet to the Server</span>
+                  <span class="lang-en">Step 2: Request Travels over the Internet to the Server</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Internet ke zariye yeh packet company ke secure cloud server (API Gateway) tak pahunchti hai. Server check karta hai ki kya request valid format me hai aur koi spam/attack toh nahi hai.</span>
+                  <span class="lang-en">The packet traverses the public internet over secure TLS encryption to the company's API Gateway, where firewall and rate limiting checks are evaluated.</span>
+                </p>
+              </div>
+            </div>
+
+            <div class="step-block">
+              <div class="step-num-badge">3</div>
+              <div class="step-body-content">
+                <h5>
+                  <span class="lang-hi">Step 3: Server Queries the Database & Prepares Data</span>
+                  <span class="lang-en">Step 3: Server Queries the Database & Prepares Data</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Server database se aapka record dhoondhta hai. Lekin database se password ya sensitive internal details ko hata kar sirf zaroori public data ko <strong>JSON format</strong> me pack karta hai.</span>
+                  <span class="lang-en">The backend controller queries the database cluster for the matching record, filters out sensitive credentials, and serializes the domain entity into clean JSON format.</span>
+                </p>
+              </div>
+            </div>
+
+            <div class="step-block" style="margin-bottom:0;">
+              <div class="step-num-badge">4</div>
+              <div class="step-body-content">
+                <h5>
+                  <span class="lang-hi">Step 4: Phone App Receives JSON & Shows on Screen</span>
+                  <span class="lang-en">Step 4: Phone App Receives JSON & Shows on Screen</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Phone app ko JSON data milta hai. App ka code us data ko padhta hai aur aapki screen par sundar profile picture, naam aur balance draw kar deta hai!</span>
+                  <span class="lang-en">The mobile client receives the JSON payload, parses the properties, and renders the user's name, avatar, and balance dynamically on the display.</span>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- HTTP Verbs simplified -->
+          <div class="panel-header-title" style="margin-top:2.2rem;">
+            <span>🔤</span>
+            <span class="lang-hi">HTTP Verbs: Server ko Action Batane Ka Tareeqa</span>
+            <span class="lang-en">HTTP Verbs: Instructing the Server on What Action to Take</span>
+          </div>
+
+          <div class="data-table-wrap">
+            <table class="styled-table">
+              <thead>
+                <tr>
+                  <th>Method</th>
+                  <th>Action Meaning</th>
+                  <th>Real-World Tech Example</th>
+                  <th>Easy to Remember Rule</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="method-badge method-get">GET</span></td>
+                  <td><strong>Read / Fetch</strong></td>
+                  <td><code>GET /users/kaif</code></td>
+                  <td>Sirf data dekhne ya mangne ke liye. Isse server par koi data change ya delete nahi hota.</td>
+                </tr>
+                <tr>
+                  <td><span class="method-badge method-post">POST</span></td>
+                  <td><strong>Create / Send New</strong></td>
+                  <td><code>POST /orders</code></td>
+                  <td>Naya account create karna, naya order place karna, ya naya post upload karna.</td>
+                </tr>
+                <tr>
+                  <td><span class="method-badge method-put">PUT</span></td>
+                  <td><strong>Replace Everything</strong></td>
+                  <td><code>PUT /profile</code></td>
+                  <td>Pura profile page shuru se overwrite karke naye data se update karna.</td>
+                </tr>
+                <tr>
+                  <td><span class="method-badge method-patch">PATCH</span></td>
+                  <td><strong>Edit Small Part</strong></td>
+                  <td><code>PATCH /users/email</code></td>
+                  <td>Sirf ek single field badalna (jaise sirf email ya phone number change karna).</td>
+                </tr>
+                <tr>
+                  <td><span class="method-badge method-delete">DELETE</span></td>
+                  <td><strong>Remove Record</strong></td>
+                  <td><code>DELETE /posts/42</code></td>
+                  <td>Kisi post, account ya cart item ko database se permanently remove karna.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- HTTP Status Codes simplified -->
+          <div class="panel-header-title" style="margin-top:2.2rem;">
+            <span>🚦</span>
+            <span class="lang-hi">HTTP Status Codes: Server Ka Quick Answer</span>
+            <span class="lang-en">HTTP Status Codes: The Server's Immediate Response Status</span>
+          </div>
+
+          <p class="panel-body-text">
+            <span class="lang-hi">Server hamesha ek 3-digit number bhejta hai jisse app ko 1 millisecond me pata chal jata hai ki request ka kya result raha:</span>
+            <span class="lang-en">Servers return a 3-digit numeric status code so software clients instantly understand the transaction outcome:</span>
+          </p>
+
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:1rem;">
+            <div class="status-summary-box box-2xx">
+              <h5>2xx = Success (Sab Theek Hai!)</h5>
+              <p>
+                • <strong>200 OK:</strong> Request successful rahi, data mil gaya.<br>
+                • <strong>201 Created:</strong> Naya record/account successfully ban gaya.<br>
+                • <strong>204 No Content:</strong> Kaam ho gaya (e.g. record delete ho gaya), koi body nahi aayi.
+              </p>
+            </div>
+
+            <div class="status-summary-box box-4xx">
+              <h5>4xx = Client Galti (User/App Ki Side)</h5>
+              <p>
+                • <strong>400 Bad Request:</strong> Data format galat bheja hai.<br>
+                • <strong>401 Unauthorized:</strong> Aap logged in nahi hain! Token missing hai.<br>
+                • <strong>403 Forbidden:</strong> Aap logged in hain, par yeh doosre ka data hai!<br>
+                • <strong>404 Not Found:</strong> Yeh URL ya ID database me nahi mili.
+              </p>
+            </div>
+
+            <div class="status-summary-box box-5xx">
+              <h5>5xx = Server Galti (Company Ki Side)</h5>
+              <p>
+                • <strong>500 Internal Server Error:</strong> Server ke backend code me koi crash ya bug aa gaya.<br>
+                • <strong>502 Bad Gateway:</strong> Upstream server unresponsive hai.<br>
+                • <strong>503 Service Unavailable:</strong> Server par heavy traffic hai ya maintenance chal rahi hai.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================================================
+           TAB 3: TYPES: REST, GRAPHQL, WEBHOOKS
+           ======================================================================== -->
+      <div id="tab-protocols" class="tab-content">
+        <div class="card-panel">
+          <div class="panel-header-title">
+            <span>🔄</span>
+            <span class="lang-hi">Common API Architecture Types (Simplified)</span>
+            <span class="lang-en">Common API Architecture Types (Simplified)</span>
+          </div>
+
+          <p class="panel-body-text">
+            <span class="lang-hi">Alag-alag architectural requirements ke liye (jaise fast microservices, mobile bandwidth optimization, ya event-driven systems), modern engineering me specialized API styles use hoti hain:</span>
+            <span class="lang-en">Depending on specific engineering requirements—such as low-latency microservices, bandwidth efficiency, or asynchronous event delivery—modern software employs specialized API architectures:</span>
+          </p>
+
+          <div class="data-table-wrap">
+            <table class="styled-table">
+              <thead>
+                <tr>
+                  <th>API Type</th>
+                  <th>How It Works</th>
+                  <th>Best Real-World Use Case</th>
+                  <th>Why Developers Like It</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong style="color:#38bdf8;">REST API</strong><br><span style="font-size:0.75rem; color:#94a3b8;">Most Popular</span></td>
+                  <td>Har resource ka ek fixed URL hota hai (e.g. <code>/users</code>, <code>/orders/42</code>). Data JSON me return hota hai.</td>
+                  <td>Website aur Mobile apps ka standard backend (90% web isi par chalta hai).</td>
+                  <td>Bohat simple aur universal hai. Har programming language me easily support hota hai.</td>
+                </tr>
+                <tr>
+                  <td><strong style="color:#c084fc;">GraphQL</strong><br><span style="font-size:0.75rem; color:#94a3b8;">Created by Meta</span></td>
+                  <td>Client server ko exactly batata hai ki use kaunse fields chahiye (e.g. "mujhe sirf naam chahiye, pura address nahi").</td>
+                  <td>Complex mobile apps jahan low internet speed par sirf zaroori data mangwana ho.</td>
+                  <td>Extra data (Over-fetching) download nahi hota, jisse mobile data aur time bachta hai.</td>
+                </tr>
+                <tr>
+                  <td><strong style="color:#34d399;">gRPC</strong><br><span style="font-size:0.75rem; color:#94a3b8;">Created by Google</span></td>
+                  <td>Text JSON ki jagah compact binary numbers use karta hai. Insaan ise nahi padh sakta par computers superfast padhte hain.</td>
+                  <td>Internal microservices (jab ek bank server doosre bank server se baat karta hai).</td>
+                  <td>Ultra-high speed aur low latency (JSON se 7-10 guna tez).</td>
+                </tr>
+                <tr>
+                  <td><strong style="color:#fbbf24;">Webhooks</strong><br><span style="font-size:0.75rem; color:#94a3b8;">Reverse API / Event Push</span></td>
+                  <td>Instead of app bar-bar poochne ke ("kya payment hua? kya payment hua?"), server payment hone par khud notification bhejta hai.</td>
+                  <td>Payment gateways (Razorpay, Stripe) aur GitHub notifications.</td>
+                  <td>Server par baar-baar request bhej kar battery aur network barbad nahi hoti.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================================================
+           TAB 4: AUTHENTICATION & TOKENS
+           ======================================================================== -->
+      <div id="tab-auth" class="tab-content">
+        <div class="card-panel">
+          <div class="panel-header-title">
+            <span>🔐</span>
+            <span class="lang-hi">API Security Basics: AuthN vs AuthZ & JWT Tokens</span>
+            <span class="lang-en">API Security Basics: AuthN vs AuthZ & JWT Tokens</span>
+          </div>
+
+          <p class="panel-body-text">
+            <span class="lang-hi">Jab hazaron users ek hi API server ko call kar rahe hote hain, toh server ko kaise pata chalta hai ki kaun access kar sakta hai? Yahan do concepts aate hain:</span>
+            <span class="lang-en">When millions of users communicate with a single centralized API cluster, how does the server control permissions? Two foundational concepts govern access:</span>
+          </p>
+
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1.5rem; margin:1.5rem 0;">
+            <div class="auth-compare-card authn">
+              <h4>1. Authentication (AuthN) = Identity</h4>
+              <p>
+                <span class="lang-hi"><strong>Sawal: "Aap Kaun Hain?"</strong><br>Jab aap username aur password daal kar login karte hain, toh server aapki identity verify karke aapko ek Digital Pass (Token) deta hai.</span>
+                <span class="lang-en"><strong>Question: "Who are you?"</strong><br>Verifying identity credentials during login to issue an authorized session token.</span>
+              </p>
+            </div>
+
+            <div class="auth-compare-card authz">
+              <h4>2. Authorization (AuthZ) = Permission</h4>
+              <p>
+                <span class="lang-hi"><strong>Sawal: "Kya Aapko Is File/Account Ko Dekhne Ka Haq Hai?"</strong><br>Aap logged in hain (AuthN pass), lekin kya aap doosre user ka bank balance dekh sakte hain? Nahi! Yahan Authorization check hota hai.</span>
+                <span class="lang-en"><strong>Question: "Are you allowed to access this specific resource?"</strong><br>Enforcing object ownership boundaries so User A cannot read User B's records.</span>
+              </p>
+            </div>
+          </div>
+
+          <!-- The JWT Explained Simply -->
+          <div class="panel-header-title" style="margin-top:2.2rem;">
+            <span>🎫</span>
+            <span class="lang-hi">JWT (JSON Web Token) Kya Hota Hai?</span>
+            <span class="lang-en">What is a JWT (JSON Web Token)?</span>
+          </div>
+
+          <p class="panel-body-text">
+            <span class="lang-hi">Jab aap login karte hain, toh server aapko ek encrypted-looking string deta hai jise <strong>JWT</strong> kehte hain. Yeh ek digital entry badge jaisa hota hai jisme 3 parts hote hain (dot <code>.</code> se alag):</span>
+            <span class="lang-en">Upon successful authentication, the server issues a compact token called a <strong>JWT</strong>. It functions like a digital event wristband, divided into three parts separated by dots:</span>
+          </p>
+
+          <!-- Real-World Sample JWT Token Breakdown Box -->
+          <div class="jwt-sample-box">
+            <div class="jwt-sample-header">
+              <span class="jwt-sample-title">
+                <span class="lang-hi">🔍 Live Sample JWT Token (Color-Coded Wire String)</span>
+                <span class="lang-en">🔍 Live Sample JWT Token (Color-Coded Wire String)</span>
+              </span>
+              <span style="font-size: 0.72rem; color: #94a3b8; font-family: var(--font-mono);">3 Dots (.) Delimited</span>
+            </div>
+            <div style="padding: 1.1rem 1.3rem; font-family: var(--font-mono); font-size: 0.85rem; line-height: 1.7; word-break: break-all; background: #030712;">
+              <span style="color: #f87171; font-weight: 700;">eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9</span><span style="color: #ffffff; font-weight: 900; font-size: 1.1rem;">.</span><span style="color: #c084fc; font-weight: 700;">eyJzdWIiOiIxMDAxIiwidXNlcm5hbWUiOiJhbGljZSIsInJvbGUiOiJjdXN0b21lciIsImV4cCI6MTc4ODU1NTYwMH0</span><span style="color: #ffffff; font-weight: 900; font-size: 1.1rem;">.</span><span style="color: #38bdf8; font-weight: 700;">dGVzdF9zaWduYXR1cmVfaGFzaF9zZWNyZXRfa2V5X3ZlcmlmaWVk</span>
+            </div>
+            <div class="jwt-sample-footer">
+              <span style="color: #f87171;">● Part 1 (Red) = Header</span>
+              <span style="color: #c084fc;">● Part 2 (Purple) = Payload (Claims)</span>
+              <span style="color: #38bdf8;">● Part 3 (Cyan) = Signature (Seal)</span>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:1rem; margin:1.2rem 0; font-family:var(--font-mono); font-size:0.82rem;">
+            <div class="jwt-part-card jwt-header">
+              <span class="jwt-part-title">1. HEADER (Red - Algorithm)</span>
+              <p>
+                <span class="lang-hi">Batata hai ki token ko sign karne ke liye kaunsa algorithm (jaise HS256) use hua hai.</span>
+                <span class="lang-en">Specifies the signing algorithm (e.g. HS256) and token type.</span>
+              </p>
+              <pre style="margin:0; background:#040814; padding:6px 8px; border-radius:4px; font-size:0.75rem; color:#cbd5e1;">{
+  "alg": "HS256",
+  "typ": "JWT"
+}</pre>
+            </div>
+
+            <div class="jwt-part-card jwt-payload">
+              <span class="jwt-part-title">2. PAYLOAD (Purple - Claims & Data)</span>
+              <p>
+                <span class="lang-hi">Isme aapka user ID, role aur token expiration timestamp encoded hota hai.</span>
+                <span class="lang-en">Contains user ID, role claims, and token expiration epoch timestamp.</span>
+              </p>
+              <pre style="margin:0; background:#040814; padding:6px 8px; border-radius:4px; font-size:0.75rem; color:#cbd5e1;">{
+  "sub": "1001",
+  "role": "customer",
+  "exp": 1788555600
+}</pre>
+            </div>
+
+            <div class="jwt-part-card jwt-sig">
+              <span class="jwt-part-title">3. SIGNATURE (Cyan - Digital Seal)</span>
+              <p>
+                <span class="lang-hi">Server secret key se bana cryptographic seal. Tampering hone par signature invalid ho jata hai!</span>
+                <span class="lang-en">Cryptographic signature verifying token authenticity. Invalidates if payload is tampered.</span>
+              </p>
+              <pre style="margin:0; background:#040814; padding:6px 8px; border-radius:4px; font-size:0.75rem; color:#cbd5e1;">HMACSHA256(
+  base64(header) + "." +
+  base64(payload),
+  server_secret
+)</pre>
+            </div>
+          </div>
+
+          <div class="beginner-spotlight" style="background:rgba(239,68,68,0.07); border-left-color:#ef4444;">
+            <h4 style="color:#f87171;">
+              <span>⚠️</span>
+              <span class="lang-hi">Critical Beginner Warning: JWT Encrypted Nahi Hota!</span>
+              <span class="lang-en">Critical Beginner Warning: JWT is Encoded, NOT Encrypted!</span>
+            </h4>
+            <p>
+              <span class="lang-hi">Dhyan rahe: JWT ka Payload sirf Base64 format me likha hota hai. Koi bhi website (jaise jwt.io) par paste karke ise padh sakta hai! Isliye JWT ke andar kabhi bhi passwords, card numbers ya sensitive <strong>Personally Identifiable Information (PII)</strong> nahi rakhna chahiye!</span>
+              <span class="lang-en">Take note: JWT payloads are simply Base64 encoded JSON text, NOT encrypted. Anyone can decode and inspect the data. Therefore, never place passwords or sensitive <strong>Personally Identifiable Information (PII)</strong> inside unencrypted token payload claims!</span>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================================================
+           TAB 5: WHY HACKERS TARGET APIS
+           ======================================================================== -->
+      <div id="tab-attack" class="tab-content">
+        <div class="card-panel">
+          <div class="panel-header-title">
+            <span>🎯</span>
+            <span class="lang-hi">Hackers APIs Ko Kyun Target Karte Hain?</span>
+            <span class="lang-en">Why Do Attackers Target APIs Directly?</span>
+          </div>
+
+          <p class="panel-body-text">
+            <span class="lang-hi">Pehle ke time par hackers website ke buttons aur visual forms par attack karte the. Lekin aaj kal hackers website ya mobile app ko kholte bhi nahi hain! Wo seedhe API par attack karte hain:</span>
+            <span class="lang-en">Traditionally, web testing focused on visual forms in browsers. Modern adversaries bypass browser interfaces completely to send raw HTTP packets directly to backend endpoints:</span>
+          </p>
+
+          <div style="display:flex; flex-direction:column; gap:1rem; margin:1.5rem 0;">
+            <div class="step-block" style="margin-bottom:0;">
+              <div class="step-num-badge">1</div>
+              <div class="step-body-content">
+                <h5>
+                  <span class="lang-hi">Phone App Ke Buttons Ko Bypass Karna</span>
+                  <span class="lang-en">Bypassing Frontend Client Validations</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Agar phone app me "Transfer Money" button disabled hai, toh ek normal user kuch nahi kar sakta. Lekin attacker tool (jaise Burp Suite ya Postman) se seedhe server ko API request bhej deta hai: <code>POST /transfer {"amount": 5000}</code>. Agar server ne khud check nahi kiya, toh paisa chala jayega!</span>
+                  <span class="lang-en">If a mobile UI disables a button or checks input lengths in JavaScript, an attacker ignores the UI and sends a direct HTTP POST request straight to the server socket.</span>
+                </p>
+              </div>
+            </div>
+
+            <div class="step-block" style="margin-bottom:0;">
+              <div class="step-num-badge">2</div>
+              <div class="step-body-content">
+                <h5>
+                  <span class="lang-hi">Numbers Badal Kar Doosre Ka Data Choorana (BOLA / IDOR)</span>
+                  <span class="lang-en">Tampering with Record Identifiers (BOLA / IDOR)</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Jab aap apna account kholte hain, app bhejti hai: <code>GET /api/users/1001</code>. Attacker URL me <code>1001</code> ki jagah <code>1002</code> ya <code>1003</code> daal kar request bhejta hai. Agar server ne ownership check nahi kiya, toh doosre user ki private details leak ho jaati hain! Yahi <strong>BOLA (Broken Object Level Authorization)</strong> vulnerability hai.</span>
+                  <span class="lang-en">When your app loads your profile via <code>GET /api/users/1001</code>, an attacker simply increments the integer to <code>1002</code>. If the server does not verify if the requester owns record 1002, the data leaks immediately. This is <strong>BOLA</strong>.</span>
+                </p>
+              </div>
+            </div>
+
+            <div class="step-block" style="margin-bottom:0;">
+              <div class="step-num-badge">3</div>
+              <div class="step-body-content">
+                <h5>
+                  <span class="lang-hi">Automated High-Speed Scripting</span>
+                  <span class="lang-en">Automated High-Speed Scripting</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Insaan website par 1 minute me 5 baar click kar sakta hai, lekin ek hacker ka script API par 1 second me 10,000 requests bhej kar passwords ya coupon codes guess (brute force) kar sakta hai.</span>
+                  <span class="lang-en">A human clicks a website several times a minute. An automated Python script dispatches 10,000 API calls per second to brute force OTPs, coupons, or enumeration endpoints.</span>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="beginner-spotlight" style="background:rgba(56,189,248,0.08); border-left-color:#38bdf8;">
+            <h4 style="color:#38bdf8;">
+              <span>🎓</span>
+              <span class="lang-hi">Next Step: OWASP API Security Top 10</span>
+              <span class="lang-en">Next Step: The OWASP API Security Top 10</span>
+            </h4>
+            <p>
+              <span class="lang-hi">Ab jab aap samajh chuke hain ki API kya hai aur kaise kaam karti hai, agle module me hum world ki #1 API vulnerability <strong>API1: Broken Object Level Authorization (BOLA)</strong> ko step-by-step master karenge!</span>
+              <span class="lang-en">Now that you understand what an API is and how it functions under the hood, you are ready to master the #1 web API vulnerability in the world: <strong>API1: Broken Object Level Authorization (BOLA)</strong> in the next module!</span>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================================================
+           TAB 6: LIVE INTERACTIVE PLAYGROUND
+           ======================================================================== -->
+      <div id="tab-lab" class="tab-content">
+        <div class="card-panel">
+          <div class="panel-header-title">
+            <span>⚡</span>
+            <span class="lang-hi">Live Interactive API Simulator (Click & Test)</span>
+            <span class="lang-en">Live Interactive API Simulator (Click & Test)</span>
+          </div>
+
+          <p class="panel-body-text">
+            <span class="lang-hi">Niche diye gaye buttons par click karke dekhiye ki real life me alag-alag apps kaise API calls bhejti hain aur server kaise JSON response return karta hai:</span>
+            <span class="lang-en">Click the real-world preset chips below to test how different applications dispatch API calls and receive structured JSON responses in real-time:</span>
+          </p>
+
+          <div class="http-console-box">
+            <!-- Presets Bar -->
+            <div class="preset-chip-row">
+              <span class="preset-label">Easy Presets:</span>
+              <button class="preset-chip" onclick="loadHttpPreset('weather')">🌦️ Weather Check (GET)</button>
+              <button class="preset-chip" onclick="loadHttpPreset('balance')">💳 Bank Balance (GET)</button>
+              <button class="preset-chip" onclick="loadHttpPreset('order_food')">🍔 Order Food (POST)</button>
+              <button class="preset-chip" onclick="loadHttpPreset('login')">🔑 User Login Token (POST)</button>
+              <button class="preset-chip" onclick="loadHttpPreset('options_check')">🌐 Browser Preflight (OPTIONS)</button>
+            </div>
+
+            <!-- Toolbar Input -->
+            <div class="http-console-toolbar">
+              <div class="http-input-group">
+                <select id="httpMethodSelect" class="http-method-select">
+                  <option value="GET">GET</option>
+                  <option value="POST">POST</option>
+                  <option value="PUT">PUT</option>
+                  <option value="DELETE">DELETE</option>
+                  <option value="OPTIONS">OPTIONS</option>
+                </select>
+                <input type="text" id="httpUrlInput" class="http-url-input" value="https://api.weatherhub.com/v1/forecast?city=Mumbai">
+              </div>
+              <button id="httpSendBtn" class="btn-send-req">
+                <span>▶</span> Send Request
+              </button>
+            </div>
+
+            <!-- Request / Response Grid -->
+            <div class="http-console-body">
+              <!-- Left: Request Packet Inspector -->
+              <div class="console-pane">
+                <div class="console-pane-header">
+                  <span class="console-pane-title">Outgoing API Request Packet</span>
+                  <span style="font-size:0.72rem; color:#38bdf8; font-family:var(--font-mono);">What App Sends</span>
+                </div>
+                <div style="font-size:0.78rem; font-family:var(--font-mono); color:#94a3b8; margin-bottom:4px;">Request Headers (Token / Format):</div>
+                <pre id="httpReqHeadersPre" style="min-height:65px; margin:0 0 10px 0; background:#070d1a; border:1px solid rgba(255,255,255,0.1); border-radius:4px; padding:8px; font-family:var(--font-mono); font-size:0.78rem; overflow:auto; box-sizing:border-box;"></pre>
+                <textarea id="httpReqHeaders" class="req-body-textarea" style="display:none;"></textarea>
+
+                <div style="font-size:0.78rem; font-family:var(--font-mono); color:#94a3b8; margin-bottom:4px;">Request Body (Data Sent to Server):</div>
+                <pre id="httpReqBodyPre" style="min-height:75px; margin:0; background:#070d1a; border:1px solid rgba(255,255,255,0.1); border-radius:4px; padding:8px; font-family:var(--font-mono); font-size:0.78rem; overflow:auto; box-sizing:border-box;"></pre>
+                <textarea id="httpReqBody" class="req-body-textarea" style="display:none;"></textarea>
+              </div>
+
+              <!-- Right: Response Packet Inspector -->
+              <div class="console-pane" style="background:#050a17;">
+                <div class="console-pane-header">
+                  <span class="console-pane-title">Server Response Packet</span>
+                  <span id="httpStatusBadge" style="font-size:0.78rem; font-family:var(--font-mono); font-weight:700; color:#34d399;">HTTP/1.1 200 OK</span>
+                </div>
+                <div style="font-size:0.78rem; font-family:var(--font-mono); color:#64748b; margin-bottom:4px;">Response Headers:</div>
+                <pre id="httpRespHeaders" style="margin:0 0 10px; background:#030712; padding:8px; border-radius:4px; font-size:0.75rem; color:#94a3b8; border:1px solid rgba(255,255,255,0.06); overflow-x:auto;">Content-Type: application/json; charset=utf-8
+Server: Cloudflare-Edge
+X-Response-Time: 18ms</pre>
+                <div style="font-size:0.78rem; font-family:var(--font-mono); color:#64748b; margin-bottom:4px;">JSON Data Received by App:</div>
+                <pre id="httpRespPayload" style="margin:0; background:#030712; padding:10px; border-radius:4px; font-size:0.8rem; color:#cbd5e1; border:1px solid rgba(255,255,255,0.06); overflow-x:auto; flex:1;">{
+  "city": "Mumbai",
+  "temperature": "31°C",
+  "humidity": "74%",
+  "condition": "Partly Cloudy",
+  "wind_speed": "14 km/h"
+}</pre>
+              </div>
+            </div>
+
+            <!-- Telemetry Bar -->
+            <div class="telemetry-bar">
+              <span id="telemetryDns">Network Hop: Phone ➔ Cloudflare Edge ➔ Weather API Server</span>
+              <span id="telemetryRoundtrip" style="color:#38bdf8; font-weight:700;">Speed: 18ms</span>
+            </div>
+
+            <!-- Behind The Scenes Explanation Panel (What Just Happened?) -->
+            <div id="httpExplanationBox" class="http-explanation-box">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                <span style="font-size: 1.1rem;">💡</span>
+                <span class="explanation-title">Explanation:</span>
+              </div>
+              <p id="httpExplanationText">
+                <span class="lang-hi"><strong>Public GET Request:</strong> Phone app ne Weather API ko query bheji: "Mujhe Mumbai ka weather chahiye". Yeh data public hai isliye login token ki zaroorat nahi padi. Server ne database se temperature '31°C' nikal kar JSON format me return kiya, aur app ne screen par display kar diya!</span>
+                <span class="lang-en"><strong>Public GET Request:</strong> The client dispatched a public GET query for Mumbai. Because weather readings are public, no user token was required. The API returned temperature '31°C' in JSON format, which the client parsed to update the UI!</span>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================================================
+           TAB 7: BEGINNER FAQS
+           ======================================================================== -->
+      <div id="tab-faq" class="tab-content">
+        <div class="card-panel">
+          <div class="panel-header-title">
+            <span>🤔</span>
+            <span class="lang-hi">Frequently Asked Questions by Beginners</span>
+            <span class="lang-en">Frequently Asked Questions by Beginners</span>
+          </div>
+
+          <p class="panel-body-text">
+            <span class="lang-hi">Agar aap API learning me bilkul naye hain, toh yeh 5 sawal aapke saare doubts clear kar denge:</span>
+            <span class="lang-en">If you are new to web development and APIs, these five essential questions will clarify foundational concepts:</span>
+          </p>
+
+          <!-- Q1 -->
+          <div class="faq-card">
+            <div class="faq-question">
+              <span>❓</span>
+              <span class="lang-hi">1. Kya API koi programming language hai ya software hai?</span>
+              <span class="lang-en">1. Is an API a programming language or an installed software?</span>
+            </div>
+            <div class="faq-answer">
+              <span class="lang-hi">
+                Nahi! API na toh koi language hai aur na hi koi app jise aap download karte hain. API sirf ek <strong>standard communication set of rules (contract)</strong> hai. Jaise do log aapas me baat karne ke liye English ya Hindi language ke rules follow karte hain, waise hi do computers internet par data share karne ke liye HTTP aur JSON ke rules follow karte hain, jise API kaha jata hai.
+              </span>
+              <span class="lang-en">
+                Neither. An API is neither a programming language nor an application you install. It is an agreed-upon <strong>communication protocol contract</strong>. Just as humans follow language rules to communicate, computers follow HTTP and JSON formatting rules to exchange data over the internet.
+              </span>
+            </div>
+          </div>
+
+          <!-- Q2 -->
+          <div class="faq-card">
+            <div class="faq-question">
+              <span>❓</span>
+              <span class="lang-hi">2. Frontend developer aur Backend developer ke beech API ka kya connection hota hai?</span>
+              <span class="lang-en">2. What is the role of an API between Frontend and Backend developers?</span>
+            </div>
+            <div class="faq-answer">
+              <span class="lang-hi">
+                <strong>Backend Developer</strong> server par code likhta hai (Node.js, Python, Java) aur API banata hai jo database se data nikal kar JSON format me deti hai.<br>
+                <strong>Frontend Developer</strong> (React, Flutter, iOS) button aur screens banata hai, aur button dabane par backend ki us API ko call karke data screen par display kar deta hai. API hi in dono ko jodne wala bridge hai!
+              </span>
+              <span class="lang-en">
+                <strong>Backend Developers</strong> construct endpoints using server runtimes (Node.js, Python, Go) to process business logic and query databases.<br>
+                <strong>Frontend Developers</strong> design mobile and web user interfaces, triggering those backend API endpoints to hydrate the UI with live data. The API is the bridge connecting both disciplines.
+              </span>
+            </div>
+          </div>
+
+          <!-- Q3 -->
+          <div class="faq-card">
+            <div class="faq-question">
+              <span>❓</span>
+              <span class="lang-hi">3. Agar hacker Postman ya cURL se request bhejega, toh server ko kaise pata chalta hai?</span>
+              <span class="lang-en">3. When an attacker sends requests via cURL or Postman, how does the server tell them apart from legitimate apps?</span>
+            </div>
+            <div class="faq-answer">
+              <span class="lang-hi">
+                Kayi baar server ko pata hi nahi chalta! Kyunki wire par chahe phone app se request jaye ya hacker ke cURL script se, dono <strong>same HTTP packet</strong> hote hain. Yahi wajah hai ki API Security itni important hai! Server ko kabhi bhi yeh bharosa nahi karna chahiye ki "request phone app se aayi hai toh safe hogi". Server ko har request par Token, Permissions aur Data ko verify karna padta hai.
+              </span>
+              <span class="lang-en">
+                In many cases, the server cannot tell the difference! Across network wires, an HTTP request from an iPhone looks identical to an HTTP request sent from a terminal running cURL. This is precisely why API Security is so critical: servers must never trust clients blindly and must always validate tokens, permissions, and input parameters independently on the backend.
+              </span>
+            </div>
+          </div>
+
+          <!-- Q4 -->
+          <div class="faq-card">
+            <div class="faq-question">
+              <span>❓</span>
+              <span class="lang-hi">4. HTTP aur HTTPS me API ke liye kya fark hota hai?</span>
+              <span class="lang-en">4. What is the difference between HTTP and HTTPS for APIs?</span>
+            </div>
+            <div class="faq-answer">
+              <span class="lang-hi">
+                <strong>HTTP:</strong> Data plain text me travel karta hai. Agar aap cafe ke Wi-Fi par baithe hain, toh koi bhi Wi-Fi traffic dekh kar aapka login token aur passwords padh sakta hai.<br>
+                <strong>HTTPS (SSL/TLS):</strong> Data fully encrypt ho jata hai. Raste me koi bhi hacker intercept karega toh use sirf unreadable gibberish dikhega. Production me har API hamesha HTTPS par hi honi chahiye!
+              </span>
+              <span class="lang-en">
+                <strong>HTTP:</strong> Data is transmitted as plain unencrypted text. Anyone listening on public Wi-Fi can capture authorization tokens and passwords in transit.<br>
+                <strong>HTTPS (TLS Encryption):</strong> The entire HTTP packet is cryptographically encrypted. Eavesdroppers only see scrambled ciphertext, preventing packet sniffing and credential theft.
+              </span>
+            </div>
+          </div>
+
+          <!-- Q5 -->
+          <div class="faq-card">
+            <div class="faq-question">
+              <span>❓</span>
+              <span class="lang-hi">5. Client-side validation aur Server-side validation me kya fark hai?</span>
+              <span class="lang-en">5. What is the difference between client-side validation and server-side validation?</span>
+            </div>
+            <div class="faq-answer">
+              <span class="lang-hi">
+                <strong>Client-side validation (UX ke liye):</strong> Phone app me form par red color se "Enter valid email" likha aata hai taaki normal user galti na kare. Lekin attacker isko 1 second me bypass kar sakta hai.<br>
+                <strong>Server-side validation (Security ke liye):</strong> Server par API controller khud dobara check karta hai ki email valid hai ya nahi, aur number positive hai ya nahi. Asli security hamesha server-side validation se hi aati hai!
+              </span>
+              <span class="lang-en">
+                <strong>Client-Side Validation (for UX):</strong> Friendly form warnings in mobile apps helping users avoid typos. Adversaries bypass client checks effortlessly by crafting custom network packets.<br>
+                <strong>Server-Side Validation (for Security):</strong> Strict schema enforcement on the backend server before touching databases. True security is solely established through robust server-side validation.
+              </span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Footer (Standardized with Irshad Akaram signature) -->
+      <footer class="app-footer-custom">
+        <div class="footer-divider-glow"></div>
+        <div class="footer-inner-content">
+          <div class="footer-brand-row">
+            <div class="footer-badge-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                <path d="m9 12 2 2 4-4"/>
+              </svg>
+            </div>
+            <div class="footer-author-text">
+              <span class="footer-credit-label">Designed and Developed by</span>
+              <span class="footer-author-name">Irshad Akaram</span>
+            </div>
+          </div>
+        </div>
+      </footer>
+
+    </main>
+  </div>
+
+  <script src="assets/js/main.js"></script>
+  <script>
+    /* ==========================================================================
+       Beginner Friendly HTTP Console Lab Logic
+       ========================================================================== */
+    const httpPresets = {
+      weather: {
+        method: "GET",
+        url: "https://api.weatherhub.com/v1/forecast?city=Mumbai",
+        headers: {
+          "Accept": "application/json"
+        },
+        body: "",
+        status: "HTTP/1.1 200 OK",
+        statusColor: "#34d399",
+        respHeaders: "Content-Type: application/json; charset=utf-8\nServer: Cloudflare-Edge\nX-Cache: HIT",
+        respBody: {
+          city: "Mumbai",
+          temperature: "31°C",
+          humidity: "74%",
+          condition: "Partly Cloudy",
+          wind_speed: "14 km/h"
+        },
+        telemetry: "Network Hop: Phone App ➔ Weather API Cloud Server",
+        roundtrip: "Speed: 18ms"
+      },
+      balance: {
+        method: "GET",
+        url: "https://api.mybank.io/v1/accounts/me/balance",
+        headers: {
+          "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI...",
+          "Accept": "application/json"
+        },
+        body: "",
+        status: "HTTP/1.1 200 OK",
+        statusColor: "#34d399",
+        respHeaders: "Content-Type: application/json; charset=utf-8\nServer: BankSecure-Gateway/3.1\nCache-Control: no-store",
+        respBody: {
+          account_number: "XXXX-XXXX-4092",
+          holder_name: "Kaif Khan",
+          currency: "INR",
+          available_balance: 42500.50,
+          account_status: "active"
+        },
+        telemetry: "Network Hop: Phone App ➔ Bank API Gateway ➔ Core Banking System",
+        roundtrip: "Speed: 29ms"
+      },
+      order_food: {
+        method: "POST",
+        url: "https://api.foodhub.io/v1/orders",
+        headers: {
+          "Authorization": "Bearer eyJhbGciOiJIUzI1Ni...",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          restaurant_id: "rest_8819",
+          item: "Paneer Butter Masala + 2 Naan",
+          quantity: 1,
+          delivery_address: "Flat 402, Green Valley Apartments"
+        }, null, 2),
+        status: "HTTP/1.1 201 Created",
+        statusColor: "#34d399",
+        respHeaders: "Location: /api/foodhub.io/v1/orders/ord_99012\nContent-Type: application/json",
+        respBody: {
+          order_id: "ord_99012",
+          status: "confirmed",
+          total_price_inr: 360.00,
+          estimated_delivery_time: "32 mins"
+        },
+        telemetry: "Network Hop: Food App ➔ Restaurant Backend API ➔ Kitchen Order Ticket",
+        roundtrip: "Speed: 34ms"
+      },
+      login: {
+        method: "POST",
+        url: "https://api.myapp.com/v1/auth/login",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          username: "kaif_user",
+          password: "MySecurePassword123!"
+        }, null, 2),
+        status: "HTTP/1.1 200 OK",
+        statusColor: "#34d399",
+        respHeaders: "Content-Type: application/json; charset=utf-8\nCache-Control: no-store",
+        respBody: {
+          message: "Login successful!",
+          token_type: "Bearer",
+          access_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxMDAxLCJyb2xlIjoiY3VzdG9tZXIifQ.seal_valid_signature",
+          expires_in_seconds: 86400
+        },
+        telemetry: "Network Hop: Login Screen ➔ Auth Microservice ➔ Password Hash Check",
+        roundtrip: "Speed: 42ms",
+        explanation_hi: "<strong>Authentication POST (Token Issue):</strong> User ne username aur password bheja. Server ne database me password hash compare kiya. Match hone par server ne ek cryptographically signed JWT Token issue kiya jo agle 24 ghante tak user ke Digital ID Pass ki tarah kaam karega.",
+        explanation_en: "<strong>Authentication POST (Token Issue):</strong> User submitted credentials. The server verified the password hash against the database and issued a cryptographically signed JWT Access Token valid for 24 hours to authenticate subsequent requests."
+      },
+      options_check: {
+        method: "OPTIONS",
+        url: "https://api.myapp.com/v1/users",
+        headers: {
+          "Origin": "https://myapp.com",
+          "Access-Control-Request-Method": "POST"
+        },
+        body: "",
+        status: "HTTP/1.1 204 No Content",
+        statusColor: "#60a5fa",
+        respHeaders: "Access-Control-Allow-Origin: https://myapp.com\nAccess-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS",
+        respBody: {},
+        telemetry: "Network Hop: Browser Security Check (CORS Preflight Handshake)",
+        roundtrip: "Speed: 12ms",
+        explanation_hi: "<strong>CORS Preflight (Browser Security Handshake):</strong> Web browser ne actual POST request bhejne se pehle server se poocha ki 'kya https://myapp.com ko data bhejna allowed hai?' Server ne 'HTTP 204 No Content' ke sath green signal diya ki haan, allowed hai!",
+        explanation_en: "<strong>CORS Preflight (Browser Security Handshake):</strong> Before dispatching a cross-origin mutation, the web browser verified server permission. The server returned HTTP 204 No Content with CORS allow headers!"
+      }
+    };
+
+    // Add explanations to remaining presets
+    httpPresets.weather.explanation_hi = "<strong>Public GET Request (Data Fetch):</strong> Phone app ne Weather API ko query bheji: 'Mujhe Mumbai ka weather chahiye'. Yeh data public hai isliye login token ki zaroorat nahi padi. Server ne database se temperature '31°C' nikal kar JSON format me return kiya, aur app ne screen par display update kiya!";
+    httpPresets.weather.explanation_en = "<strong>Public GET Request (Data Fetch):</strong> The client app sent a public GET query for Mumbai. Because weather readings are public, no user token was required. The API returned temperature '31°C' in JSON format, and the app rendered it on screen!";
+
+    httpPresets.balance.explanation_hi = "<strong>Authenticated GET Request (Security Check):</strong> App ne Authorization header me Kaif ka verified JWT Bearer Token bheja. Bank API Gateway ne pehle token signature verify ki (Authentication), phir check kiya ki Kaif ka account balance kitna hai (Authorization). Uske baad Kaif ka available balance '₹42,500.50' safely return kiya.",
+    httpPresets.balance.explanation_en = "<strong>Authenticated GET Request (Security Check):</strong> The app sent a verified JWT Bearer token in the Authorization header. The bank's gateway verified the cryptographic signature (AuthN), validated that Kaif owns this account (AuthZ), and returned his balance of '₹42,500.50'.";
+
+    httpPresets.order_food.explanation_hi = "<strong>State-Creation POST Request (New Order):</strong> App ne JSON body me food items aur address server ko bheja. Server ne database me naya order save kiya, naya Order ID 'ord_99012' create kiya, aur HTTP status code '201 Created' ke sath confirmation return ki!",
+    httpPresets.order_food.explanation_en = "<strong>State-Creation POST Request (New Order):</strong> The app transmitted food items and address in the JSON body. The backend inserted a new record into the database, assigned order ID 'ord_99012', and returned HTTP status code '201 Created'!";
+
+    let currentPresetObj = httpPresets.weather;
+
+    function loadHttpPreset(presetKey) {
+      const p = httpPresets[presetKey];
+      if (!p) return;
+
+      currentPresetObj = p;
+      document.getElementById('httpMethodSelect').value = p.method;
+      document.getElementById('httpUrlInput').value = p.url;
+      document.getElementById('httpReqHeaders').value = JSON.stringify(p.headers, null, 2);
+      document.getElementById('httpReqBody').value = p.body;
+      const hPre = document.getElementById('httpReqHeadersPre');
+      const bPre = document.getElementById('httpReqBodyPre');
+      if (hPre) hPre.innerHTML = window.syntaxHighlightJson ? window.syntaxHighlightJson(p.headers) : JSON.stringify(p.headers, null, 2);
+      if (bPre) {
+        bPre.innerHTML = p.body ? (window.syntaxHighlightJson ? window.syntaxHighlightJson(p.body) : p.body) : '<span style="color:#64748b;">// No body payload for this request method</span>';
+      }
+      executeConsoleRequest(p);
+    }
+
+    function executeConsoleRequest(presetObj) {
+      const method = document.getElementById('httpMethodSelect').value;
+      const url = document.getElementById('httpUrlInput').value;
+      
+      const badge = document.getElementById('httpStatusBadge');
+      const respHeaders = document.getElementById('httpRespHeaders');
+      const respPayload = document.getElementById('httpRespPayload');
+      const telemDns = document.getElementById('telemetryDns');
+      const telemRt = document.getElementById('telemetryRoundtrip');
+      const explText = document.getElementById('httpExplanationText');
+      const isEn = document.documentElement.getAttribute('data-lang') === 'en';
+
+      badge.innerHTML = '<span style="color:#fbbf24;">Transmitting request...</span>';
+      
+      setTimeout(() => {
+        if (presetObj) {
+          badge.innerHTML = `<span style="color:${presetObj.statusColor};">${presetObj.status}</span>`;
+          respHeaders.innerText = presetObj.respHeaders.replace(/\\n/g, '\n');
+          respPayload.innerHTML = typeof syntaxHighlightJson === 'function' ? syntaxHighlightJson(JSON.stringify(presetObj.respBody, null, 2)) : JSON.stringify(presetObj.respBody, null, 2);
+          telemDns.innerText = presetObj.telemetry;
+          telemRt.innerText = presetObj.roundtrip;
+          if (explText) {
+            explText.innerHTML = isEn ? presetObj.explanation_en : presetObj.explanation_hi;
+          }
+        } else {
+          // Custom request
+          badge.innerHTML = '<span style="color:#34d399;">HTTP/1.1 200 OK</span>';
+          respHeaders.innerText = 'Content-Type: application/json; charset=utf-8\nServer: Custom-API/1.0';
+          respPayload.innerHTML = typeof syntaxHighlightJson === 'function' ? syntaxHighlightJson(JSON.stringify({
+            status: "success",
+            message: `Executed ${method} against ${url}`,
+            timestamp: new Date().toISOString()
+          }, null, 2)) : '{"status":"success"}';
+          telemDns.innerText = "Network Hop: Custom Request ➔ Target Server";
+          telemRt.innerText = "Speed: 21ms";
+          if (explText) {
+            explText.innerHTML = isEn 
+              ? `Custom request dispatched using HTTP ${method} to <code>${url}</code>. The server processed the request and responded with HTTP status 200 OK.`
+              : `Aapne custom HTTP ${method} request <code>${url}</code> par bheji. Server ne request process ki aur HTTP 200 OK status ke sath response return kiya.`;
+          }
+        }
+      }, 150);
+    }
+
+    // Refresh explanation on language change
+    document.getElementById('langToggle')?.addEventListener('change', () => {
+      const isEn = document.documentElement.getAttribute('data-lang') === 'en';
+      const explText = document.getElementById('httpExplanationText');
+      if (explText && currentPresetObj) {
+        explText.innerHTML = isEn ? currentPresetObj.explanation_en : currentPresetObj.explanation_hi;
+      }
+    });
+
+    
+    document.addEventListener('DOMContentLoaded', () => {
+      loadHttpPreset('weather');
+    });
+
+    document.getElementById('httpSendBtn').addEventListener('click', () => {
+      executeConsoleRequest(null);
+    });
+  </script>
+</body>
+</html>

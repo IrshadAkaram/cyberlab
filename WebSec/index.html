@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<title>Security Hub — Web Application Security</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0A0E1A;
+    --surface:#11162A;
+    --surface-2:#161B33;
+    --border:rgba(255,255,255,0.08);
+    --border-soft:rgba(255,255,255,0.06);
+    --text:#F1F2F6;
+    --text-muted:#8B93A8;
+
+    --brand-1:#6366F1;
+    --brand-2:#A855F7;
+
+    --green:#22C55E;
+    --purple:#A855F7;
+    --red:#F43F5E;
+    --blue:#3B82F6;
+    --amber:#F59E0B;
+    --teal:#14B8A6;
+    --indigo:#6366F1;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{background:var(--bg);}
+  @media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth;}}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter', system-ui, sans-serif;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  
+  /* ---------- WIDE CONTAINER ---------- */
+  /* Isko 1180px se bada karke 1560px aur 96% width de di gayi hai */
+  .container{
+    max-width:1560px; 
+    width:96%; 
+    margin:0 auto;
+    padding:0 1rem;
+    position:relative;
+    z-index:1;
+  }
+  
+  a{color:inherit;}
+  svg{display:block;}
+  .icon{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+
+  /* ---------- Navbar (Full Width - Aligned Left) ---------- */
+  .navbar-full {
+    display: flex;
+    align-items: center;
+    padding: 1.5rem 2%;
+    gap: 1rem;
+    width: 100%;
+  }
+  .navbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: 1.25rem;
+  }
+  .navbar-brand .icon {
+    width: 24px;
+    height: 24px;
+    color: var(--brand-1);
+    stroke-width: 1.8;
+  }
+  .navbar-brand .hub {
+    background: linear-gradient(90deg, var(--brand-1), var(--brand-2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .navbar-tagline {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    border-left: 1px solid var(--border);
+    padding-left: 1rem;
+    letter-spacing: 0.02em;
+  }
+
+  /* ---------- Hero (Full Width Background) ---------- */
+  .hero-wrapper{
+    position:relative;
+    padding:1rem 0 1.5rem;
+    text-align:center;
+    width:100%;
+    overflow:hidden;
+  }
+  .hero-deco{
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    opacity:0.35;
+    z-index:0;
+    display:flex;
+    justify-content:center;
+  }
+  .deco-shield{
+    position:absolute;left:max(10px, calc(50% - 700px - 40px));top:30px;width:170px;height:170px;opacity:0.6;
+    animation: floatShield 9s ease-in-out infinite alternate;
+  }
+  .deco-browser{
+    position:absolute;right:max(10px, calc(50% - 700px - 30px));top:60px;width:190px;height:150px;opacity:0.6;
+    animation: floatBrowser 11s ease-in-out infinite alternate;
+  }
+  .deco-line{stroke:var(--brand-1);stroke-width:1.2;opacity:0.45; stroke-dasharray: 6 3; animation: dashMove 30s linear infinite;}
+  .deco-dot{fill:var(--brand-1);opacity:0.75; animation: pulseDot 3s ease-in-out infinite alternate;}
+
+  @keyframes floatShield {
+    0% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-12px) rotate(-3deg); }
+    100% { transform: translateY(8px) rotate(2deg); }
+  }
+  @keyframes floatBrowser {
+    0% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(14px) rotate(2deg); }
+    100% { transform: translateY(-10px) rotate(-2deg); }
+  }
+  @keyframes pulseDot {
+    0%, 100% { opacity: 0.4; transform: scale(0.9); }
+    50% { opacity: 1; transform: scale(1.3); }
+  }
+  @keyframes dashMove {
+    0% { stroke-dashoffset: 0; }
+    100% { stroke-dashoffset: 300; }
+  }
+  @media (max-width:760px){.hero-deco{display:none;}}
+
+  .hero-inner{position:relative;z-index:1;}
+  
+  h1{font-family:'Poppins',sans-serif;font-weight:700;font-size:clamp(1.9rem,5.2vw,2.9rem);line-height:1.18;}
+  h1 .grad{background:linear-gradient(90deg,var(--brand-1),var(--brand-2));-webkit-background-clip:text;background-clip:text;color:transparent;display:block;}
+  .hero-wrapper p.subhead{max-width:38rem;margin:1.1rem auto 0;color:var(--text-muted);font-size:0.98rem;}
+
+  /* ---------- Section label ---------- */
+  .section-label{display:flex;align-items:center;justify-content:center;gap:0.85rem;margin:1rem 0 2rem;} 
+  .section-label .rule{width:44px;height:1px;background:var(--border);display:inline-block;}
+  .section-label .label-text{display:flex;align-items:center;gap:0.5rem;font-family:'Poppins',sans-serif;font-weight:600;font-size:0.82rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--text);}
+  .section-label .icon{width:18px;height:18px;color:var(--brand-1);}
+
+  /* ---------- Grid (4 Columns, Wider Gap) ---------- */
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1.25rem;}
+  @media (max-width:1200px){.grid{grid-template-columns:repeat(3,1fr);}}
+  @media (max-width:850px){.grid{grid-template-columns:repeat(2,1fr);}}
+  @media (max-width:560px){.grid{grid-template-columns:1fr;}}
+
+  .card{
+    --c:var(--brand-1);
+    background: rgba(17, 22, 42, 0.72);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.15rem;
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    transition: transform .22s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow .22s ease, border-color .22s ease;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.22);
+  }
+  .card:hover{transform:translateY(-5px);border-color:var(--c);box-shadow:0 12px 30px -10px var(--c);}
+  .card:focus-visible{outline:2px solid var(--c);outline-offset:2px;}
+  .card-top{display:flex;align-items:flex-start;gap:0.85rem;margin-bottom:0.85rem;}
+  .icon-chip{
+    width:42px;height:42px;flex:none;
+    display:flex;align-items:center;justify-content:center;
+    border-radius:10px;
+    background:color-mix(in srgb, var(--c) 16%, transparent);
+    color:var(--c);
+  }
+  .icon-chip .icon{width:22px;height:22px;}
+  .card-titles h3{font-family:'Poppins',sans-serif;font-weight:600;font-size:1rem;line-height:1.3;}
+  .card-titles h3 .num{color:var(--text-muted);font-weight:500;}
+  .card-titles .full-name{font-size:0.75rem;color:var(--text-muted);margin-top:0.15rem;}
+  .card p.desc{font-size:0.85rem;color:var(--text-muted);margin-bottom:1.2rem;flex:1;line-height:1.5;}
+  .explore-btn{
+    display:inline-flex;align-items:center;gap:0.35rem;
+    font-family:'Inter',sans-serif;font-weight:600;font-size:0.82rem;
+    color:var(--c);
+    border:1.5px solid var(--c);
+    border-radius:8px;
+    padding:0.4rem 0.85rem;
+    background:color-mix(in srgb, var(--c) 8%, transparent);
+    transition:background .15s;
+    align-self: flex-start;
+  }
+  .card:hover .explore-btn{background:color-mix(in srgb, var(--c) 20%, transparent);}
+
+  /* ---------- Checklist banner ---------- */
+  .checklist-banner{
+    margin:3.5rem 0 2.5rem;
+    display:flex;align-items:center;gap:2rem;flex-wrap:wrap;
+    background: rgba(17, 22, 42, 0.78);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border:1px solid var(--border-soft);
+    outline:1px solid rgba(99,102,241,0.25);
+    outline-offset:-1px;
+    border-radius:16px;
+    padding:2rem 2.5rem;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+  }
+  .checklist-icon{
+    width:65px;height:65px;flex:none;
+    display:flex;align-items:center;justify-content:center;
+    border-radius:14px;
+    background:color-mix(in srgb, var(--brand-1) 18%, transparent);
+    color:var(--brand-1);
+  }
+  .checklist-icon .icon{width:34px;height:34px;stroke-width:1.7;}
+  .checklist-text{flex:1;min-width:250px;}
+  .checklist-text h2{font-family:'Poppins',sans-serif;font-weight:700;font-size:1.35rem;}
+  .checklist-text p{color:var(--text-muted);font-size:0.95rem;margin-top:0.4rem;max-width:40rem;}
+  .checklist-btn{
+    flex:none;
+    display:inline-flex;align-items:center;gap:0.5rem;
+    font-family:'Poppins',sans-serif;font-weight:600;font-size:0.95rem;
+    color:#fff;
+    background:linear-gradient(90deg,var(--brand-1),var(--brand-2));
+    text-decoration:none;
+    padding:0.85rem 1.6rem;
+    border-radius:10px;
+    transition:filter .15s, transform .15s;
+  }
+  .checklist-btn:hover{filter:brightness(1.08);transform:translateY(-1px);}
+  .checklist-btn:focus-visible{outline:2px solid var(--brand-2);outline-offset:2px;}
+  .checklist-btn .icon{width:20px;height:20px;stroke-width:2.2;}
+
+  /* ---------- Footer ---------- */
+  footer{display:flex;align-items:center;justify-content:center;gap:0.85rem;padding:2rem 0 1.5rem;color:var(--text-muted);font-size:0.85rem;}
+  footer .rule{width:32px;height:1px;background:var(--border);display:inline-block;}
+  footer .icon{width:16px;height:16px;color:var(--brand-1);}
+  
+  /* ---------- Beautiful Developer Credit ---------- */
+  .footer-note{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-wrap:wrap;
+    gap:0.4rem;
+    text-align:center;
+    color:var(--text-muted);
+    font-size:0.9rem;
+    padding-bottom:3rem;
+  }
+  .heart-icon{
+    color:var(--red);
+    display:inline-block;
+    animation:heartbeat 1.5s infinite;
+  }
+  @keyframes heartbeat {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+  }
+  .dev-name{
+    font-family:'Poppins',sans-serif;
+    font-weight:700;
+    font-size:1.05rem;
+    background:linear-gradient(90deg, #3B82F6, #A855F7, #F43F5E, #F59E0B, #3B82F6);
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+    background-size:200% auto;
+    animation:gradient-flow 4s linear infinite;
+  }
+  @keyframes gradient-flow {
+    0% { background-position:0% center; }
+    100% { background-position:200% center; }
+  }
+
+  /* ---------- DYNAMIC CYBER BACKGROUND ---------- */
+  .cyber-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+  }
+
+  /* Matrix Dot Grid Overlay with continuous slow drift */
+  .cyber-grid {
+    position: absolute;
+    inset: -120px;
+    background-image: 
+      radial-gradient(rgba(255, 255, 255, 0.12) 1.2px, transparent 1.2px),
+      linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+    background-size: 32px 32px, 96px 96px, 96px 96px;
+    -webkit-mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 100%);
+    mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 100%);
+    opacity: 0.85;
+    animation: gridDrift 60s linear infinite;
+  }
+
+  @keyframes gridDrift {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(96px, 96px); }
+  }
+
+  /* Ambient Glowing Floating Orbs */
+  .cyber-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(100px);
+    opacity: 0.38;
+    will-change: transform;
+  }
+
+  .orb-1 {
+    width: 650px;
+    height: 650px;
+    background: radial-gradient(circle, #6366f1 0%, rgba(99,102,241,0) 70%);
+    top: -120px;
+    left: -100px;
+    animation: floatOrb1 16s ease-in-out infinite alternate;
+  }
+
+  .orb-2 {
+    width: 700px;
+    height: 700px;
+    background: radial-gradient(circle, #a855f7 0%, rgba(168,85,247,0) 70%);
+    top: 15%;
+    right: -150px;
+    animation: floatOrb2 20s ease-in-out infinite alternate;
+  }
+
+  .orb-3 {
+    width: 560px;
+    height: 560px;
+    background: radial-gradient(circle, #06b6d4 0%, rgba(6,182,212,0) 70%);
+    bottom: -80px;
+    left: 15%;
+    animation: floatOrb3 18s ease-in-out infinite alternate;
+  }
+
+  .orb-4 {
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, #f43f5e 0%, rgba(244,63,94,0) 70%);
+    bottom: 18%;
+    right: 12%;
+    animation: floatOrb4 22s ease-in-out infinite alternate;
+  }
+
+  /* Keyframe Animations for Smooth Floating */
+  @keyframes floatOrb1 {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(120px, 90px) scale(1.15); }
+    100% { transform: translate(-60px, 140px) scale(0.92); }
+  }
+
+  @keyframes floatOrb2 {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(-140px, 110px) scale(1.18); }
+    100% { transform: translate(-80px, -70px) scale(0.9); }
+  }
+
+  @keyframes floatOrb3 {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(90px, -100px) scale(1.14); }
+    100% { transform: translate(-100px, -50px) scale(1.05); }
+  }
+
+  @keyframes floatOrb4 {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(-110px, -80px) scale(1.2); }
+    100% { transform: translate(90px, 70px) scale(0.9); }
+  }
+
+  /* Floating Cyber Data Particles */
+  .cyber-particle {
+    position: absolute;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 0 8px currentColor;
+    opacity: 0;
+    animation: floatParticle 14s infinite ease-in-out;
+  }
+
+  .p-1 { width: 3px; height: 3px; left: 12%; bottom: -20px; color: var(--brand-1); animation-delay: 0s; animation-duration: 15s; }
+  .p-2 { width: 4px; height: 4px; left: 28%; bottom: -20px; color: var(--brand-2); animation-delay: 3s; animation-duration: 18s; }
+  .p-3 { width: 3px; height: 3px; left: 48%; bottom: -20px; color: var(--teal); animation-delay: 6s; animation-duration: 14s; }
+  .p-4 { width: 4px; height: 4px; left: 68%; bottom: -20px; color: var(--red); animation-delay: 2s; animation-duration: 20s; }
+  .p-5 { width: 3px; height: 3px; left: 84%; bottom: -20px; color: var(--amber); animation-delay: 7s; animation-duration: 16s; }
+  .p-6 { width: 4px; height: 4px; left: 94%; bottom: -20px; color: var(--blue); animation-delay: 4s; animation-duration: 19s; }
+  .p-7 { width: 3px; height: 3px; left: 38%; bottom: -20px; color: var(--green); animation-delay: 9s; animation-duration: 17s; }
+  .p-8 { width: 4px; height: 4px; left: 58%; bottom: -20px; color: var(--purple); animation-delay: 11s; animation-duration: 21s; }
+
+  @keyframes floatParticle {
+    0% { transform: translateY(0) translateX(0) scale(0.5); opacity: 0; }
+    15% { opacity: 0.8; }
+    85% { opacity: 0.8; }
+    100% { transform: translateY(-105vh) translateX(50px) scale(1.2); opacity: 0; }
+  }
+
+  /* Scanline sweep effect */
+  .cyber-scanline {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 0%, rgba(99, 102, 241, 0.04) 50%, transparent 100%);
+    background-size: 100% 200%;
+    animation: scanSweep 12s linear infinite;
+  }
+
+  @keyframes scanSweep {
+    0% { background-position: 0% 0%; }
+    100% { background-position: 0% 200%; }
+  }
+
+  @media (max-width:640px){
+    .navbar-full {flex-direction:column; align-items:flex-start; gap:0.5rem;}
+    .navbar-tagline {border-left:none; padding-left:0; border-top:1px solid var(--border); padding-top:0.5rem;}
+    .hero-wrapper{padding:1.5rem 0 1rem;}
+    .checklist-banner{padding:1.4rem;text-align:center;justify-content:center;}
+    .checklist-text{min-width:100%;}
+    .checklist-btn{width:100%;justify-content:center;}
+  }
+</style>
+</head>
+<body>
+
+<!-- ================= DYNAMIC CYBER BACKGROUND ================= -->
+<div class="cyber-bg" aria-hidden="true">
+  <div class="cyber-orb orb-1"></div>
+  <div class="cyber-orb orb-2"></div>
+  <div class="cyber-orb orb-3"></div>
+  <div class="cyber-orb orb-4"></div>
+  <div class="cyber-grid"></div>
+  <div class="cyber-scanline"></div>
+  <div class="cyber-particle p-1"></div>
+  <div class="cyber-particle p-2"></div>
+  <div class="cyber-particle p-3"></div>
+  <div class="cyber-particle p-4"></div>
+  <div class="cyber-particle p-5"></div>
+  <div class="cyber-particle p-6"></div>
+  <div class="cyber-particle p-7"></div>
+  <div class="cyber-particle p-8"></div>
+</div>
+
+<header class="navbar-full" style="justify-content:space-between;">
+  <div style="display:flex; align-items:center; gap:1rem;">
+    <a href="index.html" class="navbar-brand" style="text-decoration:none;">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M12 2l7 3v6c0 4.5-3 8-7 9-4-1-7-4.5-7-9V5z"/><rect x="9" y="10" width="6" height="5" rx="1"/><path d="M10.3 10V8.5a1.7 1.7 0 0 1 3.4 0V10"/></svg>
+      <span>Web Application <span class="hub">Security</span></span>
+    </a>
+    <div class="navbar-tagline">Learn. Test. Secure.</div>
+  </div>
+  <a href="../index.html" style="display:inline-flex; align-items:center; gap:6px; padding:6px 14px; border-radius:8px; background:rgba(255,255,255,0.04); border:1px solid rgba(99,102,241,0.3); color:#94a3b8; font-size:0.8rem; font-weight:600; text-decoration:none; transition:all 0.2s ease;" onmouseover="this.style.color='#fff'; this.style.borderColor='#818cf8'; this.style.background='rgba(99,102,241,0.15)'" onmouseout="this.style.color='#94a3b8'; this.style.borderColor='rgba(99,102,241,0.3)'; this.style.background='rgba(255,255,255,0.04)'">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+    CyberLab Hub
+  </a>
+</header>
+
+<section class="hero-wrapper">
+  <div class="hero-deco" aria-hidden="true">
+    <svg class="deco-shield" viewBox="0 0 100 100" fill="none" stroke="var(--brand-1)" stroke-width="1.4"><path d="M50 5 85 18v27c0 25-15 40-35 45C30 85 15 70 15 45V18z"/></svg>
+    <svg class="deco-browser" viewBox="0 0 140 110" fill="none" stroke="var(--brand-1)" stroke-width="1.4"><rect x="5" y="5" width="130" height="100" rx="8"/><line x1="5" y1="28" x2="135" y2="28"/><circle cx="18" cy="16" r="2.2" fill="var(--brand-1)" stroke="none"/><circle cx="27" cy="16" r="2.2" fill="var(--brand-1)" stroke="none"/><circle cx="36" cy="16" r="2.2" fill="var(--brand-1)" stroke="none"/><path d="M55 55l-12 12 12 12M85 55l12 12-12 12"/></svg>
+    <svg width="100%" height="100%" viewBox="0 0 1180 340" preserveAspectRatio="xMidYMid slice" style="position:absolute;top:0;left:0;">
+      <path class="deco-line" d="M0 60 H80 V20 H160" fill="none"/>
+      <circle class="deco-dot" cx="80" cy="60" r="3"/>
+      <circle class="deco-dot" cx="160" cy="20" r="3"/>
+      <path class="deco-line" d="M1180 90 H1090 V40 H1010" fill="none"/>
+      <circle class="deco-dot" cx="1090" cy="90" r="3"/>
+      <circle class="deco-dot" cx="1010" cy="40" r="3"/>
+      <path class="deco-line" d="M40 300 H120 V260" fill="none"/>
+      <circle class="deco-dot" cx="120" cy="260" r="3"/>
+    </svg>
+  </div>
+
+  <div class="container">
+    <div class="hero-inner">
+      <h1>Web Application Security<span class="grad">Explained in Simple Language</span></h1>
+      <p class="subhead">Understand web application security concepts in easy English and Hindi. Learn about vulnerabilities, how they work, and how to prevent them.</p>
+    </div>
+  </div>
+</section>
+
+<main class="container">
+  
+  <div class="section-label">
+    <span class="rule"></span>
+    <span class="label-text">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M12 2l7 3v6c0 4.5-3 8-7 9-4-1-7-4.5-7-9V5z"/><polyline points="9 11.5 11 13.5 15 9.5"/></svg>
+      Common Web Vulnerabilities
+    </span>
+    <span class="rule"></span>
+  </div>
+
+  <div class="grid">
+
+    <a href="guides/CSRF.html" class="card" style="--c:var(--green)">
+      <div class="card-top">
+        <div class="icon-chip"><svg class="icon" viewBox="0 0 24 24"><path d="M9 15l6-6"/><path d="M11 6l1-1a4 4 0 0 1 6 6l-1 1"/><path d="M13 18l-1 1a4 4 0 0 1-6-6l1-1"/></svg></div>
+        <div class="card-titles"><h3><span class="num">1.</span> CSRF</h3><div class="full-name">Cross-Site Request Forgery</div></div>
+      </div>
+      <p class="desc">Forcing an authenticated user to execute unwanted actions on a web application.</p>
+      <span class="explore-btn">Explore →</span>
+    </a>
+
+       <a href="guides/CORS.html" class="card" style="--c:var(--red)">
+      <div class="card-top">
+        <div class="icon-chip"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="3" y1="12" x2="21" y2="12"/><path d="M12 3a14 14 0 0 1 4 9 14 14 0 0 1-4 9 14 14 0 0 1-4-9 14 14 0 0 1 4-9z"/></svg></div>
+        <div class="card-titles"><h3><span class="num">6.</span> CORS</h3><div class="full-name">Cross-Origin Resource Sharing</div></div>
+      </div>
+      <p class="desc">Misconfiguring cross-origin trust, leading to sensitive data leakage.</p>
+      <span class="explore-btn">Explore →</span>
+    </a>
+
+    <a href="guides/XSS.html" class="card" style="--c:var(--purple)">
+      <div class="card-top">
+        <div class="icon-chip"><svg class="icon" viewBox="0 0 24 24"><path d="M9 18l-6-6 6-6"/><path d="M15 6l6 6-6 6"/></svg></div>
+        <div class="card-titles"><h3><span class="num">2.</span> XSS</h3><div class="full-name">Cross-Site Scripting</div></div>
+      </div>
+      <p class="desc">Injecting and executing malicious scripts in a victim's browser.</p>
+      <span class="explore-btn">Explore →</span>
+    </a>
+
+    <a href="guides/IDOR.html" class="card" style="--c:var(--blue)">
+      <div class="card-top">
+        <div class="icon-chip"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="7" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg></div>
+        <div class="card-titles"><h3><span class="num">3.</span> IDOR</h3><div class="full-name">Insecure Direct Object Reference</div></div>
+      </div>
+      <p class="desc">Bypassing access controls to access or modify another user's data.</p>
+      <span class="explore-btn">Explore →</span>
+    </a>
+
+    <a href="guides/SQLI.html" class="card" style="--c:var(--amber)">
+      <div class="card-top">
+        <div class="icon-chip"><svg class="icon" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg></div>
+        <div class="card-titles"><h3><span class="num">4.</span> SQLi</h3><div class="full-name">SQL Injection</div></div>
+      </div>
+      <p class="desc">Injecting malicious SQL queries to manipulate or access database data.</p>
+      <span class="explore-btn">Explore →</span>
+    </a>
+
+    <a href="guides/SSRF.html" class="card" style="--c:var(--teal)">
+      <div class="card-top">
+        <div class="icon-chip"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="7" rx="1.5"/><rect x="3" y="14" width="18" height="7" rx="1.5"/><circle cx="7" cy="6.5" r="0.8" fill="currentColor" stroke="none"/><circle cx="7" cy="17.5" r="0.8" fill="currentColor" stroke="none"/></svg></div>
+        <div class="card-titles"><h3><span class="num">5.</span> SSRF</h3><div class="full-name">Server-Side Request Forgery</div></div>
+      </div>
+      <p class="desc">Forcing the server to make unintended internal or external HTTP requests.</p>
+      <span class="explore-btn">Explore →</span>
+    </a>
+
+    <a href="guides/XXE.html" class="card" style="--c:var(--indigo)">
+      <div class="card-top">
+        <div class="icon-chip"><svg class="icon" viewBox="0 0 24 24"><path d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/><path d="M15 2v5h5"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></div>
+        <div class="card-titles"><h3><span class="num">7.</span> XXE</h3><div class="full-name">XML External Entity</div></div>
+      </div>
+      <p class="desc">Exploiting XML parsers to read local files or interact with external entities.</p>
+      <span class="explore-btn">Explore →</span>
+    </a>
+
+    <a href="guides/CMDI.html" class="card" style="--c:var(--green)">
+      <div class="card-top">
+        <div class="icon-chip"><svg class="icon" viewBox="0 0 24 24"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg></div>
+        <div class="card-titles"><h3><span class="num">8.</span> Command Injection</h3><div class="full-name">OS Command Injection</div></div>
+      </div>
+      <p class="desc">Executing arbitrary operating system commands on the server via user input.</p>
+      <span class="explore-btn">Explore →</span>
+    </a>
+
+    <a href="guides/Path_Traversal.html" class="card" style="--c:var(--purple)">
+      <div class="card-top">
+        <div class="icon-chip"><svg class="icon" viewBox="0 0 24 24"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/></svg></div>
+        <div class="card-titles"><h3><span class="num">9.</span> Path Traversal</h3><div class="full-name">Directory Traversal</div></div>
+      </div>
+      <p class="desc">Manipulating directory paths to read restricted files on the server.</p>
+      <span class="explore-btn">Explore →</span>
+    </a>
+
+    <a href="guides/File_Upload.html" class="card" style="--c:var(--blue)">
+      <div class="card-top">
+        <div class="icon-chip"><svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+        <div class="card-titles"><h3><span class="num">10.</span> File Upload</h3><div class="full-name">Unrestricted File Upload</div></div>
+      </div>
+      <p class="desc">Uploading malicious scripts or web shells due to unrestricted file upload.</p>
+      <span class="explore-btn">Explore →</span>
+    </a>
+
+    <a href="guides/Broken_Auth.html" class="card" style="--c:var(--amber)">
+      <div class="card-top">
+        <div class="icon-chip"><svg class="icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="17" y1="8" x2="23" y2="14"/><line x1="23" y1="8" x2="17" y2="14"/></svg></div>
+        <div class="card-titles"><h3><span class="num">11.</span> Broken Auth</h3><div class="full-name">Broken Authentication</div></div>
+      </div>
+      <p class="desc">Exploiting weaknesses in authentication and session management mechanisms.</p>
+      <span class="explore-btn">Explore →</span>
+    </a>
+
+    <a href="guides/sensitive_data_exposure.html" class="card" style="--c:var(--teal)">
+      <div class="card-top">
+        <div class="icon-chip"><svg class="icon" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></div>
+        <div class="card-titles"><h3><span class="num">12.</span> Data Exposure</h3><div class="full-name">Sensitive Data Exposure</div></div>
+      </div>
+      <p class="desc">Accessing unencrypted or weakly protected sensitive data like passwords or PII.</p>
+      <span class="explore-btn">Explore →</span>
+    </a>
+
+    <a href="guides/DoS.html" class="card" style="--c:var(--red)">
+      <div class="card-top">
+        <div class="icon-chip"><svg class="icon" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+        <div class="card-titles"><h3><span class="num">13.</span> DoS</h3><div class="full-name">Denial of Service</div></div>
+      </div>
+      <p class="desc">Exhausting server resources to make the application unavailable to users.</p>
+      <span class="explore-btn">Explore →</span>
+    </a>
+
+    <a href="guides/open_redirect.html" class="card" style="--c:var(--indigo)">
+      <div class="card-top">
+        <div class="icon-chip"><svg class="icon" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></div>
+        <div class="card-titles"><h3><span class="num">14.</span> Open Redirect</h3><div class="full-name">Unvalidated Redirects</div></div>
+      </div>
+      <p class="desc">Redirecting users from a trusted site to a malicious third-party website.</p>
+      <span class="explore-btn">Explore →</span>
+    </a>
+
+    <a href="guides/http_request_smuggling.html" class="card" style="--c:var(--green)">
+      <div class="card-top">
+        <div class="icon-chip"><svg class="icon" viewBox="0 0 24 24"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg></div>
+        <div class="card-titles"><h3><span class="num">15.</span> Request Smuggling</h3><div class="full-name">HTTP Request Smuggling</div></div>
+      </div>
+      <p class="desc">Exploiting request parsing mismatches between frontend and backend servers.</p>
+      <span class="explore-btn">Explore →</span>
+    </a>
+
+    <a href="guides/JWT.html" class="card" style="--c:var(--purple)">
+      <div class="card-top">
+        <div class="icon-chip"><svg class="icon" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.6 12.4L20 3"/><path d="M17 6l3 3"/><path d="M13.5 9.5L16 12"/></svg></div>
+        <div class="card-titles"><h3><span class="num">16.</span> JWT</h3><div class="full-name">JWT Vulnerabilities</div></div>
+      </div>
+      <p class="desc">Bypassing authentication through token signature or algorithm manipulation.</p>
+      <span class="explore-btn">Explore →</span>
+    </a>
+
+    <a href="guides/clickjacking.html" class="card" style="--c:var(--blue)">
+      <div class="card-top">
+        <div class="icon-chip"><svg class="icon" viewBox="0 0 24 24"><path d="M4 4l7 17 2.5-7.5L21 11z"/><line x1="13.5" y1="13.5" x2="19" y2="19"/></svg></div>
+        <div class="card-titles"><h3><span class="num">17.</span> Clickjacking</h3><div class="full-name">UI Redress Attack</div></div>
+      </div>
+      <p class="desc">Overlaying an invisible frame to hijack user clicks on the application.</p>
+      <span class="explore-btn">Explore →</span>
+    </a>
+
+    <a href="guides/Prototype_Pollution.html" class="card" style="--c:var(--amber)">
+      <div class="card-top">
+        <div class="icon-chip"><svg class="icon" viewBox="0 0 24 24"><path d="M8 2v4"/><path d="M16 2v4"/><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M6 18H4"/><path d="M20 18h-2"/></svg></div>
+        <div class="card-titles"><h3><span class="num">18.</span> Prototype Pollution</h3><div class="full-name">JS Prototype Pollution</div></div>
+      </div>
+      <p class="desc">Modifying JavaScript object prototype chains to alter application logic.</p>
+      <span class="explore-btn">Explore →</span>
+    </a>
+
+    <a href="guides/Race_Conditions.html" class="card" style="--c:var(--teal)">
+      <div class="card-top">
+        <div class="icon-chip"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+        <div class="card-titles"><h3><span class="num">19.</span> Race Conditions</h3><div class="full-name">Concurrency Flaws</div></div>
+      </div>
+      <p class="desc">Sending simultaneous requests to exploit concurrency flaws in the application.</p>
+      <span class="explore-btn">Explore →</span>
+    </a>
+
+    <a href="guides/web_cache_poisoning.html" class="card" style="--c:var(--red)">
+      <div class="card-top">
+        <div class="icon-chip"><svg class="icon" viewBox="0 0 24 24"><polygon points="12 3 3 8 12 13 21 8 12 3"/><polyline points="3 13 12 18 21 13"/></svg></div>
+        <div class="card-titles"><h3><span class="num">20.</span> Web Cache Poisoning</h3><div class="full-name">Cache Poisoning</div></div>
+      </div>
+      <p class="desc">Poisoning the web cache with malicious responses to serve to other users.</p>
+      <span class="explore-btn">Explore →</span>
+    </a>
+
+    <a href="guides/Host_Header_Injection.html" class="card" style="--c:var(--indigo)">
+      <div class="card-top">
+        <div class="icon-chip"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div>
+        <div class="card-titles"><h3><span class="num">21.</span> Host Header Injection</h3><div class="full-name">Host Header Attack</div></div>
+      </div>
+      <p class="desc">Manipulating the HTTP Host header to bypass routing or hijack password resets.</p>
+      <span class="explore-btn">Explore →</span>
+    </a>
+
+    <a href="guides/LFI.html" class="card" style="--c:var(--green)">
+      <div class="card-top">
+        <div class="icon-chip"><svg class="icon" viewBox="0 0 24 24"><path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></div>
+        <div class="card-titles"><h3><span class="num">22.</span> LFI</h3><div class="full-name">Local File Inclusion</div></div>
+      </div>
+      <p class="desc">Exploiting file inclusion functionality to read local files on the server.</p>
+      <span class="explore-btn">Explore →</span>
+    </a>
+
+  </div>
+
+  <section class="checklist-banner">
+    <div class="checklist-icon">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M9 3h6a1 1 0 0 1 1 1v1H8V4a1 1 0 0 1 1-1z"/><rect x="5" y="4" width="14" height="17" rx="2"/><polyline points="8.5 12 10.5 14 15.5 9.5"/><line x1="8" y1="17" x2="14" y2="17"/></svg>
+    </div>
+    <div class="checklist-text">
+      <h2>Web Application Pen Tester Checklist</h2>
+      <p>A comprehensive checklist for web application penetration testing. Use it as your guide during assessment to ensure nothing is missed.</p>
+    </div>
+    <a href="checklists/checklist.html" class="checklist-btn">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M9 3h6a1 1 0 0 1 1 1v1H8V4a1 1 0 0 1 1-1z"/><rect x="5" y="4" width="14" height="17" rx="2"/><line x1="8" y1="11" x2="14" y2="11"/><line x1="8" y1="15" x2="14" y2="15"/></svg>
+      Open Checklist →
+    </a>
+  </section>
+
+  <footer>
+    <span class="rule"></span>
+    <svg class="icon" viewBox="0 0 24 24"><path d="M12 2l7 3v6c0 4.5-3 8-7 9-4-1-7-4.5-7-9V5z"/><polyline points="9 11.5 11 13.5 15 9.5"/></svg>
+    Stay Secure. Keep Learning. Hack Responsibly.
+    <span class="rule"></span>
+  </footer>
+
+  <p class="footer-note">
+    Designed and developed by <span class="dev-name">Irshad Akaram</span>
+  </p>
+
+</main>
+
+</body>
+</html>

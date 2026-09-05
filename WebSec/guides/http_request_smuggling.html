@@ -1,0 +1,2307 @@
+<!DOCTYPE html>
+<html lang="hi" data-theme="dark" data-lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HTTP Request Smuggling — Problem Se Solution Tak</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Poppins:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root[data-theme="dark"] {
+    --bg:#050810;
+    --panel:#0F1524;
+    --panel-2:#1A2338;
+    --border:#263049;
+    --text:#E7ECF5;
+    --text-muted:#8B96AB;
+    --danger:#FF6B5B;
+    --danger-bg:rgba(255,107,91,0.12);
+    --safe:#3ECF8E;
+    --safe-bg:rgba(62,207,142,0.12);
+    --accent:#FFC857;
+    --accent-bg:rgba(255,200,87,0.14);
+    --blue:#4D9EFF;
+    --blue-bg:rgba(77,158,255,0.12);
+    --radius:12px;
+    --mono:'IBM Plex Mono',ui-monospace,monospace;
+    --sans:'IBM Plex Sans',system-ui,sans-serif;
+    --glow: rgba(77, 158, 255, 0.05);
+    --shadow-sm: 0 4px 15px rgba(0, 0, 0, 0.25);
+  }
+
+  :root[data-theme="light"] {
+    --bg:#F4F7FB;
+    --panel:#FFFFFF;
+    --panel-2:#E8EEF5;
+    --border:#D1D9E6;
+    --text:#0F172A;
+    --text-muted:#475569;
+    --danger:#E11D48;
+    --danger-bg:rgba(225,29,72,0.12);
+    --safe:#059669;
+    --safe-bg:rgba(5,150,105,0.12);
+    --accent:#D97706;
+    --accent-bg:rgba(217,119,6,0.14);
+    --blue:#2563EB;
+    --blue-bg:rgba(37,99,235,0.12);
+    --radius:12px;
+    --mono:'IBM Plex Mono',ui-monospace,monospace;
+    --sans:'IBM Plex Sans',system-ui,sans-serif;
+    --glow: rgba(77, 158, 255, 0.05);
+    --shadow-sm: 0 4px 15px rgba(0, 0, 0, 0.06);
+  }
+
+  html[data-lang="hi"] .lang-en { display: none !important; }
+  html[data-lang="en"] .lang-hi { display: none !important; }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--bg);color:var(--text);font-family:var(--sans);
+    margin:0;padding:0;line-height:1.7;-webkit-font-smoothing:antialiased;
+    transition: background-color 0.3s, color 0.3s;
+    background-image: 
+      radial-gradient(circle at 15% 50%, var(--glow), transparent 25%),
+      radial-gradient(circle at 85% 30%, var(--glow), transparent 25%);
+  }
+  ::selection{background:var(--accent-bg);color:var(--accent);}
+  strong{color:var(--text);font-weight:600;}
+
+  code{
+    font-family:var(--mono);background:var(--panel-2);border:1px solid var(--border);
+    padding:2px 6px;border-radius:6px;font-size:0.88em;color:var(--accent);
+    transition: all 0.2s;
+  }
+  code:hover { background: var(--accent-bg); border-color: var(--accent); }
+
+  pre{
+    background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
+    padding:40px 18px 18px 18px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;
+    line-height:1.6;color:var(--text);margin:18px 0; position: relative;
+    box-shadow: 0 10px 30px -10px rgba(0,0,0,0.2);
+  }
+  pre::before {
+    content: ''; position: absolute; top: 14px; left: 16px;
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--danger); box-shadow: 16px 0 0 var(--accent), 32px 0 0 var(--safe);
+  }
+  pre code{background:none;border:none;padding:0;color:inherit; box-shadow: none;}
+  pre code:hover { background: none; border: none; }
+
+  .topbar{
+    position:sticky;top:0;z-index:50;background:rgba(15, 21, 36, 0.7);
+    backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+    border-bottom:1px solid var(--border);
+    padding:14px 20px;display:flex;align-items:center;justify-content:space-between;
+    gap:12px;flex-wrap:wrap; box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  }
+  :root[data-theme="light"] .topbar { background:rgba(255, 255, 255, 0.8); }
+
+  .brand{
+    font-family:var(--mono);font-weight:700;font-size:15.5px;
+    display:flex;align-items:center;gap:10px;cursor:default;
+  }
+  .brand-icon { font-size: 19px; display: inline-block; animation: shield-pulse 2.5s infinite ease-in-out; }
+  .brand-text {
+    background: linear-gradient(90deg, var(--accent), var(--safe));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    transition: all 0.3s ease; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .brand-text code { background: none; border: none; padding: 0; color: inherit; font-size: 1em; box-shadow: none;}
+  .brand:hover .brand-text { filter: drop-shadow(0 0 10px rgba(62, 207, 142, 0.5)); }
+  @keyframes shield-pulse { 0%, 100% { transform: scale(1); filter: drop-shadow(0 0 3px var(--safe)); } 50% { transform: scale(1.15); filter: drop-shadow(0 0 10px var(--safe)); } }
+
+  .controls-wrapper { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
+
+  .theme-toggle {
+    background: var(--panel); border: 1px solid var(--border); color: var(--text);
+    padding: 6px 14px; border-radius: 20px; cursor: pointer; font-weight: 600;
+    font-family: var(--sans); font-size: 12px; transition: all 0.2s ease;
+  }
+  .theme-toggle:hover { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); transform: translateY(-1px); }
+
+  .lang-switch-wrapper {
+    display: flex; align-items: center; gap: 6px; font-family: var(--sans);
+    font-size: 12px; font-weight: 600; color: var(--text); background: var(--panel);
+    padding: 6px 12px; border-radius: 20px; border: 1px solid var(--border);
+  }
+  .lang-active { color: var(--accent); text-shadow: 0 0 8px var(--accent-bg); } 
+  .lang-inactive { color: var(--text-muted); }
+  .switch { position: relative; display: inline-block; width: 32px; height: 18px; margin: 0 4px;}
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider {
+    position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+    background-color: var(--border); transition: .4s; border-radius: 20px;
+  }
+  .slider:before {
+    position: absolute; content: ""; height: 12px; width: 12px; left: 3px; bottom: 3px;
+    background-color: var(--text); transition: .4s; border-radius: 50%;
+  }
+  input:checked + .slider { background-color: var(--accent); }
+  input:checked + .slider:before { transform: translateX(14px); background-color: #fff; }
+
+  main{max-width:840px;margin:0 auto;padding:0 20px 20px; position: relative; z-index: 1;}
+
+  .hero{padding:50px 0 40px; position: relative; border-bottom: 1px solid var(--border); margin-bottom: 40px;}
+  .hero::after {
+    content: ''; position: absolute; top: -50px; left: 50%; transform: translateX(-50%);
+    width: 100vw; height: 100%; background: radial-gradient(ellipse at top, var(--safe-bg), transparent 60%);
+    z-index: -1; pointer-events: none; opacity: 0.5;
+  }
+  .eyebrow{
+    font-family:var(--mono);font-size:12px;letter-spacing:.14em;color:var(--danger);
+    text-transform:uppercase;margin:0 0 16px;display:flex;align-items:center;gap:8px;
+  }
+  .eyebrow::before{content:"●";font-size:9px; animation: blink 1s infinite alternate;}
+  h1.title{
+    font-family:var(--mono);font-weight:700;font-size:clamp(22px,4.5vw,34px);
+    line-height:1.45;margin:0 0 28px;color:var(--text);letter-spacing:-0.01em; text-align: justify;
+  }
+
+  .terminal{
+    background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:hidden;
+    box-shadow:0 10px 30px -10px rgba(0,0,0,0.3); margin-bottom: 24px;
+  }
+  .terminal-bar{display:flex;align-items:center;gap:7px;padding:12px 16px;border-bottom:1px solid var(--border);background:#11141a;}
+  .terminal-dot{width:10px;height:10px;border-radius:50%;background:#3A4460;}
+  .terminal-dot:nth-child(1){background:#FF5F56;}
+  .terminal-dot:nth-child(2){background:#FFBD2E;}
+  .terminal-dot:nth-child(3){background:#27C93F;}
+  .terminal-label{margin-left:8px;font-family:var(--mono);font-size:11.5px;color:var(--text-muted);}
+  .terminal-body{padding:24px 22px 26px;font-family:var(--mono);font-size:14px;color:var(--text);min-height:120px; line-height: 1.6; text-align: justify;}
+  .terminal-body .prompt{color:var(--safe);}
+  .terminal-body .cursor{display:inline-block;width:8px;height:16px;background:var(--accent);vertical-align:middle;margin-left:2px;animation:blink 1s step-end infinite;}
+  @keyframes blink{50%{opacity:0;}}
+
+  .intro-block {
+    margin-top: 28px; padding: 22px 24px;
+    background: linear-gradient(135deg, var(--panel) 0%, transparent 100%);
+    border: 1px solid var(--border); border-left: 4px solid var(--accent);
+    border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+    position: relative; overflow: hidden;
+  }
+  .intro-block::after {
+    content:''; position:absolute; right:-20px; bottom:-20px; width:100px; height:100px;
+    background: radial-gradient(circle, var(--accent-bg) 0%, transparent 70%); pointer-events: none;
+  }
+  .intro-block p{margin:0 0 14px;font-size:15px;color:var(--text); text-align: justify; line-height: 1.7;}
+  .intro-block p:last-child{margin-bottom:0;}
+  .intro-block .roadmap{font-family:var(--mono);font-size:13.5px;color:var(--accent); font-weight: 500;}
+
+  .hero-cta{
+    display:inline-flex;align-items:center;gap:10px;margin-top:26px;
+    font-family:var(--mono);font-size:14px;font-weight: 600; color:var(--accent);background:var(--panel);
+    border:1px solid var(--accent);padding:14px 24px;border-radius:10px;
+    text-decoration:none;cursor:pointer;transition:all .3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 6px 20px var(--accent-bg);
+  }
+  .hero-cta:hover{background:var(--accent); color: var(--bg); transform: translateY(-4px); box-shadow: 0 10px 25px rgba(255, 200, 87, 0.4);}
+
+  .sec-head{margin:50px 0 10px;}
+  .sec-eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.15em;color:var(--accent);text-transform:uppercase;margin:0 0 10px; display: flex; align-items: center; gap: 8px;}
+  .sec-eyebrow::after { content: ''; height: 1px; width: 40px; background: var(--accent); opacity: 0.5; }
+  .sec-head h2{
+    font-family:var(--mono);font-size:clamp(20px,4vw,28px);margin:0 0 14px;
+    background: linear-gradient(90deg, var(--text), var(--text-muted));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .sec-head p{font-size:15px;color:var(--text-muted);margin:0 0 24px;max-width:100%; line-height: 1.6; text-align: justify;}
+
+  .levels{margin-top:30px;display:flex;flex-direction:column;gap:16px;}
+  .level-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);scroll-margin-top:90px;overflow:hidden; transition: all 0.3s;}
+  .level-card:hover { border-color: rgba(255,255,255,0.1); box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
+  .level-card.open { border-color: var(--accent); box-shadow: 0 8px 30px var(--accent-bg); }
+
+  .level-header{
+    width:100%;background:none;border:none;color:var(--text);display:flex;align-items:center;
+    gap:16px;padding:18px 20px;cursor:pointer;text-align:left;font-family:var(--sans);
+  }
+  .level-header:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;}
+  .level-badge{
+    font-family:var(--mono);font-weight:700;font-size:16px;width:38px;height:38px;flex:none;
+    border-radius:10px;display:flex;align-items:center;justify-content:center;
+    background:var(--panel-2);border:1px solid var(--border);color:var(--text-muted);
+    transition: all 0.3s;
+  }
+  .level-card.open .level-badge { background: var(--accent-bg); color: var(--accent); border-color: var(--accent); }
+
+  .level-titles{flex:1;min-width:0;}
+  .level-titles h2{margin:0 0 4px;font-size:16.5px;font-weight:600;color:var(--text); transition: color 0.3s;}
+  .level-card.open .level-titles h2 { color: var(--accent); }
+  .level-titles p{margin:0;font-size:13px;color:var(--text-muted);}
+  .level-tag{
+    font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.05em;
+    padding:5px 10px;border-radius:20px;white-space:nowrap;flex:none;
+  }
+  .level-tag.problem{background:var(--danger-bg);color:var(--danger); border: 1px solid rgba(255,107,91,0.2);}
+  .level-tag.solved{background:var(--safe-bg);color:var(--safe); border: 1px solid rgba(62,207,142,0.2);}
+  .level-tag.concept{background:var(--accent-bg);color:var(--accent); border: 1px solid rgba(255,200,87,0.2);}
+
+  .chevron{flex:none;color:var(--text-muted);transition:transform .3s ease;font-size:14px;}
+  .level-card.open .chevron{transform:rotate(180deg); color: var(--accent);}
+
+  .level-body{ display: none; }
+  .level-card.open .level-body{ display: block; animation: fadeIn .3s ease; }
+
+  .level-inner{padding:0 20px 24px;font-size:14.8px; border-top: 1px solid var(--border); margin-top: 4px; padding-top: 20px;}
+  .level-inner p{margin:0 0 14px;color:var(--text); text-align: justify; line-height: 1.7;}
+  .level-inner h4{margin:22px 0 10px;font-size:14px;color:var(--accent);font-weight:600;font-family:var(--mono);letter-spacing:.04em; text-transform: uppercase;}
+
+  .callout{
+    border-left:4px solid var(--danger);background:linear-gradient(90deg, var(--danger-bg), transparent);
+    border-radius:0 10px 10px 0;padding:16px 20px;margin:18px 0;font-size:14px;
+    box-shadow: inset 0 0 20px rgba(255,107,91,0.05);
+  }
+  .callout.fixnote{border-left-color:var(--safe);background:linear-gradient(90deg, var(--safe-bg), transparent); box-shadow: inset 0 0 20px rgba(62,207,142,0.05);}
+  .callout.analogy{border-left-color:var(--accent);background:linear-gradient(90deg, var(--accent-bg), transparent); box-shadow: inset 0 0 20px rgba(255,200,87,0.05);}
+  .callout.analogy .cal-label{color:var(--accent);}
+  .callout p{margin:0;color:var(--text); text-align: justify;}
+  .callout p+p{margin-top:10px;}
+  .callout .cal-label{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.06em;display:block;margin-bottom:8px;color:var(--danger);}
+  .callout.fixnote .cal-label{color:var(--safe);}
+
+  .mini-table{width:100%;border-collapse:collapse;margin:14px 0;font-size:13px; background: var(--panel-2); border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.15);}
+  .mini-table th,.mini-table td{border:1px solid var(--border);padding:12px 14px;text-align:left;}
+  .mini-table th{background:var(--bg);color:var(--accent);font-weight:700;font-family:var(--mono);font-size:12px; text-transform: uppercase; letter-spacing: 0.5px;}
+  .mini-table td{color:var(--text); font-family: var(--mono); font-size: 12.5px;}
+
+  .sim-jump{
+    display:inline-flex;align-items:center;gap:6px;margin-top:4px;font-family:var(--mono);
+    font-size:12px;color:var(--accent);background:var(--accent-bg);
+    border:1px solid rgba(255,200,87,0.3);padding:8px 13px;border-radius:7px;cursor:pointer;text-decoration:none;
+  }
+
+  .item-divider {
+    border: 0; height: 1px; background: linear-gradient(90deg, var(--border) 0%, transparent 100%);
+    margin: 24px 0; opacity: 0.8;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .simulator-section {
+    background: #050505; border: 1px solid var(--border); border-radius: 14px;
+    margin-top: 30px; margin-bottom: 24px; overflow: hidden; position: relative;
+    display: flex; flex-direction: column; box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+  }
+  .simulator-section::before {
+    content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px;
+    background: linear-gradient(90deg, transparent, #ff3c3c, transparent);
+    animation: scanline 3s linear infinite;
+  }
+  @keyframes scanline { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+
+  .sim-header-bar {
+    background: #0a0c10; border-bottom: 1px solid #1f242d; padding: 18px 24px;
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;
+  }
+  .sim-title {
+    font-family: var(--font-code); font-size: 16px; font-weight: 700; color: #fff;
+    display: flex; align-items: center; gap: 10px; letter-spacing: 0.5px;
+  }
+  .sim-title span { color: #ff3c3c; animation: pulse-danger 1.5s infinite; border-radius: 50%;}
+  .sim-controls { display: flex; flex-direction: column; gap: 16px; width: 100%; }
+  .sim-control-group { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .sim-control-group label {
+    font-family: var(--font-code); font-size: 11.5px; color: #64748b;
+    text-transform: uppercase; letter-spacing: 1px; min-width: 140px; font-weight: bold;
+  }
+  .sim-btn-group { display: flex; gap: 10px; flex-wrap: wrap; background: #000; padding: 4px; border-radius: 6px; border: 1px solid #1f242d;}
+  .sim-btn {
+    background: transparent; border: none; color: #64748b; padding: 6px 14px;
+    border-radius: 4px; font-family: var(--font-code); font-size: 11.5px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .sim-btn:hover { color: #fff; }
+  .sim-btn.active { background: #1f242d; color: #4d9eff; box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
+
+  .btn-execute {
+    background: rgba(57, 255, 122, 0.1); color: #39ff7a; border: 1px solid #39ff7a;
+    padding: 10px 24px; border-radius: 6px; font-family: var(--font-code); font-size: 13px;
+    font-weight: 700; cursor: pointer; transition: all 0.2s; text-transform: uppercase;
+    align-self: flex-start; letter-spacing: 1px; box-shadow: 0 0 15px rgba(57, 255, 122, 0.15);
+  }
+  .btn-execute:hover { background: #39ff7a; color: #000; box-shadow: 0 0 20px rgba(57, 255, 122, 0.4); transform: translateY(-2px); }
+  .btn-execute:active { transform: scale(0.96); }
+  .btn-execute:disabled { opacity: 0.4; cursor: not-allowed; border-color: #536271; color: #536271; background: transparent; box-shadow: none; transform: none;}
+
+  .workspace { display: flex; padding: 18px; gap: 18px; height: 500px; background: #050505; }
+  @media (max-width: 850px) { .workspace { flex-direction: column; height: auto; min-height: 600px; } }
+
+  .sim-panel {
+    flex: 1; background: #0a0c10; border: 1px solid #1f242d; border-radius: 8px;
+    display: flex; flex-direction: column; overflow: hidden; box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+  }
+  .sim-panel-header {
+    background: #11141a; padding: 10px 14px; font-family: var(--font-code); font-size: 11.5px;
+    font-weight: 700; color: #fff; border-bottom: 1px solid #1f242d; display: flex;
+    align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .sim-panel-body {
+    flex: 1; padding: 14px; font-family: var(--font-code); font-size: 12px;
+    line-height: 1.6; overflow-y: auto; background: #000000;
+  }
+
+  #panel-browser .sim-panel-header { border-top: 2px solid #ffcc00; }
+  #panel-network .sim-panel-header { border-top: 2px solid #4d9eff; }
+  #panel-server .sim-panel-header { border-top: 2px solid #39ff7a; }
+
+  .log-line { opacity: 0; transform: translateX(-5px); animation: slideIn 0.2s forwards; margin-bottom: 6px; word-break: break-word; color: #a9b5c2; }
+  .log-stage {
+    font-family: var(--font-code); font-size: 12.5px; color: #ffcc00; font-weight: bold;
+    margin: 20px 0 8px 0; padding-bottom: 4px; border-bottom: 1px dashed #1f242d;
+    display: block; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  @keyframes slideIn { to { opacity: 1; transform: translateX(0); } }
+  @keyframes slideInUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+  .timestamp { color: #536271; margin-right: 10px; user-select: none; }
+  .c-info { color: #8fa0b3; } .c-warn { color: #ffcc00; } .c-err { color: #ff3c3c; } .c-ok { color: #39ff7a; } .c-blue { color: #4d9eff; } .c-gray { color: #64748b; }
+
+  .http-block { background: rgba(255,255,255,0.03); border-left: 2px solid #4d9eff; padding: 10px; margin: 10px 0; border-radius: 0 6px 6px 0; }
+  .http-method { color: #d782ff; font-weight: bold; } .http-path { color: #fff; } .http-proto { color: #64748b; }
+  .http-header-key { color: #6ab0ff; } .http-header-val { color: #9cdb9e; } .http-body { color: #ff9d66; margin-top: 8px; display: block; }
+  .resp-200 { color: #39ff7a; }
+
+  .sim-verdict-box {
+    margin: 0 18px 18px 18px; background: #0d0f12; border: 1px solid #1f242d;
+    padding: 24px; border-radius: 8px; font-family: var(--sans); display: none;
+  }
+  .sim-verdict-box.show { display: block; animation: slideInUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+  .sim-verdict-title { font-family: var(--font-code); font-size: 17px; font-weight: 700; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;}
+  .sim-verdict-text { font-size: 15px; color: #e2e8f0; line-height: 1.6; text-align: justify;}
+  .v-hacked { border-color: #ff3c3c; background: rgba(255, 60, 60, 0.08); box-shadow: inset 0 0 30px rgba(255,60,60,0.1); }
+  .v-hacked .sim-verdict-title { color: #ff3c3c; }
+  .v-blocked { border-color: #39ff7a; background: rgba(57, 255, 122, 0.08); box-shadow: inset 0 0 30px rgba(57,255,122,0.1);}
+  .v-blocked .sim-verdict-title { color: #39ff7a; }
+
+  .sim-panel-body::-webkit-scrollbar { width: 6px; }
+  .sim-panel-body::-webkit-scrollbar-track { background: #050505; }
+  .sim-panel-body::-webkit-scrollbar-thumb { background: #2a313d; border-radius: 4px; }
+  .sim-panel-body::-webkit-scrollbar-thumb:hover { background: #4d9eff; }
+
+  .checklist{margin-top:40px;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:30px 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);}
+  .checklist-head{display:flex;align-items:center;gap:12px;margin-bottom:10px;}
+  .checklist-head h2{margin:0;font-size:20px;color:var(--text);font-family:var(--mono);}
+  .checklist-intro{color:var(--text-muted);font-size:14px;margin:0 0 26px;}
+
+  .impact-section {
+    background: linear-gradient(145deg, var(--panel), var(--bg));
+    border: 2px solid var(--border);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+    position: relative; overflow: hidden;
+    padding: 30px 24px; border-radius: 14px; margin-top: 30px; margin-bottom: 24px;
+  }
+  .impact-section::before {
+    content:''; position:absolute; top:0; left:0; width:100%; height:4px;
+    background: linear-gradient(90deg, var(--danger), var(--accent), var(--danger));
+  }
+  .impact-card {
+    background: var(--panel); border: 1px solid var(--border); border-left: 4px solid var(--danger);
+    border-radius: 10px; padding: 18px 20px; margin-bottom: 16px; transition: all 0.3s;
+  }
+  .impact-card:last-child{margin-bottom:0;}
+  .impact-card:hover{ transform: translateX(4px); box-shadow: 0 8px 20px rgba(255,60,60,0.08); border-color: rgba(255,255,255,0.1);}
+  .impact-card h3{ margin:0 0 10px; font-size:14.5px; color:var(--danger); font-family:var(--mono); display:flex; align-items:center; gap:10px; text-transform:uppercase; letter-spacing:0.5px;}
+  .impact-card p{margin:0; font-size:14px; color:var(--text); text-align:justify; line-height:1.7;}
+  .impact-card p+p{margin-top:10px;}
+
+  .faq-section {
+    background: linear-gradient(145deg, var(--panel), var(--bg));
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 30px 24px;
+    margin-top: 40px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  }
+  .faq-header { margin-bottom: 24px; }
+  .faq-header h2 { font-size: 20px; color: var(--text); font-family: var(--mono); margin: 0 0 10px 0; display: flex; align-items: center; gap: 10px;}
+  .faq-header p { color: var(--text-muted); font-size: 14px; margin: 0; text-align: justify;}
+
+  .faq-list { display: flex; flex-direction: column; gap: 12px; }
+  .faq-item {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+  .faq-item:hover { border-color: rgba(255,255,255,0.1); }
+  .faq-item.active { border-color: var(--accent); box-shadow: 0 4px 15px var(--accent-bg); }
+
+  .faq-question {
+    width: 100%; text-align: left; background: none; border: none;
+    padding: 16px 20px; display: flex; align-items: center; gap: 14px;
+    cursor: pointer; color: var(--text); font-family: var(--sans); font-size: 14.5px;
+    transition: all 0.2s ease;
+  }
+  .faq-question:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .faq-q-badge {
+    font-family: var(--mono); color: var(--accent); font-weight: 700;
+    background: var(--bg); padding: 4px 8px; border-radius: 6px;
+    font-size: 13px; flex-shrink: 0; border: 1px solid var(--border);
+  }
+  .faq-item.active .faq-q-badge { background: var(--accent-bg); border-color: var(--accent); }
+  .faq-q-text { flex: 1; line-height: 1.5; font-weight: 500; }
+  .faq-icon { color: var(--text-muted); transition: transform 0.3s ease; font-size: 12px; }
+  .faq-item.active .faq-icon { transform: rotate(180deg); color: var(--accent); }
+
+  .faq-answer {
+    display: none; padding: 0 20px 20px; border-top: 1px solid var(--border);
+    margin-top: 4px; padding-top: 16px; 
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 13.5px;
+    line-height: 1.7; text-align: justify;
+  }
+  .faq-item.active .faq-answer { display: block; animation: fadeIn 0.3s ease; }
+
+  .glossary-item {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    transition: all 0.3s ease;
+  }
+  .glossary-item:hover { border-color: rgba(255,255,255,0.1); }
+  .glossary-term {
+    font-family: var(--mono); font-weight: 700; color: var(--accent);
+    font-size: 14.5px; margin-bottom: 8px; display: flex; align-items: center; gap: 10px;
+  }
+  .glossary-term .glossary-badge {
+    font-family: var(--mono); color: var(--accent); font-weight: 700;
+    background: var(--bg); padding: 3px 8px; border-radius: 6px;
+    font-size: 12px; flex-shrink: 0; border: 1px solid var(--border);
+  }
+  .glossary-def {
+    color: var(--text-muted); font-family: var(--mono); font-size: 13.5px;
+    line-height: 1.7; text-align: justify; padding-top: 10px; border-top: 1px solid var(--border);
+  }
+
+  #tester-checklist {
+    background: linear-gradient(145deg, var(--panel), var(--bg));
+    border: 2px solid var(--border);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+    position: relative;
+    overflow: hidden;
+    padding: 30px 24px;
+    border-radius: 14px;
+    margin-top: 40px;
+  }
+  #tester-checklist::before {
+    content:''; position:absolute; top:0; left:0; width:100%; height:4px;
+    background: linear-gradient(90deg, var(--safe), var(--accent), var(--danger));
+  }
+  .audit-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 22px;
+    margin-bottom: 18px;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+    z-index: 1;
+  }
+  .audit-card:last-child { margin-bottom: 0; }
+  .audit-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    border-color: rgba(255,255,255,0.1);
+  }
+  .audit-card h3 {
+    margin: 0 0 18px 0; font-size: 15.5px; color: var(--safe); font-family: var(--mono);
+    display: flex; align-items: center; gap: 10px; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+
+  .check-list { display: flex; flex-direction: column; gap: 12px; }
+  .check-label {
+    display: flex; align-items: flex-start; gap: 14px;
+    cursor: pointer; padding: 12px 14px; border-radius: 8px;
+    transition: background 0.2s ease, transform 0.2s ease;
+    border: 1px solid transparent;
+  }
+  .check-label:hover { background: var(--panel-2); border-color: var(--border); transform: translateX(4px); }
+  .check-input { display: none; }
+  .check-box {
+    width: 20px; height: 20px; border: 2px solid var(--text-muted);
+    border-radius: 5px; flex-shrink: 0; margin-top: 2px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    background: var(--bg);
+  }
+  .check-input:checked + .check-box { background: var(--safe); border-color: var(--safe); transform: rotate(360deg); }
+  .check-input:checked + .check-box::after { content: '✔'; color: white; font-size: 13px; font-weight: bold; }
+  .check-text { color: var(--text); font-size: 14px; line-height: 1.6; transition: all 0.3s ease; text-align: justify; flex: 1; }
+  .check-input:checked ~ .check-text { color: var(--text-muted); text-decoration: line-through; opacity: 0.6; }
+
+  .modern-footer { padding: 40px 18px 50px; text-align: center; }
+  .footer-badge {
+    display: inline-flex; align-items: center; gap: 10px; background: linear-gradient(145deg, var(--panel-2), var(--panel));
+    padding: 12px 28px; border-radius: 30px; font-family: var(--mono); font-size: 14px;
+    color: var(--text-muted); border: 1px solid var(--border); transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.2); cursor: default;
+  }
+  .footer-badge:hover { transform: translateY(-4px); box-shadow: 0 12px 30px var(--accent-bg); border-color: var(--accent); color: var(--text); }
+
+  .footer-name {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+    background: linear-gradient(90deg, #3B82F6, #A855F7, #F43F5E, #F59E0B, #3B82F6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    background-size: 200% auto;
+    animation: gradient-flow 4s linear infinite;
+  }
+  @keyframes gradient-flow {
+    0% { background-position: 0% center; }
+    100% { background-position: 200% center; }
+  }
+
+  @media (max-width:600px){
+    .level-header{padding:14px;gap:10px;}
+    .level-badge{width:30px;height:30px;font-size:13px;}
+    .hero{padding:30px 0 24px;}
+    main{padding:0 14px 20px;}
+    .controls-wrapper { flex-direction: column; align-items: flex-start; gap: 10px; }
+  }
+  @media (prefers-reduced-motion:reduce){
+    html{scroll-behavior:auto;}
+    *{transition-duration:0.01ms !important; animation: none !important;}
+  }
+  body::before, body::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    width: calc((100vw - 840px) / 2);
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0.12;
+    background-image: 
+      linear-gradient(var(--text-muted) 1px, transparent 1px),
+      linear-gradient(90deg, var(--text-muted) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+  body::before {
+    left: 0;
+    animation: cyber-grid-down 20s linear infinite;
+    -webkit-mask-image: linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 100%);
+    mask-image: linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 100%);
+  }
+  body::after {
+    right: 0;
+    animation: cyber-grid-up 20s linear infinite;
+    -webkit-mask-image: linear-gradient(to left, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 100%);
+    mask-image: linear-gradient(to left, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 100%);
+  }
+  @keyframes cyber-grid-down {
+    0% { background-position: 0 0; }
+    100% { background-position: 0 400px; }
+  }
+  @keyframes cyber-grid-up {
+    0% { background-position: 0 0; }
+    100% { background-position: 0 -400px; }
+  }
+  @media (max-width: 900px) {
+    body::before, body::after { display: none; }
+  }
+
+  /* ── SUB-NAV BUTTONS ── */
+  .sub-nav-wrapper {
+    position: relative; background: transparent; border-bottom: none;
+    padding: 16px 20px 0; box-shadow: none;
+  }
+  .sub-nav-bar {
+    max-width: 840px; margin: 0 auto; display: flex; align-items: center;
+    justify-content: space-between; gap: 10px; overflow-x: auto;
+    scrollbar-width: none; -ms-overflow-style: none; padding: 2px 0;
+  }
+  .sub-nav-bar::-webkit-scrollbar { display: none; }
+  .sub-nav-btn {
+    flex: 1 1 0; display: inline-flex; align-items: center; justify-content: center;
+    gap: 8px; background: var(--panel); backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--border); color: var(--text-muted); padding: 9px 14px;
+    border-radius: 24px; text-decoration: none; font-family: var(--mono);
+    font-size: 12.5px; font-weight: 600; white-space: nowrap; transition: all 0.25s ease;
+    box-shadow: var(--shadow-sm);
+  }
+  .sub-nav-btn:hover {
+    color: var(--text); border-color: var(--accent); background: var(--panel-2);
+    transform: translateY(-2px); box-shadow: 0 4px 12px rgba(255, 200, 87, 0.15);
+  }
+  .sub-nav-btn.active {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: var(--panel-2);
+  }
+  .sub-nav-btn.home-nav-btn { border-color: rgba(77, 158, 255, 0.4); color: var(--blue); border-radius: 24px; }
+  .sub-nav-btn.home-nav-btn:hover { border-color: var(--blue); background: var(--blue-bg); color: #fff; box-shadow: 0 4px 12px rgba(77, 158, 255, 0.25); }
+
+  /* ── BOTTOM NAVIGATION ROW ── */
+  .bottom-nav-row {
+    margin-top: 45px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+  }
+  .nav-arrow-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 18px;
+    border-radius: 20px;
+    text-decoration: none;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.25s ease;
+    box-shadow: var(--shadow-sm);
+    white-space: nowrap;
+  }
+  .nav-arrow-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-bg);
+    transform: translateY(-2px);
+  }
+  @media (max-width: 768px) {
+    .bottom-nav-row {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+    }
+    .bottom-nav-row .nav-arrow-btn {
+      justify-content: center;
+      width: 100%;
+      text-align: center;
+      white-space: normal;
+    }
+    .bottom-nav-row .nav-empty {
+      display: none;
+    }
+  }
+
+
+
+  /* ── DYNAMIC CYBER BACKGROUND ── */
+  .cyber-bg { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+  .cyber-grid {
+    position: absolute; inset: -120px;
+    background-image: 
+      radial-gradient(rgba(255, 255, 255, 0.12) 1.2px, transparent 1.2px),
+      linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+    background-size: 32px 32px, 96px 96px, 96px 96px;
+    opacity: 0.85; animation: gridDrift 60s linear infinite;
+  }
+  @keyframes gridDrift { 0% { transform: translate(0, 0); } 100% { transform: translate(96px, 96px); } }
+  .cyber-orb { position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.35; will-change: transform; }
+  .orb-1 { width: 550px; height: 550px; background: radial-gradient(circle, #ff6b5b 0%, transparent 70%); top: -100px; left: -100px; animation: floatOrb1 16s ease-in-out infinite alternate; }
+  .orb-2 { width: 600px; height: 600px; background: radial-gradient(circle, #ffc857 0%, transparent 70%); bottom: -80px; right: -100px; animation: floatOrb2 20s ease-in-out infinite alternate; }
+  .orb-3 { width: 480px; height: 480px; background: radial-gradient(circle, #3ecf8e 0%, transparent 70%); top: 35%; right: 15%; animation: floatOrb3 18s ease-in-out infinite alternate; }
+  .orb-4 { width: 500px; height: 500px; background: radial-gradient(circle, #4d9eff 0%, transparent 70%); bottom: 15%; left: 10%; animation: floatOrb4 22s ease-in-out infinite alternate; }
+  @keyframes floatOrb1 { 0% { transform: translate(0,0); } 100% { transform: translate(-40px, 100px); } }
+  @keyframes floatOrb2 { 0% { transform: translate(0,0); } 100% { transform: translate(-70px, -60px); } }
+  @keyframes floatOrb3 { 0% { transform: translate(0,0); } 100% { transform: translate(-80px, -40px); } }
+  @keyframes floatOrb4 { 0% { transform: translate(0,0); } 100% { transform: translate(80px, 60px); } }
+
+  /* ── Modern Footer ── */
+  .modern-footer { padding: 40px 18px 30px; text-align: center; position: relative; z-index: 1; }
+  .footer-badge {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: linear-gradient(145deg, var(--panel-2), var(--panel));
+    padding: 12px 28px; border-radius: 30px; font-family: var(--mono); font-size: 13.5px;
+    color: var(--text-muted); border: 1px solid var(--border);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.25); cursor: default;
+  }
+  .footer-badge:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 30px rgba(239, 68, 68, 0.25);
+    border-color: var(--danger);
+    color: var(--text);
+  }
+  .dev-name {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+    background: linear-gradient(90deg, #3B82F6, #A855F7, #F43F5E, #F59E0B, #3B82F6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    background-size: 200% auto;
+    animation: gradient-flow 4s linear infinite;
+  }
+  @keyframes gradient-flow { 0% { background-position: 0% center; } 100% { background-position: 200% center; } }
+
+</style>
+</head>
+<body data-lang="hi">
+
+<div class="cyber-bg" aria-hidden="true">
+  <div class="cyber-orb orb-1"></div>
+  <div class="cyber-orb orb-2"></div>
+  <div class="cyber-orb orb-3"></div>
+  <div class="cyber-orb orb-4"></div>
+  <div class="cyber-grid"></div>
+</div>
+
+
+<div class="topbar">
+  <a href="../index.html" class="brand" style="text-decoration:none; color:inherit;" title="Return to Main Hub">
+    <span class="brand-icon">🛡️</span>
+    <span class="brand-text"><code>HRS :</code> HTTP Request Smuggling</span>
+  </a>
+  <div class="controls-wrapper">
+    <div class="lang-switch-wrapper">
+      <span id="lbl-hi" class="lang-active">Hindi</span>
+      <label class="switch">
+        <input type="checkbox" id="langToggle">
+        <span class="slider"></span>
+      </label>
+      <span id="lbl-en" class="lang-inactive">English</span>
+    </div>
+    <button class="theme-toggle" id="themeBtn">☀️ Light Mode</button>
+  </div>
+</div>
+
+<!-- ================= HORIZONTAL SUB-NAV BAR ================= -->
+<div class="sub-nav-wrapper">
+  <nav class="sub-nav-bar" aria-label="Section Navigation">
+    <a class="sub-nav-btn home-nav-btn" href="../index.html" title="Main Home Page">
+      <span class="sub-nav-icon">🏠</span>
+      <span class="lang-hi">Home</span><span class="lang-en">Home</span>
+    </a>
+    <a class="sub-nav-btn" href="#simulator">
+      <span class="sub-nav-icon">⚡</span>
+      <span class="lang-hi">Simulator</span><span class="lang-en">Simulator</span>
+    </a>
+    <a class="sub-nav-btn" href="#impact">
+      <span class="sub-nav-icon">💥</span>
+      <span class="lang-hi">Attack Vectors</span><span class="lang-en">Attack Vectors</span>
+    </a>
+    <a class="sub-nav-btn" href="#confusing-questions">
+      <span class="sub-nav-icon">🤔</span>
+      <span class="lang-hi">Questions</span><span class="lang-en">Questions</span>
+    </a>
+    <a class="sub-nav-btn" href="#tester-checklist">
+      <span class="sub-nav-icon">📝</span>
+      <span class="lang-hi">Checklist</span><span class="lang-en">Checklist</span>
+    </a>
+  </nav>
+</div>
+
+<main>
+
+  <section class="hero">
+    <p class="eyebrow"><span class="lang-hi">Web App Security — Technical Walkthrough</span><span class="lang-en">Web App Security — Technical Walkthrough</span></p>
+    <h1 class="title">
+        <span class="lang-hi">HTTP Request Smuggling: Ek Problem, Aur Use Fix Karne Ke Technical Solutions</span>
+        <span class="lang-en">HTTP Request Smuggling: One Problem, And Technical Solutions To Fix It</span>
+    </h1>
+
+    <div class="terminal">
+      <div class="terminal-bar">
+        <span class="terminal-dot"></span><span class="terminal-dot"></span><span class="terminal-dot"></span>
+        <span class="terminal-label"><span class="lang-hi">proxy.request_parser</span><span class="lang-en">proxy.request_parser</span></span>
+      </div>
+      <div class="terminal-body">
+        <span class="prompt">&gt;</span> <span id="typewriter"></span><span class="cursor"></span>
+      </div>
+    </div>
+
+    <div class="intro-block">
+      <p><strong><span class="lang-hi">HTTP Request Smuggling (HTTP Desync Attack)</span><span class="lang-en">HTTP Request Smuggling (HTTP Desync Attack)</span></strong>
+        <span class="lang-hi">tab hoti hai jab ek request, front-end (jaise ek load balancer/proxy) aur back-end (jaise application server) ke beech se guzarte waqt, dono servers isse DIFFERENT tarike se parse karte hain — ki ek hi connection mein "ek request" kahan khatam hoti hai aur agli kahan shuru hoti hai. Vulnerability tab banti hai jab attacker jaanbujh kar aisa ambiguous request bhejta hai jise dono servers ALAG-ALAG tarike se interpret karte hain, jisse attacker ka chhupa hua, "smuggled" request doosre, legitimate users ke traffic mein mix ho jaata hai.</span>
+        <span class="lang-en">occurs when a request passing between a front-end (like a load balancer/proxy) and a back-end (like an application server) gets parsed DIFFERENTLY by both servers — as to where "one request" ends and the next begins on the same connection. The vulnerability arises when an attacker deliberately sends an ambiguous request that both servers interpret DIFFERENTLY, letting the attacker's hidden, "smuggled" request mix into other, legitimate users' traffic.</span>
+      </p>
+      <p class="roadmap">
+        <span class="lang-hi">Mechanism → Misconfig 1 → Gap → Misconfig 2 → Gap → Misconfig 3 → Gap → Final Solution</span>
+        <span class="lang-en">Mechanism → Misconfig 1 → Gap → Misconfig 2 → Gap → Misconfig 3 → Gap → Final Solution</span>
+      </p>
+    </div>
+
+    <a class="hero-cta" href="#simulator">⚡ <span class="lang-hi">Har misconfiguration ko simulator mein khud test karo ↓</span><span class="lang-en">Test every misconfiguration yourself in the simulator ↓</span></a>
+  </section>
+
+  <!-- REAL-WORLD IMPACT -->
+  <section class="impact-section" id="impact">
+    <div class="sec-head" style="margin-top:0;">
+      <p class="sec-eyebrow"><span class="lang-hi">Isse kya farak padta hai?</span><span class="lang-en">Why does this actually matter?</span></p>
+      <h2>💥 <span class="lang-hi">Real-World Impact — Agar Ye Vulnerability Live Website Mein Ho To Kya Ho Sakta Hai</span><span class="lang-en">Real-World Impact — What Can Happen If A Live Website Has This Bug</span></h2>
+      <p>
+        <span class="lang-hi">Mechanism mein jaane se pehle ye samajhna zaroori hai: agar ek real website mein ye bug mil jaaye, to attacker ASAL MEIN kar kya sakta hai? Neeche wo concrete scenarios hain jo real incidents mein baar-baar dekhe gaye hain.</span>
+        <span class="lang-en">Before diving into the mechanism, it's important to understand: if this bug is found on a real website, what can the attacker ACTUALLY do? Below are concrete scenarios that have repeatedly been seen in real incidents.</span>
+      </p>
+    </div>
+
+    <div class="impact-card">
+      <h3>🛡️ <span class="lang-hi">1. Front-End Security Controls Bypass Karna</span><span class="lang-en">1. Bypassing Front-End Security Controls</span></h3>
+      <p>
+        <span class="lang-hi">Front-end WAF/access-control ek "safe" request dekh kar allow kar deta hai, lekin backend usi bytes ko DIFFERENT tarike se interpret karke, ek RESTRICTED, WAF-blocked request ko chhupa kar backend tak pahucha deta hai — jaise ek internal-only admin endpoint tak, WAF ki nazron se bachte hue.</span>
+        <span class="lang-en">The front-end WAF/access-control sees a "safe" request and allows it, but the backend interprets those same bytes DIFFERENTLY, sneaking a RESTRICTED, WAF-blocked request through to the backend — like reaching an internal-only admin endpoint, evading the WAF's view entirely.</span>
+      </p>
+    </div>
+
+    <div class="impact-card">
+      <h3>🔀 <span class="lang-hi">2. Request Queue Poisoning</span><span class="lang-en">2. Request Queue Poisoning</span></h3>
+      <p>
+        <span class="lang-hi">Attacker ka smuggled request ek shared, pooled/reused TCP connection par "leftover" ban kar reh jaata hai — jab agla, koi bhi ALAG, legitimate user usi connection ka use karta hai, unka genuine request attacker ke smuggled data ke saath MIX/PREPEND ho jaata hai, corrupt/hijack ho jaata hai.</span>
+        <span class="lang-en">The attacker's smuggled request stays "leftover" on a shared, pooled/reused TCP connection — when the next, any DIFFERENT, legitimate user uses that same connection, their genuine request gets MIXED/PREPENDED with the attacker's smuggled data, becoming corrupted/hijacked.</span>
+      </p>
+    </div>
+
+    <div class="impact-card">
+      <h3>🔑 <span class="lang-hi">3. Session Hijacking Via Response Swapping</span><span class="lang-en">3. Session Hijacking Via Response Swapping</span></h3>
+      <p>
+        <span class="lang-hi">Agar attacker ka smuggled request ek doosre victim user ke response queue mein "aage" chala jaata hai, attacker ko VICTIM ka response mil sakta hai — jismein victim ka auth token, session cookie, ya personal data ho sakta hai — poori tarah SILENTLY, victim ki jaankari ke bina.</span>
+        <span class="lang-en">If the attacker's smuggled request gets positioned "ahead" in another victim's response queue, the attacker can receive the VICTIM's response — potentially containing the victim's auth token, session cookie, or personal data — entirely SILENTLY, without the victim's knowledge.</span>
+      </p>
+    </div>
+
+    <div class="impact-card">
+      <h3>🗃️ <span class="lang-hi">4. Cache Poisoning</span><span class="lang-en">4. Cache Poisoning</span></h3>
+      <p>
+        <span class="lang-hi">Agar architecture mein ek caching layer hai, attacker smuggled request ka use karke us layer ko ek MALICIOUS response cache karne ke liye trick kar sakta hai — ek genuinely popular, legitimate URL ke liye. Us URL ko visit karne wala HAR AGLA user (jab tak cache expire na ho) attacker ka malicious content dekhta hai.</span>
+        <span class="lang-en">If the architecture has a caching layer, the attacker can use a smuggled request to trick that layer into caching a MALICIOUS response — for a genuinely popular, legitimate URL. EVERY SUBSEQUENT user (until the cache expires) visiting that URL sees the attacker's malicious content.</span>
+      </p>
+    </div>
+
+    <div class="impact-card">
+      <h3>🕵️ <span class="lang-hi">5. Doosre Users Ka Sensitive Data Chori</span><span class="lang-en">5. Stealing Other Users' Sensitive Data</span></h3>
+      <p>
+        <span class="lang-hi">Smuggled request ko is tarah craft kiya jaa sakta hai ki wo agle, victim user ke request mein sensitive headers (jaise <code>Authorization</code> ya cookies) capture kar le — attacker ko wo headers apne hi response mein wapas mil jaate hain.</span>
+        <span class="lang-en">A smuggled request can be crafted to capture sensitive headers (like <code>Authorization</code> or cookies) from the next, victim user's request — the attacker gets those headers back in their own response.</span>
+      </p>
+    </div>
+
+    <div class="impact-card">
+      <h3>📜 <span class="lang-hi">6. Real-World Example — HTTP Desync Attacks Research (2019)</span><span class="lang-en">6. Real-World Example — The HTTP Desync Attacks Research (2019)</span></h3>
+      <p>
+        <span class="lang-hi">2019 mein security researcher James Kettle (PortSwigger) ne "HTTP Desync Attacks" naam ki well-documented, publicly-known research publish ki thi, jisme dikhaya gaya ki kaise HTTP Request Smuggling multiple major, well-known websites (jismein bade payment aur e-commerce platforms shaamil the) ko affect kar raha tha — ye research bug bounty programs ke through significant financial rewards mein bhi result hui thi. Ye research industry mein is vulnerability class ke liye ek landmark reference ban gayi hai.</span>
+        <span class="lang-en">In 2019, security researcher James Kettle (PortSwigger) published well-documented, publicly-known research titled "HTTP Desync Attacks", showing how HTTP Request Smuggling was affecting multiple major, well-known websites (including large payment and e-commerce platforms) — this research also resulted in significant financial rewards through bug bounty programs. This research has become a landmark reference for this vulnerability class in the industry.</span>
+      </p>
+    </div>
+
+  </section>
+
+  <section class="levels">
+
+    <!-- LEVEL 0 -->
+    <div class="level-card" id="level-0" data-level="0">
+      <button class="level-header">
+        <span class="level-badge">0</span>
+        <span class="level-titles">
+          <h2>
+            <span class="lang-hi">Mechanism — Request Boundaries, Aur Trust Boundary Kahan Toot Ti Hai</span>
+            <span class="lang-en">Mechanism — Request Boundaries, And Where The Trust Boundary Breaks</span>
+          </h2>
+          <p>
+            <span class="lang-hi">Do servers ek hi request ko alag kaise samajh sakte hain</span>
+            <span class="lang-en">How two servers can understand the same request differently</span>
+          </p>
+        </span>
+        <span class="level-tag problem"><span class="lang-hi">FOUNDATION</span><span class="lang-en">FOUNDATION</span></span>
+        <span class="chevron">▾</span>
+      </button>
+      <div class="level-body">
+        <div class="level-inner">
+          <h4>
+            <span class="lang-hi">PROXY CHAINS KI ZAROORAT KYU HAI</span>
+            <span class="lang-en">WHY PROXY CHAINS ARE NEEDED</span>
+          </h4>
+          <p>
+            <span class="lang-hi">Bade websites ek SINGLE server par nahi chalti — request pehle ek FRONT-END (load balancer, CDN, ya WAF) se guzarti hai, jo use ek ya kai BACK-END application servers ki taraf forward karti hai. Performance ke liye, front-end aur back-end ke beech ki EK TCP connection ko multiple requests ke liye REUSE kiya jaata hai ("keep-alive"/connection pooling) — na ki har request ke liye ek naya connection banaya jaaye.</span>
+            <span class="lang-en">Large websites don't run on a SINGLE server — a request first passes through a FRONT-END (load balancer, CDN, or WAF), which forwards it to one or several BACK-END application servers. For performance, a SINGLE TCP connection between front-end and back-end is REUSED for multiple requests ("keep-alive"/connection pooling) — instead of creating a new connection for every single request.</span>
+          </p>
+
+          <h4>
+            <span class="lang-hi">EK HI CONNECTION PAR "REQUEST KAHAN KHATAM HUI" KAISE PATA CHALTA HAI</span>
+            <span class="lang-en">HOW "WHERE A REQUEST ENDS" IS KNOWN ON ONE CONNECTION</span>
+          </h4>
+          <p>
+            <span class="lang-hi">Agar EK connection par multiple requests aa sakti hain, server ko pata hona chahiye ki ek request KAHAN khatam hui aur agli KAHAN shuru hui. HTTP/1.1 iske liye do tarike deta hai — <code>Content-Length</code> (body ka exact byte count) ya <code>Transfer-Encoding: chunked</code> (body ko chhote-chhote "chunks" mein todna, jismein har chunk apni size announce karta hai, aur ek "0" size wala chunk body ka end batata hai).</span>
+            <span class="lang-en">If multiple requests can arrive on ONE connection, the server needs to know WHERE one request ends and the next begins. HTTP/1.1 provides two ways to do this — <code>Content-Length</code> (the body's exact byte count) or <code>Transfer-Encoding: chunked</code> (splitting the body into small "chunks", each announcing its own size, with a "0"-sized chunk marking the body's end).</span>
+          </p>
+
+          <div class="callout analogy">
+            <span class="cal-label">
+                <span class="lang-hi">💡 SIMPLE WORDS MEIN</span>
+                <span class="lang-en">💡 IN SIMPLE WORDS</span>
+            </span>
+            <p>
+                <span class="lang-hi">Ye bilkul do translators jaisa hai jo ek hi, poore document ko translate kar rahe hain, lekin dono ke apne-apne, ALAG punctuation rules hain ki "ek sentence kahan khatam hoti hai". Ek translator comma dekh kar sentence khatam samajh leta hai, doosra sirf period (full stop) dekh kar. Comma ke BAAD, period se PEHLE wala jo bhi text bacha, ek translator ke liye wo "pehle sentence ka hi extra hissa" hai, jabki doosre ke liye wo "AGLE sentence ki SHURUAAT" hai. HTTP Request Smuggling mein bhi exactly yehi hota hai — bas "sentence" ki jagah "HTTP request" hai, aur "punctuation rule" ki jagah <code>Content-Length</code> vs <code>Transfer-Encoding</code>.</span>
+                <span class="lang-en">This is exactly like two translators translating the same, whole document, but each has their own, DIFFERENT punctuation rule for "where a sentence ends". One translator considers a sentence to end at a comma, the other only at a period (full stop). Whatever text is left AFTER the comma, BEFORE the period, is "extra part of the first sentence" for one translator, while for the other it's "the START of the NEXT sentence". HTTP Request Smuggling does exactly this — just with "sentence" replaced by "HTTP request", and the "punctuation rule" replaced by <code>Content-Length</code> vs <code>Transfer-Encoding</code>.</span>
+            </p>
+          </div>
+
+          <div class="callout">
+            <span class="cal-label">
+                <span class="lang-hi">⚠️ PROBLEM KI JADD</span>
+                <span class="lang-en">⚠️ THE ROOT OF THE PROBLEM</span>
+            </span>
+            <p>
+                <span class="lang-hi">Kuch nahi rokta ki ek client (attacker) apni request mein EK SAATH dono headers — <code>Content-Length</code> AUR <code>Transfer-Encoding</code> — bhej de, jo normally shayad nahi hona chahiye. HTTP spec kehta hai ki aisi situation mein <code>Transfer-Encoding</code> ko priority milni chahiye — lekin har server implementation is rule ko sahi tarike se follow nahi karti. Agar front-end aur back-end is ambiguity ko DIFFERENT tarike se resolve karte hain, wahi trust boundary toot jaati hai jis par poora system depend karta hai.</span>
+                <span class="lang-en">Nothing stops a client (attacker) from sending BOTH headers — <code>Content-Length</code> AND <code>Transfer-Encoding</code> — in a single request, which normally shouldn't happen. The HTTP spec says <code>Transfer-Encoding</code> should take priority in such a situation — but not every server implementation follows this rule correctly. If the front-end and back-end resolve this ambiguity DIFFERENTLY, exactly the trust boundary the whole system depends on breaks.</span>
+            </p>
+          </div>
+
+          <a class="sim-jump" href="#simulator">🎮 <span class="lang-hi">Baseline behavior simulator mein dekho</span><span class="lang-en">See baseline behavior in the simulator</span></a>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEVEL 1 -->
+    <div class="level-card" id="level-1" data-level="1">
+      <button class="level-header">
+        <span class="level-badge">1</span>
+        <span class="level-titles">
+          <h2>
+            <span class="lang-hi">Misconfiguration 1 — CL.TE Desync</span>
+            <span class="lang-en">Misconfiguration 1 — CL.TE Desync</span>
+          </h2>
+          <p>
+            <span class="lang-hi">Front-end Content-Length follow karta hai, back-end Transfer-Encoding</span>
+            <span class="lang-en">Front-end follows Content-Length, back-end follows Transfer-Encoding</span>
+          </p>
+        </span>
+        <span class="level-tag problem"><span class="lang-hi">GAP</span><span class="lang-en">GAP</span></span>
+        <span class="chevron">▾</span>
+      </button>
+      <div class="level-body">
+        <div class="level-inner">
+          <h4>
+            <span class="lang-hi">SABSE CLASSIC MISMATCH</span>
+            <span class="lang-en">THE MOST CLASSIC MISMATCH</span>
+          </h4>
+          <p>
+            <span class="lang-hi">Ek common, real-world setup mein front-end proxy <code>Content-Length</code> ko follow karta hai, jabki back-end application server <code>Transfer-Encoding</code> ko follow karta hai. Attacker ye request bhejta hai:</span>
+            <span class="lang-en">In a common, real-world setup, the front-end proxy follows <code>Content-Length</code>, while the back-end application server follows <code>Transfer-Encoding</code>. The attacker sends this request:</span>
+          </p>
+          <pre><code>POST / HTTP/1.1
+Host: target.com
+Content-Length: 13
+Transfer-Encoding: chunked
+
+0
+
+SMUGGLED</code></pre>
+
+          <div class="callout">
+            <span class="cal-label">
+                <span class="lang-hi">⚠️ GAP</span>
+                <span class="lang-en">⚠️ GAP</span>
+            </span>
+            <p>
+                <span class="lang-hi">Front-end <code>Content-Length: 13</code> follow karta hai — 13 bytes ko is request ka POORA body maan kar, poori cheez EK request ki tarah back-end ko forward kar deta hai. Back-end, jo <code>Transfer-Encoding: chunked</code> follow karta hai, <code>0\r\n\r\n</code> ko ek EMPTY CHUNK samajh kar body ko wahin par KHATAM maan leta hai. Front-end ki taraf se forward kiya gaya baaki bacha hua data (<code>SMUGGLED</code>) — jo front-end ke hisaab se USI request ka body tha — back-end ke perspective se ab EK LEFTOVER hai jo TCP stream mein "pending" reh jaata hai.</span>
+                <span class="lang-en">The front-end follows <code>Content-Length: 13</code> — treating 13 bytes as this request's FULL body, forwarding the entire thing as ONE request to the back-end. The back-end, following <code>Transfer-Encoding: chunked</code>, sees <code>0\r\n\r\n</code> as an EMPTY CHUNK and considers the body ENDED right there. The remaining data forwarded by the front-end (<code>SMUGGLED</code>) — which the front-end thought was part of THIS request's body — is now, from the back-end's perspective, LEFTOVER data still "pending" in the TCP stream.</span>
+            </p>
+          </div>
+
+          <p>
+            <span class="lang-hi">Jab is REUSED connection par agla, koi bhi ALAG, legitimate victim user ka request aata hai, back-end use us leftover <code>SMUGGLED</code> data ke turant BAAD, jaise "SMUGGLED" hi asal request ka SHURUAATI hissa ho, jodkar interpret kar leta hai — victim ka poora request corrupt/hijack ho jaata hai.</span>
+            <span class="lang-en">When the next, any DIFFERENT, legitimate victim user's request arrives on this REUSED connection, the back-end joins it right AFTER that leftover <code>SMUGGLED</code> data, treating "SMUGGLED" as if it were the START of the actual request — the victim's entire request gets corrupted/hijacked.</span>
+          </p>
+
+          <a class="sim-jump" href="#simulator">🎮 <span class="lang-hi">CL.TE desync simulator mein dekho</span><span class="lang-en">See the CL.TE desync in the simulator</span></a>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEVEL 2 -->
+    <div class="level-card" id="level-2" data-level="2">
+      <button class="level-header">
+        <span class="level-badge">2</span>
+        <span class="level-titles">
+          <h2>
+            <span class="lang-hi">Misconfiguration 2 — TE.CL Desync</span>
+            <span class="lang-en">Misconfiguration 2 — TE.CL Desync</span>
+          </h2>
+          <p>
+            <span class="lang-hi">Sirf ek direction fix karna, ulta wali gap khol deta hai</span>
+            <span class="lang-en">Fixing only one direction opens the mirror-image gap</span>
+          </p>
+        </span>
+        <span class="level-tag problem"><span class="lang-hi">GAP</span><span class="lang-en">GAP</span></span>
+        <span class="chevron">▾</span>
+      </button>
+      <div class="level-body">
+        <div class="level-inner">
+          <h4>
+            <span class="lang-hi">PARTIAL FIX — SIRF FRONT-END BADLA GAYA</span>
+            <span class="lang-en">PARTIAL FIX — ONLY THE FRONT-END WAS CHANGED</span>
+          </h4>
+          <p>
+            <span class="lang-hi">Level 1 ka incident dekh kar team ye sochti hai "chalo front-end ko bhi <code>Transfer-Encoding</code> follow karne do, jaisa back-end karta hai" — lekin sirf FRONT-END ki configuration update ki jaati hai, BACK-END ko chhoo tak nahi jaata (wo abhi bhi default rooop se <code>Content-Length</code> follow karta hai).</span>
+            <span class="lang-en">Seeing the Level 1 incident, the team thinks "let's make the front-end also follow <code>Transfer-Encoding</code>, like the back-end does" — but only the FRONT-END's configuration gets updated, the BACK-END isn't touched at all (it still defaults to following <code>Content-Length</code>).</span>
+          </p>
+
+          <div class="callout">
+            <span class="cal-label">
+                <span class="lang-hi">⚠️ GAP — MISMATCH BAS ULTA HO GAYA</span>
+                <span class="lang-en">⚠️ GAP — THE MISMATCH JUST FLIPPED</span>
+            </span>
+            <p>
+                <span class="lang-hi">Ab attacker OPPOSITE payload bhejta hai — is baar front-end <code>Transfer-Encoding</code> follow karta hai (isliye chunked body ko sahi tarike se, poori tarah parse karta hai, "0" terminator tak). Lekin back-end, jo <code>Content-Length</code> follow karta hai, ek CHHOTA body padhta hai (front-end ne jitna forward kiya usse KAM) — phir se, kuchh attacker-controlled bytes leftover reh jaate hain jo agle, victim ke request ke SHURUAAT ki tarah misinterpret ho jaate hain.</span>
+                <span class="lang-en">The attacker now sends the OPPOSITE payload — this time the front-end follows <code>Transfer-Encoding</code> (correctly, fully parsing the chunked body up to the "0" terminator). But the back-end, which follows <code>Content-Length</code>, reads a SHORTER body (less than what the front-end forwarded) — again, some attacker-controlled bytes are left over, misinterpreted as the START of the next, victim's request.</span>
+            </p>
+          </div>
+
+          <p>
+            <span class="lang-hi">GAP ye hai ki fix sirf EK SIDE (front-end) ko address kar raha tha, lekin desync ka root cause "dono sides EK JAISA consistently agree nahi karte" hai — kisi ek side ko individually badalna, sirf mismatch ki DIRECTION badal deta hai, khatam nahi karta.</span>
+            <span class="lang-en">The GAP is that the fix only addressed ONE SIDE (the front-end), but the desync's root cause is "both sides don't consistently agree the SAME way" — changing one side individually only flips the mismatch's DIRECTION, it doesn't eliminate it.</span>
+          </p>
+
+          <a class="sim-jump" href="#simulator">🎮 <span class="lang-hi">TE.CL desync simulator mein dekho</span><span class="lang-en">See the TE.CL desync in the simulator</span></a>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEVEL 3 -->
+    <div class="level-card" id="level-3" data-level="3">
+      <button class="level-header">
+        <span class="level-badge">3</span>
+        <span class="level-titles">
+          <h2>
+            <span class="lang-hi">Misconfiguration 3 — TE.TE (Obfuscated Header) Desync</span>
+            <span class="lang-en">Misconfiguration 3 — TE.TE (Obfuscated Header) Desync</span>
+          </h2>
+          <p>
+            <span class="lang-hi">Dono sides ab consistent hain, lekin header VALUE ki obfuscation naya gap khol deti hai</span>
+            <span class="lang-en">Both sides are now consistent, but header VALUE obfuscation opens a new gap</span>
+          </p>
+        </span>
+        <span class="level-tag problem"><span class="lang-hi">GAP</span><span class="lang-en">GAP</span></span>
+        <span class="chevron">▾</span>
+      </button>
+      <div class="level-body">
+        <div class="level-inner">
+          <h4>
+            <span class="lang-hi">DONO SIDES KO EK JAISA (CONSISTENT) BANAYA GAYA</span>
+            <span class="lang-en">MAKING BOTH SIDES CONSISTENT</span>
+          </h4>
+          <p>
+            <span class="lang-hi">Ab organization dono — front-end AUR back-end — ko explicitly, consistently ye rule follow karne ke liye configure karti hai: "jab bhi dono headers present hon, hamesha <code>Transfer-Encoding</code> ko priority do" (jaisa HTTP spec kehta hai). Ye Level 1 (CL.TE) aur Level 2 (TE.CL) — dono ka solid fix hai.</span>
+            <span class="lang-en">The organization now explicitly, consistently configures BOTH — the front-end AND the back-end — to follow this rule: "whenever both headers are present, always prioritize <code>Transfer-Encoding</code>" (as the HTTP spec says). This is a solid fix for both Level 1 (CL.TE) and Level 2 (TE.CL).</span>
+          </p>
+
+          <div class="callout">
+            <span class="cal-label">
+                <span class="lang-hi">⚠️ GAP — OBFUSCATED HEADER VALUE, EK SIDE USE PEHCHAAN HI NAHI PAATA</span>
+                <span class="lang-en">⚠️ GAP — AN OBFUSCATED HEADER VALUE, ONE SIDE FAILS TO RECOGNIZE IT</span>
+            </span>
+            <p>
+                <span class="lang-hi">Attacker ab <code>Transfer-Encoding</code> header ki VALUE ko thoda obfuscate karta hai — jaise <code>Transfer-Encoding: xchunked</code>, ya value ke aas-paas extra whitespace/tab characters daal kar. Ek server (jiska HTTP parser zyada STRICT hai) is malformed value ko "chunked" ki tarah RECOGNIZE hi nahi karta — isliye wo is header ko IGNORE kar deta hai, aur CHUPCHAP <code>Content-Length</code> par fallback ho jaata hai. Doosra server (jiska parser zyada LENIENT hai) isi obfuscated value ko phir bhi "chunked" ki tarah accept kar leta hai.</span>
+                <span class="lang-en">The attacker now slightly obfuscates the <code>Transfer-Encoding</code> header's VALUE — like <code>Transfer-Encoding: xchunked</code>, or adding extra whitespace/tab characters around the value. One server (with a more STRICT HTTP parser) fails to RECOGNIZE this malformed value as "chunked" at all — so it IGNORES this header, silently falling back to <code>Content-Length</code>. The other server (with a more LENIENT parser) still accepts this same obfuscated value as "chunked".</span>
+            </p>
+          </div>
+
+          <p>
+            <span class="lang-hi">GAP ye hai ki "dono headers present hon to TE ko priority do" wala rule sirf tab kaam karta hai jab dono servers EK header VALUE ko EK JAISA hi valid/invalid samjhein. Agar unke parsers ki STRICTNESS alag hai, to ye exact wahi CL/TE discrepancy wapas aa jaati hai — bas ab do headers present hone ki jagah, EK header ki subtle malformation ke through.</span>
+            <span class="lang-en">The GAP is that the rule "prioritize TE when both headers are present" only works if both servers agree on whether a header VALUE is valid/invalid, the SAME way. If their parsers' STRICTNESS differs, this exact same CL/TE discrepancy comes back — just now via a subtle malformation of ONE header, instead of two headers being present.</span>
+          </p>
+
+          <a class="sim-jump" href="#simulator">🎮 <span class="lang-hi">Obfuscated-header bypass simulator mein dekho</span><span class="lang-en">See the obfuscated-header bypass in the simulator</span></a>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEVEL 4 -->
+    <div class="level-card" id="level-4" data-level="4">
+      <button class="level-header">
+        <span class="level-badge">4</span>
+        <span class="level-titles">
+          <h2>
+            <span class="lang-hi">Final Solution — Reject Ambiguity, Normalize, Ya HTTP/2 Backend</span>
+            <span class="lang-en">Final Solution — Reject Ambiguity, Normalize, Or HTTP/2 Backend</span>
+          </h2>
+          <p>
+            <span class="lang-hi">"Guess" karne ki jagah, ambiguous request ko hi reject karo</span>
+            <span class="lang-en">Instead of "guessing", reject the ambiguous request itself</span>
+          </p>
+        </span>
+        <span class="level-tag solved"><span class="lang-hi">SOLVED</span><span class="lang-en">SOLVED</span></span>
+        <span class="chevron">▾</span>
+      </button>
+      <div class="level-body">
+        <div class="level-inner">
+          <h4>
+            <span class="lang-hi">LAYER 1 — AMBIGUOUS REQUESTS KO REJECT KARO, "GUESS" MAT KARO</span>
+            <span class="lang-en">LAYER 1 — REJECT AMBIGUOUS REQUESTS, DON'T "GUESS"</span>
+          </h4>
+          <p>
+            <span class="lang-hi">Asli, structural fix: front-end ko configure karo ki wo koi bhi request jo AMBIGUOUS FRAMING rakhti hai — chahe dono headers present hon, ya <code>Transfer-Encoding</code> ki value technically-malformed (even slightly) ho — use "normalize" karne ki koshish karne ke bajaye, SEEDHA REJECT kar de. Isse har request ki boundary ko lekar koi bhi confusion, backend tak pahunchne se pehle hi khatam ho jaati hai.</span>
+            <span class="lang-en">The real, structural fix: configure the front-end so that any request with AMBIGUOUS FRAMING — whether both headers are present, or the <code>Transfer-Encoding</code> value is technically malformed (even slightly) — is REJECTED OUTRIGHT, instead of trying to "normalize" it. This eliminates any confusion about a request's boundary before it even reaches the backend.</span>
+          </p>
+
+          <h4>
+            <span class="lang-hi">LAYER 2 — HTTP/2 BACKEND, YA CONTENT-LENGTH RECALCULATION</span>
+            <span class="lang-en">LAYER 2 — HTTP/2 BACKEND, OR CONTENT-LENGTH RECALCULATION</span>
+          </h4>
+          <p>
+            <span class="lang-hi">Agar possible ho, front-end aur back-end ke beech <code>HTTP/2</code> use karo — jiska BINARY FRAMING format explicit, length-prefixed frames use karta hai, jismein <code>Content-Length</code>/<code>Transfer-Encoding</code> jaisi ambiguity ka concept hi EXIST nahi karta. Agar HTTP/1.1 hi rakhna hai, to front-end HAR request ka <code>Content-Length</code> khud SE RECALCULATE aur NORMALIZE karke back-end ko bheje, taaki backend ko koi ambiguous choice hi na karni pade.</span>
+            <span class="lang-en">If possible, use <code>HTTP/2</code> between front-end and back-end — its BINARY FRAMING format uses explicit, length-prefixed frames, where the concept of a <code>Content-Length</code>/<code>Transfer-Encoding</code> ambiguity doesn't EXIST at all. If HTTP/1.1 must be kept, the front-end should RECALCULATE and NORMALIZE every request's <code>Content-Length</code> itself before forwarding to the back-end, so the backend never has to make an ambiguous choice.</span>
+          </p>
+
+          <div class="callout fixnote">
+            <span class="cal-label">
+                <span class="lang-hi">✅ DEFENSE-IN-DEPTH KE LIYE ADDITIONAL LAYERS</span>
+                <span class="lang-en">✅ ADDITIONAL LAYERS FOR DEFENSE-IN-DEPTH</span>
+            </span>
+            <p>
+                <span class="lang-hi">Jahan feasible ho, front-end aur back-end ke beech CONNECTION REUSE hi DISABLE kar do (har backend request ke liye ek naya connection) — isse "agle request par leftover data" ka poora attack surface hi khatam ho jaata hai (thoda performance cost ke saath). Front-end aur back-end ka HTTP parser implementation actively-maintained, well-patched software use karo, kyunki is bug class ka jyaadatar hissa DIFFERENT parsers ke SUBTLE differences se hi aata hai.</span>
+                <span class="lang-en">Where feasible, DISABLE connection reuse between the front-end and back-end entirely (a new connection for every backend request) — this eliminates the entire "leftover data on the next request" attack surface (at some performance cost). Use actively-maintained, well-patched software for the front-end and back-end's HTTP parser implementations, since most of this bug class comes from SUBTLE differences between DIFFERENT parsers.</span>
+            </p>
+          </div>
+
+          <a class="sim-jump" href="#simulator">🎮 <span class="lang-hi">Final fix simulator mein dekho</span><span class="lang-en">See the final fix in the simulator</span></a>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ── VULNERABLE VS SECURE CODE IMPLEMENTATIONS ── -->
+  <section class="sec-head" id="code-fixes">
+    <div class="sec-eyebrow"><span class="lang-hi">Code Level Fixes</span><span class="lang-en">Code Level Fixes</span></div>
+    <h2><span class="lang-hi">Code Level Fixes: Vulnerable vs. Secure Code Implementations</span><span class="lang-en">Code Level Fixes: Vulnerable vs. Secure Code Implementations</span></h2>
+    <p style="max-width: 100%; text-align: justify;">
+      <span class="lang-hi">HTTP Request Smuggling (HTTP Desync Attack) ko rokne ke liye sirf application level par regex ya route validation lagana bilkul ineffective hota hai kyunki yeh vulnerability request parsing layer aur reverse-proxy/backend communication stream mein hoti hai. Attackers <code>Content-Length</code> aur <code>Transfer-Encoding: chunked</code> dono headers ek sath bhejte hain, ya header obfuscation (jaise <code>Transfer-Encoding: [tab]chunked</code>, space before colon, multiple content-lengths) ka use karke front-end aur back-end ke message boundary interpretation ko desync kar dete hain. Sabse secure aur production-grade gold standard solutions hain: (1) <strong>Strict RFC 7230 Compliance</strong>: Agar kisi bhi request mein <code>Content-Length</code> aur <code>Transfer-Encoding</code> dono maujood hon ya multiple conflicting Content-Lengths hon, to use bina parse kiye turant <code>400 Bad Request</code> ke saath drop karna, (2) <strong>Front-End Normalization &amp; Sanitization</strong>: Reverse proxy (Nginx / Cloudflare / Envoy) ko configure karna taaki wo backend ko request forward karte waqt boundary headers ko normalize kare aur ambiguous headers ko strip kare, (3) <strong>End-to-End HTTP/2 or HTTP/3</strong>: Front-end se lekar backend tak binary framing protocol use karna jisme length-prefixed binary frames hote hain aur boundary ambiguity exist hi nahi karti, aur (4) <strong>Disable Backend Connection Pooling</strong>: Jab tak parsers 100% verified na hon, tab tak backend reuse connections ko isolate ya disable rakhna. Niche Node.js aur Python (Flask / Gunicorn / Nginx) ke real-world vulnerable setups aur unke production-grade secure implementations diye gaye hain:</span>
+      <span class="lang-en">Preventing HTTP Request Smuggling (HTTP Desync Attacks) using simple application-level route logic or regex filters is completely ineffective because this vulnerability resides within the HTTP transport and message framing layer between front-end reverse proxies and backend application runtimes. Attackers dispatch ambiguous requests containing conflicting <code>Content-Length</code> and <code>Transfer-Encoding: chunked</code> headers, or exploit whitespace and delimiter mutations to trick proxies into disagreeing on where one request terminates and the next begins. The industry gold standard defense entails: (1) <strong>Strict RFC 7230 Message Framing Enforcement</strong>: Instantly rejecting any incoming request that supplies both <code>Content-Length</code> and <code>Transfer-Encoding</code> or duplicate conflicting lengths with an immediate <code>400 Bad Request</code>, (2) <strong>Reverse Proxy Header Normalization</strong>: Configuring upstream front-ends (Nginx, Envoy, Cloudflare) to sanitize and recalculate framing headers before proxying downstream, (3) <strong>End-to-End HTTP/2 or HTTP/3 Architecture</strong>: Adopting length-prefixed binary framing from edge to origin, entirely eliminating text-based delimiter ambiguities, and (4) <strong>Disabling Downstream TCP Socket Reuse</strong>: Closing or isolating persistent backend keep-alive connections when heterogeneous parser synchronization cannot be mathematically guaranteed. Below are vulnerable vs. production-grade secure implementations across Node.js and Python (Flask / Gunicorn / Nginx):</span>
+    </p>
+  </section>
+
+  <!-- NODE.JS CODE FIX DROPDOWN -->
+  <div class="level-card open" style="margin-bottom: 16px;">
+    <button class="level-header" type="button" onclick="this.closest('.level-card').classList.toggle('open')">
+      <span class="level-badge" style="background:rgba(104, 160, 99, 0.15); color:#68a063; border-color:#68a063;">JS</span>
+      <span class="level-titles">
+        <h2>
+          <span class="lang-hi">1. Node.js (Strict llhttp Parser, Boundary Guard &amp; Socket Isolation)</span>
+          <span class="lang-en">1. Node.js (Strict llhttp Parser, Boundary Guard &amp; Socket Isolation)</span>
+        </h2>
+        <p>
+          <span class="lang-hi">RFC 7230 dual-header rejection, duplicate Content-Length defense, aur HTTP/2 binary framing</span>
+          <span class="lang-en">RFC 7230 dual-header rejection, duplicate Content-Length defense, and HTTP/2 binary framing</span>
+        </p>
+      </span>
+      <span class="level-tag solved"><span class="lang-hi">SECURE PATTERN</span><span class="lang-en">SECURE PATTERN</span></span>
+      <span class="chevron">▾</span>
+    </button>
+    <div class="level-body">
+      <div class="level-inner">
+        <pre><code>// =========================================================================
+// 1. Node.js (Express / http / http2 RFC 7230 Hardening)
+// =========================================================================
+
+const http = require('http');
+const http2 = require('http2');
+const express = require('express');
+const app = express();
+
+// -------------------------------------------------------------------------
+// ❌ INSECURE IMPLEMENTATION (Common HTTP Desynchronization Flaws)
+// -------------------------------------------------------------------------
+// 1. Permissive parser allows ambiguous headers through to backend
+// 2. Dual Content-Length + Transfer-Encoding headers accepted concurrently
+// 3. Persistent TCP connection reuse allows smuggled requests to poison queue
+// 4. Duplicate conflicting Content-Length headers not strictly dropped
+// -------------------------------------------------------------------------
+
+// ❌ VULNERABILITY: Application processes request without validating framing
+app.post('/api/order', (req, res) =&gt; {
+    // If front-end proxy used Content-Length and backend Node.js processed
+    // Transfer-Encoding: chunked, any smuggled payload remains in the socket buffer!
+    return res.json({ status: 'Order received' });
+});
+
+
+// -------------------------------------------------------------------------
+// ✅ SECURE IMPLEMENTATION (Production-Grade Request Smuggling Defenses)
+// -------------------------------------------------------------------------
+// 1. Boundary Guard Middleware: Rejects dual CL + TE or duplicate CL headers
+// 2. Strict HTTP parser verification: Node.js llhttp in strict mode
+// 3. Socket isolation: Disable keep-alive reuse if proxy sync is unverified
+// 4. End-to-end HTTP/2 binary framing (Immune to text framing ambiguity)
+// -------------------------------------------------------------------------
+
+// 1. RFC 7230 §3.3.3 Boundary Guard Middleware (Enforce before any body parser)
+function rfc7230BoundaryGuard(req, res, next) {
+    const rawHeaders = req.rawHeaders; // Access unparsed wire headers
+    
+    let clCount = 0;
+    let teCount = 0;
+
+    for (let i = 0; i &lt; rawHeaders.length; i += 2) {
+        const headerName = rawHeaders[i].toLowerCase();
+        if (headerName === 'content-length') clCount++;
+        if (headerName === 'transfer-encoding') teCount++;
+    }
+
+    // DEFENSE A: Reject multiple Content-Length headers (RFC 7230 §3.3.2)
+    if (clCount &gt; 1) {
+        res.writeHead(400, { 'Connection': 'close', 'Content-Type': 'text/plain' });
+        return res.end('400 Bad Request: Duplicate Content-Length headers detected.');
+    }
+
+    // DEFENSE B: Reject conflicting CL + TE headers (CL.TE / TE.CL attack vector)
+    if (clCount &gt; 0 &amp;&amp; teCount &gt; 0) {
+        res.writeHead(400, { 'Connection': 'close', 'Content-Type': 'text/plain' });
+        return res.end('400 Bad Request: Ambiguous framing (Both Content-Length and Transfer-Encoding present).');
+    }
+
+    // DEFENSE C: Reject malformed Transfer-Encoding (TE.TE obfuscation tricks)
+    if (teCount &gt; 0) {
+        const teValue = req.headers['transfer-encoding'];
+        // RFC specifies chunked must be the final encoding transfer
+        if (typeof teValue !== 'string' || !teValue.toLowerCase().endsWith('chunked')) {
+            res.writeHead(400, { 'Connection': 'close', 'Content-Type': 'text/plain' });
+            return res.end('400 Bad Request: Invalid or unsupported Transfer-Encoding value.');
+        }
+    }
+
+    next();
+}
+
+app.use(rfc7230BoundaryGuard);
+app.use(express.json());
+
+// 2. Hardened HTTP/1.1 Server Instance
+const server = http.createServer({
+    insecureHTTPParser: false, // Enforces strict llhttp parser; rejects header smuggling
+    maxHeaderSize: 8192        // Bounds maximum header length (8KB cap)
+}, app);
+
+// DEFENSE D: If upstream proxy synchronization cannot be guaranteed,
+// disable persistent TCP keep-alive connection reuse to eliminate request queue poisoning
+// server.keepAliveTimeout = 0; // Forces 1 request per TCP socket
+
+// 3. Gold Standard: End-to-End HTTP/2 Server (Length-prefixed binary frames)
+// Eliminates delimiter ambiguities entirely:
+// const h2Server = http2.createSecureServer({ cert: ..., key: ... }, app);
+
+server.listen(3000, () =&gt; {
+    console.log('Production server listening on port 3000 with RFC 7230 guards active');
+});</code></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- PYTHON FLASK CODE FIX DROPDOWN -->
+  <div class="level-card open" style="margin-bottom: 24px;">
+    <button class="level-header" type="button" onclick="this.closest('.level-card').classList.toggle('open')">
+      <span class="level-badge" style="background:rgba(53, 114, 165, 0.15); color:#3572A5; border-color:#3572A5;">PY</span>
+      <span class="level-titles">
+        <h2>
+          <span class="lang-hi">2. Python / Flask (Gunicorn Config, WSGI Gatekeeper &amp; Nginx Hardening)</span>
+          <span class="lang-en">2. Python / Flask (Gunicorn Config, WSGI Gatekeeper &amp; Nginx Hardening)</span>
+        </h2>
+        <p>
+          <span class="lang-hi">Nginx proxy header stripping, Gunicorn strict parsing, WSGI desync gatekeeper middleware</span>
+          <span class="lang-en">Nginx proxy header stripping, Gunicorn strict parsing, WSGI desync gatekeeper middleware</span>
+        </p>
+      </span>
+      <span class="level-tag solved"><span class="lang-hi">SECURE PATTERN</span><span class="lang-en">SECURE PATTERN</span></span>
+      <span class="chevron">▾</span>
+    </button>
+    <div class="level-body">
+      <div class="level-inner">
+        <pre><code># =========================================================================
+# 2. Python / Flask (Gunicorn WSGI / Nginx Reverse Proxy Hardening)
+# =========================================================================
+
+from flask import Flask, request, jsonify
+
+app = Flask(__name__)
+
+# -------------------------------------------------------------------------
+# ❌ INSECURE CONFIGURATION (Permissive Upstream &amp; Backend WSGI)
+# -------------------------------------------------------------------------
+# 1. Nginx passes client-controlled Transfer-Encoding directly to Gunicorn
+# 2. Gunicorn keep-alive pooling enabled between untrusted heterogeneous parsers
+# 3. WSGI application processes requests without validating boundary exclusivity
+# -------------------------------------------------------------------------
+
+
+# -------------------------------------------------------------------------
+# ✅ SECURE IMPLEMENTATION (Production-Grade Multi-Layer Defense)
+# -------------------------------------------------------------------------
+# Layer 1: Nginx Reverse Proxy Configuration (nginx.conf)
+# Layer 2: Gunicorn WSGI Server Config (gunicorn.conf.py)
+# Layer 3: Flask WSGI Smuggling Gatekeeper Middleware
+# -------------------------------------------------------------------------
+
+# -------------------------------------------------------------------------
+# LAYER 1: NGINX REVERSE PROXY HARDENING (nginx.conf snippet)
+# -------------------------------------------------------------------------
+# http {
+#     # Reject requests with invalid or malformed header names
+#     ignore_invalid_headers on;
+#
+#     server {
+#         listen 443 ssl http2; # Enforce HTTP/2 on the front-end
+#         server_name example.com;
+#
+#         location / {
+#             proxy_pass http://gunicorn_backend;
+#             proxy_http_version 1.1;
+#
+#             # Clear hop-by-hop Connection header
+#             proxy_set_header Connection "";
+#
+#             # CRITICAL: Prevent TE.CL &amp; CL.TE smuggling by stripping
+#             # raw client Transfer-Encoding; Nginx re-buffers the request body
+#             proxy_set_header Transfer-Encoding "";
+#
+#             # Ensure backend receives accurate, normalized Content-Length
+#             proxy_set_header Content-Length $content_length;
+#             proxy_set_header Host $host;
+#         }
+#     }
+# }
+
+# -------------------------------------------------------------------------
+# LAYER 2: GUNICORN PRODUCTION CONFIG (gunicorn.conf.py)
+# -------------------------------------------------------------------------
+# bind = "127.0.0.1:8000"
+# workers = 4
+# worker_class = "sync"
+# # Disallow non-standard methods or malformed HTTP versions
+# permit_unconventional_http_method = False
+# permit_unconventional_http_version = False
+# # If proxy header normalization is uncertain, disable backend keep-alive:
+# keepalive = 0  # Forces fresh TCP connection per request, stopping queue poisoning
+
+# -------------------------------------------------------------------------
+# LAYER 3: FLASK WSGI BOUNDARY GATEKEEPER MIDDLEWARE
+# -------------------------------------------------------------------------
+class HttpSmugglingGatekeeper:
+    """WSGI middleware ensuring strict RFC 7230 message framing."""
+    def __init__(self, wsgi_app):
+        self.wsgi_app = wsgi_app
+
+    def __call__(self, environ, start_response):
+        content_length = environ.get('CONTENT_LENGTH', '')
+        transfer_encoding = environ.get('HTTP_TRANSFER_ENCODING', '')
+
+        has_cl = bool(content_length and content_length.strip())
+        has_te = bool(transfer_encoding and transfer_encoding.strip())
+
+        # DEFENSE: Reject requests supplying both Content-Length &amp; Transfer-Encoding
+        if has_cl and has_te:
+            start_response(
+                '400 Bad Request',
+                [('Content-Type', 'text/plain'), ('Connection', 'close')]
+            )
+            return [b'400 Bad Request: Ambiguous framing (CL and TE concurrently supplied).']
+
+        # Validate Content-Length integer value
+        if has_cl:
+            try:
+                cl_int = int(content_length)
+                if cl_int &lt; 0:
+                    raise ValueError()
+            except ValueError:
+                start_response('400 Bad Request', [('Content-Type', 'text/plain')])
+                return [b'400 Bad Request: Invalid Content-Length header.']
+
+        return self.wsgi_app(environ, start_response)
+
+# Apply gatekeeper middleware to Flask app
+app.wsgi_app = HttpSmugglingGatekeeper(app.wsgi_app)
+
+@app.route('/api/secure/checkout', methods=['POST'])
+def secure_checkout():
+    data = request.get_json() or {}
+    return jsonify({"status": "verified", "payload": data})</code></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- SIMULATOR -->
+  <section class="simulator-section" id="simulator">
+    <div class="sim-header-bar">
+      <div class="sim-title"><span>[🔴]</span> VAPT_SMUGGLING_INTERCEPTOR</div>
+
+      <div class="sim-controls">
+        <div class="sim-control-group">
+          <label><span class="lang-hi">Attacker Payload</span><span class="lang-en">Attacker Payload</span></label>
+          <div class="sim-btn-group" id="opt-origin">
+            <button class="sim-btn active" data-val="clte">CL.TE (Both Headers, Standard)</button>
+            <button class="sim-btn" data-val="tecl">TE.CL / Obfuscated TE Header</button>
+          </div>
+        </div>
+
+        <div class="sim-control-group" style="margin-top: 10px;">
+          <label><span class="lang-hi">Backend Defense</span><span class="lang-en">Backend Defense</span></label>
+          <div class="sim-btn-group" id="opt-defense">
+            <button class="sim-btn active" data-val="0">0: No Standardization</button>
+            <button class="sim-btn" data-val="1">1: Front-End Fixed Only</button>
+            <button class="sim-btn" data-val="2">2: Both Sides Consistent</button>
+            <button class="sim-btn" data-val="3">3: Strict Parsers Differ</button>
+            <button class="sim-btn" data-val="4">4: Reject Ambiguity (Final)</button>
+          </div>
+        </div>
+
+        <button class="btn-execute" id="btn-execute" style="margin-top: 15px;">Launch_Attack</button>
+      </div>
+    </div>
+
+    <div class="workspace">
+      <!-- Panel 1: Client -->
+      <div class="sim-panel" id="panel-browser">
+        <div class="sim-panel-header">🌐 Client_Smuggled_Request</div>
+        <div class="sim-panel-body" id="log-browser">
+            <div style="margin-bottom:10px;"><span class="c-info">Payload:</span> <br> <code class="inline-code" id="lbl-payload">CL.TE (Both Headers, Standard)</code></div>
+            <div><span class="c-info">Current Defense:</span> <br> <span class="c-warn" id="lbl-defense">0: No Standardization</span></div>
+        </div>
+      </div>
+
+      <!-- Panel 2: Front-end -->
+      <div class="sim-panel" id="panel-network">
+        <div class="sim-panel-header">⚙️ Frontend_Parsing</div>
+        <div class="sim-panel-body" id="log-network"></div>
+      </div>
+
+      <!-- Panel 3: Back-end -->
+      <div class="sim-panel" id="panel-server">
+        <div class="sim-panel-header">🖥️ Backend_Parsing / Victim_Impact</div>
+        <div class="sim-panel-body" id="log-server"></div>
+      </div>
+    </div>
+
+    <div id="sim-verdict-box" class="sim-verdict-box">
+      <div id="sim-verdict-title" class="sim-verdict-title"></div>
+      <div id="sim-verdict-text" class="sim-verdict-text"></div>
+    </div>
+  </section>
+
+  <!-- GLOSSARY -->
+  <section class="faq-section" id="glossary">
+    <div class="faq-header">
+      <h2>📖 <span class="lang-hi">Glossary</span><span class="lang-en">Glossary</span></h2>
+    </div>
+
+    <div class="faq-list">
+
+      <div class="glossary-item">
+        <div class="glossary-term"><span class="glossary-badge">01</span> HTTP Request Smuggling (HTTP Desync Attack)</div>
+        <div class="glossary-def">
+          <span class="lang-hi">Ek vulnerability jisme front-end aur back-end servers ek hi request ki BOUNDARY ko different tarike se parse karte hain, jisse attacker apna request "smuggle" kar sakta hai.</span>
+          <span class="lang-en">A vulnerability where the front-end and back-end servers parse the same request's BOUNDARY differently, letting an attacker "smuggle" their own request.</span>
+        </div>
+      </div>
+
+      <div class="glossary-item">
+        <div class="glossary-term"><span class="glossary-badge">02</span> Content-Length Header</div>
+        <div class="glossary-def">
+          <span class="lang-hi">Ek HTTP header jo batata hai ki request/response body ka EXACT byte count kya hai.</span>
+          <span class="lang-en">An HTTP header stating the EXACT byte count of the request/response body.</span>
+        </div>
+      </div>
+
+      <div class="glossary-item">
+        <div class="glossary-term"><span class="glossary-badge">03</span> Transfer-Encoding Header</div>
+        <div class="glossary-def">
+          <span class="lang-hi">Ek HTTP header jo batata hai ki body kis format mein bheji jaa rahi hai — <code>chunked</code> value ke saath, body chhote-chhote, self-announcing "chunks" mein todi jaati hai.</span>
+          <span class="lang-en">An HTTP header stating the format the body is sent in — with the <code>chunked</code> value, the body is split into small, self-announcing "chunks".</span>
+        </div>
+      </div>
+
+      <div class="glossary-item">
+        <div class="glossary-term"><span class="glossary-badge">04</span> CL.TE Desync</div>
+        <div class="glossary-def">
+          <span class="lang-hi">Ek desync class jisme front-end <code>Content-Length</code> follow karta hai, aur back-end <code>Transfer-Encoding</code>.</span>
+          <span class="lang-en">A desync class where the front-end follows <code>Content-Length</code>, and the back-end follows <code>Transfer-Encoding</code>.</span>
+        </div>
+      </div>
+
+      <div class="glossary-item">
+        <div class="glossary-term"><span class="glossary-badge">05</span> TE.CL Desync</div>
+        <div class="glossary-def">
+          <span class="lang-hi">CL.TE ka mirror-image — front-end <code>Transfer-Encoding</code> follow karta hai, aur back-end <code>Content-Length</code>.</span>
+          <span class="lang-en">The mirror-image of CL.TE — the front-end follows <code>Transfer-Encoding</code>, and the back-end follows <code>Content-Length</code>.</span>
+        </div>
+      </div>
+
+      <div class="glossary-item">
+        <div class="glossary-term"><span class="glossary-badge">06</span> TE.TE Desync</div>
+        <div class="glossary-def">
+          <span class="lang-hi">Ek advanced variant jisme dono servers Transfer-Encoding priority par agree hote hain, lekin ek OBFUSCATED header VALUE ko ek server hi recognize nahi kar paata.</span>
+          <span class="lang-en">An advanced variant where both servers agree on Transfer-Encoding priority, but one server fails to recognize an OBFUSCATED header VALUE.</span>
+        </div>
+      </div>
+
+      <div class="glossary-item">
+        <div class="glossary-term"><span class="glossary-badge">07</span> Front-End / Back-End (Proxy Chain)</div>
+        <div class="glossary-def">
+          <span class="lang-hi">Ek typical web architecture jahan request pehle ek FRONT-END (load balancer/CDN/WAF) se guzarti hai, jo use ek ya kai BACK-END application servers ki taraf forward karti hai.</span>
+          <span class="lang-en">A typical web architecture where a request first passes through a FRONT-END (load balancer/CDN/WAF), which forwards it to one or several BACK-END application servers.</span>
+        </div>
+      </div>
+
+      <div class="glossary-item">
+        <div class="glossary-term"><span class="glossary-badge">08</span> Connection Pooling / Keep-Alive</div>
+        <div class="glossary-def">
+          <span class="lang-hi">Ek performance optimization jisme EK TCP connection ko multiple HTTP requests ke liye REUSE kiya jaata hai — smuggling ka impact isi reuse ki wajah se doosre users tak pahunch paata hai.</span>
+          <span class="lang-en">A performance optimization that REUSES ONE TCP connection for multiple HTTP requests — smuggling's impact reaches other users exactly because of this reuse.</span>
+        </div>
+      </div>
+
+      <div class="glossary-item">
+        <div class="glossary-term"><span class="glossary-badge">09</span> Request Queue Poisoning</div>
+        <div class="glossary-def">
+          <span class="lang-hi">Jab attacker ka smuggled data, ek reused connection par, agle legitimate user ke request ke saath mix/prepend ho jaata hai.</span>
+          <span class="lang-en">When an attacker's smuggled data mixes/prepends itself with the next legitimate user's request on a reused connection.</span>
+        </div>
+      </div>
+
+      <div class="glossary-item">
+        <div class="glossary-term"><span class="glossary-badge">10</span> Chunked Encoding</div>
+        <div class="glossary-def">
+          <span class="lang-hi">Ek encoding jisme body ko multiple, self-announcing chunks mein bheja jaata hai, aur ek "0" size wala chunk poori body ke end ko mark karta hai.</span>
+          <span class="lang-en">An encoding that sends the body as multiple, self-announcing chunks, with a "0"-sized chunk marking the end of the entire body.</span>
+        </div>
+      </div>
+
+      <div class="glossary-item">
+        <div class="glossary-term"><span class="glossary-badge">11</span> HTTP/1.1 vs HTTP/2</div>
+        <div class="glossary-def">
+          <span class="lang-hi">HTTP/1.1 text-based, ambiguous framing ka use karta hai (CL/TE). HTTP/2 binary, explicit length-prefixed FRAMES use karta hai — jismein ye ambiguity concept hi exist nahi karta.</span>
+          <span class="lang-en">HTTP/1.1 uses text-based, ambiguous framing (CL/TE). HTTP/2 uses binary, explicit length-prefixed FRAMES — where this ambiguity doesn't exist at all.</span>
+        </div>
+      </div>
+
+      <div class="glossary-item">
+        <div class="glossary-term"><span class="glossary-badge">12</span> WAF (Web Application Firewall)</div>
+        <div class="glossary-def">
+          <span class="lang-hi">Ek filter jo web application ke saamne baitha hota hai aur malicious requests block karta hai — smuggling se attacker isi WAF ki apni nazron ke bahar apna asal request bhej sakta hai.</span>
+          <span class="lang-en">A filter that sits in front of a web application, blocking malicious requests — smuggling lets an attacker send their real request outside this WAF's own view.</span>
+        </div>
+      </div>
+
+      <div class="glossary-item">
+        <div class="glossary-term"><span class="glossary-badge">13</span> Cache Poisoning</div>
+        <div class="glossary-def">
+          <span class="lang-hi">Jab smuggled request ka use karke ek caching layer ko ek genuine URL ke liye MALICIOUS response cache karne ke liye trick kiya jaata hai.</span>
+          <span class="lang-en">When a smuggled request is used to trick a caching layer into caching a MALICIOUS response for a genuine URL.</span>
+        </div>
+      </div>
+
+      <div class="glossary-item">
+        <div class="glossary-term"><span class="glossary-badge">14</span> CVE</div>
+        <div class="glossary-def">
+          <span class="lang-hi"><strong>Common Vulnerabilities and Exposures</strong> — ek unique ID jo kisi publicly-known security vulnerability ko diya jaata hai.</span>
+          <span class="lang-en"><strong>Common Vulnerabilities and Exposures</strong> — a unique ID assigned to a publicly-known security vulnerability.</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="faq-section" id="confusing-questions">
+    <div class="faq-header">
+      <h2>🤔 <span class="lang-hi">Confusing Questions</span><span class="lang-en">Confusing Questions</span></h2>
+      <p>
+        <span class="lang-hi">Ye wo sawaal hain jo HTTP Request Smuggling samajhne ke baad bhi log ghumte rehte hain — expand karke apna concept clear karo.</span>
+        <span class="lang-en">These are the questions people still get confused about even after understanding HTTP Request Smuggling — expand each to clear your concepts.</span>
+      </p>
+    </div>
+
+    <div class="faq-list">
+
+      <div class="faq-item">
+        <button class="faq-question">
+          <span class="faq-q-badge">Q1</span>
+          <span class="faq-q-text">
+            <span class="lang-hi">CL.TE aur TE.CL smuggling mein kya fark hai?</span>
+            <span class="lang-en">What is the difference between CL.TE and TE.CL smuggling?</span>
+          </span>
+          <span class="faq-icon">▼</span>
+        </button>
+        <div class="faq-answer">
+          <p>
+            <span class="lang-hi">Naming convention "FRONT-END.BACK-END" hai. <code>CL.TE</code> mein front-end <code>Content-Length</code> follow karta hai, back-end <code>Transfer-Encoding</code> (jaisa Level 1 mein dikhaya). <code>TE.CL</code> ismein bilkul ULTA hai — front-end <code>Transfer-Encoding</code> follow karta hai, back-end <code>Content-Length</code> (jaisa Level 2 mein dikhaya). Payload construction dono mein alag hoti hai kyunki attacker ko exact mismatch ke hisaab se bytes craft karne padte hain.</span>
+            <span class="lang-en">The naming convention is "FRONT-END.BACK-END". In <code>CL.TE</code>, the front-end follows <code>Content-Length</code>, the back-end follows <code>Transfer-Encoding</code> (as shown in Level 1). <code>TE.CL</code> is exactly the OPPOSITE — the front-end follows <code>Transfer-Encoding</code>, the back-end follows <code>Content-Length</code> (as shown in Level 2). Payload construction differs between the two since the attacker has to craft bytes matching the exact mismatch.</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question">
+          <span class="faq-q-badge">Q2</span>
+          <span class="faq-q-text">
+            <span class="lang-hi">HTTP Request Smuggling itna dangerous kyu hai jab ye "sirf parsing confusion" lagta hai?</span>
+            <span class="lang-en">Why is HTTP Request Smuggling so dangerous when it "looks like just parsing confusion"?</span>
+          </span>
+          <span class="faq-icon">▼</span>
+        </button>
+        <div class="faq-answer">
+          <p>
+            <span class="lang-hi">Kyunki iska impact SIRF attacker ki apni request tak limited nahi rehta — jaisa Real-World Impact mein dikhaya, ye DOOSRE, genuinely legitimate users ke requests/responses ko hijack, poison, ya leak kar sakta hai. Ek "sirf parsing detail" WAF bypass, session hijacking, aur cache poisoning tak escalate ho sakta hai — isliye ye "parsing confusion" hone ke bawajood Critical severity tak reach kar sakta hai.</span>
+            <span class="lang-en">Because its impact isn't limited to just the attacker's own request — as shown in Real-World Impact, it can hijack, poison, or leak OTHER, genuinely legitimate users' requests/responses. A "mere parsing detail" can escalate into WAF bypass, session hijacking, and cache poisoning — which is why, despite being "parsing confusion", it can reach Critical severity.</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question">
+          <span class="faq-q-badge">Q3</span>
+          <span class="faq-q-text">
+            <span class="lang-hi">Kya sirf ek header (Content-Length ya Transfer-Encoding) hi kaafi hoti hai request boundary define karne ke liye?</span>
+            <span class="lang-en">Is just one header (Content-Length or Transfer-Encoding) enough to define a request boundary?</span>
+          </span>
+          <span class="faq-icon">▼</span>
+        </button>
+        <div class="faq-answer">
+          <p>
+            <span class="lang-hi">Haan, ek genuine request ke liye SIRF EK header hi hona chahiye — problem tab shuru hoti hai jab BOTH bhej diye jaate hain (jo normally koi genuine client kabhi nahi karta), ya jab EK header ki VALUE hi ambiguous ho. Server implementations ko ideally aisi kisi bhi ambiguous request ko REJECT kar dena chahiye, "sabse likely" option guess nahi karna chahiye.</span>
+            <span class="lang-en">Yes, a genuine request should only ever have ONE header — the problem starts when BOTH are sent (which no genuine client ever normally does), or when a SINGLE header's VALUE itself is ambiguous. Server implementations should ideally REJECT any such ambiguous request, not guess the "most likely" option.</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question">
+          <span class="faq-q-badge">Q4</span>
+          <span class="faq-q-text">
+            <span class="lang-hi">Connection pooling smuggling ko itna severe kyu bana deta hai?</span>
+            <span class="lang-en">Why does connection pooling make smuggling so severe?</span>
+          </span>
+          <span class="faq-icon">▼</span>
+        </button>
+        <div class="faq-answer">
+          <p>
+            <span class="lang-hi">Jaisa Level 0 mein dikhaya, connection pooling EK connection ko MULTIPLE, alag-alag users ke requests ke liye REUSE karta hai. Isi wajah se attacker ka "leftover" data doosre, GENUINELY UNRELATED users ke requests tak "leak" ho sakta hai — agar har request apna khud ka, naya connection use karta, to smuggled data sirf attacker ke apne connection tak hi limited rehta, koi cross-user impact nahi hota.</span>
+            <span class="lang-en">As shown in Level 0, connection pooling REUSES ONE connection for MULTIPLE, different users' requests. This is exactly why an attacker's "leftover" data can "leak" into other, GENUINELY UNRELATED users' requests — if every request used its own, fresh connection, smuggled data would stay limited to just the attacker's own connection, with no cross-user impact.</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question">
+          <span class="faq-q-badge">Q5</span>
+          <span class="faq-q-text">
+            <span class="lang-hi">Kya HTTP/2 use karna smuggling ko poori tarah khatam kar deta hai?</span>
+            <span class="lang-en">Does using HTTP/2 fully eliminate smuggling?</span>
+          </span>
+          <span class="faq-icon">▼</span>
+        </button>
+        <div class="faq-answer">
+          <p>
+            <span class="lang-hi">HTTP/2 ka apna binary framing format is EXACT CL/TE ambiguity ko structurally khatam kar deta hai (jaisa Level 4 mein dikhaya) — isliye HTTP/2 END-TO-END (client se back-end tak) use karna bahut strong hai. LEKIN, agar front-end HTTP/2 receive karta hai lekin back-end ke saath HTTP/1.1 mein "DOWNGRADE" karke baat karta hai (jo bahut common practice hai), to downgrade ke waqt HTTP/1.1 wali same ambiguities phir se introduce ho sakti hain — "HTTP/2 downgrade smuggling" ek separate, real bypass class hai.</span>
+            <span class="lang-en">HTTP/2's own binary framing format structurally eliminates this exact CL/TE ambiguity (as shown in Level 4) — so using HTTP/2 END-TO-END (client to back-end) is very strong. HOWEVER, if the front-end receives HTTP/2 but "DOWNGRADES" to speak HTTP/1.1 with the back-end (a very common practice), the same HTTP/1.1 ambiguities can get reintroduced during that downgrade — "HTTP/2 downgrade smuggling" is a separate, real bypass class.</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question">
+          <span class="faq-q-badge">Q6</span>
+          <span class="faq-q-text">
+            <span class="lang-hi">HTTP Request Smuggling ko practically detect kaise karte hain (time-based technique)?</span>
+            <span class="lang-en">How is HTTP Request Smuggling practically detected (time-based technique)?</span>
+          </span>
+          <span class="faq-icon">▼</span>
+        </button>
+        <div class="faq-answer">
+          <p>
+            <span class="lang-hi">Sabse common technique ek request bhejna hai jo, agar desync exist karta hai, to backend ek AAGE aane wale, incomplete request ka INTEZAAR karne lagta hai (jaise ek chunk ka size galat batana, jisse backend "aur data aayega" soch kar wait kare). Agar response mein genuinely ek NOTICEABLE DELAY (jaise 10+ seconds) aata hai jo baseline se alag hai, to ye confirm karta hai ki backend "atka hua hai" — desync exist karta hai, chahe koi direct output na dikhe.</span>
+            <span class="lang-en">The most common technique is sending a request that, if a desync exists, makes the backend WAIT for a subsequent, incomplete request (like announcing a chunk's size incorrectly, making the backend think "more data is coming" and wait). If the response has a genuinely NOTICEABLE DELAY (like 10+ seconds) different from the baseline, it confirms the backend is "stuck" — a desync exists, even with no direct output visible.</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question">
+          <span class="faq-q-badge">Q7</span>
+          <span class="faq-q-text">
+            <span class="lang-hi">Front-end aur back-end dono servers "correct" ho sakte hain, phir bhi smuggling kyu hoti hai?</span>
+            <span class="lang-en">Both front-end and back-end servers can be "correct", so why does smuggling still happen?</span>
+          </span>
+          <span class="faq-icon">▼</span>
+        </button>
+        <div class="faq-answer">
+          <p>
+            <span class="lang-hi">Ye bilkul possible hai ki har EK server, ISOLATION mein dekha jaaye, to apni HTTP spec interpretation ke hisaab se "sahi" ho — HTTP spec khud kuch edge cases mein thodi ambiguous hai, aur alag-alag implementations ne alag-alag, defensible choices ki hain. Problem individual server ki "galti" nahi hai — problem ye hai ki DONO servers KE BEECH KA AGREEMENT missing hai. Isiliye fix bhi individual server-level nahi, SYSTEM-LEVEL (jaisa Level 4 mein dikhaya) hona chahiye.</span>
+            <span class="lang-en">It's entirely possible for EACH server, viewed in ISOLATION, to be "correct" per its own HTTP spec interpretation — the HTTP spec itself is somewhat ambiguous in certain edge cases, and different implementations have made different, defensible choices. The problem isn't any individual server's "mistake" — the problem is the missing AGREEMENT BETWEEN both servers. This is why the fix must also be SYSTEM-LEVEL (as shown in Level 4), not individual-server-level.</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question">
+          <span class="faq-q-badge">Q8</span>
+          <span class="faq-q-text">
+            <span class="lang-hi">Kya smuggling sirf load balancers/proxies ke through hi possible hai?</span>
+            <span class="lang-en">Is smuggling only possible through load balancers/proxies?</span>
+          </span>
+          <span class="faq-icon">▼</span>
+        </button>
+        <div class="faq-answer">
+          <p>
+            <span class="lang-hi">Nahi, koi bhi 2-server chain jismein REQUEST FORWARD kiya jaata hai aur CONNECTION REUSE hota hai, is class ke liye vulnerable ho sakti hai — CDNs, WAFs, reverse proxies, application gateways, aur kabhi-kabhi internal microservice-to-microservice communication bhi. Jahan bhi "ek request ke bytes ko doosri jagah forward karna" ho, wahan boundary-parsing consistency zaroori hai.</span>
+            <span class="lang-en">No, any 2-server chain that FORWARDS REQUESTS and REUSES CONNECTIONS can be vulnerable to this class — CDNs, WAFs, reverse proxies, application gateways, and sometimes even internal microservice-to-microservice communication. Wherever "forwarding a request's bytes elsewhere" happens, boundary-parsing consistency is essential.</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question">
+          <span class="faq-q-badge">Q9</span>
+          <span class="faq-q-text">
+            <span class="lang-hi">TE.TE desync kya hai aur ye normal CL.TE/TE.CL se kaise alag hai?</span>
+            <span class="lang-en">What is TE.TE desync, and how is it different from normal CL.TE/TE.CL?</span>
+          </span>
+          <span class="faq-icon">▼</span>
+        </button>
+        <div class="faq-answer">
+          <p>
+            <span class="lang-hi">CL.TE aur TE.CL mein dono servers, kisi EK header (CL ya TE) ko fully, correctly recognize karte hain — bas alag-alag headers ko priority dete hain. <code>TE.TE</code> mein, jaisa Level 3 mein dikhaya, dono servers TE ko priority dena chahte hain, lekin EK server ek OBFUSCATED/MALFORMED <code>Transfer-Encoding</code> value ko recognize hi nahi karta, isliye chupchap CL par fallback ho jaata hai — ye ek subtler, harder-to-catch variant hai.</span>
+            <span class="lang-en">In CL.TE and TE.CL, both servers fully, correctly recognize ONE header (CL or TE) — they just prioritize different headers. In <code>TE.TE</code>, as shown in Level 3, both servers WANT to prioritize TE, but ONE server fails to recognize an OBFUSCATED/MALFORMED <code>Transfer-Encoding</code> value, silently falling back to CL — this is a subtler, harder-to-catch variant.</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question">
+          <span class="faq-q-badge">Q10</span>
+          <span class="faq-q-text">
+            <span class="lang-hi">Kya HTTP Request Smuggling ko WAF detect/rok sakta hai?</span>
+            <span class="lang-en">Can a WAF detect/stop HTTP Request Smuggling?</span>
+          </span>
+          <span class="faq-icon">▼</span>
+        </button>
+        <div class="faq-answer">
+          <p>
+            <span class="lang-hi">Kabhi-kabhi, partially — lekin ek interesting irony hai: agar WAF khud FRONT-END mein rehta hai, aur is desync ka fayda uthaya jaaye WAF ko HI bypass karne ke liye (jaisa Real-World Impact #1 mein dikhaya), to WAF apna khud ka bypass DETECT hi nahi kar paata, kyunki wo sirf FRONT-END ki parsing wala VIEW dekhta hai, backend ki nahi. Isliye smuggling ke against real defense WAF rules nahi, balki front-end/back-end parsing CONSISTENCY hi hai.</span>
+            <span class="lang-en">Sometimes, partially — but there's an interesting irony: if the WAF itself sits in the FRONT-END, and this desync is used exactly to bypass the WAF (as shown in Real-World Impact #1), the WAF can't detect its own bypass, because it only sees the FRONT-END's parsing VIEW, not the backend's. So the real defense against smuggling isn't WAF rules, it's front-end/back-end parsing CONSISTENCY itself.</span>
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- TESTER CHECKLIST -->
+  <section class="checklist" id="tester-checklist" style="margin-top:20px;">
+    <div class="checklist-head"><h2>🔍 <span class="lang-hi">Web Security Tester Checklist</span><span class="lang-en">Web Security Tester Checklist</span></h2></div>
+    <p class="checklist-intro">
+        <span class="lang-hi">Ab tak humne dekha HTTP Request Smuggling kaam kaise karta hai aur ise misconfigure kaise kiya jaata hai. Ek web security tester (VAPT) ke roop mein, kisi bhi real application mein ise dhundhne ke liye ye systematic approach follow ki jaati hai:</span>
+        <span class="lang-en">So far we have seen how HTTP Request Smuggling works and how it gets misconfigured. As a web security tester (VAPT), to find this in any real application, this systematic approach is followed:</span>
+    </p>
+
+    <div class="audit-card">
+      <h3><span class="lang-hi">1. Proxy Chain Architecture Identify Karo</span><span class="lang-en">1. Identify Proxy Chain Architecture</span></h3>
+      <div class="check-list">
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">Target ke front-end/CDN/load-balancer aur backend server setup ko identify karo — HTTP response headers, timing patterns, ya publicly-known infrastructure se.</span>
+            <span class="lang-en">Identify the target's front-end/CDN/load-balancer and backend server setup — from HTTP response headers, timing patterns, or publicly-known infrastructure.</span>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div class="audit-card">
+      <h3><span class="lang-hi">2. Basic CL.TE / TE.CL Discrepancies Test Karo</span><span class="lang-en">2. Test Basic CL.TE / TE.CL Discrepancies</span></h3>
+      <div class="check-list">
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">Dono headers (<code>Content-Length</code> aur <code>Transfer-Encoding</code>) wale ambiguous requests bhej kar response/timing differences observe karo.</span>
+            <span class="lang-en">Send ambiguous requests with both headers (<code>Content-Length</code> and <code>Transfer-Encoding</code>) and observe response/timing differences.</span>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div class="audit-card">
+      <h3><span class="lang-hi">3. Timing-Based Confirmation Karo</span><span class="lang-en">3. Confirm Via Timing</span></h3>
+      <div class="check-list">
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">Ek request bhejo jo, agar desync exist karta hai, backend ko ek NOTICEABLE DELAY tak wait karwaaye (jaise CVE-style test payloads) — baseline se compare karo.</span>
+            <span class="lang-en">Send a request designed to make the backend WAIT with a NOTICEABLE DELAY if desync exists (like CVE-style test payloads) — compare against a baseline.</span>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div class="audit-card">
+      <h3><span class="lang-hi">4. Impact Test Karo (Sirf Authorized Environment Mein)</span><span class="lang-en">4. Test Impact (Only In Authorized Environments)</span></h3>
+      <div class="check-list">
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">Sirf authorized, controlled test environment mein hi queue poisoning PoC try karo — doosre users ke saath ye bahut disruptive ho sakta hai.</span>
+            <span class="lang-en">Only try queue poisoning PoCs in an authorized, controlled test environment — this can be highly disruptive to other users.</span>
+          </div>
+        </label>
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">Check karo ki smuggled request se WAF/access-control bypass ho sakta hai kya.</span>
+            <span class="lang-en">Check whether a smuggled request can bypass the WAF/access-control.</span>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div class="audit-card">
+      <h3><span class="lang-hi">5. Impact Aur Severity Document Karo</span><span class="lang-en">5. Document Impact And Severity</span></h3>
+      <div class="check-list">
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">Confirm ho jaane par, achieved impact (WAF bypass, session hijacking potential, cache poisoning) note karo — cross-user impact ki wajah se ye almost hamesha High/Critical severity hoti hai.</span>
+            <span class="lang-en">Once confirmed, note the achieved impact (WAF bypass, session hijacking potential, cache poisoning) — due to cross-user impact, this is almost always High/Critical severity.</span>
+          </div>
+        </label>
+      </div>
+    </div>
+  </section>
+
+    <!-- ── BOTTOM NAVIGATION ROW ── -->
+  <div class="bottom-nav-row">
+    <a href="open_redirect.html" class="nav-arrow-btn nav-prev">← 14. Open Redirect</a>
+    <a href="JWT.html" class="nav-arrow-btn nav-next">16. JWT →</a>
+  </div>
+
+</main>
+
+<footer class="modern-footer">
+  <div class="footer-badge">
+    <span class="footer-text">Designed and developed by <strong class="dev-name">Irshad Akaram</strong></span>
+  </div>
+</footer>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  window.toggleTheme = function() {
+    var html = document.documentElement;
+    var themeBtn = document.getElementById('themeBtn');
+    if (html.getAttribute('data-theme') === 'dark') {
+      html.setAttribute('data-theme', 'light');
+      if (themeBtn) themeBtn.textContent = '🌙 Dark Mode';
+    } else {
+      html.setAttribute('data-theme', 'dark');
+      if (themeBtn) themeBtn.textContent = '☀️ Light Mode';
+    }
+  };
+
+  window.toggleLanguage = function() {
+    var html = document.documentElement;
+    var toggle = document.getElementById('langToggle');
+    var lblHi = document.getElementById('lbl-hi');
+    var lblEn = document.getElementById('lbl-en');
+
+    if (toggle && toggle.checked) {
+      html.setAttribute('data-lang', 'en');
+      html.setAttribute('lang', 'en');
+      if(lblEn) { lblEn.classList.add('lang-active'); lblEn.classList.remove('lang-inactive'); }
+      if(lblHi) { lblHi.classList.add('lang-inactive'); lblHi.classList.remove('lang-active'); }
+    } else {
+      html.setAttribute('data-lang', 'hi');
+      html.setAttribute('lang', 'hi');
+      if(lblHi) { lblHi.classList.add('lang-active'); lblHi.classList.remove('lang-inactive'); }
+      if(lblEn) { lblEn.classList.add('lang-inactive'); lblEn.classList.remove('lang-active'); }
+    }
+  };
+
+  var themeBtn = document.getElementById('themeBtn');
+  if(themeBtn) themeBtn.addEventListener('click', window.toggleTheme);
+
+  var langToggle = document.getElementById('langToggle');
+  if(langToggle) langToggle.addEventListener('change', window.toggleLanguage);
+
+  document.querySelectorAll('.level-header').forEach(function(header){
+    header.addEventListener('click', function(){
+      var card = header.closest('.level-card');
+      if(card) {
+        card.classList.toggle('open');
+      }
+    });
+  });
+
+  document.querySelectorAll('.faq-question').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var item = this.closest('.faq-item');
+      item.classList.toggle('active');
+    });
+  });
+
+  /* ---------- Sub-Nav Smooth Scroll & Active Highlight (Pixel-Perfect Offset) ---------- */
+  var subNavBtns = document.querySelectorAll('.sub-nav-btn');
+
+  subNavBtns.forEach(function(link){
+    link.addEventListener('click', function(e){
+      var href = link.getAttribute('href');
+      if(href && href.startsWith('#')){
+        e.preventDefault();
+        var targetEl = document.querySelector(href);
+        if(targetEl){
+          var topbar = document.querySelector('.topbar');
+          var totalStickyOffset = (topbar ? topbar.offsetHeight : 50) + 4;
+          var elementPosition = targetEl.getBoundingClientRect().top;
+          var offsetPosition = elementPosition + window.pageYOffset - totalStickyOffset;
+
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: reduceMotion ? 'auto' : 'smooth'
+          });
+        }
+      }
+    });
+  });
+
+  /* ---------- Hero CTA & Sim-Jump Scroll to Simulator Fix ---------- */
+  document.querySelectorAll('.hero-cta, .sim-jump').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      var href = btn.getAttribute('href');
+      if (href && href.startsWith('#')) {
+        e.preventDefault();
+        var targetEl = document.querySelector(href);
+        if (targetEl) {
+          var topbar = document.querySelector('.topbar');
+          var offset = (topbar ? topbar.offsetHeight : 60) + 16;
+          var elementPosition = targetEl.getBoundingClientRect().top;
+          var offsetPosition = elementPosition + window.pageYOffset - offset;
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: reduceMotion ? 'auto' : 'smooth'
+          });
+        }
+      }
+    });
+  });
+
+  function updateSubNavScrollSpy() {
+    var topbar = document.querySelector('.topbar');
+    var totalStickyOffset = (topbar ? topbar.offsetHeight : 50) + 20;
+    var scrollPos = window.scrollY + totalStickyOffset;
+    
+    // Page section IDs corresponding to subnav links in DOM order:
+    var navIds = ['impact', 'code-fixes', 'simulator', 'glossary', 'confusing-questions', 'tester-checklist'];
+    var currentActive = null;
+    
+    for (var i = 0; i < navIds.length; i++) {
+      var sec = document.getElementById(navIds[i]);
+      if (sec && sec.offsetTop <= scrollPos) {
+        currentActive = navIds[i];
+      }
+    }
+
+    subNavBtns.forEach(function(btn) {
+      var href = btn.getAttribute('href');
+      if (currentActive && (href === '#' + currentActive || (currentActive === 'code-fixes' && href === '#simulator') || (currentActive === 'glossary' && href === '#confusing-questions'))) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+  }
+
+  window.addEventListener('scroll', updateSubNavScrollSpy, { passive: true });
+  updateSubNavScrollSpy();
+
+  document.querySelectorAll('.check-input').forEach(input => {
+    input.addEventListener('change', function() {
+      if(this.checked) {
+        this.closest('.check-label').classList.add('checked');
+      } else {
+        this.closest('.check-label').classList.remove('checked');
+      }
+    });
+  });
+
+  var fullTextHi = "HTTP Request Smuggling (HTTP Desync Attack) tab hota hai jab front-end proxy server (jaise Nginx, Cloudflare, AWS ALB) aur backend application server ke beech HTTP request boundaries ka interpretation differ kar jata hai. Attacker conflicting Content-Length aur Transfer-Encoding: chunked headers bhej kar request boundary ko desynchronize kar deta hai, jisse unka smuggled request shared backend TCP connection par persistent reh kar doosre users ke legitimate requests ko hijack, poison, ya credential leak kar leta hai....";
+  var fullTextEn = "HTTP Request Smuggling (HTTP Desync Attack) occurs when a front-end reverse proxy and a back-end web server interpret HTTP/1.1 message framing boundaries inconsistently. By submitting conflicting Content-Length and Transfer-Encoding headers or exploiting parser ambiguities, attackers desynchronize shared connection streams, smuggling unauthorized requests that poison caches, hijack concurrent user sessions, or exfiltrate sensitive data....";
+
+  var twEl = document.getElementById('typewriter');
+  function updateTypewriter() {
+      var isEn = document.documentElement.getAttribute('data-lang') === 'en';
+      twEl.textContent = isEn ? fullTextEn : fullTextHi;
+  }
+
+  if(reduceMotion){
+    updateTypewriter();
+  } else {
+    var i = 0;
+    var currentText = document.documentElement.getAttribute('data-lang') === 'en' ? fullTextEn : fullTextHi;
+    function typeStep(){
+      if(i <= currentText.length){
+        twEl.textContent = currentText.slice(0, i);
+        i += 2;
+        setTimeout(typeStep, 12);
+      }
+    }
+    typeStep();
+  }
+
+  if(langToggle) langToggle.addEventListener('change', updateTypewriter);
+
+  /* ---------- HTTP REQUEST SMUGGLING SIMULATOR LOGIC ---------- */
+  let currentOrigin = 'clte';
+  let currentDefense = '0';
+
+  const originValues = {
+    clte: "CL.TE (Both Headers, Standard)",
+    tecl: "TE.CL / Obfuscated TE Header"
+  };
+
+  const defenseNames = {
+    '0': '0: No Standardization',
+    '1': '1: Front-End Fixed Only',
+    '2': '2: Both Sides Consistent',
+    '3': '3: Strict Parsers Differ',
+    '4': '4: Reject Ambiguity (Final)'
+  };
+
+  document.querySelectorAll('#opt-origin .sim-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#opt-origin .sim-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentOrigin = btn.getAttribute('data-val');
+      document.getElementById('lbl-payload').innerHTML = originValues[currentOrigin];
+    });
+  });
+
+  document.querySelectorAll('#opt-defense .sim-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#opt-defense .sim-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentDefense = btn.getAttribute('data-val');
+      document.getElementById('lbl-defense').innerText = defenseNames[currentDefense];
+    });
+  });
+
+  const btnExecute = document.getElementById('btn-execute');
+  const logBrowser = document.getElementById('log-browser');
+  const logNetwork = document.getElementById('log-network');
+  const logServer = document.getElementById('log-server');
+  const verdictBox = document.getElementById('sim-verdict-box');
+  const verdictTitle = document.getElementById('sim-verdict-title');
+  const verdictText = document.getElementById('sim-verdict-text');
+
+  const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+  function appendLog(panel, htmlStrHi, htmlStrEn) {
+    const isEn = document.documentElement.getAttribute('data-lang') === 'en';
+    const div = document.createElement('div');
+    div.className = 'log-line';
+    div.innerHTML = `<span class="timestamp">${new Date().toISOString().split('T')[1].slice(0,-1)}</span> <span>${isEn ? htmlStrEn : htmlStrHi}</span>`;
+    panel.appendChild(div);
+    panel.scrollTop = panel.scrollHeight;
+  }
+
+  function appendNetworkLog(panel, htmlStr) {
+    const div = document.createElement('div');
+    div.className = 'log-line';
+    div.innerHTML = `<span class="timestamp">${new Date().toISOString().split('T')[1].slice(0,-1)}</span> ${htmlStr}`;
+    panel.appendChild(div);
+    panel.scrollTop = panel.scrollHeight;
+  }
+
+  function appendStage(panel, strHi, strEn) {
+    const isEn = document.documentElement.getAttribute('data-lang') === 'en';
+    const div = document.createElement('div');
+    div.className = 'log-line log-stage';
+    div.innerHTML = `<span>${isEn ? strEn : strHi}</span>`;
+    panel.appendChild(div);
+    panel.scrollTop = panel.scrollHeight;
+  }
+
+  function clearLogs() {
+    logBrowser.innerHTML = `
+        <div style="margin-bottom:10px;"><span class="c-info">Payload:</span> <br> <code class="inline-code" id="lbl-payload">${originValues[currentOrigin]}</code></div>
+        <div><span class="c-info">Current Defense:</span> <br> <span class="c-warn" id="lbl-defense">${defenseNames[currentDefense]}</span></div>
+        <hr style="border-color:#1f242d; margin: 15px 0;">
+    `;
+    logNetwork.innerHTML = '';
+    logServer.innerHTML = '';
+    verdictBox.className = 'sim-verdict-box';
+    verdictTitle.innerHTML = '';
+    verdictText.innerHTML = '';
+  }
+
+  clearLogs();
+
+  btnExecute.addEventListener('click', async () => {
+    btnExecute.disabled = true;
+    clearLogs();
+
+    let payload = originValues[currentOrigin];
+    let rawReq = currentOrigin === 'clte'
+      ? "POST / HTTP/1.1\\r\\nContent-Length: 13\\r\\nTransfer-Encoding: chunked\\r\\n\\r\\n0\\r\\n\\r\\nSMUGGLED"
+      : "POST / HTTP/1.1\\r\\nContent-Length: 3\\r\\nTransfer-Encoding: xchunked\\r\\n\\r\\n8\\r\\nSMUGGLED\\r\\n0\\r\\n\\r\\n";
+
+    // STAGE 1: CLIENT
+    appendStage(logBrowser, "▶ STEP 1: ATTACKER SENDS AMBIGUOUS REQUEST", "▶ STEP 1: ATTACKER SENDS AMBIGUOUS REQUEST");
+    await sleep(300);
+    appendLog(logBrowser,
+      `<span class="c-info">Action: Crafting a request with the "${payload}" framing ambiguity...</span>`,
+      `<span class="c-info">Action: Crafting a request with the "${payload}" framing ambiguity...</span>`);
+    await sleep(400);
+
+    // STAGE 2: FRONT-END
+    appendStage(logNetwork, "▶ STEP 2: FRONT-END RECEIVES REQUEST", "▶ STEP 2: FRONT-END RECEIVES REQUEST");
+    await sleep(300);
+    appendNetworkLog(logNetwork, `<span class="c-blue">>>> RAW BYTES ON THE WIRE</span>`);
+    const rawReqBlock = document.createElement('div');
+    rawReqBlock.className = 'http-block';
+    logNetwork.appendChild(rawReqBlock);
+    const writeNetwork = async (text) => {
+      const el = document.createElement('div'); el.className = 'log-line'; el.style.opacity = '1'; el.innerHTML = text;
+      rawReqBlock.appendChild(el); logNetwork.scrollTop = logNetwork.scrollHeight; await sleep(150);
+    };
+    if (currentOrigin === 'clte') {
+      await writeNetwork(`<span class="http-header-key">Content-Length:</span> <span class="http-header-val">13</span>`);
+      await writeNetwork(`<span class="http-header-key">Transfer-Encoding:</span> <span class="http-header-val">chunked</span>`);
+      await writeNetwork(`<span class="http-body">0\\r\\n\\r\\nSMUGGLED</span>`);
+    } else {
+      await writeNetwork(`<span class="http-header-key">Content-Length:</span> <span class="http-header-val">3</span>`);
+      await writeNetwork(`<span class="http-header-key">Transfer-Encoding:</span> <span class="http-header-val">xchunked (obfuscated)</span>`);
+      await writeNetwork(`<span class="http-body">8\\r\\nSMUGGLED\\r\\n0\\r\\n\\r\\n</span>`);
+    }
+
+    // STAGE 3: PARSING DECISION
+    await sleep(500);
+    appendStage(logServer, "▶ STEP 3: FRONT-END VS BACK-END PARSING", "▶ STEP 3: FRONT-END VS BACK-END PARSING");
+    await sleep(300);
+    appendLog(logServer,
+      `<span class="loader"></span> <span class="c-info">Comparing how each server resolves the framing...</span>`,
+      `<span class="loader"></span> <span class="c-info">Comparing how each server resolves the framing...</span>`);
+    await sleep(500);
+
+    let blocked = false;
+    let mismatchNote = "";
+
+    if (currentDefense === '0') {
+      appendLog(logServer, `<span class="c-err">No standardization: front-end honors Content-Length, back-end honors Transfer-Encoding.</span>`, `<span class="c-err">No standardization: front-end honors Content-Length, back-end honors Transfer-Encoding.</span>`);
+      mismatchNote = currentOrigin === 'clte' ? "Front-end forwards 13 bytes as one body. Back-end sees the chunked '0' terminator early, leaving 'SMUGGLED' as leftover." : "Front-end (accidentally still honoring CL here) forwards a short body. Back-end (honoring TE) still parses further chunk data as leftover.";
+    } else if (currentDefense === '1') {
+      appendLog(logServer, `<span class="c-info">Front-end reconfigured to honor Transfer-Encoding. Back-end left unchanged, still honors Content-Length.</span>`, `<span class="c-info">Front-end reconfigured to honor Transfer-Encoding. Back-end left unchanged, still honors Content-Length.</span>`);
+      await sleep(400);
+      if (currentOrigin === 'clte') {
+        appendLog(logServer, `<span class="c-ok">This CL.TE-style payload assumed front-end honors CL — since front-end now honors TE instead, this specific byte-level trick no longer produces a mismatch.</span>`, `<span class="c-ok">This CL.TE-style payload assumed front-end honors CL — since front-end now honors TE instead, this specific byte-level trick no longer produces a mismatch.</span>`);
+        blocked = true;
+      } else {
+        appendLog(logServer, `<span class="c-err">Front-end now honors TE (correctly parsing the full chunked body). Back-end still honors CL, reading a shorter body — the classic TE.CL mismatch.</span>`, `<span class="c-err">Front-end now honors TE (correctly parsing the full chunked body). Back-end still honors CL, reading a shorter body — the classic TE.CL mismatch.</span>`);
+        mismatchNote = "Front-end forwards the full chunked body. Back-end (CL) reads only part of it, leaving 'SMUGGLED' as leftover.";
+      }
+    } else if (currentDefense === '2') {
+      appendLog(logServer, `<span class="c-info">Both front-end AND back-end now consistently prioritize a well-formed Transfer-Encoding header when both are present.</span>`, `<span class="c-info">Both front-end AND back-end now consistently prioritize a well-formed Transfer-Encoding header when both are present.</span>`);
+      await sleep(400);
+      appendLog(logServer, `<span class="c-ok">Both servers agree on the same boundary for this well-formed header. Rejected/no mismatch for both payload variants.</span>`, `<span class="c-ok">Both servers agree on the same boundary for this well-formed header. Rejected/no mismatch for both payload variants.</span>`);
+      blocked = true;
+    } else if (currentDefense === '3') {
+      appendLog(logServer, `<span class="c-info">Both sides prioritize TE consistently for well-formed headers — but their parser strictness for the header VALUE itself differs.</span>`, `<span class="c-info">Both sides prioritize TE consistently for well-formed headers — but their parser strictness for the header VALUE itself differs.</span>`);
+      await sleep(400);
+      if (currentOrigin === 'clte') {
+        appendLog(logServer, `<span class="c-ok">This clean, well-formed double-header case is already handled by the consistent TE-priority rule. Rejected.</span>`, `<span class="c-ok">This clean, well-formed double-header case is already handled by the consistent TE-priority rule. Rejected.</span>`);
+        blocked = true;
+      } else {
+        appendLog(logServer, `<span class="c-err">The obfuscated "Transfer-Encoding: xchunked" value isn't recognized as chunked by the stricter parser, which silently falls back to Content-Length — while the other, more lenient parser still treats it as chunked.</span>`, `<span class="c-err">The obfuscated "Transfer-Encoding: xchunked" value isn't recognized as chunked by the stricter parser, which silently falls back to Content-Length — while the other, more lenient parser still treats it as chunked.</span>`);
+        mismatchNote = "One server follows the (recognized) chunked framing, the other falls back to Content-Length — 'SMUGGLED' is leftover again.";
+      }
+    } else if (currentDefense === '4') {
+      appendLog(logServer, `<span class="c-info">Front-end now REJECTS any request with ambiguous framing outright — both headers present, or any non-exact "chunked" value — instead of guessing.</span>`, `<span class="c-info">Front-end now REJECTS any request with ambiguous framing outright — both headers present, or any non-exact "chunked" value — instead of guessing.</span>`);
+      await sleep(500);
+      appendLog(logServer, `<span class="c-ok">Request rejected before it's ever forwarded to the back-end. No ambiguity ever reaches the connection that could be reused by another user.</span>`, `<span class="c-ok">Request rejected before it's ever forwarded to the back-end. No ambiguity ever reaches the connection that could be reused by another user.</span>`);
+      blocked = true;
+    }
+
+    await sleep(400);
+
+    // STAGE 4: VICTIM IMPACT
+    appendStage(logServer, "▶ STEP 4: NEXT-REQUEST / VICTIM IMPACT", "▶ STEP 4: NEXT-REQUEST / VICTIM IMPACT");
+    await sleep(300);
+
+    let attackSuccess = false;
+
+    if (blocked) {
+      appendLog(logServer, `<span class="c-ok">No leftover bytes remain on the connection — the next legitimate user's request is parsed cleanly, unaffected.</span>`, `<span class="c-ok">No leftover bytes remain on the connection — the next legitimate user's request is parsed cleanly, unaffected.</span>`);
+    } else {
+      appendLog(logServer, `<span class="c-warn">${mismatchNote}</span>`, `<span class="c-warn">${mismatchNote}</span>`);
+      await sleep(400);
+      appendLog(logServer, `<span class="c-err">On this reused connection, the next victim's genuine request is prepended with "SMUGGLED", corrupting/hijacking it.</span>`, `<span class="c-err">On this reused connection, the next victim's genuine request is prepended with "SMUGGLED", corrupting/hijacking it.</span>`);
+      attackSuccess = true;
+    }
+
+    await sleep(600);
+    const isEn = document.documentElement.getAttribute('data-lang') === 'en';
+
+    if (attackSuccess) {
+      verdictBox.classList.remove('v-blocked');
+      verdictBox.classList.add('v-hacked', 'show');
+      verdictTitle.innerHTML = `💀 REQUEST SMUGGLED (DESYNC ACHIEVED)`;
+    } else {
+      verdictBox.classList.remove('v-hacked');
+      verdictBox.classList.add('v-blocked', 'show');
+      verdictTitle.innerHTML = `🛡️ REQUEST REJECTED (NO DESYNC)`;
+    }
+
+    let explanationHi = "";
+    let explanationEn = "";
+
+    if (currentDefense === '0') {
+      explanationHi = "Koi standardization hi nahi thi, isliye front-end/back-end ki parsing hamesha mismatch karti hai, chahe koi bhi payload variant ho.";
+      explanationEn = "There was no standardization at all, so front-end/back-end parsing always mismatches, regardless of the payload variant.";
+    } else if (currentDefense === '1') {
+      if (currentOrigin === 'clte') {
+        explanationHi = "Front-end ab TE follow karta hai, isliye is CL.TE-style payload ka original mismatch ab nahi banta.";
+        explanationEn = "The front-end now follows TE, so this CL.TE-style payload's original mismatch no longer forms.";
+      } else {
+        explanationHi = "Sirf front-end badla gaya, back-end nahi — isse mismatch simply ULTA ho gaya (CL.TE se TE.CL), khatam nahi hua.";
+        explanationEn = "Only the front-end was changed, not the back-end — this simply FLIPPED the mismatch (CL.TE to TE.CL), it didn't eliminate it.";
+      }
+    } else if (currentDefense === '2') {
+      explanationHi = "Dono sides consistently, well-formed TE header ko priority dete hain — isliye dono payload variants ke against ye kaam karta hai.";
+      explanationEn = "Both sides consistently prioritize a well-formed TE header — so this works against both payload variants.";
+    } else if (currentDefense === '3') {
+      if (currentOrigin === 'clte') {
+        explanationHi = "Ye clean, well-formed double-header case already handle ho chuka hai consistent TE-priority rule se.";
+        explanationEn = "This clean, well-formed double-header case is already handled by the consistent TE-priority rule.";
+      } else {
+        explanationHi = "Header value ko obfuscate karne se, ek server ise recognize hi nahi kar paata aur silently CL par fallback ho jaata hai — exact same class ka gap wapas aa jaata hai.";
+        explanationEn = "By obfuscating the header value, one server fails to recognize it entirely and silently falls back to CL — the exact same class of gap returns.";
+      }
+    } else if (currentDefense === '4') {
+      explanationHi = "Koi bhi ambiguous framing (chahe dono headers ho ya obfuscated value) ab hi seedha reject ho jaati hai — isliye dono payload variants ke against ye robust hai.";
+      explanationEn = "Any ambiguous framing (whether both headers or an obfuscated value) is now rejected outright — so this is robust against both payload variants.";
+    }
+
+    verdictText.innerHTML = isEn ? explanationEn : explanationHi;
+    btnExecute.disabled = false;
+  });
+
+});
+</script>
+
+</body>
+</html>

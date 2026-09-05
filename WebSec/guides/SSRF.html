@@ -1,0 +1,2533 @@
+<!DOCTYPE html>
+<html lang="hi" data-theme="dark" data-lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SSRF — Problem Se Solution Tak</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Poppins:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root[data-theme="dark"] {
+    --bg:#050810;
+    --panel:#0F1524;
+    --panel-2:#1A2338;
+    --border:#263049;
+    --text:#E7ECF5;
+    --text-muted:#8B96AB;
+    --danger:#FF6B5B;
+    --danger-bg:rgba(255,107,91,0.12);
+    --safe:#3ECF8E;
+    --safe-bg:rgba(62,207,142,0.12);
+    --accent:#FFC857;
+    --accent-bg:rgba(255,200,87,0.14);
+    --radius:12px;
+    --mono:'IBM Plex Mono',ui-monospace,monospace;
+    --sans:'IBM Plex Sans',system-ui,sans-serif;
+    --blue:#4D9EFF;
+    --blue-bg:rgba(77,158,255,0.12);
+    --glow: rgba(77, 158, 255, 0.05);
+  }
+
+  :root[data-theme="light"] {
+    --bg:#F4F7FB;
+    --panel:#FFFFFF;
+    --panel-2:#E8EEF5;
+    --border:#D1D9E6;
+    --text:#0F172A;
+    --text-muted:#475569;
+    --danger:#E11D48;
+    --danger-bg:rgba(225,29,72,0.12);
+    --safe:#059669;
+    --safe-bg:rgba(5,150,105,0.12);
+    --accent:#D97706;
+    --accent-bg:rgba(217,119,6,0.14);
+    --radius:12px;
+    --mono:'IBM Plex Mono',ui-monospace,monospace;
+    --sans:'IBM Plex Sans',system-ui,sans-serif;
+    --blue:#2563EB;
+    --blue-bg:rgba(37,99,235,0.12);
+    --glow: rgba(77, 158, 255, 0.05);
+  }
+
+  html[data-lang="hi"] .lang-en { display: none !important; }
+  html[data-lang="en"] .lang-hi { display: none !important; }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--bg);color:var(--text);font-family:var(--sans);
+    margin:0;padding:0;line-height:1.7;-webkit-font-smoothing:antialiased;
+    transition: background-color 0.3s, color 0.3s;
+    background-image: 
+      radial-gradient(circle at 15% 50%, var(--glow), transparent 25%),
+      radial-gradient(circle at 85% 30%, var(--glow), transparent 25%);
+  }
+  ::selection{background:var(--accent-bg);color:var(--accent);}
+  strong{color:var(--text);font-weight:600;}
+
+  code{
+    font-family:var(--mono);background:var(--panel-2);border:1px solid var(--border);
+    padding:2px 6px;border-radius:6px;font-size:0.88em;color:var(--accent);
+    transition: all 0.2s;
+  }
+  code:hover { background: var(--accent-bg); border-color: var(--accent); }
+
+  pre{
+    background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
+    padding:40px 18px 18px 18px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;
+    line-height:1.6;color:var(--text);margin:18px 0; position: relative;
+    box-shadow: 0 10px 30px -10px rgba(0,0,0,0.2);
+  }
+  pre::before {
+    content: ''; position: absolute; top: 14px; left: 16px;
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--danger); box-shadow: 16px 0 0 var(--accent), 32px 0 0 var(--safe);
+  }
+  pre code{background:none;border:none;padding:0;color:inherit; box-shadow: none;}
+  pre code:hover { background: none; border: none; }
+
+  .topbar{
+    position:sticky;top:0;z-index:50;background:rgba(15, 21, 36, 0.7);
+    backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+    border-bottom:1px solid var(--border);
+    padding:14px 20px;display:flex;align-items:center;justify-content:space-between;
+    gap:12px;flex-wrap:wrap; box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  }
+  :root[data-theme="light"] .topbar { background:rgba(255, 255, 255, 0.8); }
+
+  .brand{
+    font-family:var(--mono);font-weight:700;font-size:15.5px;
+    display:flex;align-items:center;gap:10px;cursor:default;
+  }
+  .brand-icon { font-size: 19px; display: inline-block; animation: shield-pulse 2.5s infinite ease-in-out; }
+  .brand-text {
+    background: linear-gradient(90deg, var(--accent), var(--safe));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    transition: all 0.3s ease; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .brand-text code { background: none; border: none; padding: 0; color: inherit; font-size: 1em; box-shadow: none;}
+  .brand:hover .brand-text { filter: drop-shadow(0 0 10px rgba(62, 207, 142, 0.5)); }
+  @keyframes shield-pulse { 0%, 100% { transform: scale(1); filter: drop-shadow(0 0 3px var(--safe)); } 50% { transform: scale(1.15); filter: drop-shadow(0 0 10px var(--safe)); } }
+
+  .controls-wrapper { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
+
+  .theme-toggle {
+    background: var(--panel); border: 1px solid var(--border); color: var(--text);
+    padding: 6px 14px; border-radius: 20px; cursor: pointer; font-weight: 600;
+    font-family: var(--sans); font-size: 12px; transition: all 0.2s ease;
+  }
+  .theme-toggle:hover { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); transform: translateY(-1px); }
+
+  .lang-switch-wrapper {
+    display: flex; align-items: center; gap: 6px; font-family: var(--sans);
+    font-size: 12px; font-weight: 600; color: var(--text); background: var(--panel);
+    padding: 6px 12px; border-radius: 20px; border: 1px solid var(--border);
+  }
+  .lang-active { color: var(--accent); text-shadow: 0 0 8px var(--accent-bg); } 
+  .lang-inactive { color: var(--text-muted); }
+  .switch { position: relative; display: inline-block; width: 32px; height: 18px; margin: 0 4px;}
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider {
+    position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+    background-color: var(--border); transition: .4s; border-radius: 20px;
+  }
+  .slider:before {
+    position: absolute; content: ""; height: 12px; width: 12px; left: 3px; bottom: 3px;
+    background-color: var(--text); transition: .4s; border-radius: 50%;
+  }
+  input:checked + .slider { background-color: var(--accent); }
+  input:checked + .slider:before { transform: translateX(14px); background-color: #fff; }
+
+  main{max-width:840px;margin:0 auto;padding:0 20px 20px; position: relative; z-index: 1;}
+
+  .hero{padding:50px 0 40px; position: relative; border-bottom: 1px solid var(--border); margin-bottom: 40px;}
+  .hero::after {
+    content: ''; position: absolute; top: -50px; left: 50%; transform: translateX(-50%);
+    width: 100vw; height: 100%; background: radial-gradient(ellipse at top, var(--safe-bg), transparent 60%);
+    z-index: -1; pointer-events: none; opacity: 0.5;
+  }
+  .eyebrow{
+    font-family:var(--mono);font-size:12px;letter-spacing:.14em;color:var(--danger);
+    text-transform:uppercase;margin:0 0 16px;display:flex;align-items:center;gap:8px;
+  }
+  .eyebrow::before{content:"●";font-size:9px; animation: blink 1s infinite alternate;}
+  h1.title{
+    font-family:var(--mono);font-weight:700;font-size:clamp(22px,4.5vw,34px);
+    line-height:1.45;margin:0 0 28px;color:var(--text);letter-spacing:-0.01em; text-align: justify;
+  }
+
+  .terminal{
+    background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:hidden;
+    box-shadow:0 10px 30px -10px rgba(0,0,0,0.3); margin-bottom: 24px;
+  }
+  .terminal-bar{display:flex;align-items:center;gap:7px;padding:12px 16px;border-bottom:1px solid var(--border);background:#11141a;}
+  .terminal-dot{width:10px;height:10px;border-radius:50%;background:#3A4460;}
+  .terminal-dot:nth-child(1){background:#FF5F56;}
+  .terminal-dot:nth-child(2){background:#FFBD2E;}
+  .terminal-dot:nth-child(3){background:#27C93F;}
+  .terminal-label{margin-left:8px;font-family:var(--mono);font-size:11.5px;color:var(--text-muted);}
+  .terminal-body{padding:24px 22px 26px;font-family:var(--mono);font-size:14px;color:var(--text);min-height:120px; line-height: 1.6; text-align: justify;}
+  .terminal-body .prompt{color:var(--safe);}
+  .terminal-body .cursor{display:inline-block;width:8px;height:16px;background:var(--accent);vertical-align:middle;margin-left:2px;animation:blink 1s step-end infinite;}
+  @keyframes blink{50%{opacity:0;}}
+
+  .intro-block {
+    margin-top: 28px; padding: 22px 24px;
+    background: linear-gradient(135deg, var(--panel) 0%, transparent 100%);
+    border: 1px solid var(--border); border-left: 4px solid var(--accent);
+    border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+    position: relative; overflow: hidden;
+  }
+  .intro-block::after {
+    content:''; position:absolute; right:-20px; bottom:-20px; width:100px; height:100px;
+    background: radial-gradient(circle, var(--accent-bg) 0%, transparent 70%); pointer-events: none;
+  }
+  .intro-block p{margin:0 0 14px;font-size:15px;color:var(--text); text-align: justify; line-height: 1.7;}
+  .intro-block p:last-child{margin-bottom:0;}
+  .intro-block .roadmap{font-family:var(--mono);font-size:13.5px;color:var(--accent); font-weight: 500;}
+
+  .hero-cta{
+    display:inline-flex;align-items:center;gap:10px;margin-top:26px;
+    font-family:var(--mono);font-size:14px;font-weight: 600; color:var(--accent);background:var(--panel);
+    border:1px solid var(--accent);padding:14px 24px;border-radius:10px;
+    text-decoration:none;cursor:pointer;transition:all .3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 6px 20px var(--accent-bg);
+  }
+  .hero-cta:hover{background:var(--accent); color: var(--bg); transform: translateY(-4px); box-shadow: 0 10px 25px rgba(255, 200, 87, 0.4);}
+
+  .sec-head{margin:50px 0 10px;}
+  .sec-eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.15em;color:var(--accent);text-transform:uppercase;margin:0 0 10px; display: flex; align-items: center; gap: 8px;}
+  .sec-eyebrow::after { content: ''; height: 1px; width: 40px; background: var(--accent); opacity: 0.5; }
+  .sec-head h2{
+    font-family:var(--mono);font-size:clamp(20px,4vw,28px);margin:0 0 14px;
+    background: linear-gradient(90deg, var(--text), var(--text-muted));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .sec-head p{font-size:15px;color:var(--text-muted);margin:0 0 24px;max-width:100%; line-height: 1.6; text-align: justify;}
+
+  .levels{margin-top:30px;display:flex;flex-direction:column;gap:16px;}
+  .level-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);scroll-margin-top:90px;overflow:hidden; transition: all 0.3s;}
+  .level-card:hover { border-color: rgba(255,255,255,0.1); box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
+  .level-card.open { border-color: var(--accent); box-shadow: 0 8px 30px var(--accent-bg); }
+
+  .level-header{
+    width:100%;background:none;border:none;color:var(--text);display:flex;align-items:center;
+    gap:16px;padding:18px 20px;cursor:pointer;text-align:left;font-family:var(--sans);
+  }
+  .level-header:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;}
+  .level-badge{
+    font-family:var(--mono);font-weight:700;font-size:16px;width:38px;height:38px;flex:none;
+    border-radius:10px;display:flex;align-items:center;justify-content:center;
+    background:var(--panel-2);border:1px solid var(--border);color:var(--text-muted);
+    transition: all 0.3s;
+  }
+  .level-card.open .level-badge { background: var(--accent-bg); color: var(--accent); border-color: var(--accent); }
+
+  .level-titles{flex:1;min-width:0;}
+  .level-titles h2{margin:0 0 4px;font-size:16.5px;font-weight:600;color:var(--text); transition: color 0.3s;}
+  .level-card.open .level-titles h2 { color: var(--accent); }
+  .level-titles p{margin:0;font-size:13px;color:var(--text-muted);}
+  .level-tag{
+    font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.05em;
+    padding:5px 10px;border-radius:20px;white-space:nowrap;flex:none;
+  }
+  .level-tag.problem{background:var(--danger-bg);color:var(--danger); border: 1px solid rgba(255,107,91,0.2);}
+  .level-tag.solved{background:var(--safe-bg);color:var(--safe); border: 1px solid rgba(62,207,142,0.2);}
+  .level-tag.concept{background:var(--accent-bg);color:var(--accent); border: 1px solid rgba(255,200,87,0.2);}
+
+  .chevron{flex:none;color:var(--text-muted);transition:transform .3s ease;font-size:14px;}
+  .level-card.open .chevron{transform:rotate(180deg); color: var(--accent);}
+
+  .level-body{ display: none; }
+  .level-card.open .level-body{ display: block; animation: fadeIn .3s ease; }
+
+  .level-inner{padding:0 20px 24px;font-size:14.8px; border-top: 1px solid var(--border); margin-top: 4px; padding-top: 20px;}
+  .level-inner p{margin:0 0 14px;color:var(--text); text-align: justify; line-height: 1.7;}
+  .level-inner h4{margin:22px 0 10px;font-size:14px;color:var(--accent);font-weight:600;font-family:var(--mono);letter-spacing:.04em; text-transform: uppercase;}
+
+  .callout{
+    border-left:4px solid var(--danger);background:linear-gradient(90deg, var(--danger-bg), transparent);
+    border-radius:0 10px 10px 0;padding:16px 20px;margin:18px 0;font-size:14px;
+    box-shadow: inset 0 0 20px rgba(255,107,91,0.05);
+  }
+  .callout.fixnote{border-left-color:var(--safe);background:linear-gradient(90deg, var(--safe-bg), transparent); box-shadow: inset 0 0 20px rgba(62,207,142,0.05);}
+  .callout.analogy{border-left-color:var(--accent);background:linear-gradient(90deg, var(--accent-bg), transparent); box-shadow: inset 0 0 20px rgba(255,200,87,0.05);}
+  .callout.analogy .cal-label{color:var(--accent);}
+  .callout p{margin:0;color:var(--text); text-align: justify;}
+  .callout p+p{margin-top:10px;}
+  .callout .cal-label{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.06em;display:block;margin-bottom:8px;color:var(--danger);}
+  .callout.fixnote .cal-label{color:var(--safe);}
+
+  .mini-table{width:100%;border-collapse:collapse;margin:14px 0;font-size:13px; background: var(--panel-2); border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.15);}
+  .mini-table th,.mini-table td{border:1px solid var(--border);padding:12px 14px;text-align:left;}
+  .mini-table th{background:var(--bg);color:var(--accent);font-weight:700;font-family:var(--mono);font-size:12px; text-transform: uppercase; letter-spacing: 0.5px;}
+  .mini-table td{color:var(--text); font-family: var(--mono); font-size: 12.5px;}
+
+  .sim-jump{
+    display:inline-flex;align-items:center;gap:6px;margin-top:4px;font-family:var(--mono);
+    font-size:12px;color:var(--accent);background:var(--accent-bg);
+    border:1px solid rgba(255,200,87,0.3);padding:8px 13px;border-radius:7px;cursor:pointer;text-decoration:none;
+  }
+
+  .item-divider {
+    border: 0; height: 1px; background: linear-gradient(90deg, var(--border) 0%, transparent 100%);
+    margin: 24px 0; opacity: 0.8;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .simulator-section {
+    background: #050505; border: 1px solid var(--border); border-radius: 14px;
+    margin-top: 30px; margin-bottom: 24px; overflow: hidden; position: relative;
+    display: flex; flex-direction: column; box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+  }
+  .simulator-section::before {
+    content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px;
+    background: linear-gradient(90deg, transparent, #ff3c3c, transparent);
+    animation: scanline 3s linear infinite;
+  }
+  @keyframes scanline { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+
+  .sim-header-bar {
+    background: #0a0c10; border-bottom: 1px solid #1f242d; padding: 18px 24px;
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;
+  }
+  .sim-title {
+    font-family: var(--font-code); font-size: 16px; font-weight: 700; color: #fff;
+    display: flex; align-items: center; gap: 10px; letter-spacing: 0.5px;
+  }
+  .sim-title span { color: #ff3c3c; animation: pulse-danger 1.5s infinite; border-radius: 50%;}
+  .sim-controls { display: flex; flex-direction: column; gap: 16px; width: 100%; }
+  .sim-control-group { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .sim-control-group label {
+    font-family: var(--font-code); font-size: 11.5px; color: #64748b;
+    text-transform: uppercase; letter-spacing: 1px; min-width: 140px; font-weight: bold;
+  }
+  .sim-btn-group { display: flex; gap: 10px; flex-wrap: wrap; background: #000; padding: 4px; border-radius: 6px; border: 1px solid #1f242d;}
+  .sim-btn {
+    background: transparent; border: none; color: #64748b; padding: 6px 14px;
+    border-radius: 4px; font-family: var(--font-code); font-size: 11.5px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .sim-btn:hover { color: #fff; }
+  .sim-btn.active { background: #1f242d; color: #4d9eff; box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
+
+  .btn-execute {
+    background: rgba(57, 255, 122, 0.1); color: #39ff7a; border: 1px solid #39ff7a;
+    padding: 10px 24px; border-radius: 6px; font-family: var(--font-code); font-size: 13px;
+    font-weight: 700; cursor: pointer; transition: all 0.2s; text-transform: uppercase;
+    align-self: flex-start; letter-spacing: 1px; box-shadow: 0 0 15px rgba(57, 255, 122, 0.15);
+  }
+  .btn-execute:hover { background: #39ff7a; color: #000; box-shadow: 0 0 20px rgba(57, 255, 122, 0.4); transform: translateY(-2px); }
+  .btn-execute:active { transform: scale(0.96); }
+  .btn-execute:disabled { opacity: 0.4; cursor: not-allowed; border-color: #536271; color: #536271; background: transparent; box-shadow: none; transform: none;}
+
+  .workspace { display: flex; padding: 18px; gap: 18px; height: 500px; background: #050505; }
+  @media (max-width: 850px) { .workspace { flex-direction: column; height: auto; min-height: 600px; } }
+
+  .sim-panel {
+    flex: 1; background: #0a0c10; border: 1px solid #1f242d; border-radius: 8px;
+    display: flex; flex-direction: column; overflow: hidden; box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+  }
+  .sim-panel-header {
+    background: #11141a; padding: 10px 14px; font-family: var(--font-code); font-size: 11.5px;
+    font-weight: 700; color: #fff; border-bottom: 1px solid #1f242d; display: flex;
+    align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .sim-panel-body {
+    flex: 1; padding: 14px; font-family: var(--font-code); font-size: 12px;
+    line-height: 1.6; overflow-y: auto; background: #000000;
+  }
+
+  #panel-browser .sim-panel-header { border-top: 2px solid #ffcc00; }
+  #panel-network .sim-panel-header { border-top: 2px solid #4d9eff; }
+  #panel-server .sim-panel-header { border-top: 2px solid #39ff7a; }
+
+  .log-line { opacity: 0; transform: translateX(-5px); animation: slideIn 0.2s forwards; margin-bottom: 6px; word-break: break-word; color: #a9b5c2; }
+  .log-stage {
+    font-family: var(--font-code); font-size: 12.5px; color: #ffcc00; font-weight: bold;
+    margin: 20px 0 8px 0; padding-bottom: 4px; border-bottom: 1px dashed #1f242d;
+    display: block; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  @keyframes slideIn { to { opacity: 1; transform: translateX(0); } }
+  @keyframes slideInUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+  .timestamp { color: #536271; margin-right: 10px; user-select: none; }
+  .c-info { color: #8fa0b3; } .c-warn { color: #ffcc00; } .c-err { color: #ff3c3c; } .c-ok { color: #39ff7a; } .c-blue { color: #4d9eff; } .c-gray { color: #64748b; }
+
+  .http-block { background: rgba(255,255,255,0.03); border-left: 2px solid #4d9eff; padding: 10px; margin: 10px 0; border-radius: 0 6px 6px 0; }
+  .http-method { color: #d782ff; font-weight: bold; } .http-path { color: #fff; } .http-proto { color: #64748b; }
+  .http-header-key { color: #6ab0ff; } .http-header-val { color: #9cdb9e; } .http-body { color: #ff9d66; margin-top: 8px; display: block; }
+  .resp-200 { color: #39ff7a; }
+
+  .sim-verdict-box {
+    margin: 0 18px 18px 18px; background: #0d0f12; border: 1px solid #1f242d;
+    padding: 24px; border-radius: 8px; font-family: var(--sans); display: none;
+  }
+  .sim-verdict-box.show { display: block; animation: slideInUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+  .sim-verdict-title { font-family: var(--font-code); font-size: 17px; font-weight: 700; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;}
+  .sim-verdict-text { font-size: 15px; color: #e2e8f0; line-height: 1.6; text-align: justify;}
+  .v-hacked { border-color: #ff3c3c; background: rgba(255, 60, 60, 0.08); box-shadow: inset 0 0 30px rgba(255,60,60,0.1); }
+  .v-hacked .sim-verdict-title { color: #ff3c3c; }
+  .v-blocked { border-color: #39ff7a; background: rgba(57, 255, 122, 0.08); box-shadow: inset 0 0 30px rgba(57,255,122,0.1);}
+  .v-blocked .sim-verdict-title { color: #39ff7a; }
+
+  .sim-panel-body::-webkit-scrollbar { width: 6px; }
+  .sim-panel-body::-webkit-scrollbar-track { background: #050505; }
+  .sim-panel-body::-webkit-scrollbar-thumb { background: #2a313d; border-radius: 4px; }
+  .sim-panel-body::-webkit-scrollbar-thumb:hover { background: #4d9eff; }
+
+  .checklist{margin-top:40px;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:30px 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);}
+  .checklist-head{display:flex;align-items:center;gap:12px;margin-bottom:10px;}
+  .checklist-head h2{margin:0;font-size:20px;color:var(--text);font-family:var(--mono);}
+  .checklist-intro{color:var(--text-muted);font-size:14px;margin:0 0 26px;}
+
+  .impact-section {
+    background: linear-gradient(145deg, var(--panel), var(--bg));
+    border: 2px solid var(--border);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+    position: relative; overflow: hidden;
+    padding: 30px 24px; border-radius: 14px; margin-top: 30px; margin-bottom: 24px;
+  }
+  .impact-section::before {
+    content:''; position:absolute; top:0; left:0; width:100%; height:4px;
+    background: linear-gradient(90deg, var(--danger), var(--accent), var(--danger));
+  }
+  .impact-card {
+    background: var(--panel); border: 1px solid var(--border); border-left: 4px solid var(--danger);
+    border-radius: 10px; padding: 18px 20px; margin-bottom: 16px; transition: all 0.3s;
+  }
+  .impact-card:last-child{margin-bottom:0;}
+  .impact-card:hover{ transform: translateX(4px); box-shadow: 0 8px 20px rgba(255,60,60,0.08); border-color: rgba(255,255,255,0.1);}
+  .impact-card h3{ margin:0 0 10px; font-size:14.5px; color:var(--danger); font-family:var(--mono); display:flex; align-items:center; gap:10px; text-transform:uppercase; letter-spacing:0.5px;}
+  .impact-card p{margin:0; font-size:14px; color:var(--text); text-align:justify; line-height:1.7;}
+  .impact-card p+p{margin-top:10px;}
+
+  .faq-section {
+    background: linear-gradient(145deg, var(--panel), var(--bg));
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 30px 24px;
+    margin-top: 40px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  }
+  .faq-header { margin-bottom: 24px; }
+  .faq-header h2 { font-size: 20px; color: var(--text); font-family: var(--mono); margin: 0 0 10px 0; display: flex; align-items: center; gap: 10px;}
+  .faq-header p { color: var(--text-muted); font-size: 14px; margin: 0; text-align: justify;}
+
+  .faq-list { display: flex; flex-direction: column; gap: 12px; }
+  .faq-item {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+  .faq-item:hover { border-color: rgba(255,255,255,0.1); }
+  .faq-item.active { border-color: var(--accent); box-shadow: 0 4px 15px var(--accent-bg); }
+
+  .faq-question {
+    width: 100%; text-align: left; background: none; border: none;
+    padding: 16px 20px; display: flex; align-items: center; gap: 14px;
+    cursor: pointer; color: var(--text); font-family: var(--sans); font-size: 14.5px;
+    transition: all 0.2s ease;
+  }
+  .faq-question:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .faq-q-badge {
+    font-family: var(--mono); color: var(--accent); font-weight: 700;
+    background: var(--bg); padding: 4px 8px; border-radius: 6px;
+    font-size: 13px; flex-shrink: 0; border: 1px solid var(--border);
+  }
+  .faq-item.active .faq-q-badge { background: var(--accent-bg); border-color: var(--accent); }
+  .faq-q-text { flex: 1; line-height: 1.5; font-weight: 500; }
+  .faq-icon { color: var(--text-muted); transition: transform 0.3s ease; font-size: 12px; }
+  .faq-item.active .faq-icon { transform: rotate(180deg); color: var(--accent); }
+
+  .faq-answer {
+    display: none; padding: 0 20px 20px; border-top: 1px solid var(--border);
+    margin-top: 4px; padding-top: 16px; 
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 13.5px;
+    line-height: 1.7; text-align: justify;
+  }
+  .faq-item.active .faq-answer { display: block; animation: fadeIn 0.3s ease; }
+
+  .glossary-item {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    transition: all 0.3s ease;
+  }
+  .glossary-item:hover { border-color: rgba(255,255,255,0.1); }
+  .glossary-term {
+    font-family: var(--mono); font-weight: 700; color: var(--accent);
+    font-size: 14.5px; margin-bottom: 8px; display: flex; align-items: center; gap: 10px;
+  }
+  .glossary-term .glossary-badge {
+    font-family: var(--mono); color: var(--accent); font-weight: 700;
+    background: var(--bg); padding: 3px 8px; border-radius: 6px;
+    font-size: 12px; flex-shrink: 0; border: 1px solid var(--border);
+  }
+  .glossary-def {
+    color: var(--text-muted); font-family: var(--mono); font-size: 13.5px;
+    line-height: 1.7; text-align: justify; padding-top: 10px; border-top: 1px solid var(--border);
+  }
+
+  #tester-checklist {
+    background: linear-gradient(145deg, var(--panel), var(--bg));
+    border: 2px solid var(--border);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+    position: relative;
+    overflow: hidden;
+    padding: 30px 24px;
+    border-radius: 14px;
+    margin-top: 40px;
+  }
+  #tester-checklist::before {
+    content:''; position:absolute; top:0; left:0; width:100%; height:4px;
+    background: linear-gradient(90deg, var(--safe), var(--accent), var(--danger));
+  }
+  .audit-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 22px;
+    margin-bottom: 18px;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+    z-index: 1;
+  }
+  .audit-card:last-child { margin-bottom: 0; }
+  .audit-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    border-color: rgba(255,255,255,0.1);
+  }
+  .audit-card h3 {
+    margin: 0 0 18px 0; font-size: 15.5px; color: var(--safe); font-family: var(--mono);
+    display: flex; align-items: center; gap: 10px; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+
+  .check-list { display: flex; flex-direction: column; gap: 12px; }
+  .check-label {
+    display: flex; align-items: flex-start; gap: 14px;
+    cursor: pointer; padding: 12px 14px; border-radius: 8px;
+    transition: background 0.2s ease, transform 0.2s ease;
+    border: 1px solid transparent;
+  }
+  .check-label:hover { background: var(--panel-2); border-color: var(--border); transform: translateX(4px); }
+  .check-input { display: none; }
+  .check-box {
+    width: 20px; height: 20px; border: 2px solid var(--text-muted);
+    border-radius: 5px; flex-shrink: 0; margin-top: 2px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    background: var(--bg);
+  }
+  .check-input:checked + .check-box { background: var(--safe); border-color: var(--safe); transform: rotate(360deg); }
+  .check-input:checked + .check-box::after { content: '✔'; color: white; font-size: 13px; font-weight: bold; }
+  .check-text { color: var(--text); font-size: 14px; line-height: 1.6; transition: all 0.3s ease; text-align: justify; flex: 1; }
+  .check-input:checked ~ .check-text { color: var(--text-muted); text-decoration: line-through; opacity: 0.6; }
+
+    /* ── Designed and Developed by Footer ── */
+  .modern-footer { padding: 40px 18px 30px; text-align: center; position: relative; z-index: 1; }
+  .footer-badge {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: linear-gradient(145deg, var(--panel-2), var(--panel));
+    padding: 12px 28px; border-radius: 30px; font-family: var(--mono); font-size: 13.5px;
+    color: var(--text-muted); border: 1px solid var(--border);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.25); cursor: default;
+  }
+  .footer-badge:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 30px rgba(239, 68, 68, 0.25);
+    border-color: var(--danger);
+    color: var(--text);
+  }
+  .dev-name {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+    background: linear-gradient(90deg, #3B82F6, #A855F7, #F43F5E, #F59E0B, #3B82F6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    background-size: 200% auto;
+    animation: gradient-flow 4s linear infinite;
+  }
+  @keyframes gradient-flow {
+    0% { background-position: 0% center; }
+    100% { background-position: 200% center; }
+  }
+
+  @media (max-width:600px){
+    .level-header{padding:14px;gap:10px;}
+    .level-badge{width:30px;height:30px;font-size:13px;}
+    .hero{padding:30px 0 24px;}
+    main{padding:0 14px 20px;}
+    .controls-wrapper { flex-direction: column; align-items: flex-start; gap: 10px; }
+  }
+  @media (prefers-reduced-motion:reduce){
+    html{scroll-behavior:auto;}
+    *{transition-duration:0.01ms !important; animation: none !important;}
+  }
+  /* ---------- DYNAMIC CYBER BACKGROUND ---------- */
+  .cyber-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+  }
+
+  /* Matrix Dot Grid Overlay with continuous slow drift */
+  .cyber-grid {
+    position: absolute;
+    inset: -120px;
+    background-image: 
+      radial-gradient(rgba(255, 255, 255, 0.12) 1.2px, transparent 1.2px),
+      linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+    background-size: 32px 32px, 96px 96px, 96px 96px;
+    -webkit-mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 100%);
+    mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 100%);
+    opacity: 0.85;
+    animation: gridDrift 60s linear infinite;
+  }
+  :root[data-theme="light"] .cyber-grid {
+    background-image: 
+      radial-gradient(rgba(15, 23, 42, 0.08) 1.2px, transparent 1.2px),
+      linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+    opacity: 0.6;
+  }
+
+  @keyframes gridDrift {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(96px, 96px); }
+  }
+
+  /* Ambient Glowing Floating Orbs */
+  .cyber-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(100px);
+    opacity: 0.35;
+    will-change: transform;
+  }
+  :root[data-theme="light"] .cyber-orb {
+    opacity: 0.18;
+    filter: blur(110px);
+  }
+
+  .orb-1 {
+    width: 650px;
+    height: 650px;
+    background: radial-gradient(circle, #6366f1 0%, rgba(99,102,241,0) 70%);
+    top: -120px;
+    left: -100px;
+    animation: floatOrb1 16s ease-in-out infinite alternate;
+  }
+
+  .orb-2 {
+    width: 700px;
+    height: 700px;
+    background: radial-gradient(circle, #a855f7 0%, rgba(168,85,247,0) 70%);
+    top: 15%;
+    right: -150px;
+    animation: floatOrb2 20s ease-in-out infinite alternate;
+  }
+
+  .orb-3 {
+    width: 560px;
+    height: 560px;
+    background: radial-gradient(circle, #06b6d4 0%, rgba(6,182,212,0) 70%);
+    bottom: -80px;
+    left: 15%;
+    animation: floatOrb3 18s ease-in-out infinite alternate;
+  }
+
+  .orb-4 {
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, #f43f5e 0%, rgba(244,63,94,0) 70%);
+    bottom: 18%;
+    right: 12%;
+    animation: floatOrb4 22s ease-in-out infinite alternate;
+  }
+
+  /* Keyframe Animations for Smooth Floating */
+  @keyframes floatOrb1 {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(120px, 90px) scale(1.15); }
+    100% { transform: translate(-60px, 140px) scale(0.92); }
+  }
+
+  @keyframes floatOrb2 {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(-140px, 110px) scale(1.18); }
+    100% { transform: translate(-80px, -70px) scale(0.9); }
+  }
+
+  @keyframes floatOrb3 {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(90px, -100px) scale(1.14); }
+    100% { transform: translate(-100px, -50px) scale(1.05); }
+  }
+
+  @keyframes floatOrb4 {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(-110px, -80px) scale(1.2); }
+    100% { transform: translate(90px, 70px) scale(0.9); }
+  }
+
+  /* Floating Cyber Data Particles */
+  .cyber-particle {
+    position: absolute;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 0 8px currentColor;
+    opacity: 0;
+    animation: floatParticle 14s infinite ease-in-out;
+  }
+
+  .p-1 { width: 3px; height: 3px; left: 12%; bottom: -20px; color: var(--brand-1); animation-delay: 0s; animation-duration: 15s; }
+  .p-2 { width: 4px; height: 4px; left: 28%; bottom: -20px; color: var(--brand-2); animation-delay: 3s; animation-duration: 18s; }
+  .p-3 { width: 3px; height: 3px; left: 48%; bottom: -20px; color: var(--safe); animation-delay: 6s; animation-duration: 14s; }
+  .p-4 { width: 4px; height: 4px; left: 68%; bottom: -20px; color: var(--danger); animation-delay: 2s; animation-duration: 20s; }
+  .p-5 { width: 3px; height: 3px; left: 84%; bottom: -20px; color: var(--accent); animation-delay: 7s; animation-duration: 16s; }
+  .p-6 { width: 4px; height: 4px; left: 94%; bottom: -20px; color: #38bdf8; animation-delay: 4s; animation-duration: 19s; }
+  .p-7 { width: 3px; height: 3px; left: 38%; bottom: -20px; color: var(--safe); animation-delay: 9s; animation-duration: 17s; }
+  .p-8 { width: 4px; height: 4px; left: 58%; bottom: -20px; color: var(--brand-2); animation-delay: 11s; animation-duration: 21s; }
+
+  @keyframes floatParticle {
+    0% { transform: translateY(0) translateX(0) scale(0.5); opacity: 0; }
+    15% { opacity: 0.8; }
+    85% { opacity: 0.8; }
+    100% { transform: translateY(-105vh) translateX(50px) scale(1.2); opacity: 0; }
+  }
+
+  /* Scanline sweep effect */
+  .cyber-scanline {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 0%, rgba(99, 102, 241, 0.035) 50%, transparent 100%);
+    background-size: 100% 200%;
+    animation: scanSweep 12s linear infinite;
+  }
+
+  @keyframes scanSweep {
+    0% { background-position: 0% 0%; }
+    100% { background-position: 0% 200%; }
+  }
+
+  /* Deep Dive Link Design (Matches CSRF.html & SQLI.html) */
+  .csp-deep-dive { margin-top: 14px; text-align: left; }
+  .csp-deep-dive a {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--btn-bg, rgba(62, 207, 142, 0.18));
+    color: var(--btn-text, #3ecf8e);
+    border: 1px solid var(--btn-border, rgba(62, 207, 142, 0.45));
+    padding: 6px 14px; border-radius: 20px; font-family: var(--mono); font-weight: 700;
+    font-size: 12px; text-decoration: none; letter-spacing: 0.3px;
+    box-shadow: 0 0 6px var(--btn-glow, rgba(62, 207, 142, 0.2));
+    transition: background-color 0.2s, transform 0.2s, box-shadow 0.2s;
+  }
+  .csp-deep-dive a:hover {
+    background: var(--btn-bg-hover, rgba(62, 207, 142, 0.35));
+    transform: translateY(-1px);
+    box-shadow: 0 0 10px var(--btn-glow-hover, rgba(62, 207, 142, 0.4));
+  }
+  :root[data-theme="light"] .csp-deep-dive a {
+    background: #059669;
+    color: #ffffff;
+    border-color: #047857;
+    box-shadow: 0 0 6px rgba(5, 150, 105, 0.25);
+  }
+  :root[data-theme="light"] .csp-deep-dive a:hover {
+    background: #047857;
+    box-shadow: 0 0 10px rgba(5, 150, 105, 0.4);
+  }
+
+  /* ── SUB-NAV BUTTONS (ALIGNED TO CONTENT WIDTH & ROUNDED CORNERS) ── */
+  .sub-nav-wrapper {
+    position: relative; background: transparent; border-bottom: none;
+    padding: 16px 0 0; box-shadow: none; max-width: 840px; margin: 0 auto;
+  }
+  .sub-nav-bar {
+    max-width: 100%; padding: 0 20px; margin: 0 auto; display: flex; align-items: center;
+    justify-content: space-between; gap: 10px; overflow-x: auto;
+    scrollbar-width: none; -ms-overflow-style: none;
+  }
+  .sub-nav-bar::-webkit-scrollbar { display: none; }
+  .sub-nav-btn {
+    flex: 1 1 0; max-width: 155px; display: inline-flex; align-items: center; justify-content: center;
+    gap: 7px; background: var(--panel); backdrop-filter: blur(16px);
+    border: 1px solid var(--border); color: var(--text-muted); padding: 8px 12px;
+    border-radius: 24px; text-decoration: none; font-family: var(--mono);
+    font-size: 12px; font-weight: 600; white-space: nowrap; transition: all 0.25s ease;
+  }
+  .sub-nav-btn:hover {
+    color: var(--text); border-color: var(--accent); background: var(--panel-2);
+    transform: translateY(-2px); box-shadow: 0 4px 12px rgba(255, 200, 87, 0.15);
+  }
+  .sub-nav-btn.active {
+    border-color: var(--safe);
+    background: var(--safe-bg);
+    color: var(--safe);
+    font-weight: 700;
+    box-shadow: 0 0 12px var(--safe-bg);
+  }
+  .sub-nav-btn.home-nav-btn { border-color: rgba(77, 158, 255, 0.4); color: var(--blue); }
+  .sub-nav-btn.home-nav-btn:hover { border-color: var(--blue); background: var(--blue-bg); color: #fff; }
+  :root[data-theme="light"] .sub-nav-btn {
+    background: rgba(255, 255, 255, 0.9);
+  }
+  @media (max-width: 768px) {
+    .sub-nav-wrapper { padding: 10px 0 0; }
+    .sub-nav-bar { justify-content: flex-start; gap: 8px; padding: 0 16px; }
+    .sub-nav-btn { flex: 0 0 auto; max-width: none; padding: 6px 14px; font-size: 12px; border-radius: 20px; }
+  }
+
+  /* ── BOTTOM NAVIGATION ROW (PREV & NEXT ONLY) ── */
+  .bottom-nav-row {
+    margin-top: 45px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+  }
+  .nav-arrow-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 18px;
+    border-radius: 20px;
+    text-decoration: none;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.25s ease;
+    box-shadow: var(--shadow-sm);
+    white-space: nowrap;
+  }
+  .nav-arrow-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-bg);
+    transform: translateY(-2px);
+  }
+  @media (max-width: 768px) {
+    .bottom-nav-row {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+    }
+    .bottom-nav-row .nav-arrow-btn {
+      justify-content: center;
+      width: 100%;
+      text-align: center;
+      white-space: normal;
+    }
+  }
+
+</style>
+</head>
+<body data-lang="hi">
+
+<!-- ================= DYNAMIC CYBER BACKGROUND ================= -->
+<div class="cyber-bg" aria-hidden="true">
+  <div class="cyber-orb orb-1"></div>
+  <div class="cyber-orb orb-2"></div>
+  <div class="cyber-orb orb-3"></div>
+  <div class="cyber-orb orb-4"></div>
+  <div class="cyber-grid"></div>
+  <div class="cyber-scanline"></div>
+  <div class="cyber-particle p-1"></div>
+  <div class="cyber-particle p-2"></div>
+  <div class="cyber-particle p-3"></div>
+  <div class="cyber-particle p-4"></div>
+  <div class="cyber-particle p-5"></div>
+  <div class="cyber-particle p-6"></div>
+  <div class="cyber-particle p-7"></div>
+  <div class="cyber-particle p-8"></div>
+</div>
+
+<div class="topbar">
+  <a href="../index.html" class="brand" style="text-decoration:none; color:inherit;" title="Return to Main Hub">
+    <span class="brand-icon">🛡️</span>
+    <span class="brand-text"><code>SSRF :</code> Server-Side Request Forgery</span>
+  </a>
+  <div class="controls-wrapper">
+    <div class="lang-switch-wrapper">
+      <span id="lbl-hi" class="lang-active">Hindi</span>
+      <label class="switch">
+        <input type="checkbox" id="langToggle">
+        <span class="slider"></span>
+      </label>
+      <span id="lbl-en" class="lang-inactive">English</span>
+    </div>
+    <button class="theme-toggle" id="themeBtn">☀️ Light Mode</button>
+  </div>
+</div>
+
+<!-- ================= HORIZONTAL SUB-NAV BAR ================= -->
+<div class="sub-nav-wrapper">
+  <nav class="sub-nav-bar" aria-label="Section Navigation">
+    <a class="sub-nav-btn home-nav-btn" href="../index.html" title="Main Home Page">
+      <span class="sub-nav-icon">🏠</span>
+      <span class="lang-hi">Home</span><span class="lang-en">Home</span>
+    </a>
+    <a class="sub-nav-btn" href="#simulator">
+      <span class="sub-nav-icon">⚡</span>
+      <span class="lang-hi">Simulator</span><span class="lang-en">Simulator</span>
+    </a>
+    <a class="sub-nav-btn" href="#impact">
+      <span class="sub-nav-icon">💥</span>
+      <span class="lang-hi">Attack Vectors</span><span class="lang-en">Attack Vectors</span>
+    </a>
+    <a class="sub-nav-btn" href="#confusing-questions">
+      <span class="sub-nav-icon">🤔</span>
+      <span class="lang-hi">Questions</span><span class="lang-en">Questions</span>
+    </a>
+    <a class="sub-nav-btn" href="#tester-checklist">
+      <span class="sub-nav-icon">📝</span>
+      <span class="lang-hi">Checklist</span><span class="lang-en">Checklist</span>
+    </a>
+  </nav>
+</div>
+
+<main>
+
+  <section class="hero">
+    <p class="eyebrow"><span class="lang-hi">Web App Security — Technical Walkthrough</span><span class="lang-en">Web App Security — Technical Walkthrough</span></p>
+    <h1 class="title">
+        <span class="lang-hi">SSRF: Ek Problem, Aur Use Fix Karne Ke Technical Solutions</span>
+        <span class="lang-en">SSRF: One Problem, And Technical Solutions To Fix It</span>
+    </h1>
+
+    <div class="terminal">
+      <div class="terminal-bar">
+        <span class="terminal-dot"></span><span class="terminal-dot"></span><span class="terminal-dot"></span>
+        <span class="terminal-label"><span class="lang-hi">server.outbound_request</span><span class="lang-en">server.outbound_request</span></span>
+      </div>
+      <div class="terminal-body">
+        <span class="prompt">&gt;</span> <span id="typewriter"></span><span class="cursor"></span>
+      </div>
+    </div>
+
+    <div class="intro-block">
+      <p><strong><span class="lang-hi">SSRF (Server-Side Request Forgery)</span><span class="lang-en">SSRF (Server-Side Request Forgery)</span></strong>
+        <span class="lang-hi">tab hoti hai jab ek application user-supplied URL ke against khud ek outbound network request bhej deta hai, bina ye check kiye ki wo request ASAL MEIN kahan ja rahi hai. Vulnerability tab banti hai jab attacker is behavior ka use karke server ko internal-only resources (jo normally internet se accessible hi nahi hote) ki taraf request bhejne par majboor kar deta hai.</span>
+        <span class="lang-en">occurs when an application makes an outbound network request based on a user-supplied URL, without checking where that request is ACTUALLY going. The vulnerability arises when an attacker uses this behavior to force the server into sending a request toward internal-only resources — ones that are normally not reachable from the internet at all.</span>
+      </p>
+      <p class="roadmap">
+        <span class="lang-hi">Mechanism → Misconfig 1 → Gap → Misconfig 2 → Gap → Misconfig 3 → Gap → Final Solution</span>
+        <span class="lang-en">Mechanism → Misconfig 1 → Gap → Misconfig 2 → Gap → Misconfig 3 → Gap → Final Solution</span>
+      </p>
+    </div>
+
+    <a class="hero-cta" href="#simulator">⚡ <span class="lang-hi">Har misconfiguration ko simulator mein khud test karo ↓</span><span class="lang-en">Test every misconfiguration yourself in the simulator ↓</span></a>
+  </section>
+
+  <!-- REAL-WORLD IMPACT -->
+  <section class="impact-section" id="impact">
+    <div class="sec-head" style="margin-top:0;">
+      <p class="sec-eyebrow"><span class="lang-hi">Isse kya farak padta hai?</span><span class="lang-en">Why does this actually matter?</span></p>
+      <h2>💥 <span class="lang-hi">Real-World Impact — Agar Ye Vulnerability Live Website Mein Ho To Kya Ho Sakta Hai</span><span class="lang-en">Real-World Impact — What Can Happen If A Live Website Has This Bug</span></h2>
+      <p>
+        <span class="lang-hi">Mechanism mein jaane se pehle ye samajhna zaroori hai: agar ek real website mein ye bug mil jaaye, to attacker ASAL MEIN kar kya sakta hai? Neeche wo concrete scenarios hain jo real incidents mein baar-baar dekhe gaye hain.</span>
+        <span class="lang-en">Before diving into the mechanism, it's important to understand: if this bug is found on a real website, what can the attacker ACTUALLY do? Below are concrete scenarios that have repeatedly been seen in real incidents.</span>
+      </p>
+    </div>
+
+    <div class="impact-card">
+      <h3>☁️ <span class="lang-hi">1. Cloud Credentials Chori (Metadata Theft)</span><span class="lang-en">1. Cloud Credential Theft (Metadata Theft)</span></h3>
+      <p>
+        <span class="lang-hi">Agar server cloud (AWS/GCP/Azure) par host ho raha hai, attacker apne vulnerable "URL fetch" feature ko <code>http://169.254.169.254/</code> (cloud metadata endpoint) ki taraf point kar sakta hai. Ye endpoint temporary CLOUD CREDENTIALS deta hai jo server ki apni IAM identity ke roop mein kaam karte hain — inhe chura kar attacker poore cloud account ke andar databases, storage, aur doosre servers tak access pa sakta hai.</span>
+        <span class="lang-en">If the server is hosted on the cloud (AWS/GCP/Azure), the attacker can point the vulnerable "URL fetch" feature at <code>http://169.254.169.254/</code> (the cloud metadata endpoint). This endpoint returns temporary CLOUD CREDENTIALS that act as the server's own IAM identity — stealing these lets the attacker access databases, storage, and other servers across the entire cloud account.</span>
+      </p>
+      <div class="csp-deep-dive">
+        <a href="../labs/ssrf_metadata_theft.html" target="_blank">
+          <span class="lang-hi">Click here to see the simulation of this attack 💻</span>
+          <span class="lang-en">Click here to see the simulation of this attack 💻</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="impact-card">
+      <h3>🗺️ <span class="lang-hi">2. Internal Network Ka Map Bana Lena (Port Scanning)</span><span class="lang-en">2. Mapping The Internal Network (Port Scanning)</span></h3>
+      <p>
+        <span class="lang-hi">Attacker vulnerable feature ko baar-baar alag-alag internal IP:port combinations (jaise <code>192.168.1.1:22</code>, <code>10.0.0.5:3306</code>) ki taraf point karke response time aur error messages compare karta hai — isse pata chal jaata hai kaunse internal services chal rahe hain, jo ek "internal network map" bana deta hai agle attack steps ke liye.</span>
+        <span class="lang-en">The attacker repeatedly points the vulnerable feature at different internal IP:port combinations (like <code>192.168.1.1:22</code>, <code>10.0.0.5:3306</code>) and compares response times and error messages — this reveals which internal services are running, building an "internal network map" for the next stage of the attack.</span>
+      </p>
+    </div>
+
+    <div class="impact-card">
+      <h3>🔓 <span class="lang-hi">3. Un-Authenticated Internal Admin Panels Tak Access</span><span class="lang-en">3. Access To Unauthenticated Internal Admin Panels</span></h3>
+      <p>
+        <span class="lang-hi">Bahut saare internal services (jaise Redis, Jenkins, internal admin dashboards, Kubernetes API) is assumption par chalte hain ki "internal network se aaya request matlab trusted request hai", isliye unmein login/authentication hi nahi hota. SSRF server ko is trusted zone ke ANDAR se request bhejne deta hai — attacker seedha in services ko read/modify kar sakta hai jaise wo khud internal employee ho.</span>
+        <span class="lang-en">Many internal services (like Redis, Jenkins, internal admin dashboards, the Kubernetes API) operate on the assumption that "a request from the internal network means a trusted request", so they don't even have login/authentication. SSRF lets the attacker send a request from INSIDE this trusted zone — they can directly read/modify these services as if they were an internal employee.</span>
+      </p>
+      <div class="csp-deep-dive">
+        <a href="../labs/ssrf_internal_admin.html" target="_blank">
+          <span class="lang-hi">Click here to see the simulation of this attack 💻</span>
+          <span class="lang-en">Click here to see the simulation of this attack 💻</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="impact-card">
+      <h3>📁 <span class="lang-hi">4. Local Server Files Padhna (file:// Scheme Abuse)</span><span class="lang-en">4. Reading Local Server Files (file:// Scheme Abuse)</span></h3>
+      <p>
+        <span class="lang-hi">Agar application URL scheme ko restrict nahi karta, attacker <code>file:///etc/passwd</code> ya <code>file:///var/www/html/config.php</code> jaisa URL de sakta hai — server URL fetch karne wali library se seedha apni hi disk se sensitive files (source code, credentials, secrets) padh kar attacker ko wapas bhej deta hai.</span>
+        <span class="lang-en">If the application doesn't restrict the URL scheme, the attacker can supply a URL like <code>file:///etc/passwd</code> or <code>file:///var/www/html/config.php</code> — the server's own URL-fetching library reads sensitive files (source code, credentials, secrets) straight from its own disk and sends them back to the attacker.</span>
+      </p>
+    </div>
+
+    <div class="impact-card">
+      <h3>⚙️ <span class="lang-hi">5. SSRF Ko RCE Mein Escalate Karna</span><span class="lang-en">5. Escalating SSRF Into RCE</span></h3>
+      <p>
+        <span class="lang-hi">Kuch internal services (jaise Redis) sirf HTTP ki tarah command receive nahi karte — wo apne khud ke text-based protocol par chalte hain. Attacker <code>gopher://</code> scheme use karke ek raw byte-stream craft kar sakta hai jo Redis ke commands ki tarah dikhta hai — isse Redis ke andar ek malicious file (jaise cron job ya webshell) likh kar poore server par Remote Code Execution tak pahuncha jaa sakta hai.</span>
+        <span class="lang-en">Some internal services (like Redis) don't just receive commands over HTTP — they speak their own text-based protocol. An attacker can use the <code>gopher://</code> scheme to craft a raw byte-stream that looks like Redis commands — writing a malicious file (like a cron job or webshell) inside Redis and escalating all the way to Remote Code Execution on the whole server.</span>
+      </p>
+    </div>
+
+    <div class="impact-card">
+      <h3>📜 <span class="lang-hi">6. Real-World Example — Capital One Breach (2019)</span><span class="lang-en">6. Real-World Example — The Capital One Breach (2019)</span></h3>
+      <p>
+        <span class="lang-hi">2019 mein ek well-documented, publicly-known incident hua tha jisme ek misconfigured Web Application Firewall ke against SSRF ka use karke attacker ne AWS cloud metadata endpoint se temporary credentials chura liye the. In credentials se attacker ne storage buckets tak access pa liya, jisse over 100 million customer records (names, addresses, credit scores) expose ho gaye. Ye incident dikhata hai ki SSRF sirf "theoretical" nahi, real-world mein massive-scale data breach tak le ja sakta hai.</span>
+        <span class="lang-en">In 2019, a well-documented, publicly-known incident occurred where an attacker used SSRF against a misconfigured Web Application Firewall to steal temporary credentials from the AWS cloud metadata endpoint. Using these credentials, the attacker gained access to storage buckets, exposing over 100 million customer records (names, addresses, credit scores). This incident shows SSRF isn't just "theoretical" — in the real world, it can lead to a massive-scale data breach.</span>
+      </p>
+    </div>
+
+  </section>
+
+  <section class="levels">
+
+    <!-- LEVEL 0 -->
+    <div class="level-card" id="level-0" data-level="0">
+      <button class="level-header">
+        <span class="level-badge">0</span>
+        <span class="level-titles">
+          <h2>
+            <span class="lang-hi">Mechanism — Server Requests, Aur Trust Boundary Kahan Toot Ti Hai</span>
+            <span class="lang-en">Mechanism — Server-Side Requests, And Where The Trust Boundary Breaks</span>
+          </h2>
+          <p>
+            <span class="lang-hi">Apps external URLs fetch kyu karte hain</span>
+            <span class="lang-en">Why apps fetch external URLs at all</span>
+          </p>
+        </span>
+        <span class="level-tag problem"><span class="lang-hi">FOUNDATION</span><span class="lang-en">FOUNDATION</span></span>
+        <span class="chevron">▾</span>
+      </button>
+      <div class="level-body">
+        <div class="level-inner">
+          <h4>
+            <span class="lang-hi">APPS SERVER-SIDE MEIN URLS KYU FETCH KARTE HAIN</span>
+            <span class="lang-en">WHY APPS FETCH URLS SERVER-SIDE</span>
+          </h4>
+          <p>
+            <span class="lang-hi">Bahut saari legitimate features server ko user ke diye hue URL par khud request bhejne ki zaroorat padti hai — jaise ek "avatar from URL" feature, ek link-preview/thumbnail generator, ek webhook system jo third-party APIs ko call karta hai, ya ek PDF generator jo remote images embed karta hai. In sab mein pattern same hai: developer server ko ek TRUSTED PROXY ki tarah use karta hai jo user ke behalf par internet se data fetch karke wapas laata hai.</span>
+            <span class="lang-en">Many legitimate features need the server itself to make a request to a user-supplied URL — like an "avatar from URL" feature, a link-preview/thumbnail generator, a webhook system calling third-party APIs, or a PDF generator embedding remote images. The pattern is the same in all of these: the developer uses the server as a TRUSTED PROXY that fetches data from the internet on the user's behalf, then returns it.</span>
+          </p>
+
+          <h4>
+            <span class="lang-hi">TECHNICAL EXAMPLE</span>
+            <span class="lang-en">TECHNICAL EXAMPLE</span>
+          </h4>
+          <p>
+            <span class="lang-hi">Ek chhota real code snippet socho — ek "avatar fetch" feature jo user-supplied URL se image download karta hai:</span>
+            <span class="lang-en">Consider a small real code snippet — an "avatar fetch" feature that downloads an image from a user-supplied URL:</span>
+          </p>
+          <pre><code>@app.route('/fetch-avatar')
+def fetch_avatar():
+    url = request.args.get('url')
+    response = requests.get(url)
+    return response.content</code></pre>
+          <p>
+            <span class="lang-hi">Normal use case mein user <code>https://example.com/photo.jpg</code> jaisa public image URL dega, server usse fetch karke thumbnail bana dega — bilkul theek. Developer ne yahan ek assumption bana li: "user hamesha ek public, external image URL hi dega".</span>
+            <span class="lang-en">In the normal use case, the user supplies a public image URL like <code>https://example.com/photo.jpg</code>, and the server fetches it to build a thumbnail — perfectly fine. The developer made one assumption here: "the user will always give a public, external image URL".</span>
+          </p>
+
+          <div class="callout analogy">
+            <span class="cal-label">
+                <span class="lang-hi">💡 SIMPLE WORDS MEIN</span>
+                <span class="lang-en">💡 IN SIMPLE WORDS</span>
+            </span>
+            <p>
+                <span class="lang-hi"><code>requests.get(url)</code> ko koi idea nahi hota ki <code>url</code> variable kahan se aaya — user ne diya ya developer ne hardcode kiya. Ye function bas itna karta hai: "jo bhi address diya gaya hai, wahan jaake connect karo aur jo mile wapas le aao". Isi function ka use karke server, agar sahi checks na hon, apne hi INTERNAL network ke andar bhi request bhej sakta hai — jaise ek courier company ka driver, jo bina address verify kiye, chahe wo address office ke andar staff-only room ka hi kyu na ho, wahan pahunch jaata hai.</span>
+                <span class="lang-en"><code>requests.get(url)</code> has no idea where the <code>url</code> variable came from — whether the user supplied it or the developer hardcoded it. All this function does is: "connect to whatever address is given, and bring back whatever is found there". Using this same function, if proper checks aren't in place, the server can end up sending a request inside its OWN internal network too — like a courier company's driver who, without verifying the address, ends up delivering to a staff-only room inside the office itself, simply because that's the address they were given.</span>
+            </p>
+          </div>
+
+          <div class="callout">
+            <span class="cal-label">
+                <span class="lang-hi">⚠️ PROBLEM KI JADD</span>
+                <span class="lang-en">⚠️ THE ROOT OF THE PROBLEM</span>
+            </span>
+            <p>
+                <span class="lang-hi">Server ke apne network perspective se, uske khud ki taraf se bheja gaya request "trusted, internal traffic" maana jaata hai — firewalls jo internet se internal services ko block karte hain, wo server ke APNE outbound requests ko block nahi karte. Isliye agar attacker server ko control kar le ki wo KAHAN request bheje, to wo effectively firewall ke andar se ek "trusted insider" ban jaata hai.</span>
+                <span class="lang-en">From the server's own network's perspective, a request originating from itself is treated as "trusted, internal traffic" — firewalls that block internet traffic from reaching internal services do NOT block the server's OWN outbound requests. So if an attacker can control WHERE the server sends a request, they effectively become a "trusted insider" from behind the firewall.</span>
+            </p>
+          </div>
+
+          <a class="sim-jump" href="#simulator">🎮 <span class="lang-hi">Baseline behavior simulator mein dekho</span><span class="lang-en">See baseline behavior in the simulator</span></a>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEVEL 1 -->
+    <div class="level-card" id="level-1" data-level="1">
+      <button class="level-header">
+        <span class="level-badge">1</span>
+        <span class="level-titles">
+          <h2>
+            <span class="lang-hi">Misconfiguration 1 — Koi Validation Hi Nahi</span>
+            <span class="lang-en">Misconfiguration 1 — No Validation At All</span>
+          </h2>
+          <p>
+            <span class="lang-hi">Direct internal IP access, koi check hi nahi</span>
+            <span class="lang-en">Direct internal IP access, no checks at all</span>
+          </p>
+        </span>
+        <span class="level-tag problem"><span class="lang-hi">GAP</span><span class="lang-en">GAP</span></span>
+        <span class="chevron">▾</span>
+      </button>
+      <div class="level-body">
+        <div class="level-inner">
+          <h4>
+            <span class="lang-hi">SABSE BASIC MISTAKE</span>
+            <span class="lang-en">THE MOST BASIC MISTAKE</span>
+          </h4>
+          <p>
+            <span class="lang-hi">Level 0 ka code exactly yehi karta hai — koi validation hi nahi. Attacker <code>url</code> parameter mein ek public image URL ke bajaye seedha ek internal address de deta hai:</span>
+            <span class="lang-en">Level 0's code does exactly this — no validation at all. Instead of a public image URL, the attacker directly supplies an internal address in the <code>url</code> parameter:</span>
+          </p>
+          <pre><code>GET /fetch-avatar?url=http://127.0.0.1:6379/</code></pre>
+
+          <div class="callout">
+            <span class="cal-label">
+                <span class="lang-hi">⚠️ GAP</span>
+                <span class="lang-en">⚠️ GAP</span>
+            </span>
+            <p>
+                <span class="lang-hi">Server bina kuch check kiye <code>127.0.0.1:6379</code> (yaani apna hi localhost, port 6379 par chal raha Redis) se connect kar leta hai — jo ki normally koi bhi authentication ke bina chalta hai kyunki developer ne socha tha "isse sirf server hi access kar sakta hai, ye safe hai". Attacker ab Redis ke commands run karwa sakta hai, uska data padh sakta hai, ya use bhi corrupt kar sakta hai — sab is ek "image preview" feature ke through.</span>
+                <span class="lang-en">The server connects to <code>127.0.0.1:6379</code> (its own localhost, port 6379 running Redis) without checking anything — which normally runs with no authentication at all, because the developer assumed "only the server can access this, so it's safe". The attacker can now run Redis commands, read its data, or even corrupt it — all through this one "image preview" feature.</span>
+            </p>
+          </div>
+
+          <p>
+            <span class="lang-hi">Yahi pattern <code>http://169.254.169.254/</code> (cloud metadata) ya <code>http://192.168.1.1</code> (internal router/admin panel) jaise dusre internal targets ke against bhi kaam karta hai — server jo bhi address diya jaaye, wahan chala jaata hai.</span>
+            <span class="lang-en">This same pattern works against other internal targets too, like <code>http://169.254.169.254/</code> (cloud metadata) or <code>http://192.168.1.1</code> (internal router/admin panel) — the server goes wherever it's told, no questions asked.</span>
+          </p>
+
+          <a class="sim-jump" href="#simulator">🎮 <span class="lang-hi">Direct internal access simulator mein dekho</span><span class="lang-en">See direct internal access in the simulator</span></a>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEVEL 2 -->
+    <div class="level-card" id="level-2" data-level="2">
+      <button class="level-header">
+        <span class="level-badge">2</span>
+        <span class="level-titles">
+          <h2>
+            <span class="lang-hi">Misconfiguration 2 — Basic Blacklist, Aur DNS Rebinding</span>
+            <span class="lang-en">Misconfiguration 2 — Basic Blacklist, And DNS Rebinding</span>
+          </h2>
+          <p>
+            <span class="lang-hi">String-matching se validate karna kaafi nahi</span>
+            <span class="lang-en">Validating via string-matching isn't enough</span>
+          </p>
+        </span>
+        <span class="level-tag problem"><span class="lang-hi">GAP</span><span class="lang-en">GAP</span></span>
+        <span class="chevron">▾</span>
+      </button>
+      <div class="level-body">
+        <div class="level-inner">
+          <h4>
+            <span class="lang-hi">BLACKLIST KA REACTIVE FIX</span>
+            <span class="lang-en">THE REACTIVE BLACKLIST FIX</span>
+          </h4>
+          <p>
+            <span class="lang-hi">Level 1 ka incident dekh kar developer ek blacklist add karta hai jo known-dangerous strings ko block kare:</span>
+            <span class="lang-en">Seeing the Level 1 incident, the developer adds a blacklist that blocks known-dangerous strings:</span>
+          </p>
+          <pre><code>blocked = ["127.0.0.1", "localhost", "169.254.169.254"]
+if any(b in url for b in blocked):
+    reject_request()</code></pre>
+          <p>
+            <span class="lang-hi">Ab <code>http://127.0.0.1:6379/</code> jaisa literal payload reject ho jaata hai — developer confident feel karta hai.</span>
+            <span class="lang-en">Now a literal payload like <code>http://127.0.0.1:6379/</code> gets rejected — the developer feels confident.</span>
+          </p>
+
+          <div class="callout">
+            <span class="cal-label">
+                <span class="lang-hi">⚠️ GAP — DNS REBINDING</span>
+                <span class="lang-en">⚠️ GAP — DNS REBINDING</span>
+            </span>
+            <p>
+                <span class="lang-hi">Attacker ab ek apna khud ka domain use karta hai, jaise <code>http://attacker-dns-rebind.com/</code>. Jab server pehli baar isse validate karta hai (agar validation step alag se DNS resolve karke check kare), attacker ka DNS server ek SAFE, public IP address wapas deta hai — validation PASS ho jaata hai. Lekin jaise hi actual request bheja jaata hai (ek fraction of a second baad, ek naya DNS lookup hota hai), attacker apna DNS answer badal deta hai aur ab wahi domain <code>127.0.0.1</code> ya <code>169.254.169.254</code> ki taraf resolve hota hai.</span>
+                <span class="lang-en">The attacker now uses their own domain, like <code>http://attacker-dns-rebind.com/</code>. When the server first validates it (if the validation step does a separate DNS resolution to check), the attacker's DNS server returns a SAFE, public IP address — validation PASSES. But the moment the actual request is sent (a fraction of a second later, triggering a fresh DNS lookup), the attacker flips their DNS answer, and that same domain now resolves to <code>127.0.0.1</code> or <code>169.254.169.254</code>.</span>
+            </p>
+          </div>
+
+          <p>
+            <span class="lang-hi">Ye ek classic <strong>TOCTOU (Time-Of-Check to Time-Of-Use)</strong> flaw hai — validation aur actual connection do ALAG moments par ho rahe hain, aur beech mein attacker ke paas cheezein badalne ka mauka hota hai. Blacklist ke literal-string-matching approach ki hi tarah, ye bhi ek "sirf jo maine dekha wahi block karunga" mentality ka result hai.</span>
+            <span class="lang-en">This is a classic <strong>TOCTOU (Time-Of-Check to Time-Of-Use)</strong> flaw — validation and the actual connection happen at two DIFFERENT moments, and in between, the attacker has a window to change things. Just like the literal-string-matching approach of the blacklist, this is also the result of a "I'll only block what I saw" mentality.</span>
+          </p>
+
+          <a class="sim-jump" href="#simulator">🎮 <span class="lang-hi">DNS rebinding bypass simulator mein dekho</span><span class="lang-en">See DNS rebinding bypass in the simulator</span></a>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEVEL 3 -->
+    <div class="level-card" id="level-3" data-level="3">
+      <button class="level-header">
+        <span class="level-badge">3</span>
+        <span class="level-titles">
+          <h2>
+            <span class="lang-hi">Misconfiguration 3 — Redirect Aur Scheme Confusion</span>
+            <span class="lang-en">Misconfiguration 3 — Redirects And Scheme Confusion</span>
+          </h2>
+          <p>
+            <span class="lang-hi">Validation sahi target check karti hai, lekin redirect follow karke bypass ho jaati hai</span>
+            <span class="lang-en">Validation checks the right target, but gets bypassed via a redirect</span>
+          </p>
+        </span>
+        <span class="level-tag problem"><span class="lang-hi">GAP</span><span class="lang-en">GAP</span></span>
+        <span class="chevron">▾</span>
+      </button>
+      <div class="level-body">
+        <div class="level-inner">
+          <h4>
+            <span class="lang-hi">DNS REBINDING FIX KARNE KE BAAD</span>
+            <span class="lang-en">AFTER FIXING DNS REBINDING</span>
+          </h4>
+          <p>
+            <span class="lang-hi">Developer ab DNS resolution ko "pin" kar deta hai — validation aur actual connection dono EK HI resolved IP use karte hain, ek hi moment par. Ab <code>attacker-dns-rebind.com</code> jaisa rebinding attack kaam nahi karta, kyunki dono steps synchronized hain.</span>
+            <span class="lang-en">The developer now "pins" the DNS resolution — both validation and the actual connection use the SAME resolved IP, at the same moment. Now an attack like <code>attacker-dns-rebind.com</code> doesn't work, because both steps are synchronized.</span>
+          </p>
+
+          <div class="callout">
+            <span class="cal-label">
+                <span class="lang-hi">⚠️ GAP — BLIND REDIRECT FOLLOWING</span>
+                <span class="lang-en">⚠️ GAP — BLINDLY FOLLOWING REDIRECTS</span>
+            </span>
+            <p>
+                <span class="lang-hi">Attacker ab apne hi domain <code>http://attacker-dns-rebind.com/</code> par ek server chalata hai jo validation ke waqt to bilkul safe, public IP par resolve hota hai — validation PASS ho jaata hai. Lekin jab server actual request bhejta hai, wo attacker ka server ek <code>HTTP 302 Redirect</code> response deta hai, jo seedha <code>http://127.0.0.1:6379/</code> ki taraf point karta hai. HTTP libraries DEFAULT rooop se redirects ko AUTOMATICALLY follow kar leti hain — bina naye destination ko dobara validate kiye.</span>
+                <span class="lang-en">The attacker now runs a server on their own domain <code>http://attacker-dns-rebind.com/</code> that resolves to a perfectly safe, public IP at validation time — validation PASSES. But when the server sends the actual request, the attacker's server responds with an <code>HTTP 302 Redirect</code> pointing straight to <code>http://127.0.0.1:6379/</code>. HTTP libraries AUTOMATICALLY follow redirects BY DEFAULT — without re-validating the new destination.</span>
+            </p>
+          </div>
+
+          <p>
+            <span class="lang-hi">Isi tarah ki ek aur galti tab hoti hai jab developer ek domain-based allowlist banata hai (jaise "sirf <code>trusted-cdn.com</code> allowed hai") lekin URL ka SCHEME restrict karna bhool jaata hai — attacker <code>file:///etc/passwd</code> ya <code>gopher://127.0.0.1:6379/</code> jaisa scheme use karke, chahe hostname allowlist mein na bhi ho, kabhi-kabhi parsing inconsistencies ke through bypass kar sakta hai.</span>
+            <span class="lang-en">A similar mistake happens when a developer builds a domain-based allowlist (like "only <code>trusted-cdn.com</code> is allowed") but forgets to restrict the URL's SCHEME — an attacker can use a scheme like <code>file:///etc/passwd</code> or <code>gopher://127.0.0.1:6379/</code>, and sometimes bypass the check entirely via parsing inconsistencies, even when the hostname itself isn't on the allowlist.</span>
+          </p>
+
+          <a class="sim-jump" href="#simulator">🎮 <span class="lang-hi">Redirect bypass simulator mein dekho</span><span class="lang-en">See redirect bypass in the simulator</span></a>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEVEL 4 -->
+    <div class="level-card" id="level-4" data-level="4">
+      <button class="level-header">
+        <span class="level-badge">4</span>
+        <span class="level-titles">
+          <h2>
+            <span class="lang-hi">Final Solution — Allowlist + No-Redirect + Network-Level Controls</span>
+            <span class="lang-en">Final Solution — Allowlist + No-Redirect + Network-Level Controls</span>
+          </h2>
+          <p>
+            <span class="lang-hi">Defense-in-depth: application aur network dono layers</span>
+            <span class="lang-en">Defense-in-depth: both application and network layers</span>
+          </p>
+        </span>
+        <span class="level-tag solved"><span class="lang-hi">SOLVED</span><span class="lang-en">SOLVED</span></span>
+        <span class="chevron">▾</span>
+      </button>
+      <div class="level-body">
+        <div class="level-inner">
+          <h4>
+            <span class="lang-hi">LAYER 1 — STRICT ALLOWLIST + SCHEME LOCK</span>
+            <span class="lang-en">LAYER 1 — STRICT ALLOWLIST + SCHEME LOCK</span>
+          </h4>
+          <p>
+            <span class="lang-hi">Domain ke bajaye EXACT destination hosts ki ek strict allowlist banao (regex/substring nahi, exact match), aur sirf <code>http</code>/<code>https</code> schemes allow karo — koi <code>file://</code>, <code>gopher://</code>, <code>dict://</code> nahi:</span>
+            <span class="lang-en">Build a strict allowlist of EXACT destination hosts instead of domains (exact match, not regex/substring), and only allow <code>http</code>/<code>https</code> schemes — no <code>file://</code>, <code>gopher://</code>, <code>dict://</code>:</span>
+          </p>
+          <pre><code>ALLOWED_HOSTS = {"cdn.trusted-provider.com"}
+parsed = urlparse(url)
+if parsed.scheme not in ("http", "https"):
+    reject_request()
+if parsed.hostname not in ALLOWED_HOSTS:
+    reject_request()</code></pre>
+
+          <h4>
+            <span class="lang-hi">LAYER 2 — REDIRECTS DISABLE KARO YA REVALIDATE KARO</span>
+            <span class="lang-en">LAYER 2 — DISABLE OR RE-VALIDATE REDIRECTS</span>
+          </h4>
+          <p>
+            <span class="lang-hi">HTTP client mein automatic redirect-following ko DISABLE kar do (<code>allow_redirects=False</code>), ya agar redirect follow karna zaroori hai, to HAR redirect hop ke baad naye destination ko dobara wahi allowlist check se guzaro.</span>
+            <span class="lang-en">DISABLE automatic redirect-following in the HTTP client (<code>allow_redirects=False</code>), or if following redirects is necessary, re-run the same allowlist check on the new destination after EVERY redirect hop.</span>
+          </p>
+
+          <h4>
+            <span class="lang-hi">LAYER 3 — DNS PINNING (RESOLVE-THEN-CONNECT ATOMICALLY)</span>
+            <span class="lang-en">LAYER 3 — DNS PINNING (RESOLVE-THEN-CONNECT ATOMICALLY)</span>
+          </h4>
+          <p>
+            <span class="lang-hi">Hostname ko EK BAAR resolve karo, us resolved IP address ko private/reserved/link-local ranges ke against validate karo, aur USI IP se seedha connect karo — beech mein koi dobara DNS lookup na ho, taaki DNS rebinding ka koi window hi na bache.</span>
+            <span class="lang-en">Resolve the hostname ONCE, validate that resolved IP address against private/reserved/link-local ranges, and connect DIRECTLY to that SAME IP — with no second DNS lookup in between, so there's no window left for DNS rebinding.</span>
+          </p>
+
+          <div class="callout fixnote">
+            <span class="cal-label">
+                <span class="lang-hi">✅ LAYER 4 — NETWORK-LEVEL DEFENSE (INDEPENDENT OF CODE)</span>
+                <span class="lang-en">✅ LAYER 4 — NETWORK-LEVEL DEFENSE (INDEPENDENT OF CODE)</span>
+            </span>
+            <p>
+                <span class="lang-hi">Application-level fixes ke saath-saath, egress firewall rules laga do jo server ko sirf zaroori external destinations tak hi outbound requests bhejne den — internal services aur metadata endpoint tak seedha route hi na ho. Cloud providers <code>IMDSv2</code> jaisa mechanism bhi dete hain, jisme metadata endpoint access karne ke liye ek special session TOKEN chahiye hota hai jo simple <code>GET</code> request se copy-paste nahi ho sakta — isse SSRF ke through metadata churana bahut mushkil ho jaata hai.</span>
+                <span class="lang-en">Alongside application-level fixes, put egress firewall rules in place that only let the server send outbound requests to necessary external destinations — with no direct route to internal services or the metadata endpoint at all. Cloud providers also offer mechanisms like <code>IMDSv2</code>, which require a special session TOKEN to access the metadata endpoint — one that can't simply be copy-pasted via a basic <code>GET</code> request — making it much harder to steal metadata via SSRF.</span>
+            </p>
+          </div>
+
+          <a class="sim-jump" href="#simulator">🎮 <span class="lang-hi">Final fix simulator mein dekho</span><span class="lang-en">See the final fix in the simulator</span></a>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ── VULNERABLE VS SECURE CODE IMPLEMENTATIONS ── -->
+  <section class="sec-head" id="code-fixes">
+    <div class="sec-eyebrow"><span class="lang-hi">Code Level Fixes</span><span class="lang-en">Code Level Fixes</span></div>
+    <h2><span class="lang-hi">Code Level Fixes: Vulnerable vs. Secure Code Implementations</span><span class="lang-en">Code Level Fixes: Vulnerable vs. Secure Code Implementations</span></h2>
+    <p style="max-width: 100%; text-align: justify;">
+      <span class="lang-hi">SSRF attacks ko rokne ke liye sirf basic domain blacklist ya simple regex checks lagana fail ho jata hai (kyunki DNS Rebinding, HTTP 302 Redirects, aur IP encoding techniques unhe aasaani se bypass kar dete hain). Production-grade defense ke liye: Scheme validation (http/https only), Strict DNS Resolution + Private/Loopback/Metadata IP range blocking, HTTP Redirects ko disable karna (allow_redirects=False ya maxRedirects: 0), aur IP Pinning zaroori hote hain. Niche Node.js aur Python (Flask) ke real-world vulnerable code aur unke complete secure implementations diye gaye hain:</span>
+      <span class="lang-en">Preventing SSRF requires far more than basic domain blacklists or regex filters, which attackers easily bypass using DNS Rebinding, HTTP 302 redirects, or alternative IP notations. A production-grade defense requires: strict URL scheme validation (http/https only), pre-request DNS resolution with rigorous private/loopback/cloud metadata IP validation, completely disabling automatic HTTP redirects, and socket IP pinning. Below are vulnerable vs. production-ready secure implementations in Node.js and Python (Flask):</span>
+    </p>
+  </section>
+
+  <!-- NODE.JS CODE FIX DROPDOWN -->
+  <div class="level-card open" style="margin-bottom: 16px;">
+    <button class="level-header" type="button">
+      <span class="level-badge" style="background:rgba(104, 160, 99, 0.15); color:#68a063; border-color:#68a063;">JS</span>
+      <span class="level-titles">
+        <h2>
+          <span class="lang-hi">1. Node.js (Express / Axios / Native DNS + ipaddr.js)</span>
+          <span class="lang-en">1. Node.js (Express / Axios / Native DNS + ipaddr.js)</span>
+        </h2>
+        <p>
+          <span class="lang-hi">Scheme check, pre-request DNS resolution, IP range validation aur redirect prevention</span>
+          <span class="lang-en">Scheme check, pre-request DNS resolution, IP range validation and redirect prevention</span>
+        </p>
+      </span>
+      <span class="level-tag solved"><span class="lang-hi">SECURE PATTERN</span><span class="lang-en">SECURE PATTERN</span></span>
+      <span class="chevron">▾</span>
+    </button>
+    <div class="level-body">
+      <div class="level-inner">
+        <pre><code>// ==========================================
+// 1. Node.js (Express / Axios / ipaddr.js)
+// ==========================================
+
+const express = require('express');
+const axios = require('axios');
+const dns = require('dns').promises;
+const ipaddr = require('ipaddr.js');
+const http = require('http');
+const https = require('https');
+const app = express();
+
+// ❌ INSECURE: Blind Outbound Request to User-Supplied URL
+// Vulnerability: Application directly fetches whatever URL the user provides
+app.get('/api/fetch-avatar', async (req, res) =&gt; {
+    const targetUrl = req.query.url;
+
+    try {
+        // DANGER: No protocol check, no IP verification, redirects followed automatically!
+        // Attack 1: http://169.254.169.254/latest/meta-data/ (AWS/GCP IAM keys theft)
+        // Attack 2: http://localhost:6379/ (Internal Redis cache access)
+        // Attack 3: file:///etc/passwd (Local filesystem read)
+        // Attack 4: http://attacker.com/302-to-internal (Redirect bypass)
+        const response = await axios.get(targetUrl, { timeout: 3000 });
+        res.setHeader('Content-Type', response.headers['content-type'] || 'image/jpeg');
+        return res.send(response.data);
+    } catch (err) {
+        return res.status(500).json({ error: 'Failed to fetch asset' });
+    }
+});
+
+// ✅ SECURE PATTERN: Multi-Layer SSRF Hardening (Allowlist, DNS Pinning &amp; No-Redirects)
+function isPrivateOrReservedIP(ipString) {
+    try {
+        const addr = ipaddr.parse(ipString);
+        const range = addr.range(); // 'loopback', 'private', 'linkLocal', 'carrierNat', 'reserved', etc.
+        const blockedRanges = [
+            'loopback',    // 127.0.0.0/8, ::1 (Localhost services)
+            'private',     // 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16 (Intranet / VPC)
+            'linkLocal',   // 169.254.0.0/16 (AWS / GCP / Azure Instance Metadata endpoint)
+            'carrierNat',  // 100.64.0.0/10 (CGNAT)
+            'broadcast',   // 255.255.255.255
+            'multicast',   // 224.0.0.0/4
+            'uniqueLocal', // fc00::/7 (IPv6 private)
+            'unspecified'  // 0.0.0.0, ::
+        ];
+        return blockedRanges.includes(range);
+    } catch (e) {
+        return true; // Reject if IP cannot be parsed cleanly
+    }
+}
+
+app.get('/api/fetch-avatar-secure', async (req, res) =&gt; {
+    const rawUrl = req.query.url;
+    if (!rawUrl || typeof rawUrl !== 'string') {
+        return res.status(400).json({ error: 'Missing or invalid URL parameter' });
+    }
+
+    try {
+        // Step 1: Parse and validate URL scheme (enforce http / https only)
+        const parsedUrl = new URL(rawUrl);
+        if (parsedUrl.protocol !== 'http:' &amp;&amp; parsedUrl.protocol !== 'https:') {
+            return res.status(400).json({ error: 'Only HTTP and HTTPS protocols are allowed' });
+        }
+
+        // Step 2: (Optional) Strict Host Allowlist if external domains are known
+        // const ALLOWED_DOMAINS = ['cdn.trusted-site.com', 'images.unsplash.com'];
+        // if (!ALLOWED_DOMAINS.includes(parsedUrl.hostname.toLowerCase())) {
+        //     return res.status(403).json({ error: 'Domain is not in allowlist' });
+        // }
+
+        // Step 3: Resolve DNS manually and inspect all returned IP addresses
+        const dnsRecords = await dns.lookup(parsedUrl.hostname, { all: true });
+        if (!dnsRecords || dnsRecords.length === 0) {
+            return res.status(400).json({ error: 'Unable to resolve domain name' });
+        }
+
+        for (const record of dnsRecords) {
+            if (isPrivateOrReservedIP(record.address)) {
+                // Blocks 127.0.0.1, 169.254.169.254, 10.x.x.x, 192.168.x.x, ::1, etc.
+                return res.status(403).json({ 
+                    error: 'Forbidden: Request resolves to a restricted internal or private IP address' 
+                });
+            }
+        }
+
+        // Step 4: Pin destination to resolved IP to prevent DNS Rebinding (TOCTOU)
+        const safeIp = dnsRecords[0].address;
+        const isHttps = parsedUrl.protocol === 'https:';
+        const customAgent = isHttps 
+            ? new https.Agent({ lookup: (hostname, options, cb) =&gt; cb(null, safeIp, 4) })
+            : new http.Agent({ lookup: (hostname, options, cb) =&gt; cb(null, safeIp, 4) });
+
+        // Step 5: Fetch with redirects strictly DISABLED (prevents open-redirect bypass)
+        const response = await axios.get(parsedUrl.toString(), {
+            httpAgent: !isHttps ? customAgent : undefined,
+            httpsAgent: isHttps ? customAgent : undefined,
+            maxRedirects: 0, // CRITICAL: Never follow redirects automatically
+            timeout: 4000,   // Prevent Slowloris / connection exhaustion
+            responseType: 'arraybuffer',
+            headers: { 'User-Agent': 'SafeImageBot/1.0' }
+        });
+
+        res.setHeader('Content-Type', response.headers['content-type'] || 'image/jpeg');
+        return res.send(response.data);
+    } catch (err) {
+        if (err.response &amp;&amp; [301, 302, 307, 308].includes(err.response.status)) {
+            return res.status(400).json({ error: 'HTTP redirects are disabled to prevent SSRF bypasses' });
+        }
+        return res.status(500).json({ error: 'Failed to process request securely' });
+    }
+});</code></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- PYTHON FLASK CODE FIX DROPDOWN -->
+  <div class="level-card open" style="margin-bottom: 24px;">
+    <button class="level-header" type="button">
+      <span class="level-badge" style="background:rgba(53, 114, 165, 0.15); color:#3572A5; border-color:#3572A5;">PY</span>
+      <span class="level-titles">
+        <h2>
+          <span class="lang-hi">2. Python / Flask (Requests / urllib.parse + ipaddress &amp; socket)</span>
+          <span class="lang-en">2. Python / Flask (Requests / urllib.parse + ipaddress &amp; socket)</span>
+        </h2>
+        <p>
+          <span class="lang-hi">Strict scheme check, socket DNS lookup, ipaddress filtering aur allow_redirects=False</span>
+          <span class="lang-en">Strict scheme check, socket DNS lookup, ipaddress filtering and allow_redirects=False</span>
+        </p>
+      </span>
+      <span class="level-tag solved"><span class="lang-hi">SECURE PATTERN</span><span class="lang-en">SECURE PATTERN</span></span>
+      <span class="chevron">▾</span>
+    </button>
+    <div class="level-body">
+      <div class="level-inner">
+        <pre><code># ==========================================
+# 2. Python / Flask (Requests / ipaddress)
+# ==========================================
+
+from flask import Flask, request, jsonify, Response
+import urllib.parse
+import socket
+import ipaddress
+import requests
+
+app = Flask(__name__)
+
+# ❌ INSECURE: Directly fetching user URL with requests.get()
+@app.route('/api/preview', methods=['GET'])
+def preview_insecure():
+    target_url = request.args.get('url', '')
+    
+    # VULNERABILITY: Blind outbound call follows redirects and queries any target
+    # Attacker can supply:
+    #   - http://169.254.169.254/latest/meta-data/iam/security-credentials/ (Cloud credentials)
+    #   - http://127.0.0.1:8080/admin/delete-database (Internal admin panel)
+    #   - http://attacker-controlled.com/redirect-to-metadata (HTTP 302 redirect bypass)
+    resp = requests.get(target_url, timeout=3) # Follows redirects by default!
+    return Response(resp.content, content_type=resp.headers.get('Content-Type', 'text/html'))
+
+
+# ✅ SECURE PATTERN: Strict Scheme Check, IP Range Validation, &amp; allow_redirects=False
+def is_safe_ip(ip_str):
+    """
+    Checks if the IP address belongs to any private, loopback, link-local,
+    reserved, or cloud metadata address spaces.
+    """
+    try:
+        ip = ipaddress.ip_address(ip_str)
+        # Check against all unsafe ranges:
+        if (ip.is_loopback or      # 127.0.0.0/8, ::1 (Local server services)
+            ip.is_private or       # 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16
+            ip.is_link_local or    # 169.254.0.0/16, fe80::/10 (AWS/GCP Metadata endpoint)
+            ip.is_reserved or      # IETF reserved ranges
+            ip.is_multicast or     # 224.0.0.0/4
+            ip.is_unspecified):    # 0.0.0.0, ::
+            return False
+        return True
+    except ValueError:
+        return False # Invalid IP representation
+
+@app.route('/api/preview-secure', methods=['GET'])
+def preview_secure():
+    raw_url = request.args.get('url', '')
+    if not raw_url:
+        return jsonify({"error": "Missing url parameter"}), 400
+
+    try:
+        # Step 1: Parse URL and validate allowed scheme strictly
+        parsed = urllib.parse.urlparse(raw_url)
+        if parsed.scheme.lower() not in ('http', 'https'):
+            return jsonify({"error": "Only HTTP and HTTPS protocols are permitted"}), 400
+
+        hostname = parsed.hostname
+        if not hostname:
+            return jsonify({"error": "Invalid URL structure: missing hostname"}), 400
+
+        # Step 2: (Optional) Strict Host Allowlist if known in advance
+        # ALLOWED_HOSTS = {'api.partner.com', 'cdn.trustedcdn.com'}
+        # if hostname.lower() not in ALLOWED_HOSTS:
+        #     return jsonify({"error": "Domain not in allowed list"}), 403
+
+        # Step 3: DNS Resolution - Resolve all IPs associated with hostname
+        port = parsed.port or (443 if parsed.scheme == 'https' else 80)
+        addr_info = socket.getaddrinfo(hostname, port, type=socket.SOCK_STREAM)
+        
+        if not addr_info:
+            return jsonify({"error": "Hostname could not be resolved"}), 400
+
+        # Step 4: Verify EVERY resolved IP against unsafe ranges
+        resolved_ips = []
+        for family, socktype, proto, canonname, sockaddr in addr_info:
+            ip_str = sockaddr[0]
+            resolved_ips.append(ip_str)
+            if not is_safe_ip(ip_str):
+                # Blocks localhost, 169.254.169.254, internal subnets, etc.
+                return jsonify({
+                    "error": "Forbidden: Destination resolves to a restricted internal/private IP"
+                }), 403
+
+        # Step 5: Send request with allow_redirects=False (CRITICAL TO PREVENT REDIRECT BYPASS)
+        # Note: In production, consider using a dedicated egress proxy (e.g. Stripe Smokescreen)
+        # or pinning the socket to the validated IP to defeat DNS Rebinding (TOCTOU).
+        response = requests.get(
+            raw_url,
+            allow_redirects=False, # NEVER automatically follow HTTP 301/302 redirects
+            timeout=4.0,           # Prevent socket hang / resource starvation
+            headers={"User-Agent": "SecurePreviewCrawler/1.0"}
+        )
+
+        # Reject if server responds with a redirect location to internal IP
+        if response.is_redirect or response.status_code in (301, 302, 303, 307, 308):
+            return jsonify({"error": "Redirects are disabled to prevent SSRF bypass attacks"}), 400
+
+        return Response(
+            response.content,
+            status=response.status_code,
+            content_type=response.headers.get('Content-Type', 'text/html')
+        )
+
+    except requests.exceptions.Timeout:
+        return jsonify({"error": "Outbound connection timed out"}), 504
+    except Exception as e:
+        return jsonify({"error": "Failed to process outbound request safely"}), 500</code></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- SIMULATOR -->
+  <section class="simulator-section" id="simulator">
+    <div class="sim-header-bar">
+      <div class="sim-title"><span>[🔴]</span> VAPT_SSRF_INTERCEPTOR</div>
+
+      <div class="sim-controls">
+        <div class="sim-control-group">
+          <label><span class="lang-hi">Attacker Payload</span><span class="lang-en">Attacker Payload</span></label>
+          <div class="sim-btn-group" id="opt-origin">
+            <button class="sim-btn active" data-val="direct">http://127.0.0.1:6379/</button>
+            <button class="sim-btn" data-val="domain">http://attacker-dns-rebind.com/</button>
+          </div>
+        </div>
+
+        <div class="sim-control-group" style="margin-top: 10px;">
+          <label><span class="lang-hi">Backend Defense</span><span class="lang-en">Backend Defense</span></label>
+          <div class="sim-btn-group" id="opt-defense">
+            <button class="sim-btn active" data-val="0">0: No Validation</button>
+            <button class="sim-btn" data-val="1">1: Basic Blacklist</button>
+            <button class="sim-btn" data-val="2">2: Validate-Then-Connect</button>
+            <button class="sim-btn" data-val="3">3: DNS-Pinned Check</button>
+            <button class="sim-btn" data-val="4">4: Allowlist + No-Redirect (Final)</button>
+          </div>
+        </div>
+
+        <button class="btn-execute" id="btn-execute" style="margin-top: 15px;">Launch_Attack</button>
+      </div>
+    </div>
+
+    <div class="workspace">
+      <!-- Panel 1: Client -->
+      <div class="sim-panel" id="panel-browser">
+        <div class="sim-panel-header">🌐 Client_HTTP_Request</div>
+        <div class="sim-panel-body" id="log-browser">
+            <div style="margin-bottom:10px;"><span class="c-info">Payload URL:</span> <br> <code class="inline-code" id="lbl-payload">http://127.0.0.1:6379/</code></div>
+            <div><span class="c-info">Current Defense:</span> <br> <span class="c-warn" id="lbl-defense">0: No Validation</span></div>
+        </div>
+      </div>
+
+      <!-- Panel 2: App Logic -->
+      <div class="sim-panel" id="panel-network">
+        <div class="sim-panel-header">⚙️ Application_Logic</div>
+        <div class="sim-panel-body" id="log-network"></div>
+      </div>
+
+      <!-- Panel 3: Outbound Request -->
+      <div class="sim-panel" id="panel-server">
+        <div class="sim-panel-header">🔌 Outbound_Server_Request</div>
+        <div class="sim-panel-body" id="log-server"></div>
+      </div>
+    </div>
+
+    <div id="sim-verdict-box" class="sim-verdict-box">
+      <div id="sim-verdict-title" class="sim-verdict-title"></div>
+      <div id="sim-verdict-text" class="sim-verdict-text"></div>
+    </div>
+  </section>
+
+  <!-- GLOSSARY -->
+  <section class="faq-section" id="glossary">
+    <div class="faq-header">
+      <h2>📖 <span class="lang-hi">Glossary</span><span class="lang-en">Glossary</span></h2>
+    </div>
+
+    <div class="faq-list">
+
+      <div class="glossary-item">
+        <div class="glossary-term"><span class="glossary-badge">01</span> SSRF (Server-Side Request Forgery)</div>
+        <div class="glossary-def">
+          <span class="lang-hi">Ek vulnerability jisme attacker ek server ko uski marzi ke bina, apne bataye hue destination (jo aksar internal-only hota hai) ki taraf request bhejne par majboor kar deta hai.</span>
+          <span class="lang-en">A vulnerability where an attacker forces a server to send a request to a destination of their choosing (often an internal-only one) against the server's own intent.</span>
+        </div>
+      </div>
+
+      <div class="glossary-item">
+        <div class="glossary-term"><span class="glossary-badge">02</span> Trust Boundary</div>
+        <div class="glossary-def">
+          <span class="lang-hi">Wo invisible line jo "trusted, internal traffic" aur "untrusted, external traffic" ko alag karti hai — jab server khud request bhejta hai, wo is boundary ke ANDAR se aata hai.</span>
+          <span class="lang-en">The invisible line separating "trusted, internal traffic" from "untrusted, external traffic" — when a server sends a request itself, it comes from INSIDE this boundary.</span>
+        </div>
+      </div>
+
+      <div class="glossary-item">
+        <div class="glossary-term"><span class="glossary-badge">03</span> Cloud Metadata Endpoint</div>
+        <div class="glossary-def">
+          <span class="lang-hi">Ek special internal-only address (<code>169.254.169.254</code>) jo cloud servers (AWS/GCP/Azure) provide karte hain, jisse server apni temporary CLOUD CREDENTIALS aur configuration jaan sakta hai.</span>
+          <span class="lang-en">A special internal-only address (<code>169.254.169.254</code>) provided by cloud servers (AWS/GCP/Azure), through which a server can learn its temporary CLOUD CREDENTIALS and configuration.</span>
+        </div>
+      </div>
+
+      <div class="glossary-item">
+        <div class="glossary-term"><span class="glossary-badge">04</span> IMDSv2</div>
+        <div class="glossary-def">
+          <span class="lang-hi">Cloud metadata endpoint ka ek safer version jisme access karne ke liye ek special session TOKEN chahiye hota hai — simple SSRF se ye token nahi mil paata, isliye ye SSRF-via-metadata attacks ko mushkil bana deta hai.</span>
+          <span class="lang-en">A safer version of the cloud metadata endpoint that requires a special session TOKEN to access — a simple SSRF can't obtain this token, making SSRF-via-metadata attacks much harder.</span>
+        </div>
+      </div>
+
+      <div class="glossary-item">
+        <div class="glossary-term"><span class="glossary-badge">05</span> DNS Rebinding</div>
+        <div class="glossary-def">
+          <span class="lang-hi">Ek attack technique jisme attacker apne domain ka DNS answer badalta hai — validation ke waqt safe IP deta hai, aur actual request ke waqt internal IP deta hai, is beech mein hue GAP ko exploit karke.</span>
+          <span class="lang-en">An attack technique where the attacker changes their domain's DNS answer — returning a safe IP at validation time, and an internal IP at actual request time, exploiting the gap in between.</span>
+        </div>
+      </div>
+
+      <div class="glossary-item">
+        <div class="glossary-term"><span class="glossary-badge">06</span> TOCTOU (Time-Of-Check To Time-Of-Use)</div>
+        <div class="glossary-def">
+          <span class="lang-hi">Ek class of bugs jisme ek cheez CHECK karne ka moment aur usse USE karne ka moment ALAG hota hai — beech mein state badal sakti hai, jisse validation bekaar ho jaati hai.</span>
+          <span class="lang-en">A class of bugs where the moment something is CHECKED and the moment it's USED are DIFFERENT — the state can change in between, making the validation useless.</span>
+        </div>
+      </div>
+
+      <div class="glossary-item">
+        <div class="glossary-term"><span class="glossary-badge">07</span> Blind SSRF</div>
+        <div class="glossary-def">
+          <span class="lang-hi">Jab SSRF vulnerability exist karti hai lekin request ka response kahin dikhta nahi — sirf ye pata chalta hai ki request bheja gaya, uska result nahi. Detect karne ke liye OAST/time-based techniques use hoti hain.</span>
+          <span class="lang-en">When an SSRF vulnerability exists but the request's response isn't visible anywhere — only that a request was sent, not its result. OAST/time-based techniques are used to detect it.</span>
+        </div>
+      </div>
+
+      <div class="glossary-item">
+        <div class="glossary-term"><span class="glossary-badge">08</span> Open Redirect</div>
+        <div class="glossary-def">
+          <span class="lang-hi">Ek chhoti vulnerability jisme ek website user ko kisi bhi attacker-controlled URL par redirect kar deti hai — SSRF context mein isse validation ko bypass karne ke liye chain kiya jaata hai.</span>
+          <span class="lang-en">A small vulnerability where a website redirects a user to any attacker-controlled URL — in an SSRF context, it's chained to bypass validation checks.</span>
+        </div>
+      </div>
+
+      <div class="glossary-item">
+        <div class="glossary-term"><span class="glossary-badge">09</span> Private/Reserved IP Ranges</div>
+        <div class="glossary-def">
+          <span class="lang-hi">IP address ranges jo sirf internal networks ke liye reserved hain (jaise <code>10.0.0.0/8</code>, <code>192.168.0.0/16</code>, <code>127.0.0.0/8</code>, <code>169.254.0.0/16</code>) — internet se directly reachable nahi hote.</span>
+          <span class="lang-en">IP address ranges reserved only for internal networks (like <code>10.0.0.0/8</code>, <code>192.168.0.0/16</code>, <code>127.0.0.0/8</code>, <code>169.254.0.0/16</code>) — not directly reachable from the internet.</span>
+        </div>
+      </div>
+
+      <div class="glossary-item">
+        <div class="glossary-term"><span class="glossary-badge">10</span> Allowlist vs Blacklist</div>
+        <div class="glossary-def">
+          <span class="lang-hi"><code>Blacklist</code> sirf "known-bad" cheezein block karti hai (hamesha kuch chhoot jaata hai). <code>Allowlist</code> ulta approach hai — sirf "known-good" ko accept karti hai, baaki sab reject.</span>
+          <span class="lang-en">A <code>Blacklist</code> only blocks "known-bad" things (something always slips through). An <code>Allowlist</code> is the reverse — it only accepts "known-good", rejecting everything else.</span>
+        </div>
+      </div>
+
+      <div class="glossary-item">
+        <div class="glossary-term"><span class="glossary-badge">11</span> Gopher/Dict/File Protocol Schemes</div>
+        <div class="glossary-def">
+          <span class="lang-hi">URL schemes jo <code>http</code>/<code>https</code> se alag hain — <code>gopher://</code> raw byte-streams bhej sakta hai (jaise Redis commands craft karne ke liye), <code>file://</code> local disk files padhta hai.</span>
+          <span class="lang-en">URL schemes other than <code>http</code>/<code>https</code> — <code>gopher://</code> can send raw byte-streams (e.g. to craft Redis commands), <code>file://</code> reads local disk files.</span>
+        </div>
+      </div>
+
+      <div class="glossary-item">
+        <div class="glossary-term"><span class="glossary-badge">12</span> Loopback Address</div>
+        <div class="glossary-def">
+          <span class="lang-hi"><code>127.0.0.1</code> (ya <code>localhost</code>) — ek special address jo "khud iss hi machine" ki taraf point karta hai. Isi machine ke andar chal rahe services isi address par accessible hote hain.</span>
+          <span class="lang-en"><code>127.0.0.1</code> (or <code>localhost</code>) — a special address pointing to "this same machine". Services running inside this machine are accessible on this address.</span>
+        </div>
+      </div>
+
+      <div class="glossary-item">
+        <div class="glossary-term"><span class="glossary-badge">13</span> Egress Filtering</div>
+        <div class="glossary-def">
+          <span class="lang-hi">Network-level control jo server ke OUTBOUND (bahar jaane wale) traffic ko restrict karta hai — sirf zaroori external destinations tak jaane deta hai, baaki sab block.</span>
+          <span class="lang-en">A network-level control that restricts a server's OUTBOUND traffic — only allowing it to reach necessary external destinations, blocking everything else.</span>
+        </div>
+      </div>
+
+      <div class="glossary-item">
+        <div class="glossary-term"><span class="glossary-badge">14</span> Port Scanning (via SSRF)</div>
+        <div class="glossary-def">
+          <span class="lang-hi">Vulnerable server ko baar-baar alag-alag internal IP:port combinations ki taraf point karke, response time/error se ye pata lagana ki kaunse internal services chal rahe hain.</span>
+          <span class="lang-en">Repeatedly pointing a vulnerable server at different internal IP:port combinations to determine which internal services are running, based on response time/errors.</span>
+        </div>
+      </div>
+
+      <div class="glossary-item">
+        <div class="glossary-term"><span class="glossary-badge">15</span> WAF (Web Application Firewall)</div>
+        <div class="glossary-def">
+          <span class="lang-hi">Ek filter jo web application ke saamne baitha hota hai aur known malicious patterns dekh kar requests block karta hai — ek extra layer hai, primary fix ka substitute nahi.</span>
+          <span class="lang-en">A filter that sits in front of a web application and blocks requests by detecting known malicious patterns — an extra layer, not a substitute for the primary fix.</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="faq-section" id="confusing-questions">
+    <div class="faq-header">
+      <h2>🤔 <span class="lang-hi">Confusing Questions</span><span class="lang-en">Confusing Questions</span></h2>
+      <p>
+        <span class="lang-hi">Ye wo sawaal hain jo SSRF samajhne ke baad bhi log ghumte rehte hain — expand karke apna concept clear karo.</span>
+        <span class="lang-en">These are the questions people still get confused about even after understanding SSRF — expand each to clear your concepts.</span>
+      </p>
+    </div>
+
+    <div class="faq-list">
+
+      <div class="faq-item">
+        <button class="faq-question">
+          <span class="faq-q-badge">Q1</span>
+          <span class="faq-q-text">
+            <span class="lang-hi">SSRF aur CSRF mein kya fark hai? Naam se to bahut similar lagte hain.</span>
+            <span class="lang-en">What is the difference between SSRF and CSRF? They sound very similar by name.</span>
+          </span>
+          <span class="faq-icon">▼</span>
+        </button>
+        <div class="faq-answer">
+          <p>
+            <span class="lang-hi">Naam similar hone ke bawajood dono bilkul alag vulnerabilities hain. <code>CSRF (Cross-Site Request Forgery)</code> mein attacker ek VICTIM USER ke browser ko, uski jaankari ke bina, ek trusted website par unwanted action perform karwane ke liye majboor karta hai (jaise victim ke session cookies use karke). <code>SSRF</code> mein attacker seedha SERVER ko khud ek request bhejne ke liye majboor karta hai — koi victim user involve nahi hota, target khud application ka backend hota hai.</span>
+            <span class="lang-en">Despite the similar name, these are completely different vulnerabilities. <code>CSRF (Cross-Site Request Forgery)</code> forces a VICTIM USER's browser, without their knowledge, into performing an unwanted action on a trusted website (using the victim's session cookies). <code>SSRF</code> forces the SERVER itself to make a request — no victim user is involved, the target is the application's own backend.</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question">
+          <span class="faq-q-badge">Q2</span>
+          <span class="faq-q-text">
+            <span class="lang-hi">Blind SSRF ko practically kaise detect karte hain?</span>
+            <span class="lang-en">How do you practically detect Blind SSRF?</span>
+          </span>
+          <span class="faq-icon">▼</span>
+        </button>
+        <div class="faq-answer">
+          <p>
+            <span class="lang-hi">Sabse common technique <code>OAST (Out-of-Band)</code> hai: tester payload mein apna khud ka controlled domain daalta hai (jaise <code>http://unique-id.oastify.com</code>), aur agar us domain par DNS/HTTP request receive hoti hai (Burp Collaborator ya interactsh jaise tool mein), to confirm ho jaata hai ki SSRF kaam kar raha hai, chahe application response mein kuch na dikhe. Time-based detection bhi use hota hai — internal, unreachable IP:port dete hain aur response time compare karte hain (timeout vs. instant reject).</span>
+            <span class="lang-en">The most common technique is <code>OAST (Out-of-Band)</code>: the tester puts their own controlled domain in the payload (like <code>http://unique-id.oastify.com</code>), and if a DNS/HTTP request is received on that domain (in a tool like Burp Collaborator or interactsh), it confirms SSRF is working, even if nothing shows up in the application's response. Time-based detection is also used — giving an internal, unreachable IP:port and comparing response time (timeout vs. instant rejection).</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question">
+          <span class="faq-q-badge">Q3</span>
+          <span class="faq-q-text">
+            <span class="lang-hi">Kya sirf HTTPS enforce karna (aur http block karna) SSRF ko rok deta hai?</span>
+            <span class="lang-en">Does enforcing only HTTPS (and blocking http) prevent SSRF?</span>
+          </span>
+          <span class="faq-icon">▼</span>
+        </button>
+        <div class="faq-answer">
+          <p>
+            <span class="lang-hi">Nahi. Scheme (http vs https) aur DESTINATION (kahan request jaa rahi hai) do alag cheezein hain. Attacker <code>https://127.0.0.1:6379/</code> bhi de sakta hai — chahe TLS handshake fail ho jaaye kyunki Redis HTTPS nahi bolta, phir bhi wo connection attempt SSRF ka hi part hai aur internal port-scanning/timing information leak kar sakta hai. HTTPS enforce karna sirf transport-layer encryption ki baat hai, destination validation ki nahi.</span>
+            <span class="lang-en">No. Scheme (http vs https) and DESTINATION (where the request goes) are two different things. An attacker can also supply <code>https://127.0.0.1:6379/</code> — even if the TLS handshake fails because Redis doesn't speak HTTPS, that connection attempt is still part of SSRF and can leak internal port-scanning/timing information. Enforcing HTTPS is only about transport-layer encryption, not destination validation.</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question">
+          <span class="faq-q-badge">Q4</span>
+          <span class="faq-q-text">
+            <span class="lang-hi">DNS Rebinding attack allowlist ko kaise bypass karta hai, agar allowlist mein sirf trusted domains hain?</span>
+            <span class="lang-en">How does a DNS Rebinding attack bypass an allowlist, if the allowlist only contains trusted domains?</span>
+          </span>
+          <span class="faq-icon">▼</span>
+        </button>
+        <div class="faq-answer">
+          <p>
+            <span class="lang-hi">DNS rebinding tab kaam karta hai jab ALLOWLIST khud attacker ke domain ko allow kare (jaise agar validation logic hi galat ho), YA jab validation ek domain ke resolved IP ko check karti hai lekin usi domain ka DIFFERENT resolution actual request ke waqt use hota hai. Agar allowlist mein sirf genuinely trusted, third-party domains hain (jo attacker control nahi karta), to DNS rebinding directly applicable nahi hai — lekin agar allowlist mein khud ke sub-domains ya user-controllable domains shaamil hain, to risk bana rehta hai.</span>
+            <span class="lang-en">DNS rebinding works when the ALLOWLIST itself allows the attacker's domain (e.g. if the validation logic is flawed), OR when validation checks a domain's resolved IP but a DIFFERENT resolution of that same domain is used at actual request time. If the allowlist only contains genuinely trusted, third-party domains (that the attacker doesn't control), DNS rebinding doesn't directly apply — but if the allowlist includes your own subdomains or user-controllable domains, the risk remains.</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question">
+          <span class="faq-q-badge">Q5</span>
+          <span class="faq-q-text">
+            <span class="lang-hi">Kya cloud provider ne IMDSv2 launch kar diya, to SSRF-via-metadata khatam ho gaya?</span>
+            <span class="lang-en">Now that cloud providers have IMDSv2, is SSRF-via-metadata solved?</span>
+          </span>
+          <span class="faq-icon">▼</span>
+        </button>
+        <div class="faq-answer">
+          <p>
+            <span class="lang-hi">Bahut zyada mushkil ho gaya hai, lekin "khatam" nahi. <code>IMDSv2</code> ek session token maangta hai jo simple <code>GET</code> se copy nahi ho sakta, isliye BASIC SSRF (jo sirf ek URL fetch karti hai) ab metadata credentials nahi chura sakti. Lekin agar attacker ke paas SSRF ke saath-saath application ke through ARBITRARY HTTP headers/methods bhejne ki bhi capability ho (jaise ek full-featured HTTP client control), to theoretically dono steps — token maangna aur fir usse use karna — chain kiye ja sakte hain. Isliye IMDSv2 ek strong mitigation hai, replacement nahi.</span>
+            <span class="lang-en">It has become much harder, but not "solved". <code>IMDSv2</code> requires a session token that can't simply be copied via a basic <code>GET</code>, so BASIC SSRF (which just fetches a URL) can no longer steal metadata credentials. But if an attacker has SSRF plus the ability to send ARBITRARY HTTP headers/methods through the application (like control over a full-featured HTTP client), both steps — requesting the token and then using it — could theoretically be chained. So IMDSv2 is a strong mitigation, not a replacement for proper validation.</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question">
+          <span class="faq-q-badge">Q6</span>
+          <span class="faq-q-text">
+            <span class="lang-hi">SSRF aur Open Redirect ka kya relation hai?</span>
+            <span class="lang-en">What is the relationship between SSRF and Open Redirect?</span>
+          </span>
+          <span class="faq-icon">▼</span>
+        </button>
+        <div class="faq-answer">
+          <p>
+            <span class="lang-hi">Open Redirect akele mein ek low-severity issue hota hai (browser ko attacker ke site par redirect karna). Lekin jab ek SSRF-vulnerable application redirects ko blindly follow karti hai, to attacker apna khud ka Open Redirect endpoint SSRF validation ko bypass karne ke liye CHAIN kar sakta hai — pehle safe URL validate hota hai, fir wo URL server-side redirect karke internal target tak le jaata hai. Yahi Level 3 ka bypass hai.</span>
+            <span class="lang-en">An Open Redirect alone is usually a low-severity issue (redirecting a browser to an attacker's site). But when an SSRF-vulnerable application blindly follows redirects, an attacker can CHAIN their own Open Redirect endpoint to bypass SSRF validation — a safe URL gets validated first, then that URL server-side redirects to an internal target. This is exactly the Level 3 bypass.</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question">
+          <span class="faq-q-badge">Q7</span>
+          <span class="faq-q-text">
+            <span class="lang-hi">Kya sirf internal network firewall hi SSRF se bachne ke liye kaafi hai?</span>
+            <span class="lang-en">Is an internal network firewall alone enough to prevent SSRF?</span>
+          </span>
+          <span class="faq-icon">▼</span>
+        </button>
+        <div class="faq-answer">
+          <p>
+            <span class="lang-hi">Nahi. Firewalls ka main purpose EXTERNAL (internet se aane wale) traffic ko internal services tak pahunchne se rokna hota hai. Server ke apne OUTBOUND requests, jo SSRF ka core mechanism hain, is boundary ke ANDAR se aate hain — isliye firewall unhe naturally allow kar deta hai. Egress filtering (server ke outbound traffic ko bhi restrict karna) SSRF ke liye zyada directly relevant hai, lekin ye bhi application-level fixes ka substitute nahi, defense-in-depth ka ek layer hai.</span>
+            <span class="lang-en">No. A firewall's main purpose is stopping EXTERNAL (internet-originating) traffic from reaching internal services. A server's own OUTBOUND requests, which are SSRF's core mechanism, come from INSIDE this boundary — so the firewall naturally allows them. Egress filtering (restricting the server's outbound traffic too) is more directly relevant to SSRF, but it's also not a substitute for application-level fixes — it's one layer of defense-in-depth.</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question">
+          <span class="faq-q-badge">Q8</span>
+          <span class="faq-q-text">
+            <span class="lang-hi"><code>file://</code> scheme se SSRF ka impact kitna severe ho sakta hai?</span>
+            <span class="lang-en">How severe can the impact of SSRF be via the <code>file://</code> scheme?</span>
+          </span>
+          <span class="faq-icon">▼</span>
+        </button>
+        <div class="faq-answer">
+          <p>
+            <span class="lang-hi">Bahut severe ho sakta hai. Agar application URL fetch karne wali library ko <code>file://</code> scheme block karna bhool jaaye, attacker seedha server ki apni disk se koi bhi readable file padh sakta hai — application ka source code (jisme hardcoded secrets ho sakte hain), configuration files (database credentials), SSH private keys, ya environment files. Ye ek Local File Read (LFR) vulnerability ban jaati hai, jo purely network-based SSRF se aur bhi zyada directly damaging ho sakti hai.</span>
+            <span class="lang-en">It can be very severe. If the application's URL-fetching library forgets to block the <code>file://</code> scheme, an attacker can directly read any readable file from the server's own disk — the application's source code (which may contain hardcoded secrets), configuration files (database credentials), SSH private keys, or environment files. This becomes a Local File Read (LFR) vulnerability, which can be even more directly damaging than purely network-based SSRF.</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question">
+          <span class="faq-q-badge">Q9</span>
+          <span class="faq-q-text">
+            <span class="lang-hi">Kya ek simple regex (jaise "must start with https://trusted.com") likhna URL validation ke liye safe hai?</span>
+            <span class="lang-en">Is writing a simple regex (like "must start with https://trusted.com") safe for URL validation?</span>
+          </span>
+          <span class="faq-icon">▼</span>
+        </button>
+        <div class="faq-answer">
+          <p>
+            <span class="lang-hi">Nahi, ye ek bahut common aur dangerous mistake hai. Regex-based "starts with" checks bypass ho sakti hain jaise <code>https://trusted.com.attacker.com/</code> (jo "starts with" condition SATISFY karta hai lekin actual hostname <code>attacker.com</code> hai), ya userinfo trick jaise <code>https://trusted.com@attacker.com/</code> (jahan <code>trusted.com</code> sirf ek username field hai, actual host <code>attacker.com</code> hai). Sahi approach hai ek proper URL PARSER use karke sirf <code>hostname</code> component ko EXACT-MATCH allowlist ke against check karna, poori string ko regex se nahi.</span>
+            <span class="lang-en">No, this is a very common and dangerous mistake. Regex-based "starts with" checks can be bypassed with things like <code>https://trusted.com.attacker.com/</code> (which SATISFIES the "starts with" condition but the actual hostname is <code>attacker.com</code>), or a userinfo trick like <code>https://trusted.com@attacker.com/</code> (where <code>trusted.com</code> is just a username field, and the actual host is <code>attacker.com</code>). The correct approach is to use a proper URL PARSER to check only the <code>hostname</code> component against an EXACT-MATCH allowlist, not regex-match the whole string.</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question">
+          <span class="faq-q-badge">Q10</span>
+          <span class="faq-q-text">
+            <span class="lang-hi">SSRF ko RCE mein kaise escalate kiya jaata hai (gopher protocol chains)?</span>
+            <span class="lang-en">How is SSRF escalated into RCE (gopher protocol chains)?</span>
+          </span>
+          <span class="faq-icon">▼</span>
+        </button>
+        <div class="faq-answer">
+          <p>
+            <span class="lang-hi">Kuch internal services (jaise Redis) apne khud ke simple, text-based protocol par commands accept karte hain, HTTP par nahi. <code>gopher://</code> scheme attacker ko ek RAW BYTE STREAM (jismein newlines aur specific formatting hoti hai) us internal service ki taraf bhejne deta hai — attacker isse Redis commands (jaise <code>CONFIG SET</code> aur <code>SAVE</code>) craft karke server ki disk par ek malicious file (jaise ek cron job ya webshell) likh sakta hai, jo aage chal kar Remote Code Execution deta hai. Ye classic "SSRF-to-RCE via gopher" chain hai jo Redis/Memcached jaisi authentication-less internal services ke against use hoti hai.</span>
+            <span class="lang-en">Some internal services (like Redis) accept commands over their own simple, text-based protocol, not HTTP. The <code>gopher://</code> scheme lets an attacker send a RAW BYTE STREAM (with specific newlines and formatting) toward that internal service — the attacker can craft Redis commands (like <code>CONFIG SET</code> and <code>SAVE</code>) to write a malicious file (like a cron job or webshell) to the server's disk, eventually achieving Remote Code Execution. This is the classic "SSRF-to-RCE via gopher" chain used against authentication-less internal services like Redis/Memcached.</span>
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- TESTER CHECKLIST -->
+  <section class="checklist" id="tester-checklist" style="margin-top:20px;">
+    <div class="checklist-head"><h2>🔍 <span class="lang-hi">Web Security Tester Checklist</span><span class="lang-en">Web Security Tester Checklist</span></h2></div>
+    <p class="checklist-intro">
+        <span class="lang-hi">Ab tak humne dekha SSRF kaam kaise karta hai aur ise misconfigure kaise kiya jaata hai. Ek web security tester (VAPT) ke roop mein, kisi bhi real application mein SSRF dhundhne ke liye ye systematic approach follow ki jaati hai:</span>
+        <span class="lang-en">So far we have seen how SSRF works and how it gets misconfigured. As a web security tester (VAPT), to find SSRF in any real application, this systematic approach is followed:</span>
+    </p>
+
+    <div class="audit-card">
+      <h3><span class="lang-hi">1. Server-Side Request Wali Features Identify Karo</span><span class="lang-en">1. Identify Features That Make Server-Side Requests</span></h3>
+      <div class="check-list">
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">Features dhundo jo user-supplied URL fetch karti hain — avatar from URL, link preview/thumbnail generator, webhooks, PDF/image generation from URL, import-from-URL.</span>
+            <span class="lang-en">Look for features that fetch a user-supplied URL — avatar from URL, link preview/thumbnail generators, webhooks, PDF/image generation from URL, import-from-URL.</span>
+          </div>
+        </label>
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">XML parsers, PDF generators, aur document converters ko bhi check karo — ye bhi external resources fetch kar sakte hain.</span>
+            <span class="lang-en">Also check XML parsers, PDF generators, and document converters — these can also fetch external resources.</span>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div class="audit-card">
+      <h3><span class="lang-hi">2. Basic Internal Access Test Karo</span><span class="lang-en">2. Test Basic Internal Access</span></h3>
+      <div class="check-list">
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi"><code>http://127.0.0.1/</code>, <code>http://localhost/</code>, aur common internal ports (22, 80, 3306, 6379, 8080) try karo.</span>
+            <span class="lang-en">Try <code>http://127.0.0.1/</code>, <code>http://localhost/</code>, and common internal ports (22, 80, 3306, 6379, 8080).</span>
+          </div>
+        </label>
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">Cloud metadata endpoint <code>http://169.254.169.254/latest/meta-data/</code> try karo.</span>
+            <span class="lang-en">Try the cloud metadata endpoint <code>http://169.254.169.254/latest/meta-data/</code>.</span>
+          </div>
+        </label>
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">RFC1918 private ranges (<code>10.x.x.x</code>, <code>172.16-31.x.x</code>, <code>192.168.x.x</code>) systematically try karo.</span>
+            <span class="lang-en">Systematically try RFC1918 private ranges (<code>10.x.x.x</code>, <code>172.16-31.x.x</code>, <code>192.168.x.x</code>).</span>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div class="audit-card">
+      <h3><span class="lang-hi">3. Filter Bypass Techniques Try Karo</span><span class="lang-en">3. Try Filter Bypass Techniques</span></h3>
+      <div class="check-list">
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">IP ko decimal (<code>2130706433</code>), octal (<code>0177.0.0.1</code>), ya hex (<code>0x7f000001</code>) mein encode karke try karo.</span>
+            <span class="lang-en">Try encoding the IP in decimal (<code>2130706433</code>), octal (<code>0177.0.0.1</code>), or hex (<code>0x7f000001</code>).</span>
+          </div>
+        </label>
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">IPv6 loopback <code>[::1]</code> aur userinfo trick <code>http://trusted.com@127.0.0.1/</code> try karo.</span>
+            <span class="lang-en">Try the IPv6 loopback <code>[::1]</code> and the userinfo trick <code>http://trusted.com@127.0.0.1/</code>.</span>
+          </div>
+        </label>
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">Apna khud ka redirect-controlled URL banao jo internal target ki taraf 302 redirect kare, aur check karo application usse follow karti hai kya.</span>
+            <span class="lang-en">Build your own redirect-controlled URL that 302-redirects to an internal target, and check if the application follows it.</span>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div class="audit-card">
+      <h3><span class="lang-hi">4. Protocol/Scheme Abuse Try Karo</span><span class="lang-en">4. Try Protocol/Scheme Abuse</span></h3>
+      <div class="check-list">
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi"><code>file:///etc/passwd</code> jaisa scheme try karo local file read ke liye.</span>
+            <span class="lang-en">Try a scheme like <code>file:///etc/passwd</code> for local file reads.</span>
+          </div>
+        </label>
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi"><code>gopher://</code> aur <code>dict://</code> schemes try karo internal services ke saath interact karne ke liye.</span>
+            <span class="lang-en">Try <code>gopher://</code> and <code>dict://</code> schemes to interact with internal services.</span>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div class="audit-card">
+      <h3><span class="lang-hi">5. Blind SSRF Test Karo (OAST)</span><span class="lang-en">5. Test Blind SSRF (OAST)</span></h3>
+      <div class="check-list">
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">Apna khud ka OAST domain (Burp Collaborator/interactsh) payload mein daalo aur incoming DNS/HTTP callback check karo.</span>
+            <span class="lang-en">Put your own OAST domain (Burp Collaborator/interactsh) in the payload and check for an incoming DNS/HTTP callback.</span>
+          </div>
+        </label>
+        <label class="check-label">
+          <input type="checkbox" class="check-input">
+          <div class="check-box"></div>
+          <div class="check-text">
+            <span class="lang-hi">Confirm hone par, achieved access level (kaunse internal services/data tak access mila) document karo — ye High/Critical severity finding hota hai.</span>
+            <span class="lang-en">Once confirmed, document the achieved access level (which internal services/data were accessible) — this is a High/Critical severity finding.</span>
+          </div>
+        </label>
+      </div>
+    </div>
+  </section>
+
+    <!-- ── BOTTOM NAVIGATION ROW ── -->
+  <div class="bottom-nav-row">
+    <a href="SQLI.html" class="nav-arrow-btn nav-prev">← 4. SQLi</a>
+    <a href="CORS.html" class="nav-arrow-btn nav-next">6. CORS →</a>
+  </div>
+
+</main>
+
+<footer class="modern-footer">
+  <div class="footer-badge">
+    <span class="footer-text">Designed and developed by <strong class="dev-name">Irshad Akaram</strong></span>
+  </div>
+</footer>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  window.toggleTheme = function() {
+    var html = document.documentElement;
+    var themeBtn = document.getElementById('themeBtn');
+    if (html.getAttribute('data-theme') === 'dark') {
+      html.setAttribute('data-theme', 'light');
+      if (themeBtn) themeBtn.textContent = '🌙 Dark Mode';
+    } else {
+      html.setAttribute('data-theme', 'dark');
+      if (themeBtn) themeBtn.textContent = '☀️ Light Mode';
+    }
+  };
+
+  window.toggleLanguage = function() {
+    var html = document.documentElement;
+    var toggle = document.getElementById('langToggle');
+    var lblHi = document.getElementById('lbl-hi');
+    var lblEn = document.getElementById('lbl-en');
+
+    if (toggle && toggle.checked) {
+      html.setAttribute('data-lang', 'en');
+      html.setAttribute('lang', 'en');
+      if(lblEn) { lblEn.classList.add('lang-active'); lblEn.classList.remove('lang-inactive'); }
+      if(lblHi) { lblHi.classList.add('lang-inactive'); lblHi.classList.remove('lang-active'); }
+    } else {
+      html.setAttribute('data-lang', 'hi');
+      html.setAttribute('lang', 'hi');
+      if(lblHi) { lblHi.classList.add('lang-active'); lblHi.classList.remove('lang-inactive'); }
+      if(lblEn) { lblEn.classList.add('lang-inactive'); lblEn.classList.remove('lang-active'); }
+    }
+  };
+
+  var themeBtn = document.getElementById('themeBtn');
+  if(themeBtn) themeBtn.addEventListener('click', window.toggleTheme);
+
+  var langToggle = document.getElementById('langToggle');
+  if(langToggle) langToggle.addEventListener('change', window.toggleLanguage);
+
+  document.querySelectorAll('.level-header').forEach(function(header){
+    header.addEventListener('click', function(){
+      var card = header.closest('.level-card');
+      if(card) {
+        card.classList.toggle('open');
+      }
+    });
+  });
+
+  document.querySelectorAll('.faq-question').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var item = this.closest('.faq-item');
+      item.classList.toggle('active');
+    });
+  });
+
+  /* ---------- Sub-Nav Smooth Scroll & Active Highlight (Pixel-Perfect Offset) ---------- */
+  var subNavBtns = document.querySelectorAll('.sub-nav-btn');
+  
+  subNavBtns.forEach(function(link){
+    link.addEventListener('click', function(e){
+      var href = link.getAttribute('href');
+      if(href && href.startsWith('#')){
+        e.preventDefault();
+        var targetEl = document.querySelector(href);
+        if(targetEl){
+          var topbar = document.querySelector('.topbar');
+          var totalStickyOffset = (topbar ? topbar.offsetHeight : 50) + 4;
+          var elementPosition = targetEl.getBoundingClientRect().top;
+          var offsetPosition = elementPosition + window.pageYOffset - totalStickyOffset;
+
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: reduceMotion ? 'auto' : 'smooth'
+          });
+        }
+      }
+    });
+  });
+
+  /* ---------- Hero CTA & Sim-Jump Scroll to VAPT_SSRF_INTERCEPTOR Fix ---------- */
+  document.querySelectorAll('.hero-cta, .sim-jump').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      var href = btn.getAttribute('href');
+      if (href && href.startsWith('#')) {
+        e.preventDefault();
+        var targetEl = document.querySelector(href);
+        if (targetEl) {
+          var topbar = document.querySelector('.topbar');
+          var offset = (topbar ? topbar.offsetHeight : 60) + 16;
+          var elementPosition = targetEl.getBoundingClientRect().top;
+          var offsetPosition = elementPosition + window.pageYOffset - offset;
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: reduceMotion ? 'auto' : 'smooth'
+          });
+        }
+      }
+    });
+  });
+
+  function updateSubNavScrollSpy() {
+    var topbar = document.querySelector('.topbar');
+    var totalStickyOffset = (topbar ? topbar.offsetHeight : 50) + 20;
+    var scrollPos = window.scrollY + totalStickyOffset;
+    
+    // Page section IDs corresponding to subnav links in DOM order:
+    var navIds = ['impact', 'code-fixes', 'simulator', 'confusing-questions', 'tester-checklist'];
+    var currentActive = null;
+    
+    for (var i = 0; i < navIds.length; i++) {
+      var sec = document.getElementById(navIds[i]);
+      if (sec && sec.offsetTop <= scrollPos) {
+        currentActive = navIds[i];
+      }
+    }
+
+    subNavBtns.forEach(function(btn) {
+      var href = btn.getAttribute('href');
+      if (currentActive && (href === '#' + currentActive || (currentActive === 'code-fixes' && href === '#simulator'))) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+  }
+
+  window.addEventListener('scroll', updateSubNavScrollSpy, { passive: true });
+  updateSubNavScrollSpy();
+
+  document.querySelectorAll('.check-input').forEach(input => {
+    input.addEventListener('change', function() {
+      if(this.checked) {
+        this.closest('.check-label').classList.add('checked');
+      } else {
+        this.closest('.check-label').classList.remove('checked');
+      }
+    });
+  });
+
+  var fullTextHi = "Server-Side Request Forgery (SSRF) tab hoti hai jab ek application user ke diye hue URL par bina strict validation ke outbound HTTP request bhej deta hai. Attacker server ki internal trust ka fayda utha kar use ek malicious proxy ki tarah use karta hai — jisse cloud metadata (169.254.169.254), internal databases aur private network services tak unauthorized access mil jaata hai....";
+  var fullTextEn = "Server-Side Request Forgery (SSRF) occurs when an application makes unvalidated outbound HTTP requests to user-supplied URLs. An attacker abuses the server's internal network trust as a proxy to exfiltrate cloud instance metadata (169.254.169.254), scan internal services, and compromise isolated infrastructure....";
+
+  var twEl = document.getElementById('typewriter');
+  function updateTypewriter() {
+      var isEn = document.documentElement.getAttribute('data-lang') === 'en';
+      twEl.textContent = isEn ? fullTextEn : fullTextHi;
+  }
+
+  if(reduceMotion){
+    updateTypewriter();
+  } else {
+    var i = 0;
+    var currentText = document.documentElement.getAttribute('data-lang') === 'en' ? fullTextEn : fullTextHi;
+    function typeStep(){
+      if(i <= currentText.length){
+        twEl.textContent = currentText.slice(0, i);
+        i += 2;
+        setTimeout(typeStep, 12);
+      }
+    }
+    typeStep();
+  }
+
+  if(langToggle) langToggle.addEventListener('change', updateTypewriter);
+
+  /* ---------- SSRF SIMULATOR LOGIC ---------- */
+  let currentOrigin = 'direct';
+  let currentDefense = '0';
+
+  const originValues = {
+    direct: "http://127.0.0.1:6379/",
+    domain: "http://attacker-dns-rebind.com/"
+  };
+
+  const defenseNames = {
+    '0': '0: No Validation',
+    '1': '1: Basic Blacklist',
+    '2': '2: Validate-Then-Connect',
+    '3': '3: DNS-Pinned Check',
+    '4': '4: Allowlist + No-Redirect (Final)'
+  };
+
+  document.querySelectorAll('#opt-origin .sim-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#opt-origin .sim-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentOrigin = btn.getAttribute('data-val');
+      document.getElementById('lbl-payload').innerHTML = originValues[currentOrigin];
+    });
+  });
+
+  document.querySelectorAll('#opt-defense .sim-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#opt-defense .sim-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentDefense = btn.getAttribute('data-val');
+      document.getElementById('lbl-defense').innerText = defenseNames[currentDefense];
+    });
+  });
+
+  const btnExecute = document.getElementById('btn-execute');
+  const logBrowser = document.getElementById('log-browser');
+  const logNetwork = document.getElementById('log-network');
+  const logServer = document.getElementById('log-server');
+  const verdictBox = document.getElementById('sim-verdict-box');
+  const verdictTitle = document.getElementById('sim-verdict-title');
+  const verdictText = document.getElementById('sim-verdict-text');
+
+  const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+  function appendLog(panel, htmlStrHi, htmlStrEn) {
+    const isEn = document.documentElement.getAttribute('data-lang') === 'en';
+    const div = document.createElement('div');
+    div.className = 'log-line';
+    div.innerHTML = `<span class="timestamp">${new Date().toISOString().split('T')[1].slice(0,-1)}</span> <span>${isEn ? htmlStrEn : htmlStrHi}</span>`;
+    panel.appendChild(div);
+    panel.scrollTop = panel.scrollHeight;
+  }
+
+  function appendNetworkLog(panel, htmlStr) {
+    const div = document.createElement('div');
+    div.className = 'log-line';
+    div.innerHTML = `<span class="timestamp">${new Date().toISOString().split('T')[1].slice(0,-1)}</span> ${htmlStr}`;
+    panel.appendChild(div);
+    panel.scrollTop = panel.scrollHeight;
+  }
+
+  function appendStage(panel, strHi, strEn) {
+    const isEn = document.documentElement.getAttribute('data-lang') === 'en';
+    const div = document.createElement('div');
+    div.className = 'log-line log-stage';
+    div.innerHTML = `<span>${isEn ? strEn : strHi}</span>`;
+    panel.appendChild(div);
+    panel.scrollTop = panel.scrollHeight;
+  }
+
+  function clearLogs() {
+    logBrowser.innerHTML = `
+        <div style="margin-bottom:10px;"><span class="c-info">Payload URL:</span> <br> <code class="inline-code" id="lbl-payload">${originValues[currentOrigin]}</code></div>
+        <div><span class="c-info">Current Defense:</span> <br> <span class="c-warn" id="lbl-defense">${defenseNames[currentDefense]}</span></div>
+        <hr style="border-color:#1f242d; margin: 15px 0;">
+    `;
+    logNetwork.innerHTML = '';
+    logServer.innerHTML = '';
+    verdictBox.className = 'sim-verdict-box';
+    verdictTitle.innerHTML = '';
+    verdictText.innerHTML = '';
+  }
+
+  clearLogs();
+
+  btnExecute.addEventListener('click', async () => {
+    btnExecute.disabled = true;
+    clearLogs();
+
+    let payload = originValues[currentOrigin];
+
+    // STAGE 1: CLIENT
+    appendStage(logBrowser, "▶ STEP 1: CLIENT REQUEST", "▶ STEP 1: CLIENT REQUEST");
+    await sleep(300);
+    appendLog(logBrowser,
+      `<span class="c-info">Action: User submits "url" parameter with the payload...</span>`,
+      `<span class="c-info">Action: User submits "url" parameter with the payload...</span>`);
+    await sleep(400);
+
+    // STAGE 2: NETWORK
+    appendStage(logNetwork, "▶ STEP 2: INCOMING REQUEST TO APP", "▶ STEP 2: INCOMING REQUEST TO APP");
+    await sleep(300);
+    appendNetworkLog(logNetwork, `<span class="c-blue">>>> INCOMING HTTP REQUEST</span>`);
+    const rawReqBlock = document.createElement('div');
+    rawReqBlock.className = 'http-block';
+    logNetwork.appendChild(rawReqBlock);
+    const writeNetwork = async (text) => {
+      const el = document.createElement('div'); el.className = 'log-line'; el.style.opacity = '1'; el.innerHTML = text;
+      rawReqBlock.appendChild(el); logNetwork.scrollTop = logNetwork.scrollHeight; await sleep(150);
+    };
+    await writeNetwork(`<span class="http-method">GET</span> <span class="http-path">/fetch-avatar?url=${encodeURIComponent(payload)}</span> <span class="http-proto">HTTP/1.1</span>`);
+    await writeNetwork(`<span class="http-header-key">Host:</span> <span class="http-header-val">target-app.com</span>`);
+
+    // STAGE 3: APP LOGIC
+    await sleep(500);
+    appendStage(logServer, "▶ STEP 3: BACKEND VALIDATION LOGIC", "▶ STEP 3: BACKEND VALIDATION LOGIC");
+    await sleep(300);
+    appendLog(logServer,
+      `<span class="loader"></span> <span class="c-info">Validating URL: ${payload}</span>`,
+      `<span class="loader"></span> <span class="c-info">Validating URL: ${payload}</span>`);
+    await sleep(500);
+
+    let blocked = false;
+    let finalDestination = "";
+
+    if (currentDefense === '0') {
+      appendLog(logServer, `<span class="c-err">Koi validation nahi. URL directly requests.get() ko pass ho raha hai.</span>`, `<span class="c-err">No validation at all. The URL is passed directly into requests.get().</span>`);
+      finalDestination = currentOrigin === 'direct' ? "127.0.0.1:6379 (Redis)" : "attacker-dns-rebind.com's current DNS answer";
+    } else if (currentDefense === '1') {
+      appendLog(logServer, `<span class="c-info">Checking blacklist ["127.0.0.1","localhost","169.254.169.254"] against literal URL string...</span>`, `<span class="c-info">Checking blacklist ["127.0.0.1","localhost","169.254.169.254"] against literal URL string...</span>`);
+      await sleep(400);
+      if (currentOrigin === 'direct') {
+        appendLog(logServer, `<span class="c-ok">'127.0.0.1' found! Request rejected.</span>`, `<span class="c-ok">'127.0.0.1' found! Request rejected.</span>`);
+        blocked = true;
+      } else {
+        appendLog(logServer, `<span class="c-err">Blacklist passed — domain string doesn't literally contain any blocked term. Proceeding to fetch.</span>`, `<span class="c-err">Blacklist passed — domain string doesn't literally contain any blocked term. Proceeding to fetch.</span>`);
+        finalDestination = "attacker's DNS returns an internal IP directly — no rebinding even needed";
+      }
+    } else if (currentDefense === '2') {
+      appendLog(logServer, `<span class="c-info">Resolving hostname & checking resolved IP against private ranges (validation step)...</span>`, `<span class="c-info">Resolving hostname & checking resolved IP against private ranges (validation step)...</span>`);
+      await sleep(400);
+      if (currentOrigin === 'direct') {
+        appendLog(logServer, `<span class="c-ok">Resolved IP 127.0.0.1 is in the loopback range. Request rejected.</span>`, `<span class="c-ok">Resolved IP 127.0.0.1 is in the loopback range. Request rejected.</span>`);
+        blocked = true;
+      } else {
+        appendLog(logServer, `<span class="c-warn">Resolved IP at validation time: 203.0.113.5 (public, safe). Validation PASSED.</span>`, `<span class="c-warn">Resolved IP at validation time: 203.0.113.5 (public, safe). Validation PASSED.</span>`);
+        await sleep(400);
+        appendLog(logServer, `<span class="c-err">A fresh DNS lookup happens at actual connect time — attacker has flipped the DNS answer to 127.0.0.1 (DNS rebinding / TOCTOU).</span>`, `<span class="c-err">A fresh DNS lookup happens at actual connect time — attacker has flipped the DNS answer to 127.0.0.1 (DNS rebinding / TOCTOU).</span>`);
+        finalDestination = "127.0.0.1:6379 (Redis) via rebound DNS";
+      }
+    } else if (currentDefense === '3') {
+      appendLog(logServer, `<span class="c-info">Resolving hostname ONCE, validating that SAME IP, connecting to it directly (DNS pinned)...</span>`, `<span class="c-info">Resolving hostname ONCE, validating that SAME IP, connecting to it directly (DNS pinned)...</span>`);
+      await sleep(400);
+      if (currentOrigin === 'direct') {
+        appendLog(logServer, `<span class="c-ok">Pinned IP 127.0.0.1 rejected at validation. No second lookup to exploit.</span>`, `<span class="c-ok">Pinned IP 127.0.0.1 rejected at validation. No second lookup to exploit.</span>`);
+        blocked = true;
+      } else {
+        appendLog(logServer, `<span class="c-ok">Pinned resolution blocks rebinding — validated IP is used for the connection too.</span>`, `<span class="c-ok">Pinned resolution blocks rebinding — validated IP is used for the connection too.</span>`);
+        await sleep(400);
+        appendLog(logServer, `<span class="c-err">BUT: the resolved public server returns an HTTP 302 redirect to http://127.0.0.1:6379/, and the HTTP client follows it automatically without re-validating.</span>`, `<span class="c-err">BUT: the resolved public server returns an HTTP 302 redirect to http://127.0.0.1:6379/, and the HTTP client follows it automatically without re-validating.</span>`);
+        finalDestination = "127.0.0.1:6379 (Redis) via unvalidated redirect";
+      }
+    } else if (currentDefense === '4') {
+      appendLog(logServer, `<span class="c-info">Checking exact-match host allowlist + scheme lock (http/https only) + redirects disabled + DNS pinned...</span>`, `<span class="c-info">Checking exact-match host allowlist + scheme lock (http/https only) + redirects disabled + DNS pinned...</span>`);
+      await sleep(500);
+      appendLog(logServer, `<span class="c-ok">Host not on the exact-match allowlist. Rejected before any connection is attempted. (Even a redirect to an internal IP would be blocked, since redirects are re-validated against the same allowlist.)</span>`, `<span class="c-ok">Host not on the exact-match allowlist. Rejected before any connection is attempted. (Even a redirect to an internal IP would be blocked, since redirects are re-validated against the same allowlist.)</span>`);
+      blocked = true;
+    }
+
+    await sleep(400);
+
+    // STAGE 4: OUTBOUND REQUEST
+    appendStage(logServer, "▶ STEP 4: OUTBOUND SERVER REQUEST", "▶ STEP 4: OUTBOUND SERVER REQUEST");
+    await sleep(300);
+
+    let attackSuccess = false;
+
+    if (blocked) {
+      appendLog(logServer, `<span class="c-ok">No outbound request was made toward an internal target.</span>`, `<span class="c-ok">No outbound request was made toward an internal target.</span>`);
+    } else {
+      appendLog(logServer, `<span class="c-warn">Server connects to: ${finalDestination}</span>`, `<span class="c-warn">Server connects to: ${finalDestination}</span>`);
+      await sleep(400);
+      appendLog(logServer, `<span class="c-err">Internal service treats this as trusted, local traffic and responds. Response is returned back to the attacker via the app's own response.</span>`, `<span class="c-err">Internal service treats this as trusted, local traffic and responds. Response is returned back to the attacker via the app's own response.</span>`);
+      attackSuccess = true;
+    }
+
+    await sleep(600);
+    const isEn = document.documentElement.getAttribute('data-lang') === 'en';
+
+    if (attackSuccess) {
+      verdictBox.classList.remove('v-blocked');
+      verdictBox.classList.add('v-hacked', 'show');
+      verdictTitle.innerHTML = `💀 SSRF ACHIEVED (INTERNAL RESOURCE ACCESSED)`;
+    } else {
+      verdictBox.classList.remove('v-hacked');
+      verdictBox.classList.add('v-blocked', 'show');
+      verdictTitle.innerHTML = `🛡️ REQUEST BLOCKED (NO INTERNAL ACCESS)`;
+    }
+
+    let explanationHi = "";
+    let explanationEn = "";
+
+    if (currentDefense === '0') {
+      explanationHi = "Koi filtering hi nahi thi, isliye chaahe direct internal IP ho ya attacker ka apna domain, dono server ko wahi bhej dete hain jahan attacker chahta hai.";
+      explanationEn = "There was no filtering at all, so whether it's a direct internal IP or the attacker's own domain, both send the server exactly where the attacker wants.";
+    } else if (currentDefense === '1') {
+      if (currentOrigin === 'direct') {
+        explanationHi = "Basic blacklist ne literal string '127.0.0.1' dhundh li aur request reject kar di. Is specific payload ke against ye defense kaam kar gaya.";
+        explanationEn = "The basic blacklist found the literal string '127.0.0.1' and rejected the request. Against this specific payload, this defense worked.";
+      } else {
+        explanationHi = "Blacklist sirf hardcoded strings check karti thi. Attacker ke apne domain ka naam blacklist mein nahi hai, isliye ye pass ho gaya — aur validation IP resolve hi nahi karti, isliye attacker ko rebinding trick ki bhi zaroorat nahi padi.";
+        explanationEn = "The blacklist only checked hardcoded strings. The attacker's own domain name isn't in the blacklist, so it passed — and since validation doesn't even resolve the IP, the attacker didn't even need the rebinding trick.";
+      }
+    } else if (currentDefense === '2') {
+      if (currentOrigin === 'direct') {
+        explanationHi = "Validation ne IP resolve karke turant private range mein paaya aur block kar diya.";
+        explanationEn = "Validation resolved the IP, immediately found it in a private range, and blocked it.";
+      } else {
+        explanationHi = "Validation ke waqt attacker ke domain ka DNS ek safe public IP deta hai, isliye check PASS ho gaya. Lekin actual connection ke waqt ek NAYA DNS lookup hota hai, aur attacker apna DNS answer badal kar internal IP de deta hai — ye TOCTOU/DNS-rebinding ka gap hai.";
+        explanationEn = "At validation time, the attacker's domain's DNS returns a safe public IP, so the check PASSED. But at actual connection time, a NEW DNS lookup happens, and the attacker flips their DNS answer to an internal IP — this is the TOCTOU/DNS-rebinding gap.";
+      }
+    } else if (currentDefense === '3') {
+      if (currentOrigin === 'direct') {
+        explanationHi = "DNS-pinned validation ne pehli hi baar mein internal IP dhundh li aur block kar diya — koi doosra lookup hai hi nahi jisse rebinding ho sake.";
+        explanationEn = "DNS-pinned validation found the internal IP on the very first lookup and blocked it — there's no second lookup for rebinding to exploit.";
+      } else {
+        explanationHi = "DNS rebinding ab kaam nahi karti kyunki resolution pinned hai. Lekin attacker ka public server ek HTTP redirect deta hai jo seedha internal IP ki taraf point karta hai, aur HTTP client us redirect ko automatically follow kar leta hai bina revalidate kiye.";
+        explanationEn = "DNS rebinding no longer works because resolution is pinned. But the attacker's public server issues an HTTP redirect pointing straight to the internal IP, and the HTTP client automatically follows that redirect without re-validating it.";
+      }
+    } else if (currentDefense === '4') {
+      explanationHi = "Host ek exact-match allowlist ke against validate hua aur match nahi kiya, isliye request kabhi bheji hi nahi gayi. Redirects bhi disabled/revalidated hain, aur DNS pinned hai — isliye ye combination in dono payloads (aur DNS-rebinding/redirect variants) ke against robust hai.";
+      explanationEn = "The host was validated against an exact-match allowlist and didn't match, so the request was never even sent. Redirects are also disabled/re-validated, and DNS is pinned — so this combination is robust against both these payloads (and DNS-rebinding/redirect variants).";
+    }
+
+    verdictText.innerHTML = isEn ? explanationEn : explanationHi;
+    btnExecute.disabled = false;
+  });
+
+});
+</script>
+
+</body>
+</html>

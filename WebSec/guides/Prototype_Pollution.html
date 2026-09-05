@@ -1,0 +1,1489 @@
+<!DOCTYPE html>
+<html lang="hi" data-theme="dark" data-lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prototype Pollution — Problem Se Solution Tak</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Poppins:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root[data-theme="dark"] {
+    --bg:#050810;
+    --panel:#0F1524;
+    --panel-2:#1A2338;
+    --border:#263049;
+    --text:#E7ECF5;
+    --text-muted:#8B96AB;
+    --danger:#FF6B5B;
+    --danger-bg:rgba(255,107,91,0.12);
+    --safe:#3ECF8E;
+    --safe-bg:rgba(62,207,142,0.12);
+    --accent:#F59E0B;
+    --accent-bg:rgba(245,158,11,0.14);
+    --amber:#F59E0B;
+    --amber-bg:rgba(245,158,11,0.14);
+    --blue:#4D9EFF;
+    --blue-bg:rgba(77,158,255,0.12);
+    --purple:#A855F7;
+    --radius:12px;
+    --mono:'IBM Plex Mono',ui-monospace,monospace;
+    --sans:'IBM Plex Sans',system-ui,sans-serif;
+    --glow: rgba(245, 158, 11, 0.06);
+    --shadow-sm: 0 4px 15px rgba(0, 0, 0, 0.25);
+  }
+
+  :root[data-theme="light"] {
+    --bg:#F4F7FB;
+    --panel:#FFFFFF;
+    --panel-2:#E8EEF5;
+    --border:#D1D9E6;
+    --text:#0F172A;
+    --text-muted:#475569;
+    --danger:#E11D48;
+    --danger-bg:rgba(225,29,72,0.12);
+    --safe:#059669;
+    --safe-bg:rgba(5,150,105,0.12);
+    --accent:#D97706;
+    --accent-bg:rgba(217,119,6,0.14);
+    --amber:#D97706;
+    --amber-bg:rgba(217,119,6,0.14);
+    --blue:#2563EB;
+    --blue-bg:rgba(37,99,235,0.12);
+    --purple:#9333EA;
+    --radius:12px;
+    --mono:'IBM Plex Mono',ui-monospace,monospace;
+    --sans:'IBM Plex Sans',system-ui,sans-serif;
+    --glow: rgba(245, 158, 11, 0.06);
+    --shadow-sm: 0 4px 15px rgba(0, 0, 0, 0.06);
+  }
+
+  html[data-lang="hi"] .lang-en { display: none !important; }
+  html[data-lang="en"] .lang-hi { display: none !important; }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--bg);color:var(--text);font-family:var(--sans);
+    margin:0;padding:0;line-height:1.7;-webkit-font-smoothing:antialiased;
+    transition: background-color 0.3s, color 0.3s;
+    background-image: 
+      radial-gradient(circle at 15% 50%, var(--glow), transparent 25%),
+      radial-gradient(circle at 85% 30%, var(--glow), transparent 25%);
+  }
+  ::selection{background:var(--accent-bg);color:var(--accent);}
+  strong{color:var(--text);font-weight:600;}
+
+  code{
+    font-family:var(--mono);background:var(--panel-2);border:1px solid var(--border);
+    padding:2px 6px;border-radius:6px;font-size:0.88em;color:var(--accent);
+    transition: all 0.2s;
+  }
+  code:hover { background: var(--accent-bg); border-color: var(--accent); }
+
+  pre{
+    background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
+    padding:40px 18px 18px 18px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;
+    line-height:1.6;color:var(--text);margin:18px 0; position: relative;
+    box-shadow: 0 10px 30px -10px rgba(0,0,0,0.2);
+  }
+  pre::before {
+    content: ''; position: absolute; top: 14px; left: 16px;
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--danger); box-shadow: 16px 0 0 var(--accent), 32px 0 0 var(--safe);
+  }
+  pre code{background:none;border:none;padding:0;color:inherit; box-shadow: none;}
+  pre code:hover { background: none; border: none; }
+
+  /* ── TOPBAR ── */
+  .topbar{
+    position:sticky;top:0;z-index:50;background:rgba(15, 21, 36, 0.7);
+    backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+    border-bottom:1px solid var(--border);
+    padding:14px 20px;display:flex;align-items:center;justify-content:space-between;
+    gap:12px;flex-wrap:wrap; box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  }
+  :root[data-theme="light"] .topbar { background:rgba(255, 255, 255, 0.8); }
+
+  .brand{
+    font-family:var(--mono);font-weight:700;font-size:15.5px;
+    display:flex;align-items:center;gap:10px;cursor:default;
+  }
+  .brand-icon { font-size: 19px; display: inline-block; animation: virus-pulse 2.5s infinite ease-in-out; }
+  .brand-text {
+    background: linear-gradient(90deg, #F59E0B, #EF4444);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    transition: all 0.3s ease; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .brand-text code { background: none; border: none; padding: 0; color: inherit; font-size: 1em; box-shadow: none;}
+  .brand:hover .brand-text { filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.5)); }
+  @keyframes virus-pulse { 0%, 100% { transform: scale(1); filter: drop-shadow(0 0 3px var(--accent)); } 50% { transform: scale(1.15); filter: drop-shadow(0 0 10px var(--accent)); } }
+
+  /* ── SUB-NAV BUTTONS ── */
+  .sub-nav-wrapper {
+    position: relative;
+    background: transparent;
+    border-bottom: none;
+    padding: 16px 20px 0;
+    box-shadow: none;
+  }
+  .sub-nav-bar {
+    max-width: 880px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding: 2px 0;
+    pointer-events: auto;
+  }
+  .sub-nav-bar::-webkit-scrollbar { display: none; }
+
+  .sub-nav-btn {
+    flex: 1 1 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: var(--panel);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    padding: 8px 14px;
+    border-radius: 24px;
+    text-decoration: none;
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    white-space: nowrap;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+    text-align: center;
+  }
+  :root[data-theme="light"] .sub-nav-btn {
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+  }
+  .sub-nav-btn.home-nav-btn {
+    border-color: rgba(59, 130, 246, 0.4);
+    background: rgba(59, 130, 246, 0.08);
+    color: var(--text);
+  }
+  .sub-nav-btn.home-nav-btn:hover {
+    border-color: var(--blue);
+    background: rgba(59, 130, 246, 0.2);
+    color: #93c5fd;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.35);
+  }
+  .sub-nav-btn.topic-btn {
+    border-color: rgba(245, 158, 11, 0.35);
+    background: rgba(245, 158, 11, 0.06);
+    color: var(--accent);
+  }
+  .sub-nav-btn .sub-nav-icon {
+    font-size: 14.5px;
+    display: inline-block;
+    flex-shrink: 0;
+  }
+  .sub-nav-btn:hover {
+    border-color: var(--accent);
+    background: var(--accent-bg);
+    color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px var(--accent-bg);
+  }
+
+  .controls-wrapper { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .theme-toggle {
+    background: var(--panel); border: 1px solid var(--border); color: var(--text);
+    padding: 6px 14px; border-radius: 20px; cursor: pointer; font-weight: 600;
+    font-family: var(--sans); font-size: 12px; transition: all 0.2s ease;
+  }
+  .theme-toggle:hover { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); transform: translateY(-1px); }
+
+  .lang-switch-wrapper {
+    display: flex; align-items: center; gap: 6px; font-family: var(--sans);
+    font-size: 12px; font-weight: 600; color: var(--text); background: var(--panel);
+    padding: 6px 12px; border-radius: 20px; border: 1px solid var(--border);
+  }
+  .lang-active { color: var(--accent); text-shadow: 0 0 8px var(--accent-bg); } 
+  .lang-inactive { color: var(--text-muted); }
+  .switch { position: relative; display: inline-block; width: 32px; height: 18px; margin: 0 4px;}
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider {
+    position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+    background-color: var(--border); transition: .4s; border-radius: 20px;
+  }
+  .slider:before {
+    position: absolute; content: ""; height: 12px; width: 12px; left: 3px; bottom: 3px;
+    background-color: var(--text); transition: .4s; border-radius: 50%;
+  }
+  input:checked + .slider { background-color: var(--accent); }
+  input:checked + .slider:before { transform: translateX(14px); background-color: #fff; }
+
+  main{max-width:880px;margin:0 auto;padding:0 20px 40px; position: relative; z-index: 1;}
+
+  .hero{padding:40px 0 30px; position: relative; border-bottom: 1px solid var(--border); margin-bottom: 35px;}
+  .hero::after {
+    content: ''; position: absolute; top: -50px; left: 50%; transform: translateX(-50%);
+    width: 100vw; height: 100%; background: radial-gradient(ellipse at top, var(--accent-bg), transparent 60%);
+    z-index: -1; pointer-events: none; opacity: 0.6;
+  }
+  .eyebrow{
+    font-family:var(--mono);font-size:12px;letter-spacing:.14em;color:var(--danger);
+    text-transform:uppercase;margin:0 0 14px;display:flex;align-items:center;gap:8px;
+  }
+  .eyebrow::before{content:"●";font-size:9px; animation: blink 1s infinite alternate;}
+  h1.title{
+    font-family:var(--mono);font-weight:700;font-size:clamp(22px,4.2vw,32px);
+    line-height:1.45;margin:0 0 24px;color:var(--text);letter-spacing:-0.01em; text-align: justify;
+  }
+
+  .terminal{
+    background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:hidden;
+    box-shadow:0 10px 30px -10px rgba(0,0,0,0.3); margin-bottom: 24px;
+  }
+  .terminal-bar{display:flex;align-items:center;gap:7px;padding:12px 16px;border-bottom:1px solid var(--border);background:#11141a;}
+  .terminal-dot{width:10px;height:10px;border-radius:50%;background:#3A4460;}
+  .terminal-dot:nth-child(1){background:#FF5F56;}
+  .terminal-dot:nth-child(2){background:#FFBD2E;}
+  .terminal-dot:nth-child(3){background:#27C93F;}
+  .terminal-label{margin-left:8px;font-family:var(--mono);font-size:11.5px;color:var(--text-muted);}
+  .terminal-body{padding:22px 20px 24px;font-family:var(--mono);font-size:13.5px;color:var(--text);min-height:115px; line-height: 1.6;}
+  .terminal-body .prompt{color:var(--safe);}
+  .terminal-body .cursor{display:inline-block;width:8px;height:16px;background:var(--accent);vertical-align:middle;margin-left:2px;animation:blink 1s step-end infinite;}
+  @keyframes blink{50%{opacity:0;}}
+
+  .intro-block {
+    margin-top: 24px; padding: 22px 24px;
+    background: linear-gradient(135deg, var(--panel) 0%, transparent 100%);
+    border: 1px solid var(--border); border-left: 4px solid var(--accent);
+    border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+    position: relative; overflow: hidden;
+  }
+  .intro-block p{margin:0 0 14px;font-size:15px;color:var(--text); text-align: justify; line-height: 1.7;}
+  .intro-block p:last-child{margin-bottom:0;}
+
+  /* ── SECTION HEADINGS & LEVEL CARDS ── */
+  .sec-head{margin:45px 0 10px;}
+  .sec-eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.15em;color:var(--accent);text-transform:uppercase;margin:0 0 8px; display: flex; align-items: center; gap: 8px;}
+  .sec-eyebrow::after { content: ''; height: 1px; width: 40px; background: var(--accent); opacity: 0.5; }
+  .sec-head h2{
+    font-family:var(--mono);font-size:clamp(20px,3.8vw,26px);margin:0 0 12px;
+    background: linear-gradient(90deg, var(--text), var(--text-muted));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .sec-head p{font-size:15px;color:var(--text-muted);margin:0 0 20px;line-height: 1.6; text-align: justify;}
+
+  .levels{margin-top:24px;display:flex;flex-direction:column;gap:16px;}
+  .level-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);scroll-margin-top:90px;overflow:hidden; transition: all 0.3s;}
+  .level-card:hover { border-color: rgba(255,255,255,0.12); box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
+  .level-card.open { border-color: var(--accent); box-shadow: 0 8px 30px var(--accent-bg); }
+
+  .level-header{
+    width:100%;background:none;border:none;color:var(--text);display:flex;align-items:center;
+    gap:16px;padding:18px 20px;cursor:pointer;text-align:left;font-family:var(--sans);
+  }
+  .level-header:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;}
+  .level-badge{
+    font-family:var(--mono);font-weight:700;font-size:15px;width:38px;height:38px;flex:none;
+    border-radius:10px;display:flex;align-items:center;justify-content:center;
+    background:var(--panel-2);border:1px solid var(--border);color:var(--text-muted);
+    transition: all 0.3s;
+  }
+  .level-card.open .level-badge { background: var(--accent-bg); color: var(--accent); border-color: var(--accent); }
+
+  .level-titles{flex:1;min-width:0;}
+  .level-titles h2{margin:0 0 4px;font-size:16px;font-weight:600;color:var(--text); transition: color 0.3s;}
+  .level-card.open .level-titles h2 { color: var(--accent); }
+  .level-titles p{margin:0;font-size:13px;color:var(--text-muted);}
+  .level-tag{
+    font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.05em;
+    padding:4px 10px;border-radius:20px;white-space:nowrap;flex:none;
+  }
+  .level-tag.problem{background:var(--danger-bg);color:var(--danger); border: 1px solid rgba(255,107,91,0.2);}
+  .level-tag.solved{background:var(--safe-bg);color:var(--safe); border: 1px solid rgba(62,207,142,0.2);}
+  .level-tag.concept{background:var(--accent-bg);color:var(--accent); border: 1px solid rgba(255,200,87,0.2);}
+
+  .chevron{flex:none;color:var(--text-muted);transition:transform .3s ease;font-size:14px;}
+  .level-card.open .chevron{transform:rotate(180deg); color: var(--accent);}
+
+  .level-body{ display: none; }
+  .level-card.open .level-body{ display: block; animation: fadeIn .3s ease; }
+
+  .level-inner{padding:0 20px 24px;font-size:14.8px; border-top: 1px solid var(--border); margin-top: 4px; padding-top: 20px;}
+  .level-inner p{margin:0 0 14px;color:var(--text); text-align: justify; line-height: 1.7;}
+  .level-inner h4{margin:22px 0 10px;font-size:14px;color:var(--accent);font-weight:600;font-family:var(--mono);letter-spacing:.04em; text-transform: uppercase;}
+
+  .callout{
+    border-left:4px solid var(--danger);background:linear-gradient(90deg, var(--danger-bg), transparent);
+    border-radius:0 10px 10px 0;padding:16px 20px;margin:18px 0;font-size:14px;
+    box-shadow: inset 0 0 20px rgba(255,107,91,0.05);
+  }
+  .callout.fixnote{border-left-color:var(--safe);background:linear-gradient(90deg, var(--safe-bg), transparent); box-shadow: inset 0 0 20px rgba(62,207,142,0.05);}
+  .callout.analogy{border-left-color:var(--accent);background:linear-gradient(90deg, var(--accent-bg), transparent); box-shadow: inset 0 0 20px rgba(255,200,87,0.05);}
+  .callout.analogy .cal-label{color:var(--accent);}
+  .callout p{margin:0;color:var(--text); text-align: justify;}
+  .callout p+p{margin-top:10px;}
+  .callout .cal-label{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.06em;display:block;margin-bottom:8px;color:var(--danger);}
+  .callout.fixnote .cal-label{color:var(--safe);}
+
+  /* ── SIMULATION LINK BUTTONS INSIDE CARDS ── */
+  .simulation-cta-box {
+    margin-top: 18px; margin-bottom: 12px;
+    background: rgba(245, 158, 11, 0.08); border: 1px dashed var(--accent);
+    padding: 14px 18px; border-radius: 10px; display: flex; align-items: center;
+    justify-content: space-between; flex-wrap: wrap; gap: 12px;
+  }
+  .simulation-cta-box a {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--mono); font-size: 13px; font-weight: 700;
+    color: #0b0f19; background: var(--accent); padding: 9px 20px;
+    border-radius: 20px; text-decoration: none;
+    transition: all 0.25s ease; box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4);
+  }
+  .simulation-cta-box a:hover {
+    transform: translateY(-2px); box-shadow: 0 6px 18px rgba(245, 158, 11, 0.65);
+    filter: brightness(1.15);
+  }
+
+  .mini-table{width:100%;border-collapse:collapse;margin:16px 0;font-size:13px; background: var(--panel-2); border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.15);}
+  .mini-table th,.mini-table td{border:1px solid var(--border);padding:12px 14px;text-align:left;}
+  .mini-table th{background:var(--bg);color:var(--accent);font-weight:700;font-family:var(--mono);font-size:12px; text-transform: uppercase; letter-spacing: 0.5px;}
+  .mini-table td{color:var(--text); font-family: var(--mono); font-size: 12.5px;}
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── IMPACT CARDS SECTION ── */
+  .impact-section {
+    background: linear-gradient(145deg, var(--panel), var(--bg));
+    border: 2px solid var(--border);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+    position: relative; overflow: hidden;
+    padding: 30px 24px; border-radius: 14px; margin-top: 35px; margin-bottom: 24px;
+  }
+  .impact-section::before {
+    content:''; position:absolute; top:0; left:0; width:100%; height:4px;
+    background: linear-gradient(90deg, var(--danger), var(--accent), var(--purple));
+  }
+  .impact-card {
+    background: var(--panel); border: 1px solid var(--border); border-left: 4px solid var(--danger);
+    border-radius: 10px; padding: 18px 20px; margin-bottom: 16px; transition: all 0.3s;
+  }
+  .impact-card:last-child{margin-bottom:0;}
+  .impact-card:hover{ transform: translateX(4px); box-shadow: 0 8px 20px rgba(255,107,91,0.08); border-color: rgba(255,255,255,0.1);}
+  .impact-card h3{ margin:0 0 10px; font-size:14.5px; color:var(--danger); font-family:var(--mono); display:flex; align-items:center; gap:10px; text-transform:uppercase; letter-spacing:0.5px;}
+  .impact-card p{margin:0; font-size:14px; color:var(--text); text-align:justify; line-height:1.7;}
+
+  /* ── IN-PAGE INTERACTIVE LAB / SIMULATOR ── */
+  .simulator-section {
+    background: #050505; border: 1px solid var(--border); border-radius: 14px;
+    margin-top: 35px; margin-bottom: 24px; overflow: hidden; position: relative;
+    display: flex; flex-direction: column; box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+  }
+  .simulator-section::before {
+    content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px;
+    background: linear-gradient(90deg, transparent, #f59e0b, transparent);
+    animation: scanline 3s linear infinite;
+  }
+  @keyframes scanline { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+
+  .sim-header-bar {
+    background: #0a0c10; border-bottom: 1px solid #1f242d; padding: 18px 24px;
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;
+  }
+  .sim-title {
+    font-family: var(--mono); font-size: 15px; font-weight: 700; color: #fff;
+    display: flex; align-items: center; gap: 10px; letter-spacing: 0.5px;
+  }
+  .sim-controls { display: flex; flex-direction: column; gap: 14px; width: 100%; margin-top: 10px; }
+  .sim-control-group { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .sim-control-group label {
+    font-family: var(--mono); font-size: 11.5px; color: #64748b;
+    text-transform: uppercase; letter-spacing: 1px; min-width: 130px; font-weight: bold;
+  }
+  .sim-btn-group { display: flex; gap: 8px; flex-wrap: wrap; background: #000; padding: 4px; border-radius: 6px; border: 1px solid #1f242d;}
+  .sim-btn {
+    background: transparent; border: none; color: #64748b; padding: 6px 13px;
+    border-radius: 4px; font-family: var(--mono); font-size: 11.5px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .sim-btn:hover { color: #fff; }
+  .sim-btn.active { background: #1f242d; color: #f59e0b; box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
+
+  .btn-execute {
+    background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid #f59e0b;
+    padding: 10px 24px; border-radius: 6px; font-family: var(--mono); font-size: 13px;
+    font-weight: 700; cursor: pointer; transition: all 0.2s; text-transform: uppercase;
+    align-self: flex-start; letter-spacing: 1px; box-shadow: 0 0 15px rgba(245, 158, 11, 0.2);
+  }
+  .btn-execute:hover { background: #f59e0b; color: #000; box-shadow: 0 0 20px rgba(245, 158, 11, 0.5); transform: translateY(-2px); }
+
+  .workspace { display: flex; padding: 18px; gap: 16px; height: 480px; background: #050505; }
+  @media (max-width: 850px) { .workspace { flex-direction: column; height: auto; min-height: 600px; } }
+
+  .sim-panel {
+    flex: 1; background: #0a0c10; border: 1px solid #1f242d; border-radius: 8px;
+    display: flex; flex-direction: column; overflow: hidden; box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+  }
+  .sim-panel-header {
+    background: #11141a; padding: 10px 14px; font-family: var(--mono); font-size: 11.5px;
+    font-weight: 700; color: #fff; border-bottom: 1px solid #1f242d; display: flex;
+    align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .sim-panel-body {
+    flex: 1; padding: 14px; font-family: var(--mono); font-size: 12px;
+    line-height: 1.6; overflow-y: auto; background: #000000;
+  }
+
+  #panel-client .sim-panel-header { border-top: 2px solid #ef4444; }
+  #panel-routing .sim-panel-header { border-top: 2px solid #f59e0b; }
+  #panel-server .sim-panel-header { border-top: 2px solid #38bdf8; }
+
+  .http-block { background: rgba(255,255,255,0.03); border-left: 2px solid #f59e0b; padding: 10px; margin: 8px 0; border-radius: 0 6px 6px 0; }
+  .http-header-key { color: #6ab0ff; } .http-header-val { color: #9cdb9e; }
+
+  .sim-verdict-box {
+    margin: 0 18px 18px 18px; background: #0d0f12; border: 1px solid #1f242d;
+    padding: 20px 22px; border-radius: 8px; font-family: var(--sans); display: none;
+  }
+  .sim-verdict-box.show { display: block; animation: slideInUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+  .sim-verdict-title { font-family: var(--mono); font-size: 16px; font-weight: 700; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;}
+  .sim-verdict-text { font-size: 14.5px; color: #e2e8f0; line-height: 1.6; text-align: justify;}
+  .v-hacked { border-color: #ff3c3c; background: rgba(255, 60, 60, 0.08); box-shadow: inset 0 0 30px rgba(255,60,60,0.1); }
+  .v-hacked .sim-verdict-title { color: #ff3c3c; }
+  .v-blocked { border-color: #39ff7a; background: rgba(57, 255, 122, 0.08); box-shadow: inset 0 0 30px rgba(57,255,122,0.1);}
+  .v-blocked .sim-verdict-title { color: #39ff7a; }
+  @keyframes slideInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ── FAQ & CHECKLIST ── */
+  .faq-section {
+    background: linear-gradient(145deg, var(--panel), var(--bg));
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 30px 24px;
+    margin-top: 40px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  }
+  .faq-item {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 12px;
+    transition: all 0.3s ease;
+  }
+  .faq-item.active { border-color: var(--accent); box-shadow: 0 4px 15px var(--accent-bg); }
+  .faq-question {
+    width: 100%; text-align: left; background: none; border: none;
+    padding: 16px 20px; display: flex; align-items: center; gap: 14px;
+    cursor: pointer; color: var(--text); font-family: var(--sans); font-size: 14.5px;
+  }
+  .faq-q-badge {
+    font-family: var(--mono); color: var(--accent); font-weight: 700;
+    background: var(--bg); padding: 4px 8px; border-radius: 6px;
+    font-size: 12.5px; flex-shrink: 0; border: 1px solid var(--border);
+  }
+  .faq-item.active .faq-q-badge { background: var(--accent-bg); border-color: var(--accent); }
+  .faq-q-text { flex: 1; line-height: 1.5; font-weight: 500; }
+  .faq-icon { color: var(--text-muted); transition: transform 0.3s ease; font-size: 12px; }
+  .faq-item.active .faq-icon { transform: rotate(180deg); color: var(--accent); }
+  .faq-answer {
+    display: none; padding: 0 20px 20px; border-top: 1px solid var(--border);
+    margin-top: 4px; padding-top: 16px; color: var(--text-muted);
+    font-family: var(--mono); font-size: 13.5px; line-height: 1.7; text-align: justify;
+  }
+  .faq-item.active .faq-answer { display: block; animation: fadeIn 0.3s ease; }
+
+  #tester-checklist {
+    background: linear-gradient(145deg, var(--panel), var(--bg));
+    border: 2px solid var(--border);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+    position: relative; overflow: hidden;
+    padding: 30px 24px; border-radius: 14px; margin-top: 40px;
+  }
+  #tester-checklist::before {
+    content:''; position:absolute; top:0; left:0; width:100%; height:4px;
+    background: linear-gradient(90deg, var(--safe), var(--accent), var(--danger));
+  }
+  .check-label {
+    display: flex; align-items: flex-start; gap: 14px;
+    cursor: pointer; padding: 12px 14px; border-radius: 8px;
+    transition: background 0.2s ease, transform 0.2s ease;
+    border: 1px solid transparent;
+  }
+  .check-label:hover { background: var(--panel-2); border-color: var(--border); transform: translateX(4px); }
+  .check-input { display: none; }
+  .check-box {
+    width: 20px; height: 20px; border: 2px solid var(--text-muted);
+    border-radius: 5px; flex-shrink: 0; margin-top: 2px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    background: var(--bg);
+  }
+  .check-input:checked + .check-box {
+    background: var(--safe); border-color: var(--safe);
+    box-shadow: 0 0 10px var(--safe-bg);
+  }
+  .check-input:checked + .check-box::after {
+    content: "✓"; color: #000; font-size: 13px; font-weight: 900;
+  }
+  .check-text { font-size: 14px; color: var(--text); line-height: 1.6; }
+
+    /* ── BOTTOM NAVIGATION ROW ── */
+  .bottom-nav-row {
+    margin-top: 45px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    gap: 16px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+  }
+  .nav-arrow-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 18px;
+    border-radius: 20px;
+    text-decoration: none;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.25s ease;
+    box-shadow: var(--shadow-sm);
+    white-space: nowrap;
+  }
+  .nav-arrow-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-bg);
+    transform: translateY(-2px);
+  }
+  .bottom-nav-row .nav-prev {
+    grid-column: 1;
+    justify-self: start;
+  }
+  .bottom-nav-row .nav-home {
+    grid-column: 2;
+    justify-self: center;
+    text-align: center;
+  }
+  .bottom-nav-row .nav-next {
+    grid-column: 3;
+    justify-self: end;
+  }
+  @media (max-width: 768px) {
+    .bottom-nav-row {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+    }
+    .bottom-nav-row .nav-arrow-btn {
+      justify-content: center;
+      width: 100%;
+      text-align: center;
+      white-space: normal;
+    }
+    .bottom-nav-row .nav-empty {
+      display: none;
+    }
+  }
+
+
+
+  /* ── Designed and Developed by Footer ── */
+  .modern-footer { padding: 40px 18px 30px; text-align: center; position: relative; z-index: 1; }
+  .footer-badge {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: linear-gradient(145deg, var(--panel-2), var(--panel));
+    padding: 12px 28px; border-radius: 30px; font-family: var(--mono); font-size: 13.5px;
+    color: var(--text-muted); border: 1px solid var(--border);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.25); cursor: default;
+  }
+  .footer-badge:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 30px rgba(245, 158, 11, 0.25);
+    border-color: var(--accent);
+    color: var(--text);
+  }
+  .dev-name {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+    background: linear-gradient(90deg, #3B82F6, #A855F7, #F43F5E, #F59E0B, #3B82F6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    background-size: 200% auto;
+    animation: gradient-flow 4s linear infinite;
+  }
+  @keyframes gradient-flow {
+    0% { background-position: 0% center; }
+    100% { background-position: 200% center; }
+  }
+
+  /* ── DYNAMIC CYBER BACKGROUND ── */
+  .cyber-bg { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+  .cyber-grid {
+    position: absolute; inset: -120px;
+    background-image: 
+      radial-gradient(rgba(255, 255, 255, 0.12) 1.2px, transparent 1.2px),
+      linear-gradient(rgba(245, 158, 11, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(245, 158, 11, 0.03) 1px, transparent 1px);
+    background-size: 32px 32px, 96px 96px, 96px 96px;
+    opacity: 0.85;
+    animation: gridDrift 60s linear infinite;
+  }
+  @keyframes gridDrift { 0% { transform: translate(0, 0); } 100% { transform: translate(96px, 96px); } }
+  .cyber-orb { position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.35; will-change: transform; }
+  .orb-1 { width: 550px; height: 550px; background: radial-gradient(circle, #f59e0b 0%, transparent 70%); top: -100px; left: -100px; animation: floatOrb1 16s ease-in-out infinite alternate; }
+  .orb-2 { width: 600px; height: 600px; background: radial-gradient(circle, #ef4444 0%, transparent 70%); bottom: -80px; right: -100px; animation: floatOrb2 20s ease-in-out infinite alternate; }
+  .orb-3 { width: 480px; height: 480px; background: radial-gradient(circle, #3ecf8e 0%, transparent 70%); top: 35%; right: 15%; animation: floatOrb3 18s ease-in-out infinite alternate; }
+  .orb-4 { width: 500px; height: 500px; background: radial-gradient(circle, #4d9eff 0%, transparent 70%); bottom: 15%; left: 10%; animation: floatOrb4 22s ease-in-out infinite alternate; }
+  @keyframes floatOrb1 { 0% { transform: translate(0,0); } 100% { transform: translate(-40px, 100px); } }
+  @keyframes floatOrb2 { 0% { transform: translate(0,0); } 100% { transform: translate(-70px, -60px); } }
+  @keyframes floatOrb3 { 0% { transform: translate(0,0); } 100% { transform: translate(-80px, -40px); } }
+  @keyframes floatOrb4 { 0% { transform: translate(0,0); } 100% { transform: translate(80px, 60px); } }
+</style>
+</head>
+<body>
+
+<div class="cyber-bg" aria-hidden="true">
+  <div class="cyber-orb orb-1"></div>
+  <div class="cyber-orb orb-2"></div>
+  <div class="cyber-orb orb-3"></div>
+  <div class="cyber-orb orb-4"></div>
+  <div class="cyber-grid"></div>
+</div>
+
+<!-- ================= TOPBAR ================= -->
+<div class="topbar">
+  <a href="../index.html" class="brand" style="text-decoration:none; color:inherit;" title="Return to Main Hub">
+    <span class="brand-icon">🧬</span>
+    <span class="brand-text"><code>INJECTION :</code> Prototype Pollution</span>
+  </a>
+  <div class="controls-wrapper">
+    <div class="lang-switch-wrapper">
+      <span id="lbl-hi" class="lang-active">Hindi</span>
+      <label class="switch">
+        <input type="checkbox" id="langToggle" onchange="toggleLanguage()">
+        <span class="slider"></span>
+      </label>
+      <span id="lbl-en" class="lang-inactive">English</span>
+    </div>
+    <button class="theme-toggle" id="themeBtn" onclick="toggleTheme()">☀️ Light Mode</button>
+  </div>
+</div>
+
+<!-- ================= HORIZONTAL SUB-NAV BAR ================= -->
+<div class="sub-nav-wrapper">
+  <nav class="sub-nav-bar" aria-label="Section Navigation">
+    <a class="sub-nav-btn home-nav-btn" href="../index.html" title="Main Home Page">
+      <span class="sub-nav-icon">🏠</span>
+      <span class="lang-hi">Home</span><span class="lang-en">Home</span>
+    </a>
+    <a class="sub-nav-btn" href="#simulator">
+      <span class="sub-nav-icon">⚡</span>
+      <span class="lang-hi">Simulator</span><span class="lang-en">Simulator</span>
+    </a>
+    <a class="sub-nav-btn" href="#impact-vectors">
+      <span class="sub-nav-icon">💥</span>
+      <span class="lang-hi">Attack Vectors</span><span class="lang-en">Attack Vectors</span>
+    </a>
+    <a class="sub-nav-btn" href="#confusing-questions">
+      <span class="sub-nav-icon">🤔</span>
+      <span class="lang-hi">Questions</span><span class="lang-en">Questions</span>
+    </a>
+    <a class="sub-nav-btn" href="#tester-checklist">
+      <span class="sub-nav-icon">📝</span>
+      <span class="lang-hi">Checklist</span><span class="lang-en">Checklist</span>
+    </a>
+  </nav>
+</div>
+
+<main>
+
+  <!-- ── HERO SECTION ── -->
+  <section class="hero">
+    <p class="eyebrow"><span class="lang-hi">JavaScript Internals — Vulnerability Deep Dive</span><span class="lang-en">JavaScript Internals — Vulnerability Deep Dive</span></p>
+    <h1 class="title">
+      <span class="lang-hi">Prototype Pollution: JavaScript Ke Root Blueprint Ko Poison Karke RCE Aur Bypasses</span>
+      <span class="lang-en">Prototype Pollution: Poisoning JavaScript's Root Blueprint For RCE & Bypasses</span>
+    </h1>
+
+    <div class="terminal">
+      <div class="terminal-bar">
+        <span class="terminal-dot"></span><span class="terminal-dot"></span><span class="terminal-dot"></span>
+        <span class="terminal-label">node.runtime_environment</span>
+      </div>
+      <div class="terminal-body">
+        <span class="prompt">&gt;</span> <span id="typewriter"></span><span class="cursor"></span>
+      </div>
+    </div>
+
+    <div class="intro-block">
+      <p><strong><span class="lang-hi">JavaScript Prototype Pollution Kya Hai?</span><span class="lang-en">What is JavaScript Prototype Pollution?</span></strong>
+        <span class="lang-hi">JavaScript ek prototype-based language hai. Isme har object ke paas ek hidden link hota hai jise <code>__proto__</code> (Prototype) kehte hain, jo aakhir mein global <code>Object.prototype</code> se judta hai. Agar koi property kisi object par nahi milti, toh JS upar prototype chain mein dhoondhta hai. <strong>Prototype Pollution</strong> ek aisi vulnerability hai jahan attacker recursive merge, deep clone ya JSON parsing flaws ka faayda utha kar is global <code>Object.prototype</code> mein nayi properties inject kar deta hai.</span>
+        <span class="lang-en">JavaScript is inherently prototype-based. Every JavaScript object possesses a hidden reference called <code>__proto__</code> pointing to its prototype, which terminates at the global <code>Object.prototype</code>. When a property is queried on an object, JavaScript traverses up the prototype chain. <strong>Prototype Pollution</strong> occurs when an attacker exploits unvalidated recursive merge, deep clone, or path-assignment functions to inject properties directly into <code>Object.prototype</code>.</span>
+      </p>
+      <p>
+        <span class="lang-hi"><strong>Sabse Khatarnak Baat:</strong> Kyunki JavaScript runtime mein chalne wale LAGBHAG HAR OBJECT ka baap <code>Object.prototype</code> hota hai, isliye agar attacker ne ek baar prototype ko pollute kar diya, toh poore application ke har single object mein wo property automatically jud jaati hai! Isse attackers <strong>Privilege Escalation</strong> (e.g. <code>isAdmin: true</code>), <strong>Client-side DOM XSS</strong>, aur yahan tak ki Node.js server par <strong>Remote Code Execution (RCE)</strong> tak execute kar lete hain!</span>
+        <span class="lang-en"><strong>The Devastating Impact:</strong> Because nearly every object in the runtime inherits from <code>Object.prototype</code>, polluting the root propagates the injected properties across EVERY existing and future object in memory! Attackers leverage this to achieve immediate <strong>Privilege Escalation</strong>, <strong>Client-Side DOM XSS</strong>, and full <strong>Remote Code Execution (RCE)</strong> on Node.js backends!</span>
+      </p>
+    </div>
+  </section>
+
+  <!-- ── LEVEL CARDS: ARCHITECTURE, OPERATION & VULNERABILITIES ── -->
+  <section class="sec-head">
+    <div class="sec-eyebrow"><span class="lang-hi">Technical Deep Dive</span><span class="lang-en">Technical Deep Dive</span></div>
+    <h2><span class="lang-hi">Prototypes: Kyun Banaye Gaye, Kaise Kaam Karte Hain Aur Pollution Kaise Hoti Hai</span><span class="lang-en">Prototypes: Why Engineered, How They Work & Pollution Mechanics</span></h2>
+    <p>
+      <span class="lang-hi">JavaScript prototypal inheritance ki memory architecture, lookup lifecycle, aur pollution vulnerabilities ko samjhein:</span>
+      <span class="lang-en">Understand the memory architecture of prototypal inheritance, lookup lifecycles, and pollution root causes:</span>
+    </p>
+  </section>
+
+  <div class="levels">
+
+    <!-- LEVEL 0 -->
+    <div class="level-card open" id="lvl0">
+      <button class="level-header" onclick="toggleLevel('lvl0')">
+        <span class="level-badge">00</span>
+        <div class="level-titles">
+          <h2><span class="lang-hi">Prototypes Kyun Banaye Gaye Aur Yeh Kaise Kaam Karte Hain?</span><span class="lang-en">Why Were Prototypes Engineered & How Does Inheritance Work?</span></h2>
+          <p><span class="lang-hi">Memory Optimization, The __proto__ Chain & Object.prototype Root</span><span class="lang-en">Memory Optimization, The __proto__ Chain & Object.prototype Root</span></p>
+        </div>
+        <span class="level-tag concept">ARCHITECTURE</span>
+        <span class="chevron">▼</span>
+      </button>
+      <div class="level-body">
+        <div class="level-inner">
+          <h4><span class="lang-hi">1. Kyun Banaye Gaye? (The Memory Optimization Problem)</span><span class="lang-en">1. Why Were Prototypes Engineered?</span></h4>
+          <p>
+            <span class="lang-hi">JavaScript jab 1995 mein banayi gayi thi, tab yeh bina classical classes (C++/Java style) ke launch hui thi. Socho agar application mein 50,000 objects bante hain, aur har object ke paas apne khud ke functions (jaise <code>toString()</code>, <code>valueOf()</code>, <code>hasOwnProperty()</code>) alag-alag copy hote, toh browser ki RAM turant crash ho jaati!</span>
+            <span class="lang-en">When JavaScript was created in 1995, it lacked classical class inheritance. If every instantiated object stored duplicate copies of standard utility methods (<code>toString()</code>, <code>valueOf()</code>, <code>hasOwnProperty()</code>) in its own memory heap, browser RAM would be exhausted instantly.</span>
+          </p>
+          <p>
+            <span class="lang-hi"><strong>The Engineering Solution:</strong> JavaScript ne <strong>Prototypal Inheritance</strong> invent kiya. Ek single shared master object <code>Object.prototype</code> memory mein banaya gaya. Baaki saare objects sirf ek chhota sa pointer (<code>__proto__</code>) rakhte hain jo is master template ki taraf point karta hai. Isse hazaron objects bina RAM waste kiye saare built-in methods share kar lete hain.</span>
+            <span class="lang-en"><strong>The Engineering Solution:</strong> JavaScript introduced <strong>Prototypal Inheritance</strong>. A single shared root object, <code>Object.prototype</code>, resides once in memory. Every other object merely maintains a lightweight reference pointer (<code>__proto__</code>) linking back to this master template, enabling thousands of objects to share built-in methods with zero memory duplication.</span>
+          </p>
+
+          <h4><span class="lang-hi">2. Kaise Kaam Karta Hai? (Under The Hood Traversal)</span><span class="lang-en">2. How It Works Under The Hood</span></h4>
+          <p>
+            <span class="lang-hi">Jab code kisi object ki property ko call karta hai (e.g. <code>user.isAdmin</code>):</span>
+            <span class="lang-en">When code queries an object property (e.g. <code>user.isAdmin</code>):</span>
+          </p>
+
+          <pre><code>// Step 1: Does user own 'isAdmin'? -> user.hasOwnProperty('isAdmin') -> false
+// Step 2: Traverse up the prototype chain -> user.__proto__.isAdmin
+// Step 3: Check Object.prototype.isAdmin -> If undefined, check Object.prototype.__proto__
+// Step 4: Reaches null (End of chain) -> returns undefined!</code></pre>
+
+          <div class="callout analogy">
+            <span class="cal-label">🏭 REAL-WORLD ANALOGY</span>
+            <p>
+              <span class="lang-hi">Socho ek car factory hai jisme ek <strong>Master Mold / Die (Prototype)</strong> rakhi hai jisse hazaron gaadiyan banti hain. Agar koi chor kisi ek car ka lock kharab karta hai, toh sirf wahi ek car kharab hoti hai. Lekin agar koi attacker factory ke <strong>Master Mold</strong> mein hi ek secret master key slot kaat de, toh factory se nikalne wali HAR PURANI AUR NAYI CAR mein wo master key slot automatically aa jayega! Yahi Prototype Pollution hai — pure system ke saare objects ko ek sath poison kar dena!</span>
+              <span class="lang-en">Imagine an automobile plant using a single <strong>Master Stamping Die (Prototype)</strong> to produce cars. If someone alters one manufactured car, only that single vehicle changes. But if an intruder modifies the factory's <strong>Master Die</strong> itself, EVERY car in existence and every car produced thereafter automatically inherits that modification! That is Prototype Pollution!</span>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEVEL 1 -->
+    <div class="level-card" id="lvl1">
+      <button class="level-header" onclick="toggleLevel('lvl1')">
+        <span class="level-badge">01</span>
+        <div class="level-titles">
+          <h2><span class="lang-hi">Pollution Kaise Hoti Hai? (Root Cause: Flawed Merge)</span><span class="lang-en">How Does Pollution Occur? (Root Cause: Flawed Merge)</span></h2>
+          <p><span class="lang-hi">JSON.parse Aur Recursive Merge Function Ki Galti</span><span class="lang-en">Flawed Recursive Deep Merge & JSON Key Handling</span></p>
+        </div>
+        <span class="level-tag problem">VULNERABILITY</span>
+        <span class="chevron">▼</span>
+      </button>
+      <div class="level-body">
+        <div class="level-inner">
+          <p>
+            <span class="lang-hi">Applications aksar user ke settings update karne ke liye JSON input leti hain aur use existing user profile mein merge karti hain:</span>
+            <span class="lang-en">Web apps frequently accept arbitrary JSON inputs to update user profiles or application configurations using deep merge algorithms:</span>
+          </p>
+
+          <pre><code>// Attacker sends malicious JSON in POST request:
+{
+  "__proto__": {
+    "isAdmin": true
+  }
+}</code></pre>
+
+          <h4><span class="lang-hi">Vulnerable Merge Code (Classic Bug)</span><span class="lang-en">Vulnerable Merge Code (Classic Bug)</span></h4>
+          <pre><code>function badMerge(target, source) {
+    for (let key in source) {
+        if (typeof source[key] === 'object' &amp;&amp; source[key] !== null) {
+            if (!target[key]) target[key] = {};
+            badMerge(target[key], source[key]); // ❌ Recursion enters target['__proto__']!
+        } else {
+            target[key] = source[key];
+        }
+    }
+    return target;
+}</code></pre>
+
+          <div class="callout">
+            <span class="cal-label">⚠️ DANGER POINT</span>
+            <p>
+              <span class="lang-hi">Jab <code>key === '__proto__'</code> aati hai, <code>target['__proto__']</code> target object ke prototype yani <code>Object.prototype</code> ko refer karne lagta hai! Uske baad <code>target['__proto__']['isAdmin'] = true</code> execute hota hai, aur poore server ke sabhi objects par <code>isAdmin: true</code> lag jata hai!</span>
+              <span class="lang-en">When <code>key === '__proto__'</code> is evaluated, <code>target['__proto__']</code> resolves to <code>Object.prototype</code>! Then <code>target['__proto__']['isAdmin'] = true</code> mutates the root template, granting <code>isAdmin: true</code> to all objects globally!</span>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEVEL 2 -->
+    <div class="level-card" id="lvl2">
+      <button class="level-header" onclick="toggleLevel('lvl2')">
+        <span class="level-badge">02</span>
+        <div class="level-titles">
+          <h2><span class="lang-hi">Client-Side Prototype Pollution (DOM XSS)</span><span class="lang-en">Client-Side Prototype Pollution (DOM XSS)</span></h2>
+          <p><span class="lang-hi">URL Hash, Query Parameters Se Browser Hijack</span><span class="lang-en">Hijacking Browsers via URL Fragments & Query Parameters</span></p>
+        </div>
+        <span class="level-tag problem">TECHNIQUES</span>
+        <span class="chevron">▼</span>
+      </button>
+      <div class="level-body">
+        <div class="level-inner">
+          <p>
+            <span class="lang-hi">Browsers mein frontend libraries (jQuery, Google Tag Manager plugins, analytics) aksar URL ke query parameters ya hash ko parse karke config object banati hain:</span>
+            <span class="lang-en">Frontend client libraries often parse URL query strings or hash fragments into configuration dictionaries:</span>
+          </p>
+          <pre><code>https://victim.com/#__proto__[src]=data:text/javascript,alert(document.cookie)</code></pre>
+          <p>
+            <span class="lang-hi">Agar site ke kisi script mein likha ho: <code>let s = document.createElement('script'); s.src = config.src || '/main.js';</code>, toh pehle <code>config.src</code> undefined hota tha. Lekin polluted prototype ki wajah se <code>config.src</code> attacker ke evil script URL ko utha lega aur <strong>DOM XSS</strong> fire ho jayega!</span>
+            <span class="lang-en">If anywhere in the application code an uninitialized property is referenced (e.g. <code>script.src = config.src || defaultUrl</code>), the polluted property supplies the attacker's payload, triggering immediate DOM XSS!</span>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEVEL 3 -->
+    <div class="level-card" id="lvl3">
+      <button class="level-header" onclick="toggleLevel('lvl3')">
+        <span class="level-badge">03</span>
+        <div class="level-titles">
+          <h2><span class="lang-hi">Server-Side RCE In Node.js (Child Process Gadgets)</span><span class="lang-en">Server-Side RCE In Node.js (Child Process Gadgets)</span></h2>
+          <p><span class="lang-hi">child_process.fork / spawn Gadgets Se Shell Access</span><span class="lang-en">Exploiting child_process.fork/spawn Gadgets For Full Shell Access</span></p>
+        </div>
+        <span class="level-tag problem">CRITICAL IMPACT</span>
+        <span class="chevron">▼</span>
+      </button>
+      <div class="level-body">
+        <div class="level-inner">
+          <p>
+            <span class="lang-hi">Node.js ke core modules mein <code>child_process.spawn</code> aur <code>child_process.fork</code> jab naya process banate hain, toh wo internal options object check karte hain. Agar attacker <code>shell</code> ya <code>NODE_OPTIONS</code> pollute kar deta hai:</span>
+            <span class="lang-en">Node.js internal implementations of <code>child_process.spawn</code> read optional settings from options objects. Polluting <code>shell</code> or <code>NODE_OPTIONS</code> yields full server compromise:</span>
+          </p>
+          <pre><code>// Injected via JSON or query string:
+{
+  "__proto__": {
+    "shell": "/bin/bash",
+    "NODE_OPTIONS": "--require /tmp/malicious.js"
+  }
+}</code></pre>
+          <p>
+            <span class="lang-hi">Jab server kisi bhi normal feature ke liye (jaise email bhejna ya image resize karna) <code>spawn()</code> chalayega, Node.js attacker ki polluted shell ko execute karega — resulting in <strong>Remote Code Execution (RCE)</strong>!</span>
+            <span class="lang-en">Whenever the backend spawns any background task, Node.js inherits the polluted <code>shell</code> parameter and executes attacker commands directly on the server operating system!</span>
+          </p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── HIGH-IMPACT EXPLOITATION VECTORS SECTION ── -->
+  <section class="impact-section" id="impact-vectors">
+    <div class="sec-eyebrow"><span class="lang-hi">Real-World Damage Scenarios</span><span class="lang-en">Real-World Damage Scenarios</span></div>
+    <h2 style="font-family:var(--mono); color:var(--text); margin-top:0;">
+      <span class="lang-hi">💥 Prototype Pollution Ka Real-World Impact</span>
+      <span class="lang-en">💥 Real-World Exploitation Scenarios</span>
+    </h2>
+    <p style="color:var(--text-muted); font-size:14.5px; line-height:1.7;">
+      <span class="lang-hi">Prototype pollution sirf theoretical bug nahi hai — Lodash, jQuery, Handlebars aur hazaron NPM packages mein iski wajah se critical vulnerabilities payi gayi hain:</span>
+      <span class="lang-en">Prototype pollution has plagued top enterprise NPM modules like Lodash, Minimist, and Express template engines:</span>
+    </p>
+
+    <!-- VECTOR 1 -->
+    <div class="impact-card">
+      <h3>👑 <span class="lang-hi">1. Global Privilege Escalation (Access Control Bypass)</span><span class="lang-en">1. Global Privilege Escalation (Access Control Bypass)</span></h3>
+      <p>
+        <span class="lang-hi">Aksar web apps mein authorization code aisa hota hai: <code>if (req.session.user.isAdmin) { ... }</code>. Normal users ke session mein <code>isAdmin</code> property exist hi nahi karti (undefined hoti hai). Lekin prototype pollute karke <code>Object.prototype.isAdmin = true</code> karne par har user ka <code>isAdmin</code> true ban jata hai — instant admin access!</span>
+        <span class="lang-en">Many web services verify access via <code>if (user.isAdmin)</code>. Standard users lack this property (it evaluates to undefined). When <code>Object.prototype.isAdmin = true</code> is polluted, EVERY user object resolves to true, bypassing all authentication and authorization barriers!</span>
+      </p>
+      <div class="simulation-cta-box">
+        <div>
+          <strong style="color:var(--accent); font-family:var(--mono); font-size:13.5px;">LAB 01 : PROTOTYPE POLLUTION PRIVILEGE ESCALATION LAB</strong><br>
+          <span style="font-size:12.5px; color:var(--text-muted);">Step-by-step interactive lab demonstrating recursive JSON merge, heap inspection, and admin takeover.</span>
+        </div>
+        <a href="../labs/prototype_pollution_privilege_escalation_simulation.html" target="_blank">
+          <span>Click here to see the simulation of this attack 💻</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- VECTOR 2 -->
+    <div class="impact-card">
+      <h3>💻 <span class="lang-hi">2. Remote Code Execution (RCE) Via child_process Gadgets</span><span class="lang-en">2. Remote Code Execution (RCE) Via child_process Gadgets</span></h3>
+      <p>
+        <span class="lang-hi">Node.js backend applications jab background jobs ya commands execute karti hain via <code>child_process.spawn()</code>, toh agar <code>options.shell</code> pollute ho jaye (e.g. <code>"/bin/bash"</code>), toh spawn function command ko shell ke andar evaluate karne lagta hai, jisse attacker ko seedhe full interactive OS root shell mil jata hai!</span>
+        <span class="lang-en">When Node.js background services invoke utilities via <code>child_process.spawn()</code>, polluting <code>options.shell</code> to <code>"/bin/bash"</code> forces the runtime to evaluate tasks through the shell, yielding arbitrary command execution and root interactive shells!</span>
+      </p>
+      <div class="simulation-cta-box">
+        <div>
+          <strong style="color:var(--accent); font-family:var(--mono); font-size:13.5px;">LAB 02 : NODE.JS SERVER-SIDE RCE LAB</strong><br>
+          <span style="font-size:12.5px; color:var(--text-muted);">Interactive child_process gadget exploitation lab demonstrating shell injection and interactive root command execution.</span>
+        </div>
+        <a href="../labs/prototype_pollution_node_rce_simulation.html" target="_blank">
+          <span>Click here to see the simulation of this attack 💻</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- VECTOR 3 -->
+    <div class="impact-card">
+      <h3>💥 <span class="lang-hi">3. Application Denial of Service (DoS Crash)</span><span class="lang-en">3. Application Denial of Service (DoS Crash)</span></h3>
+      <p>
+        <span class="lang-hi">Attacker <code>Object.prototype.toString = null</code> ya <code>Object.prototype.valueOf = "corrupt"</code> inject kar deta hai. Ab jaise hi server ka koi bhi module string concatenation ya logging karega, Node.js <code>TypeError: target.toString is not a function</code> throw karega aur poora server process crash ho jayega!</span>
+        <span class="lang-en">By poisoning built-in prototype methods such as <code>Object.prototype.toString = null</code>, any standard runtime operation relying on string coercion throws an uncaught TypeError, instantly crashing the Node.js process and causing complete Denial of Service!</span>
+      </p>
+    </div>
+
+  </section>
+
+  <!-- ── VULNERABLE VS SECURE CODE SNIPPETS ── -->
+  <section class="sec-head">
+    <div class="sec-eyebrow"><span class="lang-hi">Code Level Fixes</span><span class="lang-en">Code Level Fixes</span></div>
+    <h2><span class="lang-hi">Vulnerable vs. Secure Code Implementations</span><span class="lang-en">Vulnerable vs. Secure Code Implementations</span></h2>
+  </section>
+
+  <div class="level-card open">
+    <div class="level-inner">
+      <h4><span class="lang-hi">1. Defense 1: Sensitive Keys Blacklisting & Whitelisting</span><span class="lang-en">1. Defense 1: Sensitive Keys Blacklisting & Whitelisting</span></h4>
+      <pre><code>// ✅ SECURE: Reject dangerous keys during recursive merge or cloning
+function safeMerge(target, source) {
+    for (let key in source) {
+        // Drop dangerous prototype pollution keys immediately!
+        if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+            continue; 
+        }
+        if (typeof source[key] === 'object' &amp;&amp; source[key] !== null) {
+            if (!target[key]) target[key] = {};
+            safeMerge(target[key], source[key]);
+        } else {
+            target[key] = source[key];
+        }
+    }
+    return target;
+}</code></pre>
+
+      <h4><span class="lang-hi">2. Defense 2: Objects Without Prototypes (Object.create(null))</span><span class="lang-en">2. Defense 2: Objects Without Prototypes (Object.create(null))</span></h4>
+      <pre><code>// ✅ SECURE: Create objects that do not inherit from Object.prototype
+const cleanDict = Object.create(null);
+cleanDict["user"] = "john";
+console.log(cleanDict.__proto__); // undefined! Impossible to pollute!
+
+// Alternatively, use modern ES6 Map:
+const userMap = new Map();</code></pre>
+
+      <h4><span class="lang-hi">3. Defense 3: Object.freeze()</span><span class="lang-en">3. Defense 3: Object.freeze()</span></h4>
+      <pre><code>// ✅ SECURE: Freeze Object.prototype at application startup
+Object.freeze(Object.prototype);
+// Any attempt to modify Object.prototype will throw an error or fail silently!</code></pre>
+    </div>
+  </div>
+
+  <!-- ── IN-PAGE SIMULATOR SECTION ── -->
+  <section class="simulator-section" id="simulator">
+    <div class="sim-header-bar">
+      <div class="sim-title">
+        <span>⚡</span>
+        <span class="lang-hi">Interactive Prototype Pollution Simulator</span>
+        <span class="lang-en">Interactive Prototype Pollution Simulator</span>
+      </div>
+      <div class="sim-controls">
+        <div class="sim-control-group">
+          <label><span class="lang-hi">Attack Vector:</span><span class="lang-en">Attack Vector:</span></label>
+          <div class="sim-btn-group">
+            <button class="sim-btn active" data-vector="admin" onclick="setSimVector('admin')">Privilege Escalation (__proto__.isAdmin)</button>
+            <button class="sim-btn" data-vector="rce" onclick="setSimVector('rce')">Node.js RCE Gadget (child_process.shell)</button>
+            <button class="sim-btn" data-vector="dos" onclick="setSimVector('dos')">Denial of Service (__proto__.toString=null)</button>
+            <button class="sim-btn" data-vector="constructor" onclick="setSimVector('constructor')">Bypass: constructor.prototype</button>
+          </div>
+        </div>
+        <div class="sim-control-group">
+          <label><span class="lang-hi">Defense Level:</span><span class="lang-en">Defense Level:</span></label>
+          <div class="sim-btn-group">
+            <button class="sim-btn active" data-def="0" onclick="setSimDef('0')">0: Vulnerable (Naive Merge)</button>
+            <button class="sim-btn" data-def="1" onclick="setSimDef('1')">1: Incomplete Key Filter</button>
+            <button class="sim-btn" data-def="2" onclick="setSimDef('2')">2: Strict Protosafe (Object.freeze)</button>
+          </div>
+        </div>
+      </div>
+      <button class="btn-execute" id="btnRunSim" onclick="executeSimulator()">
+        <span class="lang-hi">Inject Pollution Payload →</span>
+        <span class="lang-en">Inject Pollution Payload →</span>
+      </button>
+    </div>
+
+    <div class="workspace">
+      <!-- PANEL 1: CLIENT REQUEST -->
+      <div class="sim-panel" id="panel-client">
+        <div class="sim-panel-header">
+          <div class="window-controls" style="display:inline-flex; gap:5px; margin-right:6px;">
+            <span style="width:8px; height:8px; border-radius:50%; background:#ef4444; display:inline-block;"></span>
+            <span style="width:8px; height:8px; border-radius:50%; background:#f59e0b; display:inline-block;"></span>
+            <span style="width:8px; height:8px; border-radius:50%; background:#10b981; display:inline-block;"></span>
+          </div>
+          <span>📡</span> <span>Client Malicious JSON Payload</span>
+        </div>
+        <div class="sim-panel-body" id="clientLog">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- PANEL 2: PROTOTYPE TRAVERSAL -->
+      <div class="sim-panel" id="panel-routing">
+        <div class="sim-panel-header">
+          <div class="window-controls" style="display:inline-flex; gap:5px; margin-right:6px;">
+            <span style="width:8px; height:8px; border-radius:50%; background:#ef4444; display:inline-block;"></span>
+            <span style="width:8px; height:8px; border-radius:50%; background:#f59e0b; display:inline-block;"></span>
+            <span style="width:8px; height:8px; border-radius:50%; background:#10b981; display:inline-block;"></span>
+          </div>
+          <span>🧬</span> <span>Prototype Chain Traversal</span>
+        </div>
+        <div class="sim-panel-body" id="routingLog">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- PANEL 3: CLEAN OBJECT TESTING -->
+      <div class="sim-panel" id="panel-server">
+        <div class="sim-panel-header">
+          <div class="window-controls" style="display:inline-flex; gap:5px; margin-right:6px;">
+            <span style="width:8px; height:8px; border-radius:50%; background:#ef4444; display:inline-block;"></span>
+            <span style="width:8px; height:8px; border-radius:50%; background:#f59e0b; display:inline-block;"></span>
+            <span style="width:8px; height:8px; border-radius:50%; background:#10b981; display:inline-block;"></span>
+          </div>
+          <span>🖥️</span> <span>Application Runtime Impact</span>
+        </div>
+        <div class="sim-panel-body" id="serverLog">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </div>
+
+    <div class="sim-verdict-box" id="simVerdict">
+      <div class="sim-verdict-title" id="verdictTitle"></div>
+      <div class="sim-verdict-text" id="verdictText"></div>
+    </div>
+  </section>
+
+  <!-- ── CONFUSING QUESTIONS / FAQ ── -->
+  <section class="faq-section" id="confusing-questions">
+    <div class="sec-eyebrow"><span class="lang-hi">Critical Clarifications</span><span class="lang-en">Critical Clarifications</span></div>
+    <h2 style="font-family:var(--mono); color:var(--text); margin-top:0;">
+      <span class="lang-hi">🤔 Most Confusing Questions Solved</span>
+      <span class="lang-en">🤔 Most Confusing Questions Solved</span>
+    </h2>
+    <div class="faq-list">
+      
+      <div class="faq-item">
+        <button class="faq-question" onclick="toggleFaq(this)">
+          <span class="faq-q-badge">Q1</span>
+          <span class="faq-q-text">
+            <span class="lang-hi">Agar maine ek object par property pollute ki, toh doosre users par kaise asar padega?</span>
+            <span class="lang-en">If I pollute an object in my own session, how does it compromise other users?</span>
+          </span>
+          <span class="faq-icon">▼</span>
+        </button>
+        <div class="faq-answer">
+          <span class="lang-hi">Node.js server par chalne wala poora application <strong>single memory space (runtime)</strong> share karta hai. <code>Object.prototype</code> poore process mein sirf EK hi hota hai! Jab attacker apni ek request se use modify karta hai, toh server restart hone tak aane wale har user ke naye aur purane objects usi polluted <code>Object.prototype</code> se jud jaate hain!</span>
+          <span class="lang-en">In Node.js, the backend process shares a single global memory heap. There is only ONE <code>Object.prototype</code> across the entire runtime! Modifying it poisons the template globally for all subsequent requests and all concurrently active user sessions until the server restarts!</span>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question" onclick="toggleFaq(this)">
+          <span class="faq-q-badge">Q2</span>
+          <span class="faq-q-text">
+            <span class="lang-hi">Kya JSON.parse() khud prototype pollution karta hai?</span>
+            <span class="lang-en">Does standard JSON.parse() produce prototype pollution by default?</span>
+          </span>
+          <span class="faq-icon">▼</span>
+        </button>
+        <div class="faq-answer">
+          <span class="lang-hi">Nahi! <code>JSON.parse('{"__proto__":{"admin":true}}')</code> chalane par <code>__proto__</code> ko sirf ek normal property mana jata hai, wo prototype chain ko modify nahi karta. Pollution tab hoti hai jab developer us parsed object ko kisi doosre object mein <strong>merge, clone ya recursive copy</strong> karta hai!</span>
+          <span class="lang-en">No. <code>JSON.parse()</code> creates plain key-value entries where <code>__proto__</code> is treated as an own-property rather than an internal prototype setter. Pollution only occurs when that parsed dictionary is subsequently merged into another object via recursive assignment functions!</span>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question" onclick="toggleFaq(this)">
+          <span class="faq-q-badge">Q3</span>
+          <span class="faq-q-text">
+            <span class="lang-hi">Har koi Object.freeze(Object.prototype) kyu use nahi kar leta?</span>
+            <span class="lang-en">Why doesn't every production project simply enable Object.freeze(Object.prototype)?</span>
+          </span>
+          <span class="faq-icon">▼</span>
+        </button>
+        <div class="faq-answer">
+          <span class="lang-hi">Kayi purani third-party libraries (poly-fills, legacy frameworks) legitimate tareeqe se <code>Object.prototype</code> mein utility functions add karti hain. Agar aap freeze kar denge, toh wo libraries crash ho sakti hain. Isliye modern apps mein <code>Map</code>, <code>Object.create(null)</code> aur strict key sanitization ko prefer kiya jata hai.</span>
+          <span class="lang-en">Freezing the prototype can break legacy libraries or polyfills that legitimately extend built-in objects. While effective for pure security, it may produce runtime incompatibilities, leading teams to adopt prototype-free dictionaries (<code>Object.create(null)</code>, <code>Map</code>) and input validation instead.</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ── TESTER AUDIT CHECKLIST ── -->
+  <section id="tester-checklist">
+    <div class="sec-eyebrow"><span class="lang-hi">Penetration Testing Methodology</span><span class="lang-en">Penetration Testing Methodology</span></div>
+    <h2 style="font-family:var(--mono); color:var(--text); margin-top:0;">
+      <span class="lang-hi">📝 Prototype Pollution Security Audit Checklist</span>
+      <span class="lang-en">📝 Prototype Pollution Security Audit Checklist</span>
+    </h2>
+    <div class="check-list">
+      <label class="check-label">
+        <input type="checkbox" class="check-input">
+        <span class="check-box"></span>
+        <span class="check-text">
+          <span class="lang-hi">Test JSON API endpoints with payloads containing <code>"__proto__": {"polluted": "yes"}</code> and inspect subsequent responses.</span>
+          <span class="lang-en">Test JSON API endpoints with payloads containing <code>"__proto__": {"polluted": "yes"}</code> and inspect subsequent responses.</span>
+        </span>
+      </label>
+      <label class="check-label">
+        <input type="checkbox" class="check-input">
+        <span class="check-box"></span>
+        <span class="check-text">
+          <span class="lang-hi">Test bypasses using <code>"constructor": {"prototype": {"polluted": "yes"}}</code> if <code>__proto__</code> is blocked.</span>
+          <span class="lang-en">Test bypasses using <code>"constructor": {"prototype": {"polluted": "yes"}}</code> if <code>__proto__</code> is blocked.</span>
+        </span>
+      </label>
+      <label class="check-label">
+        <input type="checkbox" class="check-input">
+        <span class="check-box"></span>
+        <span class="check-text">
+          <span class="lang-hi">Check client-side URL parameters and hash fragments (e.g. <code>#__proto__[src]=...</code>) for DOM XSS gadgets.</span>
+          <span class="lang-en">Check client-side URL parameters and hash fragments (e.g. <code>#__proto__[src]=...</code>) for DOM XSS gadgets.</span>
+        </span>
+      </label>
+      <label class="check-label">
+        <input type="checkbox" class="check-input">
+        <span class="check-box"></span>
+        <span class="check-text">
+          <span class="lang-hi">Audit recursive merge / clone utilities to ensure keys (<code>__proto__</code>, <code>constructor</code>, <code>prototype</code>) are stripped.</span>
+          <span class="lang-en">Audit recursive merge / clone utilities to ensure keys (<code>__proto__</code>, <code>constructor</code>, <code>prototype</code>) are stripped.</span>
+        </span>
+      </label>
+      <label class="check-label">
+        <input type="checkbox" class="check-input">
+        <span class="check-box"></span>
+        <span class="check-text">
+          <span class="lang-hi">Verify NPM dependencies using <code>npm audit</code> to identify vulnerable versions of Lodash, Minimist, etc.</span>
+          <span class="lang-en">Verify NPM dependencies using <code>npm audit</code> to identify vulnerable versions of Lodash, Minimist, etc.</span>
+        </span>
+      </label>
+    </div>
+  </section>
+
+    <!-- ── BOTTOM NAVIGATION ROW ── -->
+  <div class="bottom-nav-row">
+    <a href="clickjacking.html" class="nav-arrow-btn nav-prev">← 17. Clickjacking</a>
+    <a href="../index.html" class="nav-arrow-btn nav-home" style="color:var(--accent); border-color:var(--accent);">🏠 Main Security Hub</a>
+    <a href="Race_Conditions.html" class="nav-arrow-btn nav-next">19. Race Conditions →</a>
+  </div>
+
+</main>
+
+<footer class="modern-footer">
+  <div class="footer-badge">
+    <span class="footer-text">Designed and developed by <strong class="dev-name">Irshad Akaram</strong></span>
+  </div>
+</footer>
+
+<script>
+// Typewriter effect
+const phrasesHi = [
+  "target['__proto__']['isAdmin'] = true",
+  "Traversing prototype chain up to Object.prototype...",
+  "Searching Node.js runtime for child_process gadgets...",
+  "CRITICAL: Global prototype corrupted! All objects inherit payload."
+];
+const phrasesEn = [
+  "target['__proto__']['isAdmin'] = true",
+  "Traversing prototype chain up to Object.prototype...",
+  "Evaluating Node.js runtime child_process gadgets...",
+  "CRITICAL: Global prototype corrupted! All objects inherit payload."
+];
+
+let phraseIndex = 0;
+let charIndex = 0;
+let isDeleting = false;
+let typewriterElem = document.getElementById("typewriter");
+
+function type() {
+  const isEn = document.documentElement.getAttribute("data-lang") === "en";
+  const phrases = isEn ? phrasesEn : phrasesHi;
+  const currentPhrase = phrases[phraseIndex % phrases.length];
+
+  if (isDeleting) {
+    typewriterElem.textContent = currentPhrase.substring(0, charIndex - 1);
+    charIndex--;
+  } else {
+    typewriterElem.textContent = currentPhrase.substring(0, charIndex + 1);
+    charIndex++;
+  }
+
+  let typingSpeed = isDeleting ? 30 : 60;
+
+  if (!isDeleting && charIndex === currentPhrase.length) {
+    typingSpeed = 2000;
+    isDeleting = true;
+  } else if (isDeleting && charIndex === 0) {
+    isDeleting = false;
+    phraseIndex++;
+    typingSpeed = 500;
+  }
+
+  setTimeout(type, typingSpeed);
+}
+type();
+
+// Theme Toggle
+function toggleTheme() {
+  const currentTheme = document.documentElement.getAttribute("data-theme");
+  const newTheme = currentTheme === "dark" ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", newTheme);
+  document.getElementById("themeBtn").textContent = newTheme === "dark" ? "☀️ Light Mode" : "🌙 Dark Mode";
+  try { localStorage.setItem("site_theme", newTheme); } catch(e) {}
+}
+
+// Language Toggle
+function toggleLanguage() {
+  const checkbox = document.getElementById("langToggle");
+  const newLang = checkbox.checked ? "en" : "hi";
+  document.documentElement.setAttribute("data-lang", newLang);
+  document.getElementById("lbl-hi").className = newLang === "hi" ? "lang-active" : "lang-inactive";
+  document.getElementById("lbl-en").className = newLang === "en" ? "lang-active" : "lang-inactive";
+  try { localStorage.setItem("site_lang", newLang); } catch(e) {}
+}
+
+// Accordions
+function toggleLevel(id) {
+  const card = document.getElementById(id);
+  card.classList.toggle("open");
+}
+function toggleFaq(btn) {
+  const item = btn.closest(".faq-item");
+  item.classList.toggle("active");
+}
+
+// ── In-Page Simulator Logic ──
+let simVector = "admin";
+let simDef = "0";
+
+function setSimVector(vec) {
+  simVector = vec;
+  document.querySelectorAll("[data-vector]").forEach(btn => btn.classList.toggle("active", btn.dataset.vector === vec));
+  renderSimPreview();
+}
+
+function setSimDef(def) {
+  simDef = def;
+  document.querySelectorAll("[data-def]").forEach(btn => btn.classList.toggle("active", btn.dataset.def === def));
+  renderSimPreview();
+}
+
+function renderSimPreview() {
+  const clientLog = document.getElementById("clientLog");
+  const routingLog = document.getElementById("routingLog");
+  const serverLog = document.getElementById("serverLog");
+  const verdict = document.getElementById("simVerdict");
+  verdict.className = "sim-verdict-box";
+
+  let clientHttp = "";
+  if (simVector === "admin") {
+    clientHttp = `<div class="http-block">
+<span class="http-method">POST</span> <span class="http-path">/api/user/profile</span> <span class="http-proto">HTTP/1.1</span><br>
+<span class="http-header-key">Content-Type:</span> <span class="http-header-val">application/json</span><br><br>
+<span style="color:#f59e0b;">{<br>
+&nbsp;&nbsp;"name": "Hacker",<br>
+&nbsp;&nbsp;"__proto__": {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;"isAdmin": true<br>
+&nbsp;&nbsp;}<br>
+}</span>
+</div>`;
+  } else if (simVector === "rce") {
+    clientHttp = `<div class="http-block">
+<span class="http-method">POST</span> <span class="http-path">/api/settings</span> <span class="http-proto">HTTP/1.1</span><br>
+<span class="http-header-key">Content-Type:</span> <span class="http-header-val">application/json</span><br><br>
+<span style="color:#f59e0b;">{<br>
+&nbsp;&nbsp;"__proto__": {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;"shell": "/bin/sh",<br>
+&nbsp;&nbsp;&nbsp;&nbsp;"NODE_OPTIONS": "--eval=require('child_process').exec('id > /tmp/pwn')"<br>
+&nbsp;&nbsp;}<br>
+}</span>
+</div>`;
+  } else if (simVector === "dos") {
+    clientHttp = `<div class="http-block">
+<span class="http-method">POST</span> <span class="http-path">/api/user/update</span> <span class="http-proto">HTTP/1.1</span><br>
+<span class="http-header-key">Content-Type:</span> <span class="http-header-val">application/json</span><br><br>
+<span style="color:#f59e0b;">{<br>
+&nbsp;&nbsp;"__proto__": {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;"toString": null<br>
+&nbsp;&nbsp;}<br>
+}</span>
+</div>`;
+  } else if (simVector === "constructor") {
+    clientHttp = `<div class="http-block">
+<span class="http-method">POST</span> <span class="http-path">/api/config</span> <span class="http-proto">HTTP/1.1</span><br>
+<span class="http-header-key">Content-Type:</span> <span class="http-header-val">application/json</span><br><br>
+<span style="color:#f59e0b;">{<br>
+&nbsp;&nbsp;"constructor": {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;"prototype": {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"isAdmin": true<br>
+&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+&nbsp;&nbsp;}<br>
+}</span>
+</div>`;
+  }
+
+  clientLog.innerHTML = `<span style="color:#64748b;">[Ready to send]</span>` + clientHttp;
+  routingLog.innerHTML = `<span style="color:#64748b;">Awaiting dispatch... Click "Inject Pollution Payload".</span>`;
+  serverLog.innerHTML = `<span style="color:#64748b;">Clean environment initialized.</span>`;
+}
+
+function executeSimulator() {
+  const routingLog = document.getElementById("routingLog");
+  const serverLog = document.getElementById("serverLog");
+  const verdict = document.getElementById("simVerdict");
+  const verdictTitle = document.getElementById("verdictTitle");
+  const verdictText = document.getElementById("verdictText");
+  const isEn = document.documentElement.getAttribute("data-lang") === "en";
+
+  let routeLogHtml = "";
+  let serverLogHtml = "";
+  let isExploited = false;
+  let title = "";
+  let explanation = "";
+
+  if (simDef === "0") {
+    // Defense 0: Naive merge (vulnerable)
+    isExploited = true;
+    routeLogHtml = `<div style="color:#ffcc00;">[badMerge] Iterating source keys...</div>
+<div style="color:#ff6b5b;">[badMerge] Key '${simVector === 'constructor' ? 'constructor' : '__proto__'}' traversed into Object.prototype!</div>
+<div style="color:#ff6b5b;">[Mutation] Object.prototype.${simVector === 'rce' ? 'shell' : (simVector === 'dos' ? 'toString' : 'isAdmin')} was set!</div>`;
+
+    if (simVector === "admin" || simVector === "constructor") {
+      serverLogHtml = `<div style="color:#38bdf8;">[Test 1] Creating fresh empty object: let cleanUser = {};</div>
+<div style="color:#ff6b5b;">[Test 2] cleanUser.isAdmin is evaluated: true!</div>
+<div style="color:#39ff7a;">[HTTP 200 OK] Admin permissions granted to unauthorized guest!</div>`;
+      title = isEn ? "💀 Global Prototype Polluted: Admin Escalation" : "💀 Global Prototype Pollute Ho Gaya: Admin Rights Mil Gaye";
+      explanation = isEn
+        ? "The recursive merge function modified Object.prototype. Now even completely new, clean objects evaluate 'cleanObj.isAdmin === true'! Total authorization bypass!"
+        : "Recursive merge function ne Object.prototype ko modify kar diya. Ab naye bane plain objects bhi 'cleanObj.isAdmin === true' return kar rahe hain! System full compromise!";
+    } else if (simVector === "rce") {
+      serverLogHtml = `<div style="color:#ff6b5b;">[Runtime] Injected 'shell' and 'NODE_OPTIONS' into prototype.</div>
+<div style="color:#ff6b5b;">[child_process] Internal spawn() called for image resize.</div>
+<div style="color:#39ff7a;">[RCE] Bash command executed with server privileges!</div>`;
+      title = isEn ? "💀 Remote Code Execution (RCE) Triggered" : "💀 Server Par Remote Code Execution (RCE) Ho Gaya";
+      explanation = isEn
+        ? "The polluted 'shell' gadget was ingested by Node.js child_process.spawn, executing arbitrary OS shell commands!"
+        : "Node.js child_process.spawn ne polluted 'shell' property ko read kar liya aur server par attacker ka command execute ho gaya!";
+    } else {
+      serverLogHtml = `<div style="color:#ff6b5b;">[Runtime] Object.prototype.toString was set to null.</div>
+<div style="color:#ff3c3c;">[Crash] Uncaught TypeError: target.toString is not a function</div>
+<div style="color:#ff3c3c;">Process exited with code 1 (SIGSEGV/FATAL)</div>`;
+      title = isEn ? "💀 Application Crashed (Denial of Service)" : "💀 Poora Node.js Server Crash Ho Gaya (DoS)";
+      explanation = isEn
+        ? "Setting toString to null broke all standard string operations across the Node.js runtime, triggering immediate unhandled exceptions and killing the process!"
+        : "Built-in toString method ko null karne se runtime ki saari string operations toot gayi aur poora Node server crash ho gaya!";
+    }
+  } else if (simDef === "1") {
+    // Defense 1: Incomplete filter (filters __proto__ only)
+    if (simVector === "constructor") {
+      isExploited = true;
+      routeLogHtml = `<div style="color:#ffcc00;">[Filter] Filter checked for '__proto__' key: Not found.</div>
+<div style="color:#ff6b5b;">[Bypass] Key 'constructor' entered constructor.prototype!</div>
+<div style="color:#ff6b5b;">[Mutation] Object.prototype.isAdmin successfully polluted via constructor!</div>`;
+      serverLogHtml = `<div style="color:#38bdf8;">[Runtime] cleanUser.isAdmin is true!</div>
+<div style="color:#39ff7a;">[HTTP 200 OK] Incomplete filter bypassed.</div>`;
+      title = isEn ? "💀 Incomplete Key Filter Bypassed via constructor.prototype" : "💀 Incomplete Filter Bypass: constructor.prototype Dwara Attack";
+      explanation = isEn
+        ? "The developer only filtered out '__proto__', forgetting that 'constructor.prototype' reaches the exact same root Object.prototype! The bypass succeeded."
+        : "Developer ne sirf '__proto__' ko block kiya tha, lekin 'constructor.prototype' ko bhool gaya. Attacker ne usi se bypass karke prototype pollute kar diya!";
+    } else {
+      isExploited = false;
+      routeLogHtml = `<div style="color:#39ff7a;">[Filter] Dangerous key '__proto__' detected! Dropping key...</div>`;
+      serverLogHtml = `<div style="color:#39ff7a;">[Safe] Object merged without polluting prototype.</div>`;
+      title = isEn ? "🛡️ Attack Blocked: '__proto__' Key Filtered" : "🛡️ Attack Block: '__proto__' Key Filter Ho Gayi";
+      explanation = isEn
+        ? "The basic key check detected '__proto__' and stripped it from the merge operation."
+        : "Filter ne '__proto__' key ko pehchan kar drop kar diya aur prototype safe raha.";
+    }
+  } else {
+    // Defense 2: Strict Protosafe (Object.freeze or complete block)
+    isExploited = false;
+    routeLogHtml = `<div style="color:#39ff7a;">[Strict Guard] Validating keys against blocked list: ['__proto__', 'constructor', 'prototype']</div>
+<div style="color:#39ff7a;">[Strict Guard] Object.prototype is frozen with Object.freeze()!</div>
+<div style="color:#ff3c3c;">[Strict Guard] REJECTED: Attempt to mutate frozen prototype aborted!</div>`;
+    serverLogHtml = `<div style="color:#39ff7a;">[Runtime] Object.prototype remains clean & immutable.</div>
+<div style="color:#64748b;">Zero pollution. Application running securely.</div>`;
+    title = isEn ? "🛡️ Blocked: Immutable Object.prototype & Strict Filtering" : "🛡️ Blocked: Object.freeze & Strict Filtering Dwara Surakshit";
+    explanation = isEn
+      ? "All dangerous keys are stripped, and Object.prototype is frozen, guaranteeing complete immunity against prototype pollution attacks!"
+      : "Object.freeze() aur strict key filtering ne prototype ko 100% surakshit rakha. Koi bhi injection possible nahi hui!";
+  }
+
+  routingLog.innerHTML = routeLogHtml;
+  serverLog.innerHTML = serverLogHtml;
+
+  verdict.classList.remove('v-hacked', 'v-blocked');
+  verdict.classList.add(isExploited ? 'v-hacked' : 'v-blocked', 'show');
+  verdictTitle.innerHTML = title;
+  verdictText.innerHTML = explanation;
+}
+
+// Initial preview
+renderSimPreview();
+
+// Check saved preferences
+try {
+  const savedTheme = localStorage.getItem("site_theme");
+  if (savedTheme) {
+    document.documentElement.setAttribute("data-theme", savedTheme);
+    document.getElementById("themeBtn").textContent = savedTheme === "dark" ? "☀️ Light Mode" : "🌙 Dark Mode";
+  }
+  const savedLang = localStorage.getItem("site_lang");
+  if (savedLang === "en") {
+    document.getElementById("langToggle").checked = true;
+    toggleLanguage();
+  }
+} catch(e) {}
+</script>
+
+</body>
+</html>
