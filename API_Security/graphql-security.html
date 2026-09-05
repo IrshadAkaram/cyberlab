@@ -1201,55 +1201,53 @@
       color: #f87171;
     }
 
-    /* FAQ Section */
-    .faq-accordion {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      margin-bottom: 2.5rem;
+    /* Cards Panels & Badge Headers (Module 01 Standard) */
+    .card-panel {
+      background: rgba(7, 14, 28, 0.90);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(56, 189, 248, 0.18);
+      border-radius: var(--radius-lg, 16px);
+      padding: 1.8rem;
+      margin-bottom: 0.5rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     }
-    .faq-item {
-      background: #070e20;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 10px;
-      overflow: hidden;
+    html[data-theme="light"] .card-panel {
+      background: #ffffff;
+      border-color: #e2e8f0;
     }
-    .faq-question-btn {
-      width: 100%;
-      background: none;
-      border: none;
-      padding: 1rem 1.4rem;
-      text-align: left;
-      font-size: 0.94rem;
-      font-weight: 700;
-      color: #f1f5f9;
-      cursor: pointer;
+    .card-title-badge-row {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      transition: background 0.2s;
+      gap: 12px;
+      margin-bottom: 1.4rem;
     }
-    .faq-question-btn:hover {
-      background: rgba(255, 255, 255, 0.03);
+    .card-title-badge-row .panel-header-title {
+      margin: 0;
     }
-    .faq-arrow {
-      font-size: 0.8rem;
-      color: #38bdf8;
-      transition: transform 0.2s;
+    .blue-circle-num {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #1d4ed8, #0284c7);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 0.95rem;
+      flex-shrink: 0;
+      box-shadow: 0 0 12px rgba(2, 132, 199, 0.4);
     }
-    .faq-item.open .faq-arrow {
-      transform: rotate(180deg);
+    .panel-header-title {
+      font-family: var(--font-heading);
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.01em;
     }
-    .faq-answer-body {
-      display: none;
-      padding: 0 1.4rem 1.2rem;
-      font-size: 0.88rem;
-      line-height: 1.65;
-      color: #cbd5e1;
-      border-top: 1px solid rgba(255, 255, 255, 0.05);
-    }
-    .faq-item.open .faq-answer-body {
-      display: block;
+    html[data-theme="light"] .panel-header-title {
+      color: #0f172a;
     }
 
     /* Footer Navigation */
@@ -1459,7 +1457,7 @@
           <button type="button" class="tab-underline-btn" data-tab="tab-code">💻 4. Code &amp; Fix</button>
           <button type="button" class="tab-underline-btn" data-tab="tab-checklist">📋 5. Review Checklist</button>
           <button type="button" class="tab-underline-btn" data-tab="tab-lab">⚡ 6. Live Lab</button>
-          <button type="button" class="tab-underline-btn" data-tab="tab-questions">❓ 7. FAQ</button>
+          <button type="button" class="tab-underline-btn" data-tab="tab-questions">🤔 7. Questions</button>
         </nav>
       </div>
 
@@ -2161,128 +2159,151 @@ Content-Type: application/json
       </div>
 
       <!-- ====================================================================
-           TAB 7: COMPREHENSIVE FAQ
+           TAB 7: QUESTIONS & TRICKY INTERVIEW SCENARIOS
            ==================================================================== -->
       <div class="tab-content-pane" id="tab-questions">
 
-        <div class="faq-accordion">
-          <!-- FAQ 1 -->
-          <div class="faq-item open">
-            <button type="button" class="faq-question-btn" onclick="toggleFaq(this)">
-              <span>1. Why is GraphQL Introspection considered a vulnerability if it is a built-in feature?</span>
-              <span class="faq-arrow">▼</span>
-            </button>
-            <div class="faq-answer-body">
-              <p class="lang-hi">Introspection development aur documentation ke liye banaya gaya tha. Lekin production me ye attacker ko backend ka pura architectural blueprint de deta hai. Isme internal microservices, administrative mutations (e.g. <code>debugResetDb</code>), private fields, aur field types bina kisi authentication ke expose ho jate hain.</p>
-              <p class="lang-en">Introspection is designed as a developer ergonomics tool to power IDE auto-completion. In production, however, it transforms into an adversary's primary reconnaissance weapon, exposing deprecated endpoints, administrative mutations (e.g., <code>updateUserRole</code>), internal field types, and backend relationships without requiring authentication.</p>
+        <div class="card-panel">
+          <div class="card-title-badge-row">
+            <div class="blue-circle-num">🤔</div>
+            <div>
+              <h2 class="panel-header-title">Questions &amp; Tricky Interview Scenarios</h2>
+              <p style="font-size:0.86rem; color:#94a3b8; margin:0;">
+                <span class="lang-hi">GraphQL Security aur Architecture se jude top interview questions aur real-world scenarios</span>
+                <span class="lang-en">Master tough GraphQL API security &amp; architecture questions asked by top security firms</span>
+              </p>
             </div>
           </div>
 
-          <!-- FAQ 2 -->
-          <div class="faq-item">
-            <button type="button" class="faq-question-btn" onclick="toggleFaq(this)">
-              <span>2. If introspection is disabled, can an attacker still discover the schema?</span>
-              <span class="faq-arrow">▼</span>
-            </button>
-            <div class="faq-answer-body">
-              <p class="lang-hi">Haan! Attacker <strong>Field Suggestions</strong> ka faayda uthate hain. Jab koi galat field query ki jaati hai, toh GraphQL engine "Did you mean ...?" kehta hai. Tools jaise <strong>Clairvoyance</strong> dictionary brute-force ke zariye pura schema bina introspection ke bhi reconstruct kar lete hain. Isliye suggestion masking bhi zaroori hai.</p>
-              <p class="lang-en">Yes! Attackers exploit <strong>Field Suggestions</strong>. When a client submits an invalid field, standard GraphQL engines respond with "Did you mean [field]?". Automated tools like <strong>Clairvoyance</strong> feed comprehensive wordlists to reconstruct the entire schema word-by-word. Production engines must disable suggestion hints.</p>
+          <div class="faq-grid">
+            <!-- Question 1 -->
+            <div class="faq-card step-1">
+              <div class="faq-question">
+                <span>❓</span>
+                <span class="lang-hi">1. Why is GraphQL Introspection considered a vulnerability if it is a built-in feature?</span>
+                <span class="lang-en">1. Why is GraphQL Introspection considered a vulnerability if it is a built-in feature?</span>
+              </div>
+              <div class="faq-answer">
+                <span class="lang-hi">Introspection development aur documentation ke liye banaya gaya tha. Lekin production me ye attacker ko backend ka pura architectural blueprint de deta hai. Isme internal microservices, administrative mutations (e.g. <code>debugResetDb</code>), private fields, aur field types bina kisi authentication ke expose ho jate hain.</span>
+                <span class="lang-en">Introspection is designed as a developer ergonomics tool to power IDE auto-completion. In production, however, it transforms into an adversary's primary reconnaissance weapon, exposing deprecated endpoints, administrative mutations (e.g., <code>updateUserRole</code>), internal field types, and backend relationships without requiring authentication.</span>
+              </div>
             </div>
-          </div>
 
-          <!-- FAQ 3 -->
-          <div class="faq-item">
-            <button type="button" class="faq-question-btn" onclick="toggleFaq(this)">
-              <span>3. How does Query Depth Limiting prevent Denial of Service attacks?</span>
-              <span class="faq-arrow">▼</span>
-            </button>
-            <div class="faq-answer-body">
-              <p class="lang-hi">Query Depth Limiter AST ko inspect karta hai resolvers execute hone se pehle. Agar koi query defined limit (e.g. 5 levels) se zyada nested hoti hai, toh engine request ko turant reject kar deta hai. Isse circular relations (user -> orders -> user...) database tak pahunch hi nahi paati.</p>
-              <p class="lang-en">Query Depth Limiting inspects the parsed Abstract Syntax Tree (AST) prior to resolver invocation. If the nesting level exceeds a preset threshold (typically 5 to 7 levels), the engine immediately aborts query validation, preventing circular relationship queries from executing against the database.</p>
+            <!-- Question 2 -->
+            <div class="faq-card step-2">
+              <div class="faq-question">
+                <span>❓</span>
+                <span class="lang-hi">2. If introspection is disabled, can an attacker still discover the schema?</span>
+                <span class="lang-en">2. If introspection is disabled, can an attacker still discover the schema?</span>
+              </div>
+              <div class="faq-answer">
+                <span class="lang-hi">Haan! Attacker <strong>Field Suggestions</strong> ka faayda uthate hain. Jab koi galat field query ki jaati hai, toh GraphQL engine "Did you mean ...?" kehta hai. Tools jaise <strong>Clairvoyance</strong> dictionary brute-force ke zariye pura schema bina introspection ke bhi reconstruct kar lete hain. Isliye suggestion masking bhi zaroori hai.</span>
+                <span class="lang-en">Yes! Attackers exploit <strong>Field Suggestions</strong>. When a client submits an invalid field, standard GraphQL engines respond with "Did you mean [field]?". Automated tools like <strong>Clairvoyance</strong> feed comprehensive wordlists to reconstruct the entire schema word-by-word. Production engines must disable suggestion hints.</span>
+              </div>
             </div>
-          </div>
 
-          <!-- FAQ 4 -->
-          <div class="faq-item">
-            <button type="button" class="faq-question-btn" onclick="toggleFaq(this)">
-              <span>4. What is the difference between Query Depth and Query Complexity / Cost Analysis?</span>
-              <span class="faq-arrow">▼</span>
-            </button>
-            <div class="faq-answer-body">
-              <p class="lang-hi">Query Depth sirf nesting levels count karta hai (height). Lekin ek shallow query bhi server crash kar sakti hai agar wo 1000 items fetch kare (width: <code>users(first: 10000)</code>). Query Complexity har field aur argument ko ek numerical score deti hai (e.g., <code>users</code> = 10 points, per item = 2 points). Agar total cost 500 se zyada ho, toh query block ho jaati hai.</p>
-              <p class="lang-en">Query Depth only measures tree height (nesting levels). However, an attacker can crash a server using a shallow query that requests massive collections (e.g., <code>users(first: 10000)</code>). Complexity / Cost analysis assigns numerical weight to each field and multiplier arguments. If total query cost exceeds a configured budget (e.g. 1,000 points), execution is rejected.</p>
+            <!-- Question 3 -->
+            <div class="faq-card step-3">
+              <div class="faq-question">
+                <span>❓</span>
+                <span class="lang-hi">3. How does Query Depth Limiting prevent Denial of Service attacks?</span>
+                <span class="lang-en">3. How does Query Depth Limiting prevent Denial of Service attacks?</span>
+              </div>
+              <div class="faq-answer">
+                <span class="lang-hi">Query Depth Limiter AST ko inspect karta hai resolvers execute hone se pehle. Agar koi query defined limit (e.g. 5 levels) se zyada nested hoti hai, toh engine request ko turant reject kar deta hai. Isse circular relations (user -> orders -> user...) database tak pahunch hi nahi paati.</span>
+                <span class="lang-en">Query Depth Limiting inspects the parsed Abstract Syntax Tree (AST) prior to resolver invocation. If the nesting level exceeds a preset threshold (typically 5 to 7 levels), the engine immediately aborts query validation, preventing circular relationship queries from executing against the database.</span>
+              </div>
             </div>
-          </div>
 
-          <!-- FAQ 5 -->
-          <div class="faq-item">
-            <button type="button" class="faq-question-btn" onclick="toggleFaq(this)">
-              <span>5. Why do traditional perimeter WAFs fail to rate-limit GraphQL APIs?</span>
-              <span class="faq-arrow">▼</span>
-            </button>
-            <div class="faq-answer-body">
-              <p class="lang-hi">Traditional WAFs HTTP request count (IP per second) par kaam karte hain. GraphQL me 1 HTTP POST request ke andar 500 aliases ya array batching use karke 500 alag operations bheje ja sakte hain. WAF use sirf 1 request count karta hai, jabki backend par 500 operations execute ho rahe hote hain.</p>
-              <p class="lang-en">Perimeter WAFs track HTTP request volumes per client IP. In GraphQL, a client can nest 500 distinct operations inside a single HTTP POST using field aliases or array batching. The perimeter WAF observes 1 inbound transaction, while the backend resolves 500 intensive operations, making perimeter rate limiting completely ineffective.</p>
+            <!-- Question 4 -->
+            <div class="faq-card step-4">
+              <div class="faq-question">
+                <span>❓</span>
+                <span class="lang-hi">4. What is the difference between Query Depth and Query Complexity / Cost Analysis?</span>
+                <span class="lang-en">4. What is the difference between Query Depth and Query Complexity / Cost Analysis?</span>
+              </div>
+              <div class="faq-answer">
+                <span class="lang-hi">Query Depth sirf nesting levels count karta hai (height). Lekin ek shallow query bhi server crash kar sakti hai agar wo 1000 items fetch kare (width: <code>users(first: 10000)</code>). Query Complexity har field aur argument ko ek numerical score deti hai (e.g., <code>users</code> = 10 points, per item = 2 points). Agar total cost 500 se zyada ho, toh query block ho jaati hai.</span>
+                <span class="lang-en">Query Depth only measures tree height (nesting levels). However, an attacker can crash a server using a shallow query that requests massive collections (e.g., <code>users(first: 10000)</code>). Complexity / Cost analysis assigns numerical weight to each field and multiplier arguments. If total query cost exceeds a configured budget (e.g. 1,000 points), execution is rejected.</span>
+              </div>
             </div>
-          </div>
 
-          <!-- FAQ 6 -->
-          <div class="faq-item">
-            <button type="button" class="faq-question-btn" onclick="toggleFaq(this)">
-              <span>6. What are Automatic Persisted Queries (APQ) and do they improve security?</span>
-              <span class="faq-arrow">▼</span>
-            </button>
-            <div class="faq-answer-body">
-              <p class="lang-hi">APQ me client query string bhejne ke bajaye query ka SHA-256 hash bhejta hai. Agar server par strict <strong>Query Whitelisting</strong> enable ho, toh server sirf approved hashes accept karta hai aur raw arbitrary query execution ko completely block kar deta hai. Ye GraphQL ka sabse powerful security defense hai!</p>
-              <p class="lang-en">With APQ and Persisted Queries, clients send a SHA-256 hash of pre-compiled queries rather than arbitrary query strings. When configured in strict whitelisting mode, the server only executes pre-approved queries, completely neutralizing arbitrary query crafting, introspection attacks, and unexpected circular nesting!</p>
+            <!-- Question 5 -->
+            <div class="faq-card step-5">
+              <div class="faq-question">
+                <span>❓</span>
+                <span class="lang-hi">5. Why do traditional perimeter WAFs fail to rate-limit GraphQL APIs?</span>
+                <span class="lang-en">5. Why do traditional perimeter WAFs fail to rate-limit GraphQL APIs?</span>
+              </div>
+              <div class="faq-answer">
+                <span class="lang-hi">Traditional WAFs HTTP request count (IP per second) par kaam karte hain. GraphQL me 1 HTTP POST request ke andar 500 aliases ya array batching use karke 500 alag operations bheje ja sakte hain. WAF use sirf 1 request count karta hai, jabki backend par 500 operations execute ho rahe hote hain.</span>
+                <span class="lang-en">Perimeter WAFs track HTTP request volumes per client IP. In GraphQL, a client can nest 500 distinct operations inside a single HTTP POST using field aliases or array batching. The perimeter WAF observes 1 inbound transaction, while the backend resolves 500 intensive operations, making perimeter rate limiting completely ineffective.</span>
+              </div>
             </div>
-          </div>
 
-          <!-- FAQ 7 -->
-          <div class="faq-item">
-            <button type="button" class="faq-question-btn" onclick="toggleFaq(this)">
-              <span>7. How does BOLA (Broken Object Level Authorization) occur in GraphQL?</span>
-              <span class="faq-arrow">▼</span>
-            </button>
-            <div class="faq-answer-body">
-              <p class="lang-hi">REST me route middleware (e.g. <code>/orders/:id</code>) access control check karta hai. GraphQL me query graph ke through traverse karti hai (<code>user -> orders -> items</code>). Agar kisi child resolver me <code>context.user.id</code> verify nahi kiya gaya, toh attacker unauthorized records fetch kar leta hai chahe parent resolver secure ho.</p>
-              <p class="lang-en">In REST, authorization middleware guards entry routes. In GraphQL, execution flows through a graph tree of individual field resolvers. If any child or leaf resolver fails to validate the authenticated user's ownership from <code>context.user</code>, clients can traverse into unauthorized records despite the parent query being legitimate.</p>
+            <!-- Question 6 -->
+            <div class="faq-card step-1">
+              <div class="faq-question">
+                <span>❓</span>
+                <span class="lang-hi">6. What are Automatic Persisted Queries (APQ) and do they improve security?</span>
+                <span class="lang-en">6. What are Automatic Persisted Queries (APQ) and do they improve security?</span>
+              </div>
+              <div class="faq-answer">
+                <span class="lang-hi">APQ me client query string bhejne ke bajaye query ka SHA-256 hash bhejta hai. Agar server par strict <strong>Query Whitelisting</strong> enable ho, toh server sirf approved hashes accept karta hai aur raw arbitrary query execution ko completely block kar deta hai. Ye GraphQL ka sabse powerful security defense hai!</span>
+                <span class="lang-en">With APQ and Persisted Queries, clients send a SHA-256 hash of pre-compiled queries rather than arbitrary query strings. When configured in strict whitelisting mode, the server only executes pre-approved queries, completely neutralizing arbitrary query crafting, introspection attacks, and unexpected circular nesting!</span>
+              </div>
             </div>
-          </div>
 
-          <!-- FAQ 8 -->
-          <div class="faq-item">
-            <button type="button" class="faq-question-btn" onclick="toggleFaq(this)">
-              <span>8. Does GraphQL type validation protect against SQL or NoSQL injection?</span>
-              <span class="faq-arrow">▼</span>
-            </button>
-            <div class="faq-answer-body">
-              <p class="lang-hi">Nahi! GraphQL sirf input types enforce karta hai (e.g. String, Int). Agar resolver us String ko directly SQL query (<code>SELECT * FROM users WHERE name = '${args.term}'</code>) me concatenate karta hai, toh SQL Injection 100% possible hai. Resolvers me hamesha parameterized queries / ORM use karna chahiye.</p>
-              <p class="lang-en">No! GraphQL type validation only confirms primitive data types (e.g., String, Int, Boolean). If a resolver concatenates a String argument directly into a raw SQL query or MongoDB filter, SQLi or NoSQLi will execute unobstructed. Resolvers must always utilize parameterized statements and ORM abstractions.</p>
+            <!-- Question 7 -->
+            <div class="faq-card step-2">
+              <div class="faq-question">
+                <span>❓</span>
+                <span class="lang-hi">7. How does BOLA (Broken Object Level Authorization) occur in GraphQL?</span>
+                <span class="lang-en">7. How does BOLA (Broken Object Level Authorization) occur in GraphQL?</span>
+              </div>
+              <div class="faq-answer">
+                <span class="lang-hi">REST me route middleware (e.g. <code>/orders/:id</code>) access control check karta hai. GraphQL me query graph ke through traverse karti hai (<code>user -> orders -> items</code>). Agar kisi child resolver me <code>context.user.id</code> verify nahi kiya gaya, toh attacker unauthorized records fetch kar leta hai chahe parent resolver secure ho.</span>
+                <span class="lang-en">In REST, authorization middleware guards entry routes. In GraphQL, execution flows through a graph tree of individual field resolvers. If any child or leaf resolver fails to validate the authenticated user's ownership from <code>context.user</code>, clients can traverse into unauthorized records despite the parent query being legitimate.</span>
+              </div>
             </div>
-          </div>
 
-          <!-- FAQ 9 -->
-          <div class="faq-item">
-            <button type="button" class="faq-question-btn" onclick="toggleFaq(this)">
-              <span>9. What is the N+1 problem in GraphQL and why is it also a security concern?</span>
-              <span class="faq-arrow">▼</span>
-            </button>
-            <div class="faq-answer-body">
-              <p class="lang-hi">N+1 problem tab hoti hai jab 1 parent query N child records fetch karti hai aur har child ke liye alag database query chalti hai (1 + N queries). Attackers iska faayda utha kar 10,000 queries trigger kar sakte hain. Isko solve karne ke liye <strong>DataLoader</strong> use kiya jata hai jo queries ko batch karta hai.</p>
-              <p class="lang-en">The N+1 problem occurs when fetching a parent collection of N items triggers N individual database calls for nested relations (1 parent + N child queries). Malicious actors exploit this to induce database CPU exhaustion. Implementing <strong>DataLoader</strong> batches and memoizes requests to consolidate hundreds of queries into single batch reads.</p>
+            <!-- Question 8 -->
+            <div class="faq-card step-3">
+              <div class="faq-question">
+                <span>❓</span>
+                <span class="lang-hi">8. Does GraphQL type validation protect against SQL or NoSQL injection?</span>
+                <span class="lang-en">8. Does GraphQL type validation protect against SQL or NoSQL injection?</span>
+              </div>
+              <div class="faq-answer">
+                <span class="lang-hi">Nahi! GraphQL sirf input types enforce karta hai (e.g. String, Int). Agar resolver us String ko directly SQL query (<code>SELECT * FROM users WHERE name = '${args.term}'</code>) me concatenate karta hai, toh SQL Injection 100% possible hai. Resolvers me hamesha parameterized queries / ORM use karna chahiye.</span>
+                <span class="lang-en">No! GraphQL type validation only confirms primitive data types (e.g., String, Int, Boolean). If a resolver concatenates a String argument directly into a raw SQL query or MongoDB filter, SQLi or NoSQLi will execute unobstructed. Resolvers must always utilize parameterized statements and ORM abstractions.</span>
+              </div>
             </div>
-          </div>
 
-          <!-- FAQ 10 -->
-          <div class="faq-item">
-            <button type="button" class="faq-question-btn" onclick="toggleFaq(this)">
-              <span>10. Which HTTP methods should a production GraphQL server allow?</span>
-              <span class="faq-arrow">▼</span>
-            </button>
-            <div class="faq-answer-body">
-              <p class="lang-hi">Production me GraphQL queries aur mutations hamesha <strong>POST</strong> method se aani chahiye with <code>Content-Type: application/json</code>. GET requests me queries URL parameters me jati hain, jisse sensitive parameters browser history aur proxy logs me leak ho jate hain aur CSRF risks badh jate hain.</p>
-              <p class="lang-en">Production GraphQL APIs should strictly mandate <strong>POST</strong> requests with <code>Content-Type: application/json</code>. Allowing GET queries exposes sensitive parameters in server access logs and browser histories, while enabling Cross-Site Request Forgery (CSRF) vulnerabilities when combined with cookie-based session architectures.</p>
+            <!-- Question 9 -->
+            <div class="faq-card step-4">
+              <div class="faq-question">
+                <span>❓</span>
+                <span class="lang-hi">9. What is the N+1 problem in GraphQL and why is it also a security concern?</span>
+                <span class="lang-en">9. What is the N+1 problem in GraphQL and why is it also a security concern?</span>
+              </div>
+              <div class="faq-answer">
+                <span class="lang-hi">N+1 problem tab hoti hai jab 1 parent query N child records fetch karti hai aur har child ke liye alag database query chalti hai (1 + N queries). Attackers iska faayda utha kar 10,000 queries trigger kar sakte hain. Isko solve karne ke liye <strong>DataLoader</strong> use kiya jata hai jo queries ko batch karta hai.</span>
+                <span class="lang-en">The N+1 problem occurs when fetching a parent collection of N items triggers N individual database calls for nested relations (1 parent + N child queries). Malicious actors exploit this to induce database CPU exhaustion. Implementing <strong>DataLoader</strong> batches and memoizes requests to consolidate hundreds of queries into single batch reads.</span>
+              </div>
+            </div>
+
+            <!-- Question 10 -->
+            <div class="faq-card step-5">
+              <div class="faq-question">
+                <span>❓</span>
+                <span class="lang-hi">10. Which HTTP methods should a production GraphQL server allow?</span>
+                <span class="lang-en">10. Which HTTP methods should a production GraphQL server allow?</span>
+              </div>
+              <div class="faq-answer">
+                <span class="lang-hi">Production me GraphQL queries aur mutations hamesha <strong>POST</strong> method se aani chahiye with <code>Content-Type: application/json</code>. GET requests me queries URL parameters me jati hain, jisse sensitive parameters browser history aur proxy logs me leak ho jate hain aur CSRF risks badh jate hain.</span>
+                <span class="lang-en">Production GraphQL APIs should strictly mandate <strong>POST</strong> requests with <code>Content-Type: application/json</code>. Allowing GET queries exposes sensitive parameters in server access logs and browser histories, while enabling Cross-Site Request Forgery (CSRF) vulnerabilities when combined with cookie-based session architectures.</span>
+              </div>
             </div>
           </div>
         </div>
@@ -2819,12 +2840,6 @@ Content-Type: application/json
         }, null, 2);
         terminal.innerHTML = highlightJson(payload, false);
       }
-    }
-
-    // 6. FAQ Accordion Toggle
-    function toggleFaq(btn) {
-      const item = btn.parentElement;
-      item.classList.toggle('open');
     }
 
     // Initialize Lab Preset 1 on load
