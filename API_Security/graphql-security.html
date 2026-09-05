@@ -15,13 +15,15 @@
        Inherits Canonical Cyber-Dark Theme, Sub-Pixel Alignment & Zero Shift
        ========================================================================== */
     body {
-      background: #040814;
+      background: radial-gradient(circle at 50% 0%, #101a36 0%, #040814 70%);
       color: #f1f5f9;
       margin: 0;
       padding: 0;
       overflow-x: hidden;
       overflow-y: visible;
       font-family: var(--font-sans);
+      min-height: 100vh;
+      position: relative;
     }
 
     /* Master Layout: Sidebar + Main Area */
@@ -2322,6 +2324,8 @@ Content-Type: application/json
 
     </main>
   </div>
+
+  <script src="assets/js/main.js"></script>
 
   <!-- ====================================================================
        INTERACTIVE JAVASCRIPT CONTROLLER
