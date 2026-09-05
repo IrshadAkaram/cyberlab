@@ -3474,12 +3474,106 @@ html[data-theme="light"] .check-status-btn {
 
 
 
+/* ==========================================================================
+   Universal Canonical Sidebar Navigation Theme (Source of Truth: Module 00)
+   ========================================================================== */
+.dashboard-sidebar {
+  width: 280px;
+  background: #070d1c;
+  border-right: 1px solid rgba(255, 255, 255, 0.07);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #1e293b transparent;
+}
+
+.sidebar-header {
+  padding: 1.5rem 1.4rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sidebar-brand-title {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  line-height: 1.2;
+}
+
+.sidebar-brand-title span {
+  background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 20px rgba(56, 189, 248, 0.3);
+}
+
+.sidebar-section-heading {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #38bdf8;
+  padding: 0.9rem 1.4rem 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.vuln-nav-list {
+  list-style: none;
+  padding: 0 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+}
+
+.vuln-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border-radius: var(--radius-pill, 9999px);
+  color: #94a3b8;
+  text-decoration: none;
+  font-size: 0.86rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.vuln-nav-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: #f1f5f9;
+}
+
 .vuln-nav-item.active {
   background: linear-gradient(135deg, rgba(56, 189, 248, 0.22), rgba(2, 132, 199, 0.35)) !important;
   border: 1px solid rgba(56, 189, 248, 0.55) !important;
   color: #ffffff !important;
   font-weight: 700 !important;
   box-shadow: 0 4px 16px rgba(56, 189, 248, 0.3) !important;
+}
+
+.nav-num-badge {
+  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 7px;
+  border-radius: var(--radius-pill, 9999px);
+  color: inherit;
 }
 
 .vuln-nav-item.active .nav-num-badge {
