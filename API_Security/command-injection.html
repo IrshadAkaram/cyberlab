@@ -198,7 +198,7 @@
 
     .main-vuln-h1 {
       font-family: var(--font-heading);
-      font-size: 2.35rem;
+      font-size: clamp(1.8rem, 2.2vw, 2.15rem);
       font-weight: 800;
       line-height: 1.2;
       color: #ffffff;
@@ -1748,8 +1748,7 @@
           </div>
 
           <h1 class="main-vuln-h1">
-            OS Command<br>
-            <span class="title-blue">Injection (RCE)</span>
+            OS Command <span class="title-blue">Injection (RCE)</span>
           </h1>
 
           <p class="main-vuln-desc">
