@@ -679,29 +679,126 @@
       font-size: 1.1rem;
       flex-shrink: 0;
     }
-    .char-asif {
-      background: rgba(56, 189, 248, 0.15);
-      border: 1px solid #38bdf8;
-      color: #38bdf8;
+        /* Colorful Engineering Dialogue Chatting Cards */
+    .story-card-box {
+      background: rgba(7, 13, 28, 0.6);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      border-radius: var(--radius-lg);
+      padding: 1.6rem 1.8rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
     }
-    .char-atharva {
-      background: rgba(239, 68, 68, 0.15);
-      border: 1px solid #ef4444;
-      color: #f87171;
+
+    .dialogue-turn {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 1.4rem;
+    }
+    .dialogue-turn:last-child {
+      margin-bottom: 0;
+    }
+
+    .char-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      flex-shrink: 0;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+      transition: all 0.25s ease;
+    }
+    .char-avatar:hover {
+      transform: scale(1.08);
+    }
+
+    .char-avatar.char-vikram {
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.3), rgba(56, 189, 248, 0.15));
+      border: 2px solid #38bdf8;
+      box-shadow: 0 0 18px rgba(56, 189, 248, 0.4);
+    }
+
+    .char-avatar.char-rohan {
+      background: linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(192, 132, 252, 0.15));
+      border: 2px solid #c084fc;
+      box-shadow: 0 0 18px rgba(168, 85, 247, 0.4);
     }
 
     .dialogue-bubble {
-      background: rgba(15, 23, 42, 0.6);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: var(--radius-md);
-      padding: 0.9rem 1.2rem;
-      font-size: 0.98rem;
+      flex: 1;
+      border-radius: 4px 14px 14px 14px;
+      padding: 1.1rem 1.4rem;
+      font-size: 0.94rem;
       line-height: 1.7;
       color: #f1f5f9;
-      flex: 1;
+      position: relative;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     }
-    .dialogue-bubble strong {
+
+    .dialogue-bubble.bubble-vikram {
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.12), rgba(15, 23, 42, 0.75));
+      border: 1px solid rgba(56, 189, 248, 0.32);
+      border-left: 4px solid #38bdf8;
+    }
+
+    .dialogue-bubble.bubble-rohan {
+      background: linear-gradient(135deg, rgba(168, 85, 247, 0.12), rgba(15, 23, 42, 0.75));
+      border: 1px solid rgba(168, 85, 247, 0.32);
+      border-left: 4px solid #c084fc;
+    }
+
+    .dialogue-header-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .speaker-name {
+      font-family: var(--font-heading);
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+    .speaker-name.vikram {
       color: #38bdf8;
+    }
+    .speaker-name.rohan {
+      color: #c084fc;
+    }
+
+    .speaker-tag {
+      font-size: 0.70rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: var(--radius-pill);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .speaker-tag.vikram {
+      background: rgba(56, 189, 248, 0.18);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.35);
+    }
+    .speaker-tag.rohan {
+      background: rgba(168, 85, 247, 0.18);
+      color: #c084fc;
+      border: 1px solid rgba(168, 85, 247, 0.35);
+    }
+
+    .dialogue-bubble code {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 0.86rem;
+      color: #bae6fd;
+    }
+    .bubble-rohan code {
+      color: #e9d5ff;
     }
 
     /* Visual Architecture Box */
@@ -1649,7 +1746,7 @@
           </div>
         </div>
 
-                <!-- Right Box: Interactive Hero Widget (Aligned with Module 01 BOLA Design) -->
+                        <!-- Right Visual Graphic Box (Interactive Simulator Widget - Exact Module 01 BOLA Parity) -->
         <div class="hero-glass-graphic" id="cmdHeroWidget">
           <div class="hero-widget-header">
             <div class="hero-widget-badge">
@@ -1670,7 +1767,7 @@
             <div class="attacker-graphic-node" id="cmdAttackerNode">
               <div class="attacker-avatar-circle" id="cmdAttackerAvatar">🥷</div>
               <div class="attacker-label" id="cmdAttackerLabel">Rohan (Attacker)</div>
-              <div class="attacker-sub" id="cmdAttackerSub">Input: "8.8.8.8; whoami"</div>
+              <div class="attacker-sub" id="cmdAttackerSub">Input: 8.8.8.8; whoami</div>
             </div>
 
             <div class="graphic-center-flow">
@@ -1685,18 +1782,18 @@
               <div class="flow-beam-track" id="cmdBeamTrack">
                 <div class="flow-beam-particle exploit" id="cmdBeamParticle"></div>
               </div>
-              <span class="flow-state-label" id="cmdFlowStateText" style="color:#f87171;">Injected Semicolon Delimiter</span>
+              <span class="flow-state-label" id="cmdFlowStateText" style="color:#f87171;">Semicolon Delimiter</span>
             </div>
 
             <div class="target-profile-card exploit" id="cmdTargetCard">
               <div class="target-card-top">
-                <h4 id="cmdTargetName">Linux App Container</h4>
-                <span class="target-pill-status breach" id="cmdTargetStatus">HTTP 200 (RCE)</span>
+                <h4 id="cmdTargetName">App Host</h4>
+                <span class="target-pill-status breach" id="cmdTargetStatus">HTTP 200</span>
               </div>
-              <p id="cmdTargetExec">Exec: <code style="color:#ef4444;">sh -c "ping ...; whoami"</code></p>
-              <p id="cmdTargetOutput">Output: <code style="color:#f87171; font-weight:700;">root (uid=0)</code></p>
-              <p id="cmdTargetResult">Status: <code style="color:#ef4444;">Host Compromise</code></p>
-              <span class="unauth-note" id="cmdTargetNote">🚨 Arbitrary OS commands executed on host!</span>
+              <p id="cmdTargetExec">UID: <code style="color:#f87171;">0 (root)</code></p>
+              <p id="cmdTargetOutput">Exec: <code style="color:#ef4444;">whoami</code></p>
+              <p id="cmdTargetResult">Host: <code style="color:#ef4444;">pwned</code></p>
+              <span class="unauth-note" id="cmdTargetNote">🚨 Remote Code Execution</span>
             </div>
           </div>
         </div>
@@ -1816,11 +1913,14 @@
               <span class="lang-en">Engineering Dialogue: Vikram (Backend Lead) vs Rohan (Senior Security Architect)</span>
             </div>
 
-            <!-- Turn 1 -->
+                        <!-- Turn 1 -->
             <div class="dialogue-turn">
               <div class="char-avatar char-vikram">👨‍💻</div>
-              <div class="dialogue-bubble">
-                <strong>Vikram (Backend Lead):</strong><br>
+              <div class="dialogue-bubble bubble-vikram">
+                <div class="dialogue-header-badge">
+                  <span class="speaker-name vikram">Vikram</span>
+                  <span class="speaker-tag vikram">Backend Lead</span>
+                </div>
                 <span class="lang-hi">"Rohan, hamare enterprise cloud dashboard me users ko remote microservice connectivity monitor karni thi. Maine ek simple REST endpoint develop kiya hai: <code>POST /api/v1/network/diagnostics</code>. Request body me user target host bhejta hai (jaise <code>{"host": "8.8.8.8"}</code>), aur backend Python me <code>subprocess.check_output(f'ping -c 2 {host}', shell=True)</code> se CLI ping command chala kar live terminal latency output JSON me return kar deta hai. Code bilkul compact hai aur perfectly work kar raha hai!"</span>
                 <span class="lang-en">"Rohan, enterprise clients requested an operational dashboard to test latency to remote microservices. I built <code>POST /api/v1/network/diagnostics</code>. The client supplies a target host in JSON: <code>{"host": "8.8.8.8"}</code>. The backend executes <code>subprocess.check_output(f'ping -c 2 {host}', shell=True)</code> to retrieve live CLI packet output and returns it to the UI. It is compact and works seamlessly!"</span>
               </div>
@@ -1829,8 +1929,11 @@
             <!-- Turn 2 -->
             <div class="dialogue-turn">
               <div class="char-avatar char-rohan">🕵️‍♂️</div>
-              <div class="dialogue-bubble">
-                <strong>Rohan (Senior Security Architect):</strong><br>
+              <div class="dialogue-bubble bubble-rohan">
+                <div class="dialogue-header-badge">
+                  <span class="speaker-name rohan">Rohan</span>
+                  <span class="speaker-tag rohan">Senior Security Architect</span>
+                </div>
                 <span class="lang-hi">"Vikram, yeh code critical Remote Code Execution (RCE) vulnerability expose kar raha hai! Jab tum <code>shell=True</code> pass karte ho, Python underlying system ke <code>/bin/sh -c</code> ko call karta hai. Shell pure string ko lexically evaluate karta hai. Agar main host parameter me <code>8.8.8.8; whoami</code> bhej doon, toh shell semicolon dekh kar do independent commands chala dega: pehle ping, aur turant baad <code>whoami</code>! Tumhari API mere command ka output HTTP response me return kar degi!"</span>
                 <span class="lang-en">"Vikram, that implementation introduces a critical Remote Code Execution (RCE) vulnerability! Passing <code>shell=True</code> instructs Python to invoke <code>/bin/sh -c</code>. The shell lexer parses the input line. If an adversary submits <code>8.8.8.8; whoami</code>, the shell treats the semicolon as a statement delimiter: it executes the ping and immediately follows by executing <code>whoami</code>, reflecting the OS username in the HTTP response!"</span>
               </div>
@@ -1839,8 +1942,11 @@
             <!-- Turn 3 -->
             <div class="dialogue-turn">
               <div class="char-avatar char-vikram">👨‍💻</div>
-              <div class="dialogue-bubble">
-                <strong>Vikram (Backend Lead):</strong><br>
+              <div class="dialogue-bubble bubble-vikram">
+                <div class="dialogue-header-badge">
+                  <span class="speaker-name vikram">Vikram</span>
+                  <span class="speaker-tag vikram">Backend Lead</span>
+                </div>
                 <span class="lang-hi">"Lekin Rohan, hamara application containerized hai (Docker container me chal raha hai). Agar attacker container ke andar command execute kar bhi le, toh kya wo actual host infrastructure tak pahuch sakta hai? Container isolation hume protect karega na?"</span>
                 <span class="lang-en">"Wait Rohan, our microservice runs inside an isolated Docker container! Even if someone executes commands inside the container, can they really touch our cloud host? Doesn't container isolation mitigate the blast radius?"</span>
               </div>
@@ -1849,8 +1955,11 @@
             <!-- Turn 4 -->
             <div class="dialogue-turn">
               <div class="char-avatar char-rohan">🕵️‍♂️</div>
-              <div class="dialogue-bubble">
-                <strong>Rohan (Senior Security Architect):</strong><br>
+              <div class="dialogue-bubble bubble-rohan">
+                <div class="dialogue-header-badge">
+                  <span class="speaker-name rohan">Rohan</span>
+                  <span class="speaker-tag rohan">Senior Security Architect</span>
+                </div>
                 <span class="lang-hi">"Container koi security boundary nahi hai! Container ke andar baithe attacker ko saare sensitive environment variables (jaise <code>DATABASE_URL</code>, <code>AWS_SECRET_ACCESS_KEY</code>, <code>JWT_PRIVATE_KEY</code>) read karne ka access mil jata hai. Aur agar pod Kubernetes me chal raha hai, toh attacker <code>cat /var/run/secrets/kubernetes.io/serviceaccount/token</code> run karke cluster credentials chura sakta hai aur poore cloud tenant ko compromise kar sakta hai!"</span>
                 <span class="lang-en">"Containers are operational sandboxes, not security hypervisors! An attacker with container code execution can read all environment secrets (e.g. <code>DATABASE_URL</code>, <code>AWS_SECRET_ACCESS_KEY</code>, <code>JWT_PRIVATE_KEY</code>). Furthermore, in Kubernetes environments, reading <code>/var/run/secrets/kubernetes.io/serviceaccount/token</code> grants cluster API access, allowing cluster-wide lateral compromise!"</span>
               </div>
@@ -1859,8 +1968,11 @@
             <!-- Turn 5 -->
             <div class="dialogue-turn">
               <div class="char-avatar char-vikram">👨‍💻</div>
-              <div class="dialogue-bubble">
-                <strong>Vikram (Backend Lead):</strong><br>
+              <div class="dialogue-bubble bubble-vikram">
+                <div class="dialogue-header-badge">
+                  <span class="speaker-name vikram">Vikram</span>
+                  <span class="speaker-tag vikram">Backend Lead</span>
+                </div>
                 <span class="lang-hi">"Toh main ek quick regex sanitization laga deta hoon jo semicolon (<code>;</code>) aur double ampersand (<code>&amp;&amp;</code>) ko request aate hi strip ya reject kar de!"</span>
                 <span class="lang-en">"Understood! Then I will simply add a blacklist regex filter to strip or reject semicolons (<code>;</code>) and double ampersands (<code>&amp;&amp;</code>) before execution!"</span>
               </div>
@@ -1869,8 +1981,11 @@
             <!-- Turn 6 -->
             <div class="dialogue-turn">
               <div class="char-avatar char-rohan">🕵️‍♂️</div>
-              <div class="dialogue-bubble">
-                <strong>Rohan (Senior Security Architect):</strong><br>
+              <div class="dialogue-bubble bubble-rohan">
+                <div class="dialogue-header-badge">
+                  <span class="speaker-name rohan">Rohan</span>
+                  <span class="speaker-tag rohan">Senior Security Architect</span>
+                </div>
                 <span class="lang-hi">"Blacklisting hamesha bypass ho jaati hai! Agar tum <code>;</code> aur <code>&amp;&amp;</code> block karoge, toh attacker pipes (<code>|</code>), logical OR (<code>||</code>), POSIX subshell (<code>$(whoami)</code>), backticks (<code>`whoami`</code>), ya newline characters (<code>
 </code>) use kar lega. Space bypass karne ke liye wo <code>${IFS}</code> use karega: <code>cat${IFS}/etc/passwd</code>.<br><br>
                 <strong>The Real Solution:</strong> Kabhi bhi shell interpreter invoke mat karo! Use parameterized process execution: <code>subprocess.run(['ping', '-c', '2', host], shell=False)</code>. Isme OS kernel <code>execve</code> syscall direct binary ko invoke karti hai, aur <code>host</code> parameter ek isolated argument ban kar rehta hai jisme semicolon sirf ek harmless string character hota hai!"</span>
@@ -2296,7 +2411,6 @@
               <div class="compare-box vulnerable">
                 <div class="compare-header">
                   <span class="compare-title">❌ Vulnerable: shell=True String Concatenation</span>
-                  <button type="button" class="copy-code-btn" onclick="copyCodeSnippet(this)">Copy</button>
                 </div>
                 <div class="compare-body">
                   <pre><code><span class="t-comment"># ❌ VULNERABLE: Invokes shell, interprets metacharacters</span>
@@ -2327,7 +2441,6 @@ app = Flask(__name__)
               <div class="compare-box secure">
                 <div class="compare-header">
                   <span class="compare-title">✅ Secure: shell=False + Argument Array + IP Validation</span>
-                  <button type="button" class="copy-code-btn" onclick="copyCodeSnippet(this)">Copy</button>
                 </div>
                 <div class="compare-body">
                   <pre><code><span class="t-comment"># ✅ SECURE: Strict validation + direct binary execution</span>
@@ -2375,7 +2488,6 @@ app = Flask(__name__)
               <div class="compare-box vulnerable">
                 <div class="compare-header">
                   <span class="compare-title">❌ Vulnerable: child_process.exec() Shell Invocation</span>
-                  <button type="button" class="copy-code-btn" onclick="copyCodeSnippet(this)">Copy</button>
                 </div>
                 <div class="compare-body">
                   <pre><code><span class="t-comment">// ❌ VULNERABLE: Invokes /bin/sh -c with unescaped input</span>
@@ -2402,7 +2514,6 @@ app.post(<span class="t-str">'/api/v1/diagnostics/ping'</span>, (req, res) => {
               <div class="compare-box secure">
                 <div class="compare-header">
                   <span class="compare-title">✅ Secure: execFile() + net.isIPv4 Validation</span>
-                  <button type="button" class="copy-code-btn" onclick="copyCodeSnippet(this)">Copy</button>
                 </div>
                 <div class="compare-body">
                   <pre><code><span class="t-comment">// ✅ SECURE: Strict type validation + execFile (No shell spawned)</span>

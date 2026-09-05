@@ -1442,52 +1442,54 @@
           </div>
         </div>
 
-        <!-- Right Box (Interactive Hero Widget matching ssrf.html) -->
+                <!-- Right Visual Graphic Box (Interactive Simulator Widget - Exact Module 01 BOLA Parity) -->
         <div class="hero-glass-graphic" id="nosqlHeroWidget">
           <div class="hero-widget-header">
             <div class="hero-widget-badge">
               <span class="pulse-live-dot"></span>
-              <span class="hero-badge-title">Interactive NoSQL Injection Simulator</span>
+              <span class="hero-badge-title">Interactive Attack Flow</span>
             </div>
             <div class="hero-sim-pills">
-              <button type="button" class="hero-sim-btn" id="btnNosqlSafe" title="Protected: Zod & mongo-sanitize Active">
-                <span>🛡️</span> <span>Schema Guard (Safe)</span>
+              <button type="button" class="hero-sim-btn" id="btnNosqlSafe" title="Show Normal Login Request">
+                <span>👤</span> <span>Normal ("admin")</span>
               </button>
-              <button type="button" class="hero-sim-btn active exploit" id="btnNosqlExploit" title="Vulnerable: $ne Operator Bypass">
-                <span>⚠️</span> <span>$ne Bypass (Exploit)</span>
+              <button type="button" class="hero-sim-btn active exploit" id="btnNosqlExploit" title="Show NoSQL Injection Exploit">
+                <span>⚡</span> <span>NoSQL Exploit ($ne)</span>
               </button>
             </div>
           </div>
 
           <div class="hero-widget-body">
-            <div class="attacker-graphic-node">
-              <div class="attacker-avatar-circle">🥷</div>
-              <div class="attacker-label">Gyanendra (Attacker)</div>
-              <div class="attacker-sub">Injecting {"$ne": ""}</div>
+            <div class="attacker-graphic-node" id="nosqlAttackerNode">
+              <div class="attacker-avatar-circle" id="nosqlAttackerAvatar">🥷</div>
+              <div class="attacker-label" id="nosqlAttackerLabel">Gyanendra (Attacker)</div>
+              <div class="attacker-sub" id="nosqlAttackerSub">Payload: {"$ne": 1}</div>
             </div>
 
             <div class="graphic-center-flow">
-              <div class="graphic-url-pill" id="heroUrlPill">
-                <span style="color:#ef4444; font-weight:700;">POST</span> <span>/api/v1/auth/login</span>
+              <div class="graphic-url-pill" id="nosqlUrlPill">
+                <span class="m-verb" id="nosqlVerb" style="color:#ef4444; font-weight:700;">POST</span> <span class="m-path" id="nosqlPath">/api/v1/auth/login</span>
               </div>
-              <div style="font-size:0.7rem; color:#fca5a5; font-family:var(--font-mono);" id="heroPayloadText">
-                pass: {"$ne": "wrong_guess"}
+              <div class="graphic-swap-box" id="nosqlSwapBox">
+                <span class="swap-id-badge from" id="nosqlBadgeFrom">pass: "str"</span>
+                <span class="swap-arrow-icon" id="nosqlSwapArrow" style="color:var(--text-dim); font-size:0.8rem;">➔</span>
+                <span class="swap-id-badge to" id="nosqlBadgeTo">{"$ne": 1}</span>
               </div>
-              <div class="flow-beam-track">
-                <div class="flow-beam-particle" id="heroBeamParticle"></div>
+              <div class="flow-beam-track" id="nosqlBeamTrack">
+                <div class="flow-beam-particle exploit" id="nosqlBeamParticle"></div>
               </div>
-              <span class="flow-state-label" id="heroFlowState" style="color:#ef4444;">Operator Inverting Query Logic</span>
+              <span class="flow-state-label" id="nosqlFlowStateText" style="color:#f87171;">Inverted Query Logic</span>
             </div>
 
-            <div class="target-profile-card exploit" id="heroTargetCard">
+            <div class="target-profile-card exploit" id="nosqlTargetCard">
               <div class="target-card-top">
-                <h4 id="heroTargetName">MongoDB Users Collection</h4>
-                <span class="target-pill-status breach" id="heroTargetStatus">BYPASSED</span>
+                <h4 id="nosqlTargetName">MongoDB Auth</h4>
+                <span class="target-pill-status breach" id="nosqlTargetStatus">HTTP 200</span>
               </div>
-              <p>Filter: <code id="heroField1" style="color:#ef4444;">username: "admin"</code></p>
-              <p>Operator: <code id="heroField2" style="color:#ef4444;">$ne: "wrong_guess" (TRUE)</code></p>
-              <p>Result: <code id="heroField3" style="color:#ef4444;">Admin Document Returned</code></p>
-              <span style="color:#f87171; font-size:0.68rem; font-weight:700;" id="heroTargetNote">🚨 Admin JWT Token Minted!</span>
+              <p id="nosqlTargetField1">User: <code>admin</code></p>
+              <p id="nosqlTargetField2">Filter: <code>$ne: 1 (TRUE)</code></p>
+              <p id="nosqlTargetField3">Token: <code>Minted (JWT)</code></p>
+              <span class="unauth-note" id="nosqlTargetNote">🚨 Admin account takeover!</span>
             </div>
           </div>
         </div>
@@ -1914,7 +1916,6 @@
               <div class="compare-box vulnerable">
                 <div class="compare-header">
                   <span class="compare-title">❌ Vulnerable: Direct Untrusted Dict Query</span>
-                  <button type="button" class="copy-code-btn" onclick="copyCodeSnippet(this)">Copy</button>
                 </div>
                 <div class="compare-body">
                   <pre><code><span class="t-comment"># ❌ VULNERABLE: Direct untrusted dict query</span>
@@ -1945,7 +1946,6 @@ db = client[<span class="t-str">"prod_db"</span>]
               <div class="compare-box secure">
                 <div class="compare-header">
                   <span class="compare-title">✅ Secure: Strict Scalar Type Guard + $eq Match</span>
-                  <button type="button" class="copy-code-btn" onclick="copyCodeSnippet(this)">Copy</button>
                 </div>
                 <div class="compare-body">
                   <pre><code><span class="t-comment"># ✅ SECURE: Strict scalar type enforcement</span>
@@ -1990,7 +1990,6 @@ db = client[<span class="t-str">"prod_db"</span>]
               <div class="compare-box vulnerable">
                 <div class="compare-header">
                   <span class="compare-title">❌ Vulnerable: req.body Object directly in Query</span>
-                  <button type="button" class="copy-code-btn" onclick="copyCodeSnippet(this)">Copy</button>
                 </div>
                 <div class="compare-body">
                   <pre><code><span class="t-comment">// ❌ VULNERABLE: Direct req.body object in findOne()</span>
@@ -2015,7 +2014,6 @@ app.post(<span class="t-str">'/api/v1/auth/login'</span>, <span class="t-kw">asy
               <div class="compare-box secure">
                 <div class="compare-header">
                   <span class="compare-title">✅ Secure: mongo-sanitize + Strict String Casting</span>
-                  <button type="button" class="copy-code-btn" onclick="copyCodeSnippet(this)">Copy</button>
                 </div>
                 <div class="compare-body">
                   <pre><code><span class="t-comment">// ✅ SECURE: mongo-sanitize strips all $ / . keys</span>
@@ -2591,70 +2589,108 @@ Content-Length: 28
       });
     }
 
-    // 4. Hero Widget Interactive Toggle (Matching ssrf.html)
+        // 4. Hero Widget Interactive Toggle (Exact Module 01 Parity)
     const btnNosqlSafe = document.getElementById('btnNosqlSafe');
     const btnNosqlExploit = document.getElementById('btnNosqlExploit');
-    const heroUrlPill = document.getElementById('heroUrlPill');
-    const heroPayloadText = document.getElementById('heroPayloadText');
-    const heroBeamParticle = document.getElementById('heroBeamParticle');
-    const heroFlowState = document.getElementById('heroFlowState');
-    const heroTargetCard = document.getElementById('heroTargetCard');
-    const heroTargetName = document.getElementById('heroTargetName');
-    const heroTargetStatus = document.getElementById('heroTargetStatus');
-    const heroField1 = document.getElementById('heroField1');
-    const heroField2 = document.getElementById('heroField2');
-    const heroField3 = document.getElementById('heroField3');
-    const heroTargetNote = document.getElementById('heroTargetNote');
+    const nosqlAvatar = document.getElementById('nosqlAttackerAvatar');
+    const nosqlLabel = document.getElementById('nosqlAttackerLabel');
+    const nosqlSub = document.getElementById('nosqlAttackerSub');
+    const nosqlVerb = document.getElementById('nosqlVerb');
+    const nosqlBadgeFrom = document.getElementById('nosqlBadgeFrom');
+    const nosqlBadgeTo = document.getElementById('nosqlBadgeTo');
+    const nosqlBeam = document.getElementById('nosqlBeamParticle');
+    const nosqlFlowState = document.getElementById('nosqlFlowStateText');
+    const nosqlCard = document.getElementById('nosqlTargetCard');
+    const nosqlTargetName = document.getElementById('nosqlTargetName');
+    const nosqlTargetStatus = document.getElementById('nosqlTargetStatus');
+    const nosqlField1 = document.getElementById('nosqlTargetField1');
+    const nosqlField2 = document.getElementById('nosqlTargetField2');
+    const nosqlField3 = document.getElementById('nosqlTargetField3');
+    const nosqlNote = document.getElementById('nosqlTargetNote');
 
     if (btnNosqlSafe && btnNosqlExploit) {
       btnNosqlSafe.addEventListener('click', () => {
         btnNosqlSafe.classList.add('active', 'safe');
         btnNosqlExploit.classList.remove('active', 'exploit');
 
-        heroUrlPill.innerHTML = '<span style="color:#10b981; font-weight:700;">POST</span> <span>/api/v1/auth/login</span>';
-        heroPayloadText.textContent = 'pass: "ValidUserStringPass123"';
-        heroPayloadText.style.color = '#6ee7b7';
-        heroBeamParticle.style.background = 'linear-gradient(90deg, transparent, #10b981, transparent)';
-        heroFlowState.textContent = 'Schema Validated (Zod + sanitize)';
-        heroFlowState.style.color = '#10b981';
+        if (nosqlAvatar) {
+          nosqlAvatar.textContent = '👤';
+          nosqlAvatar.style.borderColor = '#10b981';
+          nosqlAvatar.style.background = 'rgba(16, 185, 129, 0.15)';
+          nosqlAvatar.style.boxShadow = '0 0 15px rgba(16, 185, 129, 0.35)';
+        }
+        if (nosqlLabel) { nosqlLabel.textContent = 'User (Normal)'; nosqlLabel.style.color = '#34d399'; }
+        if (nosqlSub) nosqlSub.textContent = 'Input: pass: "secret"';
 
-        heroTargetCard.className = 'target-profile-card safe';
-        heroTargetName.textContent = 'MongoDB Users Collection';
-        heroTargetStatus.className = 'target-pill-status blocked';
-        heroTargetStatus.textContent = 'PROTECTED';
-        heroField1.textContent = 'username: "admin"';
-        heroField1.style.color = '#10b981';
-        heroField2.textContent = 'Type: String Only (Verified)';
-        heroField2.style.color = '#10b981';
-        heroField3.textContent = 'bcrypt.compare() Verified';
-        heroField3.style.color = '#10b981';
-        heroTargetNote.textContent = '🛡️ Zero Injection Allowed';
-        heroTargetNote.style.color = '#10b981';
+        if (nosqlVerb) { nosqlVerb.style.color = '#34d399'; }
+        if (nosqlBadgeFrom) nosqlBadgeFrom.textContent = 'pass: "str"';
+        if (nosqlBadgeTo) {
+          nosqlBadgeTo.textContent = 'pass: "str"';
+          nosqlBadgeTo.className = 'swap-id-badge from';
+        }
+
+        if (nosqlBeam) nosqlBeam.classList.remove('exploit');
+        if (nosqlFlowState) {
+          nosqlFlowState.textContent = 'Schema Validated (String)';
+          nosqlFlowState.style.color = '#34d399';
+        }
+
+        if (nosqlCard) {
+          nosqlCard.className = 'target-profile-card normal';
+        }
+        if (nosqlTargetName) nosqlTargetName.textContent = 'MongoDB Auth';
+        if (nosqlTargetStatus) {
+          nosqlTargetStatus.className = 'target-pill-status safe';
+          nosqlTargetStatus.textContent = 'HTTP 401';
+        }
+        if (nosqlField1) nosqlField1.innerHTML = 'User: <code>admin</code>';
+        if (nosqlField2) nosqlField2.innerHTML = 'Match: <code>bcrypt check</code>';
+        if (nosqlField3) nosqlField3.innerHTML = 'Status: <code style="color:#10b981;">Rejected (Safe)</code>';
+        if (nosqlNote) {
+          nosqlNote.innerHTML = '<span style="color:#34d399;">✓ Protected: Schema validation</span>';
+        }
       });
 
       btnNosqlExploit.addEventListener('click', () => {
         btnNosqlExploit.classList.add('active', 'exploit');
         btnNosqlSafe.classList.remove('active', 'safe');
 
-        heroUrlPill.innerHTML = '<span style="color:#ef4444; font-weight:700;">POST</span> <span>/api/v1/auth/login</span>';
-        heroPayloadText.textContent = 'pass: {"$ne": "wrong_guess"}';
-        heroPayloadText.style.color = '#fca5a5';
-        heroBeamParticle.style.background = 'linear-gradient(90deg, transparent, #ef4444, transparent)';
-        heroFlowState.textContent = 'Operator Inverting Query Logic';
-        heroFlowState.style.color = '#ef4444';
+        if (nosqlAvatar) {
+          nosqlAvatar.textContent = '🥷';
+          nosqlAvatar.style.borderColor = '#ef4444';
+          nosqlAvatar.style.background = 'rgba(239, 68, 68, 0.15)';
+          nosqlAvatar.style.boxShadow = '0 0 15px rgba(239, 68, 68, 0.35)';
+        }
+        if (nosqlLabel) { nosqlLabel.textContent = 'Gyanendra (Attacker)'; nosqlLabel.style.color = '#f87171'; }
+        if (nosqlSub) nosqlSub.textContent = 'Payload: {"$ne": 1}';
 
-        heroTargetCard.className = 'target-profile-card exploit';
-        heroTargetName.textContent = 'MongoDB Users Collection';
-        heroTargetStatus.className = 'target-pill-status breach';
-        heroTargetStatus.textContent = 'BYPASSED';
-        heroField1.textContent = 'username: "admin"';
-        heroField1.style.color = '#ef4444';
-        heroField2.textContent = '$ne: "wrong_guess" (TRUE)';
-        heroField2.style.color = '#ef4444';
-        heroField3.textContent = 'Admin Document Returned';
-        heroField3.style.color = '#ef4444';
-        heroTargetNote.textContent = '🚨 Admin JWT Token Minted!';
-        heroTargetNote.style.color = '#f87171';
+        if (nosqlVerb) { nosqlVerb.style.color = '#ef4444'; }
+        if (nosqlBadgeFrom) nosqlBadgeFrom.textContent = 'pass: "str"';
+        if (nosqlBadgeTo) {
+          nosqlBadgeTo.textContent = '{"$ne": 1}';
+          nosqlBadgeTo.className = 'swap-id-badge to';
+        }
+
+        if (nosqlBeam) nosqlBeam.classList.add('exploit');
+        if (nosqlFlowState) {
+          nosqlFlowState.textContent = 'Inverted Query Logic';
+          nosqlFlowState.style.color = '#f87171';
+        }
+
+        if (nosqlCard) {
+          nosqlCard.className = 'target-profile-card exploit';
+        }
+        if (nosqlTargetName) nosqlTargetName.textContent = 'MongoDB Auth';
+        if (nosqlTargetStatus) {
+          nosqlTargetStatus.className = 'target-pill-status breach';
+          nosqlTargetStatus.textContent = 'HTTP 200';
+        }
+        if (nosqlField1) nosqlField1.innerHTML = 'User: <code>admin</code>';
+        if (nosqlField2) nosqlField2.innerHTML = 'Filter: <code>$ne: 1 (TRUE)</code>';
+        if (nosqlField3) nosqlField3.innerHTML = 'Token: <code>Minted (JWT)</code>';
+        if (nosqlNote) {
+          nosqlNote.innerHTML = '<span style="color:#f87171;">🚨 Admin account takeover!</span>';
+        }
       });
     }
 

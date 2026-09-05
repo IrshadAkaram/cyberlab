@@ -1274,16 +1274,16 @@ function initHeroInteractiveWidgets() {
           targetCard.classList.remove('normal');
           targetCard.classList.add('exploit');
         }
-        if (targetName) targetName.textContent = 'Linux App Container';
+        if (targetName) targetName.textContent = 'App Host';
         if (targetStatus) {
-          targetStatus.textContent = 'HTTP 200 (RCE)';
+          targetStatus.textContent = 'HTTP 200';
           targetStatus.className = 'target-pill-status breach';
         }
-        if (targetExec) targetExec.innerHTML = 'Exec: <code style="color:#ef4444;">sh -c "ping ...; whoami"</code>';
-        if (targetOutput) targetOutput.innerHTML = 'Output: <code style="color:#f87171; font-weight:700;">root (uid=0)</code>';
-        if (targetResult) targetResult.innerHTML = 'Status: <code style="color:#ef4444;">Host Compromise</code>';
+        if (targetExec) targetExec.innerHTML = 'UID: <code style="color:#f87171;">0 (root)</code>';
+        if (targetOutput) targetOutput.innerHTML = 'Exec: <code style="color:#ef4444;">whoami</code>';
+        if (targetResult) targetResult.innerHTML = 'Host: <code style="color:#ef4444;">pwned</code>';
         if (targetNote) {
-          targetNote.innerHTML = '🚨 Arbitrary OS commands executed on host!';
+          targetNote.innerHTML = '🚨 Remote Code Execution';
           targetNote.style.color = '#f87171';
         }
       } else {
@@ -1297,7 +1297,7 @@ function initHeroInteractiveWidgets() {
           avatar.style.boxShadow = '0 0 15px rgba(16, 185, 129, 0.35)';
         }
         if (label) { label.textContent = 'Vikram (User)'; label.style.color = '#34d399'; }
-        if (sub) sub.textContent = 'Input: "8.8.8.8"';
+        if (sub) sub.textContent = 'Input: 8.8.8.8';
 
         if (verb) { verb.textContent = 'POST'; verb.style.color = '#34d399'; }
         if (path) path.textContent = '/api/v1/diagnostics/ping';
@@ -1314,16 +1314,16 @@ function initHeroInteractiveWidgets() {
           targetCard.classList.remove('exploit');
           targetCard.classList.add('normal');
         }
-        if (targetName) targetName.textContent = 'Linux App Container';
+        if (targetName) targetName.textContent = 'App Host';
         if (targetStatus) {
-          targetStatus.textContent = 'HTTP 200 (OK)';
+          targetStatus.textContent = 'HTTP 200';
           targetStatus.className = 'target-pill-status safe';
         }
-        if (targetExec) targetExec.innerHTML = 'Exec: <code>["ping", "-c", "2", "8.8.8.8"]</code>';
-        if (targetOutput) targetOutput.innerHTML = 'Output: <code style="color:#34d399;">64 bytes from 8.8.8.8</code>';
-        if (targetResult) targetResult.innerHTML = 'Status: <code style="color:#34d399;">Latency: 14.2ms</code>';
+        if (targetExec) targetExec.innerHTML = 'UID: <code>unprivileged</code>';
+        if (targetOutput) targetOutput.innerHTML = 'Exec: <code>ping only</code>';
+        if (targetResult) targetResult.innerHTML = 'Status: <code style="color:#34d399;">14ms latency</code>';
         if (targetNote) {
-          targetNote.innerHTML = '<span style="color:#34d399;">✓ Protected: shell=False, no shell parser</span>';
+          targetNote.innerHTML = '<span style="color:#34d399;">✓ Protected: shell=False</span>';
           targetNote.style.color = '#34d399';
         }
       }

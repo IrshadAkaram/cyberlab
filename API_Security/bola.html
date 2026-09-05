@@ -1618,7 +1618,6 @@
             <div class="terminal-pane">
               <div class="terminal-header">
                 <span class="terminal-label">HTTP Request (Attacker Kaif modifies ID to 1002)</span>
-                <button class="btn-copy" data-target="#req-term-4">Copy</button>
               </div>
               <div class="code-container" id="req-term-4">
                 <div class="code-line"><span class="line-num">1</span><span class="code-text"><span class="http-verb">GET</span> <span class="http-path">/api/users/1002</span> <span class="http-ver">HTTP/1.1</span></span></div>
@@ -1631,7 +1630,6 @@
             <div class="terminal-pane">
               <div class="terminal-header">
                 <span class="terminal-label">HTTP Response (Victim Om Data Leaked)</span>
-                <button class="btn-copy" data-target="#res-term-4">Copy</button>
               </div>
               <div class="code-container" id="res-term-4">
                 <div class="code-line"><span class="line-num">1</span><span class="code-text"><span class="http-ver">HTTP/1.1</span> <span class="http-status-200">200 OK</span></span></div>
@@ -1672,7 +1670,6 @@
             <div class="compare-box vulnerable">
               <div class="compare-box-header">
                 <span class="compare-tag vuln">❌ Vulnerable Implementation (FastAPI)</span>
-                <button class="btn-copy" data-target="#code-vuln-clean">Copy</button>
               </div>
               <div class="code-container" id="code-vuln-clean">
                 <div class="code-line"><span class="line-num">1</span><span class="code-text"><span style="color:#f43f5e;">@app.get</span>(<span style="color:#fbbf24;">"/api/invoices/{invoice_id}"</span>)</span></div>
@@ -1695,7 +1692,6 @@
             <div class="compare-box secure">
               <div class="compare-box-header">
                 <span class="compare-tag safe">✅ Remediated Implementation (Scoped Query)</span>
-                <button class="btn-copy" data-target="#code-safe-clean">Copy</button>
               </div>
               <div class="code-container" id="code-safe-clean">
                 <div class="code-line"><span class="line-num">1</span><span class="code-text"><span style="color:#f43f5e;">@app.get</span>(<span style="color:#fbbf24;">"/api/invoices/{invoice_id}"</span>)</span></div>

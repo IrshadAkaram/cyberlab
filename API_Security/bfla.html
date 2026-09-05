@@ -1329,7 +1329,6 @@
             <div class="terminal-pane">
               <div class="terminal-header">
                 <span class="terminal-label">HTTP Request (Kaif calls Admin Endpoint with role: user)</span>
-                <button class="btn-copy" data-target="#req-term-bfla">Copy</button>
               </div>
               <div class="code-container" id="req-term-bfla">
                 <div class="code-line"><span class="line-num">1</span><span class="code-text"><span class="http-verb" style="color:#ef4444;">DELETE</span> <span class="http-path">/api/v1/admin/users/102</span> <span class="http-ver">HTTP/1.1</span></span></div>
@@ -1342,7 +1341,6 @@
             <div class="terminal-pane">
               <div class="terminal-header">
                 <span class="terminal-label">HTTP Response (Vulnerable BFLA Execution)</span>
-                <button class="btn-copy" data-target="#resp-term-bfla">Copy</button>
               </div>
               <div class="code-container" id="resp-term-bfla">
                 <div class="code-line"><span class="line-num">1</span><span class="code-text"><span class="http-ver">HTTP/1.1</span> <span class="http-status-200">200 OK</span></span></div>
@@ -1382,7 +1380,6 @@
             <div class="compare-box vulnerable">
               <div class="compare-box-header">
                 <span class="compare-tag vuln">❌ Vulnerable Implementation (FastAPI)</span>
-                <button class="btn-copy" data-target="#code-vuln-bfla">Copy</button>
               </div>
               <div class="code-container" id="code-vuln-bfla">
                 <div class="code-line"><span class="line-num">1</span><span class="code-text"><span style="color:#f43f5e;">@app.delete</span>(<span style="color:#fbbf24;">"/api/v1/admin/users/{user_id}"</span>)</span></div>
@@ -1401,7 +1398,6 @@
             <div class="compare-box secure">
               <div class="compare-box-header">
                 <span class="compare-tag safe">✅ Remediated & Secure Code (RBAC Enforced)</span>
-                <button class="btn-copy" data-target="#code-safe-bfla">Copy</button>
               </div>
               <div class="code-container" id="code-safe-bfla">
                 <div class="code-line"><span class="line-num">1</span><span class="code-text"><span style="color:#64748b;"># Centralized RBAC Role Guard Middleware</span></span></div>

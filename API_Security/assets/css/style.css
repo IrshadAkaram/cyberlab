@@ -172,10 +172,7 @@ html[data-theme="light"] .vuln-nav-item:hover {
   color: #0f172a;
 }
 
-html[data-theme="light"] .vuln-nav-item.active {
-  background: #0284c7;
-  color: #ffffff;
-}
+/* light theme active */
 
 /* Universal Layout & Justify Enforcement */
 p, .text-para, .panel-body-text, .pillar-right-content, .faq-answer, .term-body,
@@ -3476,3 +3473,17 @@ html[data-theme="light"] .check-status-btn {
 
 
 
+
+.vuln-nav-item.active {
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.22), rgba(2, 132, 199, 0.35)) !important;
+  border: 1px solid rgba(56, 189, 248, 0.55) !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  box-shadow: 0 4px 16px rgba(56, 189, 248, 0.3) !important;
+}
+
+.vuln-nav-item.active .nav-num-badge {
+  background: #38bdf8 !important;
+  color: #040814 !important;
+  font-weight: 800 !important;
+}

@@ -353,7 +353,6 @@
           <div class="terminal-pane">
             <div class="terminal-header">
               <span class="terminal-label">Request (Manipulating ID to 1002)</span>
-              <button class="btn-copy" data-target="#req-block-d1">Copy</button>
             </div>
             <div class="code-container" id="req-block-d1">
               <div class="code-line"><span class="line-num">1</span><span class="code-text"><span class="http-verb">GET</span> <span class="http-path">/api/users/1002</span> <span class="http-ver">HTTP/1.1</span></span></div>
@@ -364,7 +363,6 @@
           <div class="terminal-pane">
             <div class="terminal-header">
               <span class="terminal-label">Response (Victim Data Leaked)</span>
-              <button class="btn-copy" data-target="#res-block-d1">Copy</button>
             </div>
             <div class="code-container" id="res-block-d1">
               <div class="code-line"><span class="line-num">1</span><span class="code-text"><span class="http-ver">HTTP/1.1</span> <span class="http-status-200">200 OK</span></span></div>
@@ -390,7 +388,6 @@
           <div class="compare-box vulnerable">
             <div class="compare-box-header">
               <span class="compare-tag vuln">❌ Vulnerable (Unscoped Query)</span>
-              <button class="btn-copy" data-target="#v-code-d1">Copy</button>
             </div>
             <div class="code-container" id="v-code-d1">
               <div class="code-line"><span class="line-num">1</span><span class="code-text">user = db.query(User).filter(User.id == user_id).first()</span></div>
@@ -400,7 +397,6 @@
           <div class="compare-box secure">
             <div class="compare-box-header">
               <span class="compare-tag safe">✅ Secure (Scoped Query)</span>
-              <button class="btn-copy" data-target="#s-code-d1">Copy</button>
             </div>
             <div class="code-container" id="s-code-d1">
               <div class="code-line"><span class="line-num">1</span><span class="code-text">user = db.query(User).filter(</span></div>
