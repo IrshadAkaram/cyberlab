@@ -589,36 +589,38 @@
       margin-top: 4px;
     }
 
-    /* Tab Underline Navigation */
+    /* Tab Underline Navigation (Module 11 Parity) */
     .tabs-underline-nav-wrapper {
-      margin-bottom: 1.6rem;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      position: sticky;
-      top: 0;
-      background: #040814;
-      z-index: 20;
-      padding-top: 0.4rem;
+      margin-bottom: 1.8rem;
+      background: transparent;
     }
+    .tab-underline-nav,
     .tabs-underline-nav {
       display: flex;
-      gap: 1.2rem;
+      align-items: center;
+      gap: 24px;
+      border-bottom: 2px solid rgba(255, 255, 255, 0.08);
+      margin-bottom: 1.8rem;
       overflow-x: auto;
       scrollbar-width: none;
+      background: transparent;
     }
+    .tab-underline-nav::-webkit-scrollbar,
     .tabs-underline-nav::-webkit-scrollbar {
       display: none;
     }
     .tab-underline-btn {
       background: none;
       border: none;
-      padding: 0.8rem 0.2rem;
       color: #94a3b8;
-      font-size: 0.88rem;
+      font-family: var(--font-sans);
+      font-size: 0.95rem;
       font-weight: 600;
+      padding: 12px 2px 14px 2px;
       cursor: pointer;
       position: relative;
-      transition: all 0.2s;
       white-space: nowrap;
+      transition: color 0.2s;
     }
     .tab-underline-btn:hover {
       color: #f1f5f9;
@@ -629,12 +631,13 @@
     .tab-underline-btn.active::after {
       content: "";
       position: absolute;
-      bottom: -1px;
+      bottom: -2px;
       left: 0;
       right: 0;
-      height: 2px;
+      height: 3px;
       background: #38bdf8;
-      box-shadow: 0 0 10px #38bdf8;
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.8);
+      border-radius: 3px;
     }
 
     /* Tab Panes */
@@ -865,6 +868,199 @@
     .code-editor-body code {
       font-family: inherit;
     }
+
+     /* ── Overview Section: Module 10 Pattern ─────────────────────────────── */
+     .def-lead-card {
+       background: rgba(14, 165, 233, 0.05);
+       border: 1px solid rgba(56, 189, 248, 0.2);
+       border-radius: var(--radius-md, 12px);
+       padding: 1.3rem 1.6rem;
+       margin-bottom: 1.6rem;
+     }
+     .def-lead-title {
+       font-family: var(--font-heading);
+       font-size: 1.1rem;
+       font-weight: 700;
+       margin-bottom: 0.8rem;
+       display: flex;
+       align-items: center;
+       gap: 10px;
+     }
+     .def-lead-text,
+     .def-lead-text span,
+     .def-lead-text p {
+       color: #f1f5f9 !important;
+       font-size: 1rem !important;
+       line-height: 1.75 !important;
+       margin: 0;
+       text-align: justify !important;
+       text-justify: inter-word !important;
+     }
+     .def-lead-text strong, .def-lead-text b { color: #ffffff !important; font-weight: 700; }
+
+     .story-card-box {
+       background: linear-gradient(135deg, rgba(30, 41, 59, 0.5), rgba(15, 23, 42, 0.8));
+       border: 1px solid rgba(56, 189, 248, 0.2);
+       border-left: 4px solid #38bdf8;
+       border-radius: var(--radius-md, 12px);
+       padding: 1.4rem;
+       margin-bottom: 1.6rem;
+     }
+     .dialogue-turn {
+       display: flex;
+       gap: 12px;
+       margin-bottom: 1rem;
+       align-items: flex-start;
+     }
+     .dialogue-turn:last-child { margin-bottom: 0; }
+     .char-avatar-circle {
+       width: 38px;
+       height: 38px;
+       border-radius: 50%;
+       display: flex;
+       align-items: center;
+       justify-content: center;
+       font-size: 1.1rem;
+       flex-shrink: 0;
+       font-weight: 800;
+       font-size: 0.82rem;
+     }
+     .char-dev {
+       background: rgba(56, 189, 248, 0.15);
+       border: 2px solid #38bdf8;
+       color: #38bdf8;
+     }
+     .char-sec {
+       background: rgba(239, 68, 68, 0.15);
+       border: 2px solid #ef4444;
+       color: #f87171;
+     }
+     .char-gql {
+       background: rgba(168, 85, 247, 0.15);
+       border: 2px solid #a855f7;
+       color: #c084fc;
+     }
+     .story-bubble {
+       background: rgba(15, 23, 42, 0.6);
+       border: 1px solid rgba(255, 255, 255, 0.08);
+       border-radius: var(--radius-md, 12px);
+       padding: 0.9rem 1.2rem;
+       font-size: 0.96rem;
+       line-height: 1.7;
+       color: #f1f5f9;
+       flex: 1;
+     }
+     .story-bubble strong { color: #38bdf8; }
+
+     .arch-flow-box {
+       background: #030712;
+       border: 1px solid rgba(255, 255, 255, 0.1);
+       border-radius: var(--radius-md, 12px);
+       padding: 1.4rem;
+       margin: 1.4rem 0;
+     }
+     .arch-step-grid {
+       display: grid;
+       grid-template-columns: repeat(4, 1fr);
+       gap: 12px;
+     }
+     @media (max-width: 900px) { .arch-step-grid { grid-template-columns: 1fr; } }
+     .arch-node {
+       background: rgba(15, 23, 42, 0.8);
+       border: 1px solid rgba(56, 189, 248, 0.25);
+       border-radius: var(--radius-md, 12px);
+       padding: 1rem;
+       display: flex;
+       flex-direction: column;
+       align-items: center;
+       text-align: center;
+       gap: 6px;
+     }
+     .arch-node.danger-node { border-color: rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.05); }
+     .arch-node.target-node { border-color: rgba(245, 158, 11, 0.4); background: rgba(245, 158, 11, 0.05); }
+     .arch-node.success-node { border-color: rgba(16, 185, 129, 0.4); background: rgba(16, 185, 129, 0.05); }
+     .arch-node-title { font-size: 0.88rem; font-weight: 700; color: #f1f5f9; }
+     .arch-node-desc { font-size: 0.78rem; color: #cbd5e1; line-height: 1.5; }
+
+     /* ── Checklist: Module 11 Exact Parity ───────────────────────────────── */
+     .checklist-meta-header {
+       display: flex;
+       justify-content: space-between;
+       align-items: center;
+       margin-bottom: 1.2rem;
+       padding: 0.8rem 1rem;
+       background: rgba(15, 23, 42, 0.6);
+       border-radius: var(--radius-md, 12px);
+       border: 1px solid rgba(255, 255, 255, 0.05);
+     }
+     .checklist-guide-msg { font-size: 0.86rem; color: #cbd5e1; }
+     .checklist-counter-badge {
+       font-family: var(--font-mono);
+       font-size: 0.78rem;
+       background: rgba(56, 189, 248, 0.15);
+       border: 1px solid rgba(56, 189, 248, 0.4);
+       color: #38bdf8;
+       padding: 3px 10px;
+       border-radius: 999px;
+       font-weight: 700;
+     }
+     .checklist-container { display: flex; flex-direction: column; gap: 14px; }
+     .checklist-item {
+       background: rgba(15, 23, 42, 0.5);
+       border: 1px solid rgba(255, 255, 255, 0.06);
+       border-radius: var(--radius-md, 12px);
+       padding: 1.2rem 1.4rem;
+       display: flex;
+       gap: 16px;
+       align-items: flex-start;
+       transition: all 0.2s ease;
+       cursor: pointer;
+     }
+     .checklist-item:hover { border-color: rgba(56, 189, 248, 0.3); background: rgba(15, 23, 42, 0.75); }
+     .checklist-item.item-passed { border-color: rgba(16, 185, 129, 0.5); background: rgba(16, 185, 129, 0.04); }
+     .checklist-item.item-failed { border-color: rgba(239, 68, 68, 0.5); background: rgba(239, 68, 68, 0.04); }
+     .check-box-circle {
+       width: 32px; height: 32px;
+       border-radius: 50%;
+       border: 2px solid rgba(255, 255, 255, 0.2);
+       display: flex; align-items: center; justify-content: center;
+       flex-shrink: 0; margin-top: 2px; cursor: pointer;
+       transition: all 0.2s;
+       font-weight: 700; font-family: var(--font-mono); font-size: 0.85rem; color: #94a3b8;
+     }
+     .checklist-item.item-passed .check-box-circle { border-color: #10b981; background: #10b981; color: #fff; box-shadow: 0 0 10px rgba(16,185,129,0.5); }
+     .checklist-item.item-failed .check-box-circle { border-color: #ef4444; background: #ef4444; color: #fff; box-shadow: 0 0 10px rgba(239,68,68,0.5); }
+     .check-content { flex: 1; }
+     .check-content h5 { margin: 0 0 4px; font-size: 0.98rem; font-family: var(--font-heading); color: #fff; }
+     .check-content p { margin: 0 0 10px; font-size: 0.86rem; color: #94a3b8; line-height: 1.5; }
+     .check-how-to-box {
+       background: rgba(0,0,0,0.35);
+       border: 1px solid rgba(255,255,255,0.05);
+       border-radius: 8px;
+       padding: 10px 14px;
+       margin-bottom: 10px;
+       font-size: 0.82rem; color: #cbd5e1; line-height: 1.6;
+     }
+     .check-how-to-title { font-weight: 700; color: #38bdf8; margin-bottom: 4px; display: flex; align-items: center; gap: 5px; }
+     .check-burp-block {
+       background: #020612;
+       border: 1px solid rgba(255,255,255,0.08);
+       border-radius: 8px;
+       padding: 10px 12px; margin: 8px 0;
+       font-family: var(--font-mono); font-size: 0.78rem; color: #cbd5e1;
+       overflow-x: auto; white-space: pre;
+     }
+     .check-actions-bar { display: flex; gap: 10px; margin-top: 8px; }
+     .check-status-btn {
+       padding: 4px 12px;
+       border-radius: 999px;
+       font-size: 0.75rem; font-weight: 600;
+       cursor: pointer; border: 1px solid transparent;
+       background: rgba(255,255,255,0.05); color: #94a3b8;
+       display: flex; align-items: center; gap: 6px; transition: all 0.2s;
+     }
+     .check-status-btn.pass-btn:hover, .check-status-btn.pass-btn.active { background: rgba(16,185,129,0.2); border-color: #10b981; color: #34d399; }
+     .check-status-btn.fail-btn:hover, .check-status-btn.fail-btn.active { background: rgba(239,68,68,0.2); border-color: #ef4444; color: #f87171; }
 
     /* Burp Checklist (Module 07 / 11 Parity) */
     .checklist-counter-card {
@@ -1417,7 +1613,7 @@
           <div class="hero-widget-body">
             <div class="attacker-graphic-node" id="gqlAttackerNode">
               <div class="attacker-avatar-circle" id="gqlAttackerAvatar">🥷</div>
-              <div class="attacker-label" id="gqlAttackerLabel">Attacker (Adversary)</div>
+              <div class="attacker-label" id="gqlAttackerLabel">Attacker</div>
               <div class="attacker-sub" id="gqlAttackerSub">__schema { types }</div>
             </div>
 
@@ -1468,101 +1664,167 @@
            ==================================================================== -->
       <div class="tab-content-pane active" id="tab-overview">
 
-        <!-- Engineering Dialogue -->
-        <div class="dialogue-container">
-          <div class="dialogue-title-bar">
-            <h3>💬 Engineering Dialogue: REST vs GraphQL Security Realities</h3>
-            <span style="font-size:0.75rem; color:#94a3b8; font-family:var(--font-mono);">PRODUCTION_INCIDENT_POSTMORTEM</span>
+        <!-- Beginner-Friendly: GraphQL in Simple Words -->
+        <div class="def-lead-card" style="border-left:4px solid #38bdf8; border-color:rgba(56,189,248,0.3); background:rgba(56,189,248,0.04); margin-bottom:1.6rem;">
+          <div class="def-lead-title" style="color:#38bdf8;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            <span class="lang-hi">GraphQL Simple Words Me — Beginner's Guide</span>
+            <span class="lang-en">GraphQL in Simple Words — Beginner's Guide</span>
           </div>
 
-          <div class="dialogue-thread">
-            <div class="dialogue-row vikram">
-              <div class="char-avatar char-vikram">VI</div>
-              <div class="dialogue-bubble bubble-vikram">
-                <span class="dialogue-name name-vikram">Vikram (Backend Lead)</span>
-                <span class="lang-hi">Rohan bhai, humne naye checkout microservice ko REST se Apollo GraphQL par migrate kiya tha taaki mobile app sirf required fields fetch kare aur over-fetching na ho. Frontend team bohot khush thi. Lekin kl raat hamare Kubernetes pods memory leak ki wajah se crash hone lage, aur subah security team ne report kiya ki staging ka internal <code>deleteAccount</code> mutation public ho gaya hai! Ye kaise hua?</span>
-                <span class="lang-en">Rohan, we recently migrated our checkout microservice from traditional REST to Apollo GraphQL so our mobile apps could request exact fields without over-fetching. Frontend velocity doubled. But last night, our Kubernetes pods suddenly suffered OOM crash loops, and our external bug bounty triage reported that our internal <code>deleteAccount</code> mutation is exposed to the public! How did this happen?</span>
+          <!-- Step cards grid -->
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:0.8rem;">
+
+            <div style="background:rgba(15,23,42,0.7); border:1px solid rgba(56,189,248,0.15); border-radius:10px; padding:1rem; display:flex; gap:12px; align-items:flex-start;">
+              <div style="min-width:34px; height:34px; background:rgba(56,189,248,0.15); border:2px solid #38bdf8; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800; color:#38bdf8; font-size:0.9rem;">1</div>
+              <div>
+                <div style="font-weight:700; color:#fff; font-size:0.95rem; margin-bottom:4px;">
+                  <span class="lang-hi">GraphQL kya hai?</span>
+                  <span class="lang-en">What is GraphQL?</span>
+                </div>
+                <div style="font-size:0.86rem; color:#cbd5e1; line-height:1.6;">
+                  <span class="lang-hi">GraphQL ek <strong>API language</strong> hai jo Facebook ne banaya. Isme sirf <strong>ek endpoint</strong> hota hai <code>/graphql</code>, aur client decide karta hai ki use exactly kaunsa data chahiye — zyada bhi nahi, kam bhi nahi.</span>
+                  <span class="lang-en">GraphQL is an <strong>API query language</strong> built by Facebook. It has just <strong>one endpoint</strong> <code>/graphql</code>, and the client decides exactly what data it wants — no more, no less.</span>
+                </div>
               </div>
             </div>
 
-            <div class="dialogue-row rohan">
-              <div class="char-avatar char-rohan">RO</div>
-              <div class="dialogue-bubble bubble-rohan">
-                <span class="dialogue-name name-rohan">Rohan (Senior Security Architect)</span>
-                <span class="lang-hi">Vikram, yahi GraphQL ka sabse bada trap hai! By default, Apollo Server aur GraphQL engines me <strong>Introspection</strong> enabled rehta hai. Iska matlab koi bhi user <code>__schema</code> query bhej kar tumhare sare queries, mutations, internal object types aur sensitive parameters ka pura blueprint 1 second me download kar sakta hai! Aur jo crash hua, wo ek <strong>Recursive Circular Query</strong> tha — attacker ne <code>user { orders { user { orders { user ... } } } }</code> bhej kar database par hazaaron nested SQL joins trigger kar diye!</span>
-                <span class="lang-en">Vikram, that is the quintessential GraphQL pitfall! By default, engines like Apollo Server ship with <strong>Introspection</strong> enabled. Any anonymous caller can query the meta-field <code>__schema</code> and receive your complete architectural blueprint—every query, mutation, hidden administrative field, and resolver argument. And that pod crash was caused by an <strong>Unbounded Circular Query</strong>—an attacker nested <code>user -> orders -> user -> orders</code> 20 times, forcing your resolvers into exponential database joins until memory was exhausted!</span>
+            <div style="background:rgba(15,23,42,0.7); border:1px solid rgba(168,85,247,0.15); border-radius:10px; padding:1rem; display:flex; gap:12px; align-items:flex-start;">
+              <div style="min-width:34px; height:34px; background:rgba(168,85,247,0.15); border:2px solid #a855f7; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800; color:#c084fc; font-size:0.9rem;">2</div>
+              <div>
+                <div style="font-weight:700; color:#fff; font-size:0.95rem; margin-bottom:4px;">
+                  <span class="lang-hi">REST se alag kaise hai?</span>
+                  <span class="lang-en">How is it different from REST?</span>
+                </div>
+                <div style="font-size:0.86rem; color:#cbd5e1; line-height:1.6;">
+                  <span class="lang-hi">REST me alag-alag URLs hote hain (<code>/users</code>, <code>/orders</code>). GraphQL me <strong>ek hi URL</strong> se sab kuch milta hai. Aap khud query likhte ho — server sirf sunke jawab deta hai.</span>
+                  <span class="lang-en">REST has separate URLs for each resource. GraphQL has <strong>one URL</strong> for everything. You write the query describing what you need, and the server replies with exactly that.</span>
+                </div>
               </div>
             </div>
 
-            <div class="dialogue-row vikram">
-              <div class="char-avatar char-vikram">VI</div>
-              <div class="dialogue-bubble bubble-vikram">
-                <span class="dialogue-name name-vikram">Vikram (Backend Lead)</span>
-                <span class="lang-hi">Arre baap re! Par humne Cloudflare WAF par IP rate limiting lagayi thi. Attacker ne sirf 1 single HTTP request bheja tha!</span>
-                <span class="lang-en">Unbelievable! But we have Cloudflare WAF rate limiting configured per IP. The attacker only sent a single HTTP POST request to <code>/graphql</code>!</span>
+            <div style="background:rgba(15,23,42,0.7); border:1px solid rgba(239,68,68,0.15); border-radius:10px; padding:1rem; display:flex; gap:12px; align-items:flex-start;">
+              <div style="min-width:34px; height:34px; background:rgba(239,68,68,0.15); border:2px solid #ef4444; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800; color:#f87171; font-size:0.9rem;">3</div>
+              <div>
+                <div style="font-weight:700; color:#fff; font-size:0.95rem; margin-bottom:4px;">
+                  <span class="lang-hi">Problem kya hai?</span>
+                  <span class="lang-en">What is the security problem?</span>
+                </div>
+                <div style="font-size:0.86rem; color:#cbd5e1; line-height:1.6;">
+                  <span class="lang-hi">GraphQL me ek built-in <strong>"X-Ray machine"</strong> hoti hai jise <code>__schema</code> kehte hain. Default ON rehti hai. Koi bhi ise use karke poora server ka map download kar sakta hai — sare hidden functions, secrets, sab!</span>
+                  <span class="lang-en">GraphQL has a built-in <strong>"X-Ray machine"</strong> called <code>__schema</code> that is ON by default. Anyone can use it to download a complete map of your server — all hidden functions, admin mutations, everything!</span>
+                </div>
               </div>
             </div>
 
-            <div class="dialogue-row rohan">
-              <div class="char-avatar char-rohan">RO</div>
-              <div class="dialogue-bubble bubble-rohan">
-                <span class="dialogue-name name-rohan">Rohan (Senior Security Architect)</span>
-                <span class="lang-hi">Kyunki traditional WAFs HTTP request count measure karte hain, GraphQL AST complexity nahi! Attacker ne <strong>Alias Batching</strong> use kiya — ek hi HTTP POST body me 500 alag-alag alias queries bhej diye (<code>a1: login(...), a2: login(...)</code>). WAF ke liye ye 1 request thi, lekin tumhare backend server ne 500 database operations execute kar dale! GraphQL ko secure karne ke liye tumhe network layer par nahi, resolver aur query AST validation layer par defence lagana padta hai!</span>
-                <span class="lang-en">Because perimeter WAFs inspect HTTP request counts, not GraphQL AST complexity! Attackers use <strong>Alias Batching</strong>—packing 500 distinct operations inside a single HTTP POST body (<code>a1: login(...), a2: login(...)</code>). The WAF logs 1 request, but your server executes 500 database queries! To secure GraphQL, defenses must reside directly within AST validation rules, query depth limiters, and resolver authorization layers!</span>
+            <div style="background:rgba(15,23,42,0.7); border:1px solid rgba(245,158,11,0.15); border-radius:10px; padding:1rem; display:flex; gap:12px; align-items:flex-start;">
+              <div style="min-width:34px; height:34px; background:rgba(245,158,11,0.15); border:2px solid #f59e0b; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800; color:#fbbf24; font-size:0.9rem;">4</div>
+              <div>
+                <div style="font-weight:700; color:#fff; font-size:0.95rem; margin-bottom:4px;">
+                  <span class="lang-hi">Server crash kaise hota hai?</span>
+                  <span class="lang-en">How can a server be crashed?</span>
+                </div>
+                <div style="font-size:0.86rem; color:#cbd5e1; line-height:1.6;">
+                  <span class="lang-hi">Attacker ek "infinite loop" query bhejta hai — <em>user ke orders, har order ke users, har user ke orders...</em> Server ise ek real request samajhta hai aur database queries karta rehta hai jab tak RAM khatam na ho jaye aur crash ho jaye!</span>
+                  <span class="lang-en">Attacker sends an "infinite loop" query — <em>user's orders, each order's user, each user's orders...</em> The server treats it as a real request and keeps hitting the database until it runs out of RAM and crashes!</span>
+                </div>
               </div>
+            </div>
+
+          </div>
+
+          <!-- Quick Fact Banner -->
+          <div style="margin-top:12px; background:rgba(56,189,248,0.08); border:1px dashed rgba(56,189,248,0.35); border-radius:8px; padding:0.75rem 1rem; font-size:0.85rem; color:#cbd5e1; line-height:1.6; display:flex; gap:10px; align-items:flex-start;">
+            <span style="font-size:1.2rem; flex-shrink:0;">💡</span>
+            <div>
+              <span class="lang-hi"><strong style="color:#38bdf8;">याद रखें:</strong> REST me ek hacker ko 100 alag URLs probe karni padti hain. GraphQL me <strong>sirf 1 request</strong> se woh pura server ka blueprint pa leta hai. Isliye GraphQL Security zyada important ho jaati hai!</span>
+              <span class="lang-en"><strong style="color:#38bdf8;">Remember:</strong> In REST, a hacker must probe 100 different URLs. In GraphQL, <strong>just 1 request</strong> gives them a complete server blueprint. That's exactly why GraphQL Security matters more!</span>
             </div>
           </div>
         </div>
 
-        <!-- Comparison Table: REST vs GraphQL -->
-        <div class="content-panel-card highlight" style="margin-bottom:2rem;">
-          <div class="panel-card-header">
-            <div class="panel-icon-badge">⚖️</div>
-            <h4>Architectural Security Comparison: REST vs. GraphQL</h4>
+        <!-- Real-Life Analogy Card -->
+        <div class="def-lead-card" style="border-left:4px solid #a855f7; background:rgba(168,85,247,0.05); border-color:rgba(168,85,247,0.25);">
+          <div class="def-lead-title" style="color:#a855f7;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+            <span class="lang-hi">Real-Life Example: Magic Menu Waiter — Jo Bhi Maango, Turant Mil Jaye!</span>
+            <span class="lang-en">Real-Life Example: The Magic Menu Waiter Who Reveals Kitchen Secrets</span>
           </div>
-          <div style="overflow-x:auto;">
-            <table style="width:100%; border-collapse:collapse; font-size:0.84rem; text-align:left;">
-              <thead>
-                <tr style="border-bottom:1px solid rgba(255,255,255,0.1); color:#38bdf8;">
-                  <th style="padding:10px;">Security Dimension</th>
-                  <th style="padding:10px;">Traditional REST APIs</th>
-                  <th style="padding:10px;">GraphQL APIs</th>
-                  <th style="padding:10px;">Attacker Advantage in GraphQL</th>
-                </tr>
-              </thead>
-              <tbody style="color:#cbd5e1;">
-                <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
-                  <td style="padding:10px; font-weight:700; color:#fff;">Endpoint Surface</td>
-                  <td style="padding:10px;">Dozens of distinct endpoints (<code>/users</code>, <code>/orders</code>)</td>
-                  <td style="padding:10px; color:#38bdf8;">Single endpoint (<code>/graphql</code>)</td>
-                  <td style="padding:10px; color:#f87171;">Perimeter WAF URL filtering cannot distinguish read vs write operations</td>
-                </tr>
-                <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
-                  <td style="padding:10px; font-weight:700; color:#fff;">Schema Visibility</td>
-                  <td style="padding:10px;">Hidden unless Swagger/OpenAPI JSON is explicitly exposed</td>
-                  <td style="padding:10px; color:#f87171;">Introspection system allows dumping entire schema via <code>__schema</code></td>
-                  <td style="padding:10px; color:#f87171;">100% accurate discovery of all hidden types, mutations, and backend logic</td>
-                </tr>
-                <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
-                  <td style="padding:10px; font-weight:700; color:#fff;">Rate Limiting</td>
-                  <td style="padding:10px;">1 HTTP Request = 1 Operation</td>
-                  <td style="padding:10px; color:#f87171;">1 HTTP Request = N Operations via Aliases &amp; Batching</td>
-                  <td style="padding:10px; color:#f87171;">Bypasses IP-based HTTP request rate limits effortlessly</td>
-                </tr>
-                <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
-                  <td style="padding:10px; font-weight:700; color:#fff;">Resource Consumption</td>
-                  <td style="padding:10px;">Server defines database queries and nesting limits</td>
-                  <td style="padding:10px; color:#f87171;">Client dictates query depth, circular relations, and field selections</td>
-                  <td style="padding:10px; color:#f87171;">Unbounded circular queries exhaust server CPU &amp; database connections</td>
-                </tr>
-                <tr>
-                  <td style="padding:10px; font-weight:700; color:#fff;">Authorization Boundary</td>
-                  <td style="padding:10px;">Handled at Controller / Endpoint route middleware</td>
-                  <td style="padding:10px; color:#f87171;">Must be enforced per Resolver and per Field</td>
-                  <td style="padding:10px; color:#f87171;">Missing authorization in a single nested resolver leaks confidential data</td>
-                </tr>
-              </tbody>
-            </table>
+          <div class="def-lead-text">
+            <p class="lang-hi">
+              Maan lo ek high-end restaurant hai. Purane zamane me (REST API), waiter ke paas <strong>fixed menu cards</strong> the — har item ka ek alag page tha, aur tum sirf wohi order kar sakte the jo menu par likha tha. Kitchen ke andar kya banta hai, uska poora process hidden tha.<br><br>
+              Ab restaurant ne <strong>"Magic Menu" (GraphQL)</strong> introduce kiya! Ab customer seedha waiter ko ek <em>custom slip</em> de sakta hai: <em>"Mujhe chef ka naam, recipe, secret ingredient, aur sab staff ki salary bata do ek hi request me!"</em> Waiter bina check kiye sab kuch laa deta hai!<br><br>
+              <strong>Yahi GraphQL ka Security Problem Hai:</strong> Ek attacker restaurant ka customer ban ke ek special <code>__schema</code> order bhejta hai, aur waiter (GraphQL engine) kitchen ka poora blueprint — har mutation, hidden admin function, aur database structure — ek hi second me serve kar deta hai! Phir attacker ek <strong>Circular Query</strong> bhejta hai jo waiter ko infinite loop me daal deta hai jab tak kitchen (server) crash na ho jaye!
+            </p>
+            <p class="lang-en">
+              Imagine a classic restaurant (REST API) with fixed printed menu cards. Each item has its own page; you can only order what's listed. The kitchen's internal processes remain hidden from customers.<br><br>
+              Now the restaurant introduces a <strong>"Magic Menu" (GraphQL)</strong>! Customers hand the waiter a custom slip saying: <em>"Give me the chef's name, full recipe, secret ingredients, and staff salaries — all in one trip!"</em> The waiter obeys without any validation.<br><br>
+              <strong>This is GraphQL's Core Security Problem:</strong> An attacker sends a special <code>__schema</code> order and the waiter (GraphQL engine) returns your entire kitchen blueprint — every mutation, hidden admin operation, and resolver argument — in one second. Then the attacker sends a <strong>Circular Query</strong> that traps the waiter in an infinite loop until the kitchen (server) crashes from memory exhaustion!
+            </p>
+          </div>
+        </div>
+
+
+        <!-- Visual Architecture: Attack Flow -->
+        <div class="arch-flow-box">
+          <div class="def-lead-title" style="color:#38bdf8; margin-bottom:1.2rem;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+            <span class="lang-hi">GraphQL Attack Flow: Attacker Se Server Crash Tak</span>
+            <span class="lang-en">GraphQL Attack Flow: From Anonymous Request to Server Crash</span>
+          </div>
+          <div class="arch-step-grid">
+            <div class="arch-node danger-node">
+              <span style="font-size:1.8rem;">🥷</span>
+              <div class="arch-node-title">1. Attacker</div>
+              <div class="arch-node-desc">Sends single HTTP POST to <code>/graphql</code> with malicious query or introspection probe</div>
+            </div>
+            <div class="arch-node">
+              <span style="font-size:1.8rem;">🛡️</span>
+              <div class="arch-node-title">2. Perimeter WAF</div>
+              <div class="arch-node-desc">Allows it — WAF sees 1 normal HTTP request, cannot parse GraphQL AST internals</div>
+            </div>
+            <div class="arch-node danger-node">
+              <span style="font-size:1.8rem;">🖥️</span>
+              <div class="arch-node-title">3. GraphQL Engine</div>
+              <div class="arch-node-desc">Executes unvalidated query: dumps schema via <code>__schema</code> OR spins into circular resolver loops</div>
+            </div>
+            <div class="arch-node target-node">
+              <span style="font-size:1.8rem;">💀</span>
+              <div class="arch-node-title">4. Outcome</div>
+              <div class="arch-node-desc">Full schema exposed (Introspection) OR server OOM crash (Circular Query) OR brute-force bypass (Alias Batching)</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- GraphQL Threat Classification -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:1.4rem; margin-bottom:1.4rem;">
+          <div style="background:rgba(15,23,42,0.7); border:1px solid rgba(255,255,255,0.08); border-left:4px solid #ef4444; border-radius:12px; padding:1.2rem;">
+            <h4 style="margin:0 0 8px; color:#f87171; font-size:1rem;">🔍 Introspection Schema Leak</h4>
+            <p style="margin:0; font-size:0.94rem; color:#f1f5f9; line-height:1.65;">
+              <span class="lang-hi">GraphQL ka built-in <code>__schema</code> endpoint enabled hone par koi bhi attacker bina authentication ke tumhara poora API map kar leta hai — sare queries, mutations, hidden admin functions aur object types ka blueprint 1 second me download ho jata hai.</span>
+              <span class="lang-en">When <code>__schema</code> introspection remains enabled in production, any unauthenticated caller receives a complete architectural blueprint of your API — every query, mutation, hidden admin field, and object type — in one round trip.</span>
+            </p>
+          </div>
+          <div style="background:rgba(15,23,42,0.7); border:1px solid rgba(255,255,255,0.08); border-left:4px solid #f59e0b; border-radius:12px; padding:1.2rem;">
+            <h4 style="margin:0 0 8px; color:#fbbf24; font-size:1rem;">🔄 Circular Query DoS</h4>
+            <p style="margin:0; font-size:0.94rem; color:#f1f5f9; line-height:1.65;">
+              <span class="lang-hi">Attacker circularly nested query bhejta hai — <code>user { orders { user { orders { ... } } } }</code>. Har nesting level par resolvers ek aur database query trigger karte hain. Bina depth limit ke server memory exhaust hokar crash kar jaata hai.</span>
+              <span class="lang-en">An attacker nests circular relations — <code>user → orders → user → orders</code> — dozens of levels deep. Each nesting level triggers additional database joins. Without a query depth limit, server memory and CPU are exhausted, causing a complete OOM crash.</span>
+            </p>
+          </div>
+          <div style="background:rgba(15,23,42,0.7); border:1px solid rgba(255,255,255,0.08); border-left:4px solid #a855f7; border-radius:12px; padding:1.2rem;">
+            <h4 style="margin:0 0 8px; color:#c084fc; font-size:1rem;">📦 Alias Batching Bypass</h4>
+            <p style="margin:0; font-size:0.94rem; color:#f1f5f9; line-height:1.65;">
+              <span class="lang-hi">Ek single HTTP POST request me attacker 500 alag alias queries bhej sakta hai (<code>a1: login(...), a2: login(...)</code>). WAF ke liye ye 1 request hai, lekin server ke liye 500 separate operations. IP-based rate limiting completely bypass ho jaati hai.</span>
+              <span class="lang-en">A single HTTP POST can contain 500 distinct aliased operations (<code>a1: login(...), a2: login(...)</code>). Network-level IP rate limiters count 1 request, but the server processes 500 database operations — completely bypassing all perimeter-layer brute force protections.</span>
+            </p>
+          </div>
+          <div style="background:rgba(15,23,42,0.7); border:1px solid rgba(255,255,255,0.08); border-left:4px solid #10b981; border-radius:12px; padding:1.2rem;">
+            <h4 style="margin:0 0 8px; color:#34d399; font-size:1rem;">🔐 Missing Resolver Authorization</h4>
+            <p style="margin:0; font-size:0.94rem; color:#f1f5f9; line-height:1.65;">
+              <span class="lang-hi">REST me authorization ek central middleware me hoti hai. GraphQL me har resolver alag hota hai. Ek bhi resolver me authorization miss hone par, attacker nested query ke zariye sensitive data leak kar sakta hai, chahe parent query protected ho.</span>
+              <span class="lang-en">REST centralizes authorization in route middleware. In GraphQL, every resolver must independently enforce authorization. Missing a check on a single nested resolver allows attackers to reach sensitive data via deep queries, even when the parent field is properly protected.</span>
+            </p>
           </div>
         </div>
 
@@ -1659,82 +1921,137 @@
       </div>
 
       <!-- ====================================================================
-           TAB 3: ATTACK SCENARIOS
+           TAB 3: ATTACK SCENARIOS (Real-World Pentesting Demonstrations)
            ==================================================================== -->
       <div class="tab-content-pane" id="tab-scenarios">
 
-        <div class="checklist-items-stack">
-          <!-- Scenario 1 -->
-          <div class="check-audit-box">
-            <div class="check-audit-header">
-              <div class="check-title-group">
-                <div class="check-num-box" style="background:rgba(239,68,68,0.15); color:#f87171;">01</div>
-                <div>
-                  <div class="check-title-text">Scenario 1: Production Schema Discovery &amp; Hidden Mutation Takeover</div>
-                  <span style="font-size:0.75rem; color:#94a3b8;">Full Introspection Dump Leading to Admin Account Creation</span>
+        <div class="card-panel">
+          <div class="card-title-badge-row">
+            <div class="blue-circle-num">3</div>
+            <h2 class="panel-header-title">
+              <span class="lang-hi">Real-World GraphQL Attack Scenarios &amp; Exploitation Vectors</span>
+              <span class="lang-en">Real-World GraphQL Attack Scenarios &amp; Exploitation Vectors</span>
+            </h2>
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:1.4rem; margin-top:1.2rem;">
+
+            <!-- Scenario 1: Purple / Cyan Theme -->
+            <div style="background:linear-gradient(135deg, rgba(168,85,247,0.06), rgba(15,23,42,0.85)); border:1px solid rgba(168,85,247,0.25); border-left:4px solid #a855f7; border-radius:12px; padding:1.4rem;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:10px;">
+                <div style="display:flex; align-items:center; gap:12px;">
+                  <div style="width:34px; height:34px; border-radius:50%; background:rgba(168,85,247,0.18); border:2px solid #a855f7; display:flex; align-items:center; justify-content:center; font-weight:800; color:#c084fc; font-family:var(--font-mono); font-size:0.85rem;">01</div>
+                  <div>
+                    <h4 style="margin:0; color:#c084fc; font-size:1.05rem;">Scenario 1: Production Schema Discovery &amp; Hidden Mutation Takeover</h4>
+                    <span style="font-size:0.75rem; color:#94a3b8; font-family:var(--font-mono);">FULL INTROSPECTION DUMP &rarr; PRIVILEGE ESCALATION</span>
+                  </div>
                 </div>
+                <span style="background:rgba(168,85,247,0.15); border:1px solid rgba(168,85,247,0.4); color:#c084fc; padding:3px 10px; border-radius:999px; font-size:0.72rem; font-weight:700; font-family:var(--font-mono); text-transform:uppercase;">Critical Severity</span>
               </div>
-              <span class="meta-chip danger">Critical Severity</span>
-            </div>
-            <p style="font-size:0.84rem; color:#cbd5e1; margin:0; line-height:1.6;">
-              <span class="lang-hi">Attacker e-commerce website par <code>POST /graphql</code> endpoint par standard introspection query bhejta hai. Server response me pura AST dump kar deta hai, jisme developer ka hidden debug mutation <code>createAdminAccount(secretToken: String, email: String)</code> reveal ho jata hai. Attacker schema se required arguments dekh kar 1 minute me administrative user create kar leta hai.</span>
-              <span class="lang-en">An attacker sends an introspection payload to <code>POST /graphql</code> on a production e-commerce target. The server returns the entire type graph, exposing an undocumented staging mutation <code>createAdminAccount(secretToken: String, email: String)</code>. Inspecting the field arguments allows immediate administrative account creation.</span>
-            </p>
-            <div class="check-burp-snippet">
-<span style="color:#38bdf8;">POST</span> /graphql HTTP/1.1
+
+              <p style="font-size:0.88rem; color:#cbd5e1; margin:0 0 12px; line-height:1.65;">
+                <span class="lang-hi">Attacker e-commerce target par <code>POST /graphql</code> endpoint par standard introspection probe bhejta hai. Server response me poora AST dump kar deta hai, jisme developer ka hidden staging mutation <code style="color:#f87171; background:rgba(239,68,68,0.12); padding:1px 6px; border-radius:4px;">createAdminAccount(secretToken, email)</code> reveal ho jata hai. Attacker bina authorization ke root admin account create kar leta hai:</span>
+                <span class="lang-en">An attacker sends an introspection payload to <code>POST /graphql</code> on a production target. The server returns the entire type graph, exposing an undocumented internal mutation <code style="color:#f87171; background:rgba(239,68,68,0.12); padding:1px 6px; border-radius:4px;">createAdminAccount(secretToken, email)</code>. Inspecting the field arguments allows instantaneous administrative account creation:</span>
+              </p>
+
+              <div class="check-burp-block" style="border-color:rgba(168,85,247,0.25);"><span style="color:#38bdf8; font-weight:700;">POST</span> /graphql HTTP/1.1
 <span style="color:#94a3b8;">Host:</span> api.target.com
 <span style="color:#94a3b8;">Content-Type:</span> application/json
 
-{"query":"query IntrospectSchema { __schema { queryType { name } mutationType { name } types { name kind fields { name args { name type { name } } } } } }"}
-            </div>
-          </div>
+<span style="color:#c084fc;">{"query":</span> <span style="color:#34d399;">"query IntrospectSchema { __schema { queryType { name } mutationType { name } types { name kind fields { name args { name type { name } } } } } }"</span><span style="color:#c084fc;">}</span></div>
 
-          <!-- Scenario 2 -->
-          <div class="check-audit-box">
-            <div class="check-audit-header">
-              <div class="check-title-group">
-                <div class="check-num-box" style="background:rgba(239,68,68,0.15); color:#f87171;">02</div>
-                <div>
-                  <div class="check-title-text">Scenario 2: Exponential Circular Depth Denial of Service (DoS)</div>
-                  <span style="font-size:0.75rem; color:#94a3b8;">Unbounded Graph Traversal Blocking Server Event Loop</span>
-                </div>
+              <div style="background:rgba(16,185,129,0.08); border-left:3px solid #10b981; border-radius:0 8px 8px 0; padding:10px 14px; font-size:0.82rem; color:#cbd5e1; line-height:1.55; margin-top:8px;">
+                <strong style="color:#34d399;">✅ Exploit Result (HTTP 200 OK):</strong> Schema dumping revealed hidden staging mutations: <code style="color:#f87171;">createAdminAccount</code>, <code style="color:#f87171;">debugResetDB</code>. Attacker used the schema arguments to author an unauthenticated admin creation payload, seizing cloud infrastructure within 60 seconds!
               </div>
-              <span class="meta-chip danger">High Severity</span>
             </div>
-            <p style="font-size:0.84rem; color:#cbd5e1; margin:0; line-height:1.6;">
-              <span class="lang-hi">Attacker schema me <code>thread</code> aur <code>replies</code> ki circular relation dekhta hai. Wo ek query draft karta hai jisme 15 levels of nested circular fetching hoti hai. Server par har level par queries exponentially multiply hoti hain: 10 threads &times; 10 replies &times; 10 replies... Node.js process 100% CPU par freeze ho jati hai aur Kubernetes OOMKilled trigger kar deta hai.</span>
-              <span class="lang-en">The attacker notices a circular relationship between <code>thread</code> and <code>replies</code>. They craft a query nesting 15 levels of bidirectional resolution. Resolvers execute exponential queries (10 threads &times; 10 replies &times; 10 replies...), causing memory consumption to skyrocket and triggering container OOM termination.</span>
-            </p>
-            <div class="check-burp-snippet">
-<span style="color:#38bdf8;">POST</span> /graphql HTTP/1.1
+
+            <!-- Scenario 2: Crimson / Red Theme -->
+            <div style="background:linear-gradient(135deg, rgba(239,68,68,0.06), rgba(15,23,42,0.85)); border:1px solid rgba(239,68,68,0.25); border-left:4px solid #ef4444; border-radius:12px; padding:1.4rem;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:10px;">
+                <div style="display:flex; align-items:center; gap:12px;">
+                  <div style="width:34px; height:34px; border-radius:50%; background:rgba(239,68,68,0.18); border:2px solid #ef4444; display:flex; align-items:center; justify-content:center; font-weight:800; color:#f87171; font-family:var(--font-mono); font-size:0.85rem;">02</div>
+                  <div>
+                    <h4 style="margin:0; color:#f87171; font-size:1.05rem;">Scenario 2: Exponential Circular Depth Denial of Service (DoS)</h4>
+                    <span style="font-size:0.75rem; color:#94a3b8; font-family:var(--font-mono);">UNBOUNDED GRAPH TRAVERSAL &rarr; SERVER OUT-OF-MEMORY CRASH</span>
+                  </div>
+                </div>
+                <span style="background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.4); color:#f87171; padding:3px 10px; border-radius:999px; font-size:0.72rem; font-weight:700; font-family:var(--font-mono); text-transform:uppercase;">High Severity</span>
+              </div>
+
+              <p style="font-size:0.88rem; color:#cbd5e1; margin:0 0 12px; line-height:1.65;">
+                <span class="lang-hi">Attacker schema me <code>thread</code> aur <code>replies</code> ki circular relationship dekhta hai. Wo ek query draft karta hai jisme 15 levels of nested circular fetching hoti hai. Backend database par exponential SQL joins trigger hote hain: 10 threads &times; 10 replies &times; 10 threads... Node.js event loop freeze ho jata hai aur container OOM crash ho jata hai:</span>
+                <span class="lang-en">The attacker discovers a bidirectional relationship between <code>thread</code> and <code>replies</code>. They craft a payload nesting 15 levels deep. Resolvers spawn exponential database joins (10 &times; 10 &times; 10...), instantly starving Node.js event loop memory and triggering an instant container crash:</span>
+              </p>
+
+              <div class="check-burp-block" style="border-color:rgba(239,68,68,0.25);"><span style="color:#38bdf8; font-weight:700;">POST</span> /graphql HTTP/1.1
+<span style="color:#94a3b8;">Host:</span> api.target.com
 <span style="color:#94a3b8;">Content-Type:</span> application/json
 
-{"query":"query CircularDoS { thread(id: 1) { replies { thread { replies { thread { replies { thread { id author { threads { replies { id } } } } } } } } } } }"}
-            </div>
-          </div>
+<span style="color:#c084fc;">{"query":</span> <span style="color:#f87171;">"query CircularDoS { thread(id: 1) { replies { thread { replies { thread { replies { thread { id author { threads { replies { id } } } } } } } } } } }"</span><span style="color:#c084fc;">}</span></div>
 
-          <!-- Scenario 3 -->
-          <div class="check-audit-box">
-            <div class="check-audit-header">
-              <div class="check-title-group">
-                <div class="check-num-box" style="background:rgba(239,68,68,0.15); color:#f87171;">03</div>
-                <div>
-                  <div class="check-title-text">Scenario 3: 500-Alias Batching Rate Limit Bypass for OTP Brute-Force</div>
-                  <span style="font-size:0.75rem; color:#94a3b8;">Single HTTP Request Bypassing Cloudflare / Reverse Proxy Limiter</span>
-                </div>
+              <div style="background:rgba(239,68,68,0.08); border-left:3px solid #ef4444; border-radius:0 8px 8px 0; padding:10px 14px; font-size:0.82rem; color:#cbd5e1; line-height:1.55; margin-top:8px;">
+                <strong style="color:#f87171;">💥 Server Out-of-Memory Impact:</strong> RAM consumption surged from 135 MB to 4.2 GB in 920 ms! Node.js event-loop lag exceeded 8,000 ms (0 req/s throughput). Kubernetes liveness probe failed, triggering an immediate <code style="color:#fca5a5;">CrashLoopBackOff</code> across all pods!
               </div>
-              <span class="meta-chip danger">Critical Severity</span>
             </div>
-            <p style="font-size:0.84rem; color:#cbd5e1; margin:0; line-height:1.6;">
-              <span class="lang-hi">Account password reset endpoint 4-digit SMS OTP maangta hai. Reverse proxy 5 requests/minute allow karti hai. Attacker 1 single POST request me 500 aliases (<code>a0001: verifyOTP(otp:"0001"), a0002: verifyOTP(otp:"0002")...</code>) daal deta hai. WAF use 1 request samajhta hai, jabki backend 500 attempts process karke victim ka account 2 seconds me hijack kar leta hai.</span>
-              <span class="lang-en">The password reset endpoint requires a 4-digit SMS OTP. The edge reverse proxy rate limits clients to 5 requests/minute. The attacker sends 1 single POST request containing 500 aliases (<code>a0001: verifyOTP(otp:"0001"), a0002...</code>). The proxy passes the single HTTP transaction, allowing the attacker to brute-force the valid code in 20 requests total.</span>
-            </p>
-            <div class="check-burp-snippet">
-<span style="color:#38bdf8;">POST</span> /graphql HTTP/1.1
+
+            <!-- Scenario 3: Amber / Gold Theme -->
+            <div style="background:linear-gradient(135deg, rgba(245,158,11,0.06), rgba(15,23,42,0.85)); border:1px solid rgba(245,158,11,0.25); border-left:4px solid #f59e0b; border-radius:12px; padding:1.4rem;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:10px;">
+                <div style="display:flex; align-items:center; gap:12px;">
+                  <div style="width:34px; height:34px; border-radius:50%; background:rgba(245,158,11,0.18); border:2px solid #f59e0b; display:flex; align-items:center; justify-content:center; font-weight:800; color:#fbbf24; font-family:var(--font-mono); font-size:0.85rem;">03</div>
+                  <div>
+                    <h4 style="margin:0; color:#fbbf24; font-size:1.05rem;">Scenario 3: 500-Alias Batching Rate Limit Bypass for OTP Brute-Force</h4>
+                    <span style="font-size:0.75rem; color:#94a3b8; font-family:var(--font-mono);">SINGLE HTTP POST &rarr; 500 PARALLEL RESOLVER EXECUTIONS</span>
+                  </div>
+                </div>
+                <span style="background:rgba(245,158,11,0.15); border:1px solid rgba(245,158,11,0.4); color:#fbbf24; padding:3px 10px; border-radius:999px; font-size:0.72rem; font-weight:700; font-family:var(--font-mono); text-transform:uppercase;">Critical Severity</span>
+              </div>
+
+              <p style="font-size:0.88rem; color:#cbd5e1; margin:0 0 12px; line-height:1.65;">
+                <span class="lang-hi">Password reset endpoint 4-digit SMS OTP maangta hai. Cloudflare WAF 5 requests/minute restrict karti hai. Attacker ek single HTTP POST body me 500 aliases (<code>a0001: verifyOTP(...), a0002: ...</code>) daal deta hai. WAF use 1 request ginta hai, jabki server 500 verification execute karke victim ka account 2 second me hijack kar leta hai:</span>
+                <span class="lang-en">The password reset endpoint requires a 4-digit SMS OTP. The edge WAF restricts clients to 5 req/min. The attacker sends 1 single HTTP request bundling 500 aliases (<code>a0001: verifyOTP(...), a0002: ...</code>). The WAF logs 1 request, while the server validates all 500 codes in parallel, hijacking the account in seconds:</span>
+              </p>
+
+              <div class="check-burp-block" style="border-color:rgba(245,158,11,0.25);"><span style="color:#38bdf8; font-weight:700;">POST</span> /graphql HTTP/1.1
+<span style="color:#94a3b8;">Host:</span> api.target.com
 <span style="color:#94a3b8;">Content-Type:</span> application/json
 
-{"query":"mutation BatchBypass { a0001: verifyOTP(email: \"admin@corp.com\", code: \"0001\") { token } a0002: verifyOTP(email: \"admin@corp.com\", code: \"0002\") { token } a0003: verifyOTP(email: \"admin@corp.com\", code: \"0003\") { token } }"}
+<span style="color:#c084fc;">{"query":</span> <span style="color:#fbbf24;">"mutation BatchBypass { a0001: verifyOTP(email: \"victim@corp.com\", code: \"0001\") { token } a0002: verifyOTP(email: \"victim@corp.com\", code: \"0002\") { token } ... a0500: verifyOTP(email: \"victim@corp.com\", code: \"0500\") { token } }"</span><span style="color:#c084fc;">}</span></div>
+
+              <div style="background:rgba(245,158,11,0.08); border-left:3px solid #f59e0b; border-radius:0 8px 8px 0; padding:10px 14px; font-size:0.82rem; color:#cbd5e1; line-height:1.55; margin-top:8px;">
+                <strong style="color:#fbbf24;">⚡ WAF Bypass Result:</strong> Edge WAF logged exactly 1 HTTP transaction (Allowed). Backend custom resolvers processed all 500 PIN attempts in parallel, returning <code style="color:#34d399;">token: "eyJhbGciOi..."</code> for alias <code style="color:#fbbf24;">a0284</code>. Total time elapsed: 2.1 seconds!
+              </div>
             </div>
+
+            <!-- Scenario 4: Emerald / Teal Theme -->
+            <div style="background:linear-gradient(135deg, rgba(16,185,129,0.06), rgba(15,23,42,0.85)); border:1px solid rgba(16,185,129,0.25); border-left:4px solid #10b981; border-radius:12px; padding:1.4rem;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:10px;">
+                <div style="display:flex; align-items:center; gap:12px;">
+                  <div style="width:34px; height:34px; border-radius:50%; background:rgba(16,185,129,0.18); border:2px solid #10b981; display:flex; align-items:center; justify-content:center; font-weight:800; color:#34d399; font-family:var(--font-mono); font-size:0.85rem;">04</div>
+                  <div>
+                    <h4 style="margin:0; color:#34d399; font-size:1.05rem;">Scenario 4: Resolver BOLA / Broken Object Level Authorization</h4>
+                    <span style="font-size:0.75rem; color:#94a3b8; font-family:var(--font-mono);">NESTED RELATION TRAVERSAL &rarr; UNAUTHORIZED BILLING &amp; PII DISCLOSURE</span>
+                  </div>
+                </div>
+                <span style="background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.4); color:#34d399; padding:3px 10px; border-radius:999px; font-size:0.72rem; font-weight:700; font-family:var(--font-mono); text-transform:uppercase;">High Severity</span>
+              </div>
+
+              <p style="font-size:0.88rem; color:#cbd5e1; margin:0 0 12px; line-height:1.65;">
+                <span class="lang-hi">Root query <code>me</code> authenticated user ka data check karti hai, lekin nested relation resolver <code>order(id: 882)</code> me client identity (<code>context.user.id == order.userId</code>) verify nahi hoti. Attacker apna JWT token bhej kar doosre users ke private billing addresses aur credit cards exfiltrate kar leta hai:</span>
+                <span class="lang-en">The top-level query validates user session, but intermediate field resolver <code>order(id: 882)</code> fails to verify if <code>order.userId === context.user.id</code>. An authenticated attacker traverses the graph to exfiltrate other customers' private orders, addresses, and saved cards:</span>
+              </p>
+
+              <div class="check-burp-block" style="border-color:rgba(16,185,129,0.25);"><span style="color:#38bdf8; font-weight:700;">POST</span> /graphql HTTP/1.1
+<span style="color:#94a3b8;">Authorization:</span> Bearer eyJhbGciOi_ATTACKER_TOKEN
+<span style="color:#94a3b8;">Content-Type:</span> application/json
+
+<span style="color:#c084fc;">{"query":</span> <span style="color:#34d399;">"query { order(id: 882) { id total shippingAddress paymentDetails { cardLast4 billingZip } } }"</span><span style="color:#c084fc;">}</span></div>
+
+              <div style="background:rgba(56,189,248,0.08); border-left:3px solid #38bdf8; border-radius:0 8px 8px 0; padding:10px 14px; font-size:0.82rem; color:#cbd5e1; line-height:1.55; margin-top:8px;">
+                <strong style="color:#38bdf8;">🔓 Data Exposure Result:</strong> HTTP 200 OK returned victim's home address, telephone, and payment token. Because authorization was enforced only at the route gateway and not inside nested GraphQL resolvers, 100% of internal customer orders were exposed!
+              </div>
+            </div>
+
           </div>
         </div>
 
@@ -1895,204 +2212,276 @@ graphql_app = GraphQLView(
 
       </div>
 
+
       <!-- ====================================================================
-           TAB 5: BURP REPEATER REVIEW CHECKLIST (MODULE 07 / 11 PARITY)
+           TAB 5: BURP REPEATER REVIEW CHECKLIST (MODULE 11 PARITY)
            ==================================================================== -->
       <div class="tab-content-pane" id="tab-checklist">
 
-        <div class="checklist-counter-card">
-          <div class="checklist-counter-text">
-            <h3>GraphQL Security Auditing Checklist</h3>
-            <p>Interactive 7-Point Security &amp; Triage Review for Burp Suite Repeater</p>
+        <div class="card-panel">
+          <div class="card-title-badge-row">
+            <div class="blue-circle-num">5</div>
+            <h2 class="panel-header-title">
+              <span class="lang-hi">Hands-On GraphQL Security Pentesting Checklist</span>
+              <span class="lang-en">Hands-On GraphQL Security Pentesting Checklist</span>
+            </h2>
           </div>
-          <div class="counter-badge-pill" id="auditCounterBadge">0 of 7 Audited</div>
-        </div>
 
-        <div class="checklist-items-stack">
-          <!-- Check 1 -->
-          <div class="check-audit-box" id="chkBox1">
-            <div class="check-audit-header">
-              <div class="check-title-group">
-                <div class="check-num-box">01</div>
-                <div>
-                  <div class="check-title-text">Introspection Schema Dumping Probe</div>
-                  <span style="font-size:0.75rem; color:#94a3b8;">Verify if __schema meta-queries are disabled on public endpoints</span>
-                </div>
-              </div>
-              <div class="check-action-btns">
-                <button type="button" class="btn-audit pass" onclick="markCheck(1, 'pass')">PASS</button>
-                <button type="button" class="btn-audit fail" onclick="markCheck(1, 'fail')">FAIL</button>
-              </div>
+          <div class="checklist-meta-header">
+            <div class="checklist-guide-msg">
+              <span class="lang-hi">Har test case ko inspect karein aur <strong>Pass (Secure)</strong> ya <strong>Fail (Vulnerable)</strong> mark karein:</span>
+              <span class="lang-en">Audit each test case and mark as <strong>Pass (Secure)</strong> or <strong>Fail (Vulnerable)</strong>:</span>
             </div>
-            <p style="font-size:0.84rem; color:#cbd5e1; margin:0;">
-              In Burp Repeater, send a POST request with body <code>{"query":"{ __schema { queryType { name } } }"}</code>. If response returns HTTP 200 with schema metadata, mark <strong>FAIL</strong>. If response returns "GraphQL introspection is not allowed", mark <strong>PASS</strong>.
-            </p>
-            <div class="check-burp-snippet">
-POST /graphql HTTP/1.1
+            <div class="checklist-counter-badge">
+              <span id="gql-checklist-counter">0 of 7 Checks Audited (0 Passed | 0 Vulnerable)</span>
+            </div>
+          </div>
+
+          <div class="checklist-container">
+
+            <!-- Item 1 -->
+            <div class="checklist-item" id="gql-check-item-1" onclick="handleGqlCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleGqlCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">1</span>
+              </div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">1. Introspection Schema Dumping Probe</span>
+                  <span class="lang-en">1. Introspection Schema Dumping Probe</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Verify karein ki kya <code>__schema</code> meta-queries public endpoints par disabled hain ya nahi.</span>
+                  <span class="lang-en">Verify if <code>__schema</code> meta-queries are disabled on public endpoints.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test in Burp Suite Repeater:</div>
+                  <span class="lang-hi">1. Burp Repeater me POST request bhejein <code>/graphql</code> par.<br>2. Body me introspection query bhejein:<br>3. Agar HTTP 200 ke saath schema metadata return ho, toh <strong>FAIL</strong>. Agar "introspection not allowed" error aaye, toh <strong>PASS</strong>.</span>
+                  <span class="lang-en">1. Send a POST request to <code>/graphql</code> in Burp Repeater.<br>2. Use the introspection query below.<br>3. If HTTP 200 returns schema metadata, mark <strong>FAIL</strong>. If "introspection not allowed" error appears, mark <strong>PASS</strong>.</span>
+                  <div class="check-burp-block">POST /graphql HTTP/1.1
 Host: target.com
 Content-Type: application/json
 
-{"query":"{ __schema { types { name } } }"}
-            </div>
-          </div>
-
-          <!-- Check 2 -->
-          <div class="check-audit-box" id="chkBox2">
-            <div class="check-audit-header">
-              <div class="check-title-group">
-                <div class="check-num-box">02</div>
-                <div>
-                  <div class="check-title-text">Field Suggestions Leakage (Clairvoyance Attack)</div>
-                  <span style="font-size:0.75rem; color:#94a3b8;">Check if disabled introspection still leaks schema via suggestion engine</span>
+{"query":"{ __schema { types { name } } }"}</div>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setGqlChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setGqlChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
                 </div>
               </div>
-              <div class="check-action-btns">
-                <button type="button" class="btn-audit pass" onclick="markCheck(2, 'pass')">PASS</button>
-                <button type="button" class="btn-audit fail" onclick="markCheck(2, 'fail')">FAIL</button>
-              </div>
             </div>
-            <p style="font-size:0.84rem; color:#cbd5e1; margin:0;">
-              Send an intentional typo in a query (e.g. <code>{ me { user_emai } }</code>). If the error message responds <em>"Did you mean user_email?"</em>, the engine is leaking field names and can be brute-forced. Pass only if suggestion masking is enabled.
-            </p>
-            <div class="check-burp-snippet">
-POST /graphql HTTP/1.1
+
+            <!-- Item 2 -->
+            <div class="checklist-item" id="gql-check-item-2" onclick="handleGqlCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleGqlCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">2</span>
+              </div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">2. Field Suggestions Leakage (Clairvoyance Attack)</span>
+                  <span class="lang-en">2. Field Suggestions Leakage (Clairvoyance Attack)</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Check karein ki kya disabled introspection ke bawajood schema field suggestions ke zariye leak ho rahi hai.</span>
+                  <span class="lang-en">Check if disabled introspection still leaks schema via the suggestion engine.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test in Burp Suite Repeater:</div>
+                  <span class="lang-hi">1. Intentional typo wali query bhejein.<br>2. Agar response me "Did you mean user_email?" jaisi suggestion aaye, toh engine field names leak kar raha hai — <strong>FAIL</strong>.</span>
+                  <span class="lang-en">1. Send an intentional typo query.<br>2. If error returns "Did you mean user_email?" — the engine leaks field names via suggestion engine — <strong>FAIL</strong>.</span>
+                  <div class="check-burp-block">POST /graphql HTTP/1.1
 Content-Type: application/json
 
-{"query":"{ user { passwrd_tkn } }"}
-            </div>
-          </div>
-
-          <!-- Check 3 -->
-          <div class="check-audit-box" id="chkBox3">
-            <div class="check-audit-header">
-              <div class="check-title-group">
-                <div class="check-num-box">03</div>
-                <div>
-                  <div class="check-title-text">Circular Query Depth Limit Resistance</div>
-                  <span style="font-size:0.75rem; color:#94a3b8;">Test server response against 10+ levels of circular nesting</span>
+{"query":"{ user { passwrd_tkn } }"}</div>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setGqlChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setGqlChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
                 </div>
               </div>
-              <div class="check-action-btns">
-                <button type="button" class="btn-audit pass" onclick="markCheck(3, 'pass')">PASS</button>
-                <button type="button" class="btn-audit fail" onclick="markCheck(3, 'fail')">FAIL</button>
-              </div>
             </div>
-            <p style="font-size:0.84rem; color:#cbd5e1; margin:0;">
-              Send a query with 10 nested relations. If the server executes it (or delays responding by &gt;2 seconds), mark <strong>FAIL</strong>. Pass only if a <code>GRAPHQL_VALIDATION_FAILED: Query exceeds maximum depth</code> error is returned instantly.
-            </p>
-            <div class="check-burp-snippet">
-POST /graphql HTTP/1.1
+
+            <!-- Item 3 -->
+            <div class="checklist-item" id="gql-check-item-3" onclick="handleGqlCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleGqlCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">3</span>
+              </div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">3. Circular Query Depth Limit Resistance</span>
+                  <span class="lang-en">3. Circular Query Depth Limit Resistance</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Test karein ki kya server 10+ levels ke circular nesting ke against protected hai ya crash ho jaata hai.</span>
+                  <span class="lang-en">Test server response against 10+ levels of circular nesting — should reject instantly.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test in Burp Suite Repeater:</div>
+                  <span class="lang-hi">Neeche di gayi 10-level deep circular query bhejein. Agar server execute kare ya 2 second se zyada delay kare — <strong>FAIL</strong>. Agar turant <code>Query exceeds maximum depth</code> error aaye — <strong>PASS</strong>.</span>
+                  <span class="lang-en">Send the 10-level deep circular query below. If server executes or delays >2 seconds — <strong>FAIL</strong>. If it instantly returns <code>Query exceeds maximum depth</code> — <strong>PASS</strong>.</span>
+                  <div class="check-burp-block">POST /graphql HTTP/1.1
 Content-Type: application/json
 
-{"query":"{ user { posts { author { posts { author { posts { id } } } } } } }"}
-            </div>
-          </div>
-
-          <!-- Check 4 -->
-          <div class="check-audit-box" id="chkBox4">
-            <div class="check-audit-header">
-              <div class="check-title-group">
-                <div class="check-num-box">04</div>
-                <div>
-                  <div class="check-title-text">Alias Batching Rate Limit Resistance</div>
-                  <span style="font-size:0.75rem; color:#94a3b8;">Verify if 50+ aliases in a single payload are rejected</span>
+{"query":"{ user { posts { author { posts { author { posts { id } } } } } } }"}</div>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setGqlChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setGqlChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
                 </div>
               </div>
-              <div class="check-action-btns">
-                <button type="button" class="btn-audit pass" onclick="markCheck(4, 'pass')">PASS</button>
-                <button type="button" class="btn-audit fail" onclick="markCheck(4, 'fail')">FAIL</button>
-              </div>
             </div>
-            <p style="font-size:0.84rem; color:#cbd5e1; margin:0;">
-              Send 50 aliases in 1 request to a login, OTP, or expensive calculation resolver. If all 50 execute, rate limiting is completely bypassed (FAIL). Pass only if server enforces max alias limits or batching restrictions.
-            </p>
-            <div class="check-burp-snippet">
-POST /graphql HTTP/1.1
+
+            <!-- Item 4 -->
+            <div class="checklist-item" id="gql-check-item-4" onclick="handleGqlCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleGqlCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">4</span>
+              </div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">4. Alias Batching Rate Limit Resistance</span>
+                  <span class="lang-en">4. Alias Batching Rate Limit Resistance</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Verify karein ki kya 50+ aliases wali single payload reject hoti hai ya sab execute ho jaate hain.</span>
+                  <span class="lang-en">Verify if 50+ aliases in a single payload are rejected or all executed.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test in Burp Suite Repeater:</div>
+                  <span class="lang-hi">Login/OTP resolver par 50 aliases ek hi request me bhejein. Agar sab 50 execute ho jaate hain — rate limiting bypass ho gayi, <strong>FAIL</strong>. Pass tabhi agar server max alias limit enforce kare.</span>
+                  <span class="lang-en">Send 50 aliases in one request to a login, OTP, or expensive resolver. If all 50 execute — rate limiting is bypassed, <strong>FAIL</strong>. Pass only if server enforces max alias limits.</span>
+                  <div class="check-burp-block">POST /graphql HTTP/1.1
 Content-Type: application/json
 
-{"query":"query { a1: login(pin:\"1\") a2: login(pin:\"2\") ... a50: login(pin:\"50\") }"}
-            </div>
-          </div>
-
-          <!-- Check 5 -->
-          <div class="check-audit-box" id="chkBox5">
-            <div class="check-audit-header">
-              <div class="check-title-group">
-                <div class="check-num-box">05</div>
-                <div>
-                  <div class="check-title-text">IDE Console Exposure Audit (/graphiql, /altair)</div>
-                  <span style="font-size:0.75rem; color:#94a3b8;">Probe common interactive developer console paths</span>
+{"query":"query { a1: login(pin:\"1\") a2: login(pin:\"2\") ... a50: login(pin:\"50\") }"}</div>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setGqlChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setGqlChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
                 </div>
               </div>
-              <div class="check-action-btns">
-                <button type="button" class="btn-audit pass" onclick="markCheck(5, 'pass')">PASS</button>
-                <button type="button" class="btn-audit fail" onclick="markCheck(5, 'fail')">FAIL</button>
-              </div>
             </div>
-            <p style="font-size:0.84rem; color:#cbd5e1; margin:0;">
-              Send GET requests to <code>/graphiql</code>, <code>/graphql</code>, <code>/altair</code>, and <code>/playground</code> with <code>Accept: text/html</code>. If an interactive HTML explorer loads, mark <strong>FAIL</strong>.
-            </p>
-            <div class="check-burp-snippet">
-GET /graphiql HTTP/1.1
+
+            <!-- Item 5 -->
+            <div class="checklist-item" id="gql-check-item-5" onclick="handleGqlCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleGqlCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">5</span>
+              </div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">5. GraphQL IDE Console Exposure (/graphiql, /altair)</span>
+                  <span class="lang-en">5. GraphQL IDE Console Exposure (/graphiql, /altair)</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Common interactive developer console paths probe karein — production par ye accessible nahi honi chahiye.</span>
+                  <span class="lang-en">Probe common interactive developer console paths — these must not be accessible in production.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test in Burp Suite Repeater:</div>
+                  <span class="lang-hi"><code>/graphiql</code>, <code>/graphql</code>, <code>/altair</code>, aur <code>/playground</code> par GET request bhejein <code>Accept: text/html</code> ke saath. Agar interactive HTML explorer load ho — <strong>FAIL</strong>.</span>
+                  <span class="lang-en">Send GET requests to <code>/graphiql</code>, <code>/graphql</code>, <code>/altair</code>, and <code>/playground</code> with <code>Accept: text/html</code>. If an interactive explorer loads — <strong>FAIL</strong>.</span>
+                  <div class="check-burp-block">GET /graphiql HTTP/1.1
 Host: target.com
-Accept: text/html,application/xhtml+xml
-            </div>
-          </div>
-
-          <!-- Check 6 -->
-          <div class="check-audit-box" id="chkBox6">
-            <div class="check-audit-header">
-              <div class="check-title-group">
-                <div class="check-num-box">06</div>
-                <div>
-                  <div class="check-title-text">Resolver BOLA / Object Ownership Check</div>
-                  <span style="font-size:0.75rem; color:#94a3b8;">Test accessing another user's nested objects via ID parameters</span>
+Accept: text/html,application/xhtml+xml</div>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setGqlChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setGqlChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
                 </div>
               </div>
-              <div class="check-action-btns">
-                <button type="button" class="btn-audit pass" onclick="markCheck(6, 'pass')">PASS</button>
-                <button type="button" class="btn-audit fail" onclick="markCheck(6, 'fail')">FAIL</button>
-              </div>
             </div>
-            <p style="font-size:0.84rem; color:#cbd5e1; margin:0;">
-              Authenticate as User A. Send query requesting User B's order ID (<code>order(id: 882)</code>). If the response returns User B's invoice details or shipping address, mark <strong>FAIL</strong> (BOLA/IDOR). Pass only if forbidden exception is thrown.
-            </p>
-            <div class="check-burp-snippet">
-POST /graphql HTTP/1.1
+
+            <!-- Item 6 -->
+            <div class="checklist-item" id="gql-check-item-6" onclick="handleGqlCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleGqlCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">6</span>
+              </div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">6. Resolver BOLA / Object Ownership Check</span>
+                  <span class="lang-en">6. Resolver BOLA / Object Ownership Check</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Test karein ki kya User A, User B ke nested objects ko ID parameter ke zariye access kar sakta hai.</span>
+                  <span class="lang-en">Test accessing another user's nested objects via ID parameters in resolver queries.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test in Burp Suite Repeater:</div>
+                  <span class="lang-hi">User A ke JWT se authenticate karein. Phir User B ka order ID query karein. Agar User B ka invoice ya address return ho — <strong>CRITICAL FAIL</strong> (BOLA/IDOR). Pass tabhi agar forbidden exception throw ho.</span>
+                  <span class="lang-en">Authenticate as User A. Query User B's order ID. If response returns User B's invoice or shipping address — <strong>CRITICAL FAIL</strong> (BOLA/IDOR). Pass only if forbidden exception is thrown.</span>
+                  <div class="check-burp-block">POST /graphql HTTP/1.1
 Authorization: Bearer USER_A_JWT
 
-{"query":"query { order(id: 882) { id total shippingAddress } }"}
-            </div>
-          </div>
-
-          <!-- Check 7 -->
-          <div class="check-audit-box" id="chkBox7">
-            <div class="check-audit-header">
-              <div class="check-title-group">
-                <div class="check-num-box">07</div>
-                <div>
-                  <div class="check-title-text">GraphQL Injection in Resolvers (SQLi / NoSQLi)</div>
-                  <span style="font-size:0.75rem; color:#94a3b8;">Inject quotation marks and boolean payloads into query arguments</span>
+{"query":"query { order(id: 882) { id total shippingAddress } }"}</div>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setGqlChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setGqlChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
                 </div>
               </div>
-              <div class="check-action-btns">
-                <button type="button" class="btn-audit pass" onclick="markCheck(7, 'pass')">PASS</button>
-                <button type="button" class="btn-audit fail" onclick="markCheck(7, 'fail')">FAIL</button>
-              </div>
             </div>
-            <p style="font-size:0.84rem; color:#cbd5e1; margin:0;">
-              Inject SQL payloads into filter strings: <code>users(filter: "admin' OR '1'='1")</code>. If database syntax error or dumped records appear, mark <strong>FAIL</strong>. GraphQL types do NOT sanitize raw SQL queries inside custom resolvers!
-            </p>
-            <div class="check-burp-snippet">
-POST /graphql HTTP/1.1
+
+            <!-- Item 7 -->
+            <div class="checklist-item" id="gql-check-item-7" onclick="handleGqlCheckItemClick(event, this)">
+              <div class="check-box-circle" onclick="toggleGqlCheckCircle(event, this)" title="Click to toggle Pass / Fail">
+                <span class="check-mark-icon">7</span>
+              </div>
+              <div class="check-content">
+                <h5>
+                  <span class="lang-hi">7. GraphQL Resolver Injection (SQLi / NoSQLi in Arguments)</span>
+                  <span class="lang-en">7. GraphQL Resolver Injection (SQLi / NoSQLi in Arguments)</span>
+                </h5>
+                <p>
+                  <span class="lang-hi">Query arguments me SQL/NoSQL payloads inject karein — GraphQL types raw DB queries ko automatically sanitize nahi karte.</span>
+                  <span class="lang-en">Inject SQL/NoSQL payloads into query arguments — GraphQL types do NOT auto-sanitize raw DB queries in custom resolvers.</span>
+                </p>
+                <div class="check-how-to-box">
+                  <div class="check-how-to-title">🔍 How to Test in Burp Suite Repeater:</div>
+                  <span class="lang-hi">Filter strings me SQL payloads inject karein: <code>users(filter: "admin' OR '1'='1")</code>. Agar DB syntax error ya dumped records aayein — <strong>CRITICAL FAIL</strong>.</span>
+                  <span class="lang-en">Inject SQL payloads into filter strings. If database syntax error or dumped records appear — <strong>CRITICAL FAIL</strong>.</span>
+                  <div class="check-burp-block">POST /graphql HTTP/1.1
 Content-Type: application/json
 
-{"query":"query { searchUsers(term: \"' UNION SELECT username, password FROM users--\") { id username } }"}
+{"query":"query { searchUsers(term: \"' UNION SELECT username, password FROM users--\") { id username } }"}</div>
+                </div>
+                <div class="check-actions-bar">
+                  <button type="button" class="check-status-btn pass-btn" onclick="setGqlChecklistStatus(event, this, 'pass')">
+                    <span>✓</span> <span>Pass (Secure)</span>
+                  </button>
+                  <button type="button" class="check-status-btn fail-btn" onclick="setGqlChecklistStatus(event, this, 'fail')">
+                    <span>✕</span> <span>Fail (Vulnerable)</span>
+                  </button>
+                </div>
+              </div>
             </div>
+
           </div>
         </div>
 
       </div>
+
 
       <!-- ====================================================================
            TAB 6: INTERACTIVE LIVE LAB SIMULATOR
@@ -2438,25 +2827,74 @@ Content-Type: application/json
       gqlTargetNote.style.color = '#ef4444';
     });
 
-    // 4. Burp Checklist State Manager
-    const checkStates = {};
-    function markCheck(checkId, state) {
-      checkStates[checkId] = state;
-      const box = document.getElementById('chkBox' + checkId);
-      const btnPass = box.querySelector('.btn-audit.pass');
-      const btnFail = box.querySelector('.btn-audit.fail');
+    // 4. Checklist Interactive Logic (Module 11 Parity)
+    window.setGqlChecklistStatus = function(event, btn, status) {
+      if (event) event.stopPropagation();
+      const item = btn.closest('.checklist-item');
+      if (!item) return;
+      const itemId = item.id;
+      const passBtn = item.querySelector('.pass-btn');
+      const failBtn = item.querySelector('.fail-btn');
+      const circleIcon = item.querySelector('.check-mark-icon');
 
-      if (state === 'pass') {
-        btnPass.classList.add('active');
-        btnFail.classList.remove('active');
+      const isCurrent = (status === 'pass' && item.classList.contains('item-passed')) ||
+                        (status === 'fail' && item.classList.contains('item-failed'));
+
+      if (isCurrent) {
+        item.classList.remove('item-passed', 'item-failed');
+        if (passBtn) passBtn.classList.remove('active');
+        if (failBtn) failBtn.classList.remove('active');
+        const itemNum = itemId.replace('gql-check-item-', '');
+        if (circleIcon) circleIcon.innerText = itemNum;
       } else {
-        btnFail.classList.add('active');
-        btnPass.classList.remove('active');
+        if (status === 'pass') {
+          item.classList.add('item-passed');
+          item.classList.remove('item-failed');
+          if (passBtn) passBtn.classList.add('active');
+          if (failBtn) failBtn.classList.remove('active');
+          if (circleIcon) circleIcon.innerText = '✓';
+        } else {
+          item.classList.add('item-failed');
+          item.classList.remove('item-passed');
+          if (failBtn) failBtn.classList.add('active');
+          if (passBtn) passBtn.classList.remove('active');
+          if (circleIcon) circleIcon.innerText = '✕';
+        }
       }
+      updateGqlChecklistCounter();
+    };
 
-      const count = Object.keys(checkStates).length;
-      document.getElementById('auditCounterBadge').textContent = `${count} of 7 Audited`;
+    window.toggleGqlCheckCircle = function(event, el) {
+      if (event) event.stopPropagation();
+      const item = el.closest('.checklist-item');
+      if (!item) return;
+      if (item.classList.contains('item-passed')) {
+        setGqlChecklistStatus(null, item.querySelector('.fail-btn'), 'fail');
+      } else if (item.classList.contains('item-failed')) {
+        setGqlChecklistStatus(null, item.querySelector('.fail-btn'), 'fail');
+      } else {
+        setGqlChecklistStatus(null, item.querySelector('.pass-btn'), 'pass');
+      }
+    };
+
+    window.handleGqlCheckItemClick = function(event, item) {
+      if (event.target.closest('.check-actions-bar') || event.target.closest('code') || event.target.closest('.check-how-to-box') || event.target.closest('.check-burp-block')) {
+        return;
+      }
+      toggleGqlCheckCircle(event, item);
+    };
+
+    function updateGqlChecklistCounter() {
+      const items = document.querySelectorAll('#tab-checklist .checklist-item');
+      const passed = document.querySelectorAll('#tab-checklist .checklist-item.item-passed').length;
+      const failed = document.querySelectorAll('#tab-checklist .checklist-item.item-failed').length;
+      const audited = passed + failed;
+      const total = items.length;
+      const counter = document.getElementById('gql-checklist-counter');
+      if (counter) counter.textContent = `${audited} of ${total} Checks Audited (${passed} Passed | ${failed} Vulnerable)`;
     }
+
+
 
     // 5. Live Lab Simulator Presets & Logic
     const labPresets = {
